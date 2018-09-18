@@ -1,0 +1,166 @@
+{% extends "sedm_base.html" %}
+{% block content %}
+    <div class="vertical-center-row">
+        <div id="messagebox">
+        <h2 id="message">{{ req_dict.message | safe }}</h2>
+        <div id="availableObjects"></div>
+        </div>
+
+
+        <form id='request_form' action="request" method="post">
+            {{ form.csrf_token }}
+            <div class="col-md-5">
+            <div id="objectInfo" class="panel-body">
+                <h3>Request Target Information</h3>
+                {{ form.object_id }}
+                <ul class="list-group">
+                      <li class="list-group-item">{{ form.obj_name.label }}{{ form.obj_name }}</li>
+                      <li class="list-group-item">{{ form.obj_ra.label }}{{ form.obj_ra }}</li>
+                      <li class="list-group-item">{{ form.obj_dec.label }}{{ form.obj_dec }}</li>
+                     <li class="list-group-item"> {{ form.obj_epoch.label }}{{ form.obj_epoch }}</li>
+                     <li class="list-group-item">{{ form.obj_mag.label }}{{ form.obj_mag }}</li>
+                </ul>
+
+
+
+
+
+                <div id="searchPanel" class="panel-body">
+                    <p>Target information can be automatically
+                        populated if the requested target already
+                        has an entry in the database. Please enter
+                        either a name or coordinates to
+                        search for existing targets.</p>
+                    <button type="button" onclick="findObject()">Search for object</button>
+                </div>
+            </div>
+            {{ form.request_id }}
+            {{ form.allocation_id }}
+            {{ form.user_id }}
+            {{ form.marshal_id }}
+            <div id="requestProgram" class="panel-body">
+                <h3>Request Program Options</h3>
+                {{ form.allocation.label }}{{ form.allocation }}
+
+                {{ form.status.label }}{{ form.status }}
+            </div>
+            </div>
+            <div class="col-md-5">
+            <div id="requestSetup">
+                <h3>Request Observation Options</h3>
+                <ul class="list-group">
+                      <li class="list-group-item">{{ form.inidate.label }}{{ form.inidate(class_="col-xs-3") }}</li>
+                      <li class="list-group-item">{{ form.enddate.label }}{{ form.enddate(class_="col-xs-3") }}</li>
+                      <li class="list-group-item">{{ form.priority.label }}{{ form.priority(class_="col-xs-2") }}</li>
+                </ul>
+
+                <div id="requestSetupIFU">
+                    <h4>IFU</h4>
+                    {{ form.ifu.label }}{{ form.ifu }}
+
+                    {{ form.ab.label }}{{ form.ab }}
+                    {{ form.ifu_use_mag.label }}{{ form.ifu_use_mag }}
+                    {{ form.ifu_exptime.label }}{{ form.ifu_exptime }}
+                </div>
+                <div id="requestSetupPhot">
+                    <h4>RC</h4>
+                    {{ form.rc.label }}{{ form.rc }}
+                    {{ form.rc_use_mag.label }}{{ form.rc_use_mag }}
+                    <table id="photTable">
+                        <tr><th>Filter</th><th>Exptime(seconds)</th><th>Repeats</th></tr>
+                        <tr>
+                            <td id="do_r">r{{ form.do_r }}</td>
+                            <td id="r_exptime">{{ form.r_exptime }}</td>
+                            <td id="r_repeats">x{{ form.r_repeats }}</td>
+                        </tr>
+                        <tr>
+                            <td id="do_g">g{{ form.do_g }}</td>
+                            <td id="g_exptime">{{ form.g_exptime }}</td>
+                            <td id="g_repeats">x{{ form.g_repeats }}</td>
+                        </tr>
+                        <tr>
+                            <td id="do_i">i{{ form.do_i }}</td>
+                            <td id="i_exptime">{{ form.i_exptime }}</td>
+                            <td id="i_repeats">x{{ form.i_repeats }}</td>
+                        </tr>
+                        <tr>
+                            <td id="do_u">u{{ form.do_u }}</td>
+                            <td id="u_exptime">{{ form.u_exptime }}</td>
+                            <td id="u_repeats">x{{ form.u_repeats }}</td>
+                        </tr>
+                    </table>
+                    {{ form.seq_repeats.label }}{{ form.seq_repeats }}
+                    {{ form.seq_completed.label }}{{ form.seq_completed }}
+
+                    {{ form.cadence.label }}{{ form.cadence }}
+                </div>
+
+            </div>
+            <div id="requestConstraint">
+                <h3>Request Constraint Options</h3>
+                {{ form.maxairmass.label }}{{ form.maxairmass  }}
+                {{ form.min_moon_dist.label }}{{ form.min_moon_dist  }}
+                {{ form.max_moon_illum.label }}{{ form.max_moon_illum  }}
+                {{ form.max_fwhm.label }}{{ form.max_fwhm  }}
+                {{ form.max_cloud_cover.label }}{{ form.max_cloud_cover  }}
+                {{ form.phasesamples.label }}{{ form.phasesamples }}
+                {{ form.sampletolerance.label }}{{ form.sampletolerance }}
+                {{ form.last_obs_jd }}
+            </div>
+        {{ form.submit_req }}
+        </div>
+        </form>
+
+    </div>
+    <div class="container">
+
+    </div>
+{% endblock %}
+{% block footer %}
+{{ super() }}
+    <script>
+        function findObject() {
+            var name = $('#obj_name').val();
+            var ra = $('#obj_ra').val();
+            var dec = $('#obj_dec').val();
+            var myJSON = JSON.stringify({name: name, ra: ra, dec: dec});
+            $.ajax({
+            url: "/search/get_objects",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(myJSON),
+            type: 'post',
+            success: function (data, status) {
+            console.log(data);
+            $('#availableObjects').html(data.message);
+
+        }
+        })}
+        function addValues(id) {
+            var myJSON = JSON.stringify({id: id});
+            $.ajax({
+            url: "/search/get_object_values",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(myJSON),
+            type: 'post',
+            success: function (data, status) {
+            console.log(data);
+            $('#obj_name').val(data.name);
+            $('#obj_ra').val(data.ra);
+            $('#obj_dec').val(data.dec);
+            $('#obj_epoch').val(data.epoch);
+            $('#obj_mag').val(data.magnitude);
+        }
+        })}
+    $(document).ready(function() {
+      $(window).keydown(function(event){
+        if(event.keyCode == 13) {
+          event.preventDefault();
+          return false;
+        }
+      });
+    });
+    </script>
+
+{% endblock %}

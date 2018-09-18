@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="viewport" content = "width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="/static/css/bootstrap.css" type="text/css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Bokeh includes-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/sedm-main.css')}}">
+
+    {% block head %}
+        <title>{{ title }}</title>
+    {% endblock %}
+</head>
+
+<body>
+
+    <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="navcontainer">
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a class="navbar-brand" href="http://www.astro.caltech.edu/sedm/">SED Machine</a></li>
+                    {% if not current_user.is_authenticated %}
+                        <li><a href="/#">Home</a></li>
+                        <!--li><a href="/login">Login</a></li-->
+                    {% else %}
+                        <li><a href="/#">{{ current_user.name }} home</a></li>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                        <li><a href="/objects">Objects</a></li>
+                        <li><a href="/request">Request</a></li>
+                        {% if current_user.name=='SEDM_admin' %}
+                            <li><a href="/scheduler">Scheduler</a></li>
+                        {% endif %}
+                        <li><a href="/project_stats">Project Statistics</a></li>
+
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Data Access <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                        <li><a href="/data_access/ifu">IFU</a></li>
+                        <li><a href="/data_access/rc">RC</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <li><a href="/weather_stats?">Night Statistics</a></li>
+
+                    {% if current_user.is_authenticated and current_user.name=='SEDM_admin' %}
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Admin <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/manage_user">Manage Users</a></li>
+                            <li><a href="/manage_group">Manage Groups</a></li>
+                            <li><a href="/manage_program">Manage Programs</a></li>
+                            <li><a href="/manage_allocation">Manage Allocations</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">My account <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/login">Login</a></li>
+                            <li><a href="/logout">Logout</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="/passchange">Change password</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}
+        <h1>Under construction</h1>
+        {% endblock %}
+    </div>
+    {% block footer %}
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    {% endblock %}
+
+</body>
+</html>

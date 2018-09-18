@@ -1,0 +1,40 @@
+{% extends "sedm_base.html" %}
+{% block content %}
+    <div id="header">
+        <h2>SEDm CSV Upload Page</h2>
+    </div>
+    <div id="preamble">
+        <p>In order to handle a csv request, users must compile with the
+            strict guidelines given here.  Failure to do so will result in the
+        rejection of your targets.</p>
+    </div>
+
+    <div id="csvFormat">
+        <ul>
+            <li>The first line of all request should be a header with the listed keywords inputs</li>
+            <li>Header keywords must match those listed to right (red values are required)</li>
+            <li>Values must match the values type column for each keyword</li>
+        </ul>
+    </div>
+    <div id="uploadFile">
+        <input type="file" onchange="loadfile(this)">
+    </div>
+    <div id="addCSVform">
+        {{ form.textbox.label }}{{ form.textbox }}
+        {{ form.submit_req }}
+    </div>
+
+{% endblock %}
+
+{% block footer %}
+{{ super() }}
+<script>
+    function loadfile(input){
+        var reader = new FileReader();
+        reader.onload = function(e){
+            document.getElementById('text').value = e.target.result;
+        }
+        reader.readAsText(input.files[0]);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "sedm_base.html" %}
+{% from "macros.html" import calendar_picker %}
+
+{% block head %}
+    {{ calendar_picker('head') }}
+    {{ super() }}
+    {{ sedm_dict.js_resources | safe}}
+    {{ sedm_dict.css_resources | safe}}
+{% endblock %}
+{% block content %}
+    <div class="container" id="message">
+        <p>{{ sedm_dict.message }}</p>
+    </div>
+    {{ calendar_picker('content') }}
+    <div id="weatherStats" class="container">
+        <div id="script_div"> {{ sedm_dict.script | safe}}</div>
+        <div id="plot_div">{{ sedm_dict.div | safe}}</div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+    {{ calendar_picker('footer') }}
+{% endblock footer %}

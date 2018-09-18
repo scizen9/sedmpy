@@ -1,0 +1,23 @@
+table               option 1            option 2        option 3...
+
+classification      object_id           spec_id         classification      redshift    id**
+flexure             timestamp1          id**
+metrics_phot        phot_id**           id**             
+metrics_spec        spec_id**           id**             
+object              coords(q3c)         name            marshal_id**        id**        iauname**
+orbit_params        object_id**         id**
+periodic            object_id           id** 
+observation         atomicrequest_id    id**            request_id          object_id   fitsfile**
+spec                observation_id**    marshal_spec_id id**
+phot                observation_id**    marshal_phot_id id**
+ref_stars           coords(q3c)         mag             filter              id**
+request             id**                object_id       status
+atomicrequest       request_id          id**            object_id	        inidate	    enddate
+telescope_stats     observation_id**    id**            date (should it be a timestamp instead?) --> Yes, date shall be a timestamp
+users               id**                username**            
+groups              id**                designator**
+usergroups          no index
+
+
+
+** created automatically

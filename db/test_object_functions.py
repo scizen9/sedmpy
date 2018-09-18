@@ -1,0 +1,11 @@
+# test add_object
+# test get_from_objects
+# test get_object_id_from_name
+# test add_elliptical_orbit
+# test get_elliptical_orbit
+# test add_hyperbolic_orbit
+# test get_hyperbolic_orbit
+# test add_parabolic_orbit
+# test get_parabolic_orbit
+# test add_earth_satellite_orbit
+# test get_earth_satellite_orbit

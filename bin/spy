@@ -1,0 +1,27 @@
+#!/bin/bash -f
+
+source activate astroconda
+
+SEDMPATH=$HOME/sedmpy
+
+# if [ -z ${PYTHONPATH+X} ]
+# then PYTHONPATH=${PYTHONPATH}:${SEDMPATH}
+# else
+PYTHONPATH=${SEDMPATH}
+# fi
+export PYTHONPATH
+
+if [ "$#" -eq 0 ]
+then 
+    echo "Starting Python"
+    ipython --pylab
+else
+    case $1 in
+        what) python $SEDMPATH/drpifu/What.py "$@";;
+        plan) shift 1; python $SEDMPATH/drpifu/Plan.py "$@";;
+        report) python $SEDMPATH/drpifu/DrpReport.py;;
+        *) python -u "$@";;
+    esac
+fi
+exit
+

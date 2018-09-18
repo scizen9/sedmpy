@@ -1,0 +1,19 @@
+{% extends "sedm_base.html" %}
+{% from "macros.html" import calendar_picker %}
+
+{% block head %}
+    {{ calendar_picker('head') }}
+    {{ super() }}
+{% endblock head %}
+
+{% block content %}
+    {{ calendar_picker('content', name='obsdate') }}
+    <div class="container">
+        {{ sedm_dict.sci_data| safe}}
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+    {{ calendar_picker('footer') }}
+{% endblock footer %}

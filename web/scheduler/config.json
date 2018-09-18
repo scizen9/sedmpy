@@ -1,0 +1,2 @@
+{"site": {"name": "palomar", "longitude": -116.8599, "latitude": 33.3574, "elevation": 1703.2},
+	  "database": {"host": "localhost", "port": 5432, "user": "sedmuser", "db": "sedmdb", "password": "user$edm1235"}}
