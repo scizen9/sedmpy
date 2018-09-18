@@ -1,0 +1,26 @@
+{% macro calendar_picker(block, name='obsdate') %}
+    {# calendar picker html #}
+
+    {% if block == 'content' %}
+        <div class="container">
+            <form method="get" autocomplete="off">
+                <div class="input-group date" data-provide="datepicker" data-date-format="yyyymmdd" data-date-today-highlight="True" data-date-end-date="0d" data-date-autoclose="true">
+                    <input type="text" name="{{ name }}" class="form-control">
+                    <div class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </div>
+                </div>
+                <div class="form-group"> <!-- submit -->
+                    <button class="btn btn-primary " type="submit">Submit</button>
+                </div>
+            </form>
+	</div>
+
+    {% elif block == 'footer' %}
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+
+    {% elif block == 'head' %}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css">
+    {% endif %}
+
+{%- endmacro %}

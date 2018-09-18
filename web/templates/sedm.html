@@ -1,0 +1,20 @@
+{% extends "sedm_base.html" %}
+{% block content %}
+    <div class="container">
+        <h2>{{sedm_dict.greeting}}</h2>
+    </div>
+    <div class="container">
+        <div class="active-requests">
+            <h4>{{sedm_dict.active.title}}</h4>
+            {{ sedm_dict.active.table | safe }}
+        </div>
+        <div class="completed-requests">
+            <h4>{{sedm_dict.complete.title}}</h4>
+            {{ sedm_dict.complete.table | safe }}
+        </div>
+        <div class="expired-requests">
+            <h4>{{sedm_dict.expired.title}}</h4>
+            {{ sedm_dict.expired.table | safe }}
+        </div>
+    </div>
+{% endblock %}
