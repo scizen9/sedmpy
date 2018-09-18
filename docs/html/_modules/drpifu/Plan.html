@@ -1,0 +1,347 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>drpifu.Plan &#8212; SEDM Pipeline 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for drpifu.Plan</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Generate Makefile for reducing ifu data&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">astropy.io.fits</span> <span class="k">as</span> <span class="nn">pf</span>
+
+
+<div class="viewcode-block" id="extract_info"><a class="viewcode-back" href="../../drpifu.html#drpifu.Plan.extract_info">[docs]</a><span class="k">def</span> <span class="nf">extract_info</span><span class="p">(</span><span class="n">infiles</span><span class="p">):</span>
+
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-- Plan.py: Ingesting headers --&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">ifile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">infiles</span><span class="p">):</span>
+        <span class="n">FF</span> <span class="o">=</span> <span class="n">pf</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">ifile</span><span class="p">)</span>
+        <span class="n">FF</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ifile</span>
+        <span class="k">if</span> <span class="s1">&#39;JD&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">FF</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">:</span>
+            <span class="c1"># print(&quot;Skipping %s&quot; % ifile)</span>
+            <span class="k">continue</span>
+        <span class="n">headers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FF</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+        <span class="n">FF</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">headers</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s1">&#39;JD&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="identify_observations"><a class="viewcode-back" href="../../drpifu.html#drpifu.Plan.identify_observations">[docs]</a><span class="k">def</span> <span class="nf">identify_observations</span><span class="p">(</span><span class="n">headers</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a list of object name, observation number, and list of files.</span>
+
+<span class="sd">    e.g. will return:</span>
+
+<span class="sd">    {&#39;STD-BD+25d4655&#39;: {1: [&#39;...&#39;]}, {2: [&#39;...&#39;]}, </span>
+<span class="sd">           &#39;ZTF14dvo&#39;: {1: [&#39;...&#39;, &#39;...&#39;]}}</span>
+<span class="sd">    </span>
+<span class="sd">    where STD-BD+25d4655 was observed at the beginning and end of night. SN</span>
+<span class="sd">    14dov was observed once with A-B.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">JD</span> <span class="o">=</span> <span class="mf">0.</span>
+
+    <span class="n">objcnt</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">objs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">calibs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">headers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;JD&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">JD</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Headers not sorted by JD&quot;</span><span class="p">)</span>
+        <span class="n">JD</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;JD&#39;</span><span class="p">]</span>
+
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;OBJECT&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span>
+        <span class="n">exptime</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;exptime&#39;</span><span class="p">]</span>
+        <span class="n">adcspeed</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;ADCSPEED&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;test&quot;</span> <span class="ow">in</span> <span class="n">obj</span> <span class="ow">or</span> <span class="s2">&quot;Test&quot;</span> <span class="ow">in</span> <span class="n">obj</span> <span class="ow">or</span> <span class="s2">&quot;TEST&quot;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="s2">&quot;Calib&quot;</span> <span class="ow">in</span> <span class="n">obj</span> <span class="ow">or</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">appendToCalibs</span><span class="p">(</span><span class="n">Str</span><span class="p">):</span>
+
+                <span class="k">if</span> <span class="n">Str</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="n">Str</span> <span class="ow">and</span> <span class="n">exptime</span> <span class="o">==</span> <span class="mf">0.</span><span class="p">:</span>
+                        <span class="n">Str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s%1.1f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">Str</span><span class="p">,</span> <span class="n">adcspeed</span><span class="p">)</span>
+                        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                        <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                    <span class="k">elif</span> <span class="s2">&quot;Xe&quot;</span> <span class="ow">in</span> <span class="n">Str</span> <span class="ow">or</span> <span class="s2">&quot;Hg&quot;</span> <span class="ow">in</span> <span class="n">Str</span> <span class="ow">or</span> <span class="s2">&quot;Cd&quot;</span> <span class="ow">in</span> <span class="n">Str</span> <span class="ow">or</span> \
+                                    <span class="s2">&quot;Ne&quot;</span> <span class="ow">in</span> <span class="n">Str</span> <span class="ow">or</span> <span class="s2">&quot;dome&quot;</span> <span class="ow">in</span> <span class="n">Str</span><span class="p">:</span>
+                        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;b_&quot;</span>
+                        <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;crr_b_&quot;</span>
+                        <span class="n">suffix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+                    <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="n">Str</span> <span class="ow">and</span> <span class="n">exptime</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mis-labeled bias with exptime &gt; 0: </span><span class="si">%9.1f</span><span class="s2">&quot;</span> <span class="o">%</span>
+                              <span class="n">exptime</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">calibs</span><span class="p">[</span><span class="n">Str</span><span class="p">]</span> <span class="o">=</span> <span class="n">calibs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Str</span><span class="p">,</span> <span class="p">[])</span>
+                        <span class="n">calibs</span><span class="p">[</span><span class="n">Str</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">fname</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">)</span>
+
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">)</span>
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;dome&quot;</span><span class="p">)</span>
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;Xe&quot;</span><span class="p">)</span>
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;Hg&quot;</span><span class="p">)</span>
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;Cd&quot;</span><span class="p">)</span>
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;Ne&quot;</span><span class="p">)</span>
+            <span class="n">appendToCalibs</span><span class="p">(</span><span class="s2">&quot;twilight&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;Focus:&quot;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="s2">&quot;dark&quot;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="s2">&quot;Calib&quot;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="s2">&quot;STOW&quot;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># The &#39;A&#39; position defines the start of an object set</span>
+        <span class="k">if</span> <span class="s1">&#39;[A]&#39;</span> <span class="ow">in</span> <span class="n">obj</span> <span class="ow">or</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">objcnt</span><span class="p">:</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="n">objcnt</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">objs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">objcnt</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cnt</span>
+            <span class="n">vals</span><span class="p">[</span><span class="n">cnt</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">fname</span><span class="p">]</span>
+            <span class="n">objs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cnt</span> <span class="o">=</span> <span class="n">objcnt</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">objs</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">cnt</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">-- Calibrations --&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">calibs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%15s</span><span class="s2"> : </span><span class="si">%2.0i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">-- Standard Star Sets --&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">objs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="s2">&quot;STD-&quot;</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%20s</span><span class="s2"> : </span><span class="si">%2.0i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">-- Science Object Sets --&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">objs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="s2">&quot;STD-&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%20s</span><span class="s2"> : </span><span class="si">%2.0i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">objs</span><span class="p">,</span> <span class="n">calibs</span></div>
+
+
+<span class="n">make_preamble</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">PY = ~/spy</span>
+<span class="s2">PYC = ~/sedmpy/drpifu</span>
+<span class="s2">IMCOMBINE = $(PY) $(PYC)/Imcombine.py</span>
+<span class="s2">REPORT = $(PY) $(PYC)/DrpReport.py</span>
+<span class="s2">CLASS = $(PY) $(PYC)/Classify.py</span>
+<span class="s2">ZTFUPLOAD = $(PY) $(PYC)/growth.py</span>
+
+<span class="s2">BSUB = $(PY) $(PYC)/Debias.py</span>
+<span class="s2">CRRSUB =  $(PY) $(PYC)/CosmicX.py</span>
+
+<span class="s2">SRCS = $(wildcard ifu*fits)</span>
+<span class="s2">BIAS = $(addprefix b_,$(SRCS))</span>
+<span class="s2">CRRS = $(addprefix crr_,$(BIAS))</span>
+
+<span class="s2">mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))</span>
+<span class="s2">current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))</span>
+
+<span class="s2">crr_b_% : b_%</span>
+<span class="s2">	$(CRRSUB) --niter 4 --sepmed --gain 1.0 --readnoise 5.0 --objlim 4.8 </span><span class="se">\\</span><span class="s2"></span>
+<span class="s2">		--sigclip 8.0 --fsmode convolve --psfmodel gaussy --psffwhm=2 </span><span class="se">\\</span><span class="s2"></span>
+<span class="s2">		$&lt; $@ mask$@</span>
+
+<span class="s2">bs_crr_b_%.gz : crr_b_%</span>
+<span class="s2">	$(BGDSUB) fine.npy $&lt; --gausswidth=100</span>
+
+<span class="s2">.PHONY: report finalreport</span>
+
+<span class="s2">bias: bias0.1.fits bias2.0.fits $(BIAS)</span>
+<span class="s2">crrs: $(CRRS)</span>
+
+<span class="s2">$(BIAS): bias0.1.fits bias2.0.fits</span>
+<span class="s2">	$(BSUB) $(subst b_,,$@)</span>
+
+<span class="s2">$(CRRS): </span>
+<span class="s2">	$(CRRSUB) --niter 4 --sepmed --gain 1.0 --readnoise 5.0 --objlim 4.8 </span><span class="se">\\</span><span class="s2"></span>
+<span class="s2">		--sigclip 8.0 --fsmode convolve --psfmodel gaussy --psffwhm=2 </span><span class="se">\\</span><span class="s2"></span>
+<span class="s2">		$(subst crr_,,$@) $@ mask$@</span>
+
+<span class="s2">calimgs: dome.fits Hg.fits Cd.fits Xe.fits</span>
+
+<span class="s2">report:</span>
+<span class="s2">	$(REPORT) | tee report.txt</span>
+
+<span class="s2">ztfupload:</span>
+<span class="s2">	$(ZTFUPLOAD) $(current_dir)</span>
+
+<span class="s2">classify:</span>
+<span class="s2">	$(CLASS) --specdir $(dir $(mkfile_path))</span>
+<span class="s2">	$(REPORT) | tee report.txt</span>
+
+<span class="s2">finalreport:</span>
+<span class="s2">	cat report*.txt | mail -s &quot;SEDM DRP Report for $(current_dir)&quot; neill@srl.caltech.edu,rsw@astro.caltech.edu,nblago@caltech.edu,fremling@caltech.edu,ah@astro.caltech.edu,yashuvatsas@gmail.com,tda@lists.astro.caltech.edu</span>
+
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="MF_imcombine"><a class="viewcode-back" href="../../drpifu.html#drpifu.Plan.MF_imcombine">[docs]</a><span class="k">def</span> <span class="nf">MF_imcombine</span><span class="p">(</span><span class="n">objname</span><span class="p">,</span> <span class="n">files</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+
+    <span class="n">filelist</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> &quot;</span> <span class="o">%</span> <span class="n">ifile</span> <span class="k">for</span> <span class="n">ifile</span> <span class="ow">in</span> <span class="n">files</span><span class="p">])</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.fits: </span><span class="si">%s</span><span class="s2"> </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">objname</span><span class="p">,</span> <span class="n">filelist</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">7</span><span class="p">:</span>
+        <span class="n">reject</span> <span class="o">=</span> <span class="s2">&quot;--Nlo 1 --Nhi 1&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reject</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">in</span> <span class="n">objname</span><span class="p">:</span>
+        <span class="n">second</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">$(IMCOMBINE) --outname </span><span class="si">%s</span><span class="s2">.fits --listfile </span><span class="si">%s</span><span class="s2">.lst </span><span class="si">%s</span><span class="s2"> --files </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">objname</span><span class="p">,</span> <span class="n">objname</span><span class="p">,</span> <span class="n">reject</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">second</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">$(IMCOMBINE) --outname </span><span class="si">%s</span><span class="s2">.fits --listfile </span><span class="si">%s</span><span class="s2">.lst </span><span class="si">%s</span><span class="s2"> --files </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">objname</span><span class="p">,</span> <span class="n">objname</span><span class="p">,</span> <span class="n">reject</span><span class="p">,</span> <span class="n">filelist</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">objname</span> <span class="ow">and</span> <span class="s2">&quot;dome&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">objname</span><span class="p">:</span>
+        <span class="n">second</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="si">%s</span><span class="s2">.npy : cube.npy </span><span class="si">%s</span><span class="s2">.fits</span><span class="se">\n\t</span><span class="s2">$(EXTSINGLE) cube.npy --A </span><span class="si">%s</span><span class="s2">.fits --outname </span><span class="si">%s</span><span class="s2">.npy --flat_correction flat-dome-700to900.npy --nosky</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">objname</span><span class="p">,</span> <span class="n">objname</span><span class="p">,</span> <span class="n">objname</span><span class="p">,</span> <span class="n">objname</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">first</span> <span class="o">+</span> <span class="n">second</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="to_makefile"><a class="viewcode-back" href="../../drpifu.html#drpifu.Plan.to_makefile">[docs]</a><span class="k">def</span> <span class="nf">to_makefile</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">calibs</span><span class="p">):</span>
+
+    <span class="n">MF</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="nb">all</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">calibname</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">calibs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="k">if</span> <span class="s2">&quot;bias&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">calibname</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">MF</span> <span class="o">+=</span> <span class="n">MF_imcombine</span><span class="p">(</span><span class="n">calibname</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
+        <span class="nb">all</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">.fits &quot;</span> <span class="o">%</span> <span class="n">calibname</span>
+
+    <span class="n">preamble</span> <span class="o">=</span> <span class="n">make_preamble</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;Makefile&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="n">clean</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">clean:</span><span class="se">\n\t</span><span class="s2">rm </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">all</span>
+
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">preamble</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">all: </span><span class="si">%s%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">all</span><span class="p">,</span> <span class="n">clean</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">MF</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="make_plan"><a class="viewcode-back" href="../../drpifu.html#drpifu.Plan.make_plan">[docs]</a><span class="k">def</span> <span class="nf">make_plan</span><span class="p">(</span><span class="n">headers</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert headers to a makefile, assuming headers sorted by JD.&quot;&quot;&quot;</span>
+
+    <span class="n">objs</span><span class="p">,</span> <span class="n">calibs</span> <span class="o">=</span> <span class="n">identify_observations</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+    <span class="n">to_makefile</span><span class="p">(</span><span class="n">objs</span><span class="p">,</span> <span class="n">calibs</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">files</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">to_process</span> <span class="o">=</span> <span class="n">extract_info</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+
+    <span class="n">make_plan</span><span class="p">(</span><span class="n">to_process</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">SEDM Pipeline</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../drpifu.html">1. drpifu: IFU-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../drprc.html">2. drprc: RCam-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db.html">3. db: SEDM database software</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Don Neill, Nadia Blagorodnova, Nick Konidaris.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

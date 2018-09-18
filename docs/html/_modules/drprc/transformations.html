@@ -1,0 +1,176 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>drprc.transformations &#8212; SEDM Pipeline 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for drprc.transformations</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Thu Dec  3 15:25:46 2015</span>
+
+<span class="sd">@author: nadiablago</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="johnson2sdss"><a class="viewcode-back" href="../../drprc.html#drprc.transformations.johnson2sdss">[docs]</a><span class="k">def</span> <span class="nf">johnson2sdss</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">I</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;global transformations between UBVRI and ugriz&#39;&#39;&#39;</span>
+    
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    #Color Color Term Zeropoint Range</span>
+<span class="sd">    &quot;gV&quot;: (0.630 ± 0.002) (B − V) −(0.124 ± 0.002)</span>
+<span class="sd">    &quot;ri&quot;: (1.007 ± 0.005) (R − I) −(0.236 ± 0.003)</span>
+<span class="sd">    &quot;rz&quot;: (1.584 ± 0.008) (R − I) −(0.386 ± 0.005)</span>
+<span class="sd">    &quot;rR&quot;: (0.267 ± 0.005) (V − R) +(0.088 ± 0.003) V − R ≤ 0.93</span>
+<span class="sd">    &quot;rR&quot;: (0.77 ± 0.04) (V − R) −(0.37 ± 0.04) V − R &gt; 0.93</span>
+<span class="sd">    &quot;ug&quot;: (0.750 ± 0.050) (U − B) + (0.770 ± 0.070) (B − V) +(0.720 ± 0.040)</span>
+<span class="sd">    &quot;gB&quot;: −(0.370 ± 0.002) (B − V) −(0.124 ± 0.002)</span>
+<span class="sd">    &quot;gr&quot;: (1.646 ± 0.008) (V − R) −(0.139 ± 0.004)</span>
+<span class="sd">    &quot;iI&quot;: [0.247, 0.329]&#39;&#39;&#39;</span></div>
+    
+
+<div class="viewcode-block" id="sdss2johnson"><a class="viewcode-back" href="../../drprc.html#drprc.transformations.sdss2johnson">[docs]</a><span class="k">def</span> <span class="nf">sdss2johnson</span><span class="p">(</span><span class="n">ref_sdss</span><span class="p">,</span> <span class="n">savefile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Jordi et. al 2006</span>
+<span class="sd">    </span>
+<span class="sd">    ugriz -&gt; UBVRcIc</span>
+<span class="sd">    ================</span>
+<span class="sd">    </span>
+<span class="sd">            Transformation</span>
+<span class="sd">        U-B   =     (0.79 ± 0.02)*(u-g)    - (0.93 ± 0.02)</span>
+<span class="sd">        U-B   =     (0.52 ± 0.06)*(u-g)    + (0.53 ± 0.09)*(g-r) - (0.82 ± 0.04)</span>
+<span class="sd">        B-g   =     (0.175 ± 0.002)*(u-g)  + (0.150 ± 0.003)</span>
+<span class="sd">        B-g   =     (0.313 ± 0.003)*(g-r)  + (0.219 ± 0.002)</span>
+<span class="sd">        V-g   =     (-0.565 ± 0.001)*(g-r) - (0.016 ± 0.001)</span>
+<span class="sd">        V-I   =     (0.675 ± 0.002)*(g-i)  + (0.364 ± 0.002) if  g-i &lt;= 2.1</span>
+<span class="sd">        V-I   =     (1.11 ± 0.02)*(g-i)    - (0.52 ± 0.05)   if  g-i &gt;  2.1</span>
+<span class="sd">        R-r   =     (-0.153 ± 0.003)*(r-i) - (0.117 ± 0.003)</span>
+<span class="sd">        R-I   =     (0.930 ± 0.005)*(r-i)  + (0.259 ± 0.002)</span>
+<span class="sd">        I-i   =     (-0.386 ± 0.004)*(i-z) - (0.397 ± 0.001)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="n">ref_sdss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">ref_sdss</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+
+    <span class="n">bands</span> <span class="o">=</span> <span class="s2">&quot;BVRI&quot;</span>
+    <span class="n">john</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ref_sdss</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;i8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> \
+    <span class="p">(</span><span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;V&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span>\
+    <span class="p">(</span><span class="s1">&#39;dU&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dB&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dV&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dR&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dI&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f4&#39;</span><span class="p">)])</span>
+
+    <span class="n">band_dic</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;B&quot;</span><span class="p">:</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">:</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">:</span><span class="s2">&quot;i&quot;</span><span class="p">}</span>
+    <span class="n">coldic</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;U&quot;</span><span class="p">:</span><span class="s2">&quot;ug&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span><span class="s2">&quot;gr&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">:</span><span class="s2">&quot;gr&quot;</span><span class="p">,</span> <span class="s2">&quot;R&quot;</span><span class="p">:</span><span class="s2">&quot;ri&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">:</span><span class="s2">&quot;iz&quot;</span><span class="p">}</span>
+    <span class="n">coefs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;U&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.79</span><span class="p">,</span> <span class="mf">0.93</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">])],</span>
+            <span class="s2">&quot;B&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.313</span><span class="p">,</span> <span class="mf">0.219</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">])],</span>
+             <span class="s2">&quot;V&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.565</span><span class="p">,</span> <span class="mf">0.016</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">])],</span>
+            <span class="s2">&quot;R&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.153</span><span class="p">,</span> <span class="mf">0.117</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.003</span><span class="p">])],</span>
+            <span class="s2">&quot;I&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mf">0.386</span><span class="p">,</span> <span class="mf">0.397</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.004</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">])]</span> <span class="p">}</span>
+            
+    <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bands</span><span class="p">:</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="n">coldic</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="n">coldic</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="n">john</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">col</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">coefs</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="n">band_dic</span><span class="p">[</span><span class="n">b</span><span class="p">]]</span>
+        <span class="n">john</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="o">+</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">col</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">coefs</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1">#U band a bit different</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="s2">&quot;U&quot;</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="n">coldic</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span> <span class="o">-</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="n">coldic</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">john</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">col</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">coefs</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="n">john</span><span class="p">[</span><span class="s2">&quot;B&quot;</span><span class="p">]</span>
+    <span class="n">john</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="o">+</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">col</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">coefs</span><span class="p">[</span><span class="n">b</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="p">)</span>
+    
+    <span class="n">john</span><span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">]</span>
+    <span class="n">john</span><span class="p">[</span><span class="s2">&quot;dec&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="s2">&quot;dec&quot;</span><span class="p">]</span>
+    <span class="n">john</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_sdss</span><span class="p">[</span><span class="s2">&quot;objid&quot;</span><span class="p">]</span>
+        
+        
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">savefile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="n">savefile</span><span class="p">,</span> <span class="n">john</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="s2">&quot;id,ra,dec,U,B,V,R,I,dU,dB,dV,dR,dI&quot;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">,</span><span class="si">%.5f</span><span class="s2">,</span><span class="si">%.5f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">,</span><span class="si">%.4f</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">john</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">SEDM Pipeline</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../drpifu.html">1. drpifu: IFU-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../drprc.html">2. drprc: RCam-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db.html">3. db: SEDM database software</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Don Neill, Nadia Blagorodnova, Nick Konidaris.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

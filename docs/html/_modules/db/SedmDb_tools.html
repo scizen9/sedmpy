@@ -1,0 +1,471 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>db.SedmDb_tools &#8212; SEDM Pipeline 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for db.SedmDb_tools</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.time</span> <span class="k">import</span> <span class="n">Time</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+
+<div class="viewcode-block" id="DbTools"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools">[docs]</a><span class="k">class</span> <span class="nc">DbTools</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_class</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db_class</span>
+    <span class="c1"># TODO: refactor and move functions into the class</span>
+
+<div class="viewcode-block" id="DbTools.submit_asteroids_edb"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.submit_asteroids_edb">[docs]</a>    <span class="k">def</span> <span class="nf">submit_asteroids_edb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file</span> <span class="o">=</span> <span class="s1">&#39;/home/sedm/kpy/ephem/asteroids.edb&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">):</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;#&#39;</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">par</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;n&#39;</span><span class="p">:</span>  <span class="c1"># remove /n from the end of the line</span>
+                    <span class="n">par</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">par</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">obj_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;typedesig&#39;</span><span class="p">:</span> <span class="n">par</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span>
+                <span class="n">obj_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">add_object</span><span class="p">(</span><span class="n">obj_dict</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">obj_id</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;object </span><span class="si">%s</span><span class="s2"> failed to be created&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">],))</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">par</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;e&#39;</span><span class="p">:</span>
+                    <span class="n">time</span><span class="o">=</span><span class="n">par</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+                    <span class="n">pardic</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;object_id&#39;</span><span class="p">:</span> <span class="n">obj_id</span><span class="p">,</span> <span class="s1">&#39;inclination&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="s1">&#39;longascnode_O&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span> <span class="s1">&#39;perihelion_o&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">4</span><span class="p">]),</span>
+                    <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">5</span><span class="p">]),</span> <span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">6</span><span class="p">]),</span> <span class="s1">&#39;e&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">7</span><span class="p">]),</span> <span class="s1">&#39;M&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">8</span><span class="p">]),</span> <span class="s1">&#39;mjdepoch&#39;</span><span class="p">:</span> <span class="n">Time</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">10</span><span class="p">]),</span> <span class="s1">&#39;M1&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">11</span><span class="p">]),</span>
+                    <span class="s1">&#39;M2&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">12</span><span class="p">])}</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">par</span><span class="p">)</span> <span class="o">==</span> <span class="mi">14</span><span class="p">:</span>
+                        <span class="n">pardic</span><span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="mi">13</span><span class="p">])</span>
+                    <span class="n">add</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">add_elliptical_heliocentric</span><span class="p">(</span><span class="n">pardic</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">add</span><span class="p">)</span>
+                <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                if par[1] == &#39;h&#39;:</span>
+<span class="sd">                    pardic = {&#39;object_id&#39;: obj_id, &#39;T&#39;: par[2], &#39;e&#39;: par[6], &#39;inclination&#39;: par[3], &#39;longascnode_O&#39;: par[4],</span>
+<span class="sd">                       &#39;perihelion_o&#39;: par[5], &#39;q&#39;: par[7], &#39;D&#39;: float(par[8]), &#39;M1&#39;: par[9], &#39;M2&#39;: par[10]}</span>
+<span class="sd">                    if len(par) == 12:</span>
+<span class="sd">                        pardic[&#39;s&#39;] =par[11]</span>
+<span class="sd">                    add=self.db.add_hyperbolic_heliocentric(pardic)</span>
+<span class="sd">                    print add</span>
+<span class="sd">                if par[1] == &#39;p&#39;:</span>
+<span class="sd">                    pardic = {&#39;object_id&#39;: obj_id, &#39;T&#39;: par[2], &#39;inclination&#39;: par[3], &#39;longascnode_O&#39;: par[5],</span>
+<span class="sd">                       &#39;perihelion_o&#39;: par[4], &#39;q&#39;: par[5], &#39;D&#39;: float(par[7]), &#39;M1&#39;: par[8], &#39;M2&#39;: par[9]}</span>
+<span class="sd">                    if len(par) == 11:</span>
+<span class="sd">                        pardic[&#39;s&#39;] =par[10]</span>
+<span class="sd">                    add=self.db.add_parabolic_heliocentric(pardic)</span>
+<span class="sd">                    print add</span>
+<span class="sd">                if par[1] == &#39;E&#39;:</span>
+<span class="sd">                    pardic = {&#39;object_id&#39;: obj_id, &#39;T&#39;: par[2], &#39;e&#39;: par[5], &#39;inclination&#39;: par[3], &#39;ra&#39;: par[4],</span>
+<span class="sd">                       &#39;pedigree&#39;: par[6], &#39;M&#39;: par[7], &#39;n&#39;: par[8], &#39;decay&#39;: par[9], &#39;reforbit&#39;: par[10], &#39;drag&#39;: par[11]}</span>
+<span class="sd">                    add=self.db.add_earth_satellite(pardic)</span>
+<span class="sd">                    print add</span>
+<span class="sd">                &quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="DbTools.get_object_parameters"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.get_object_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">get_object_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">object_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Takes an object_id and returns the object&#39;s information and orbit parameters for SSO</span>
+<span class="sd">        Args:</span>
+<span class="sd">            object_id (int): id of the object</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (-1, &quot;ERROR...&quot;) if an error occurred</span>
+
+<span class="sd">            [(&#39;marshal_id&#39;, &#39;name&#39;, &#39;iauname&#39;, &#39;ra&#39;, &#39;dec&#39;, typedesig&#39;, &#39;epoch&#39;), None] for fixed objects, or if there are</span>
+<span class="sd">            no orbit parameters in the database</span>
+
+<span class="sd">            [(&#39;marshal_id&#39;, &#39;name&#39;, &#39;iauname&#39;, &#39;ra&#39;, &#39;dec&#39;, typedesig&#39;, &#39;epoch&#39;), (orbit params arranged in ephem ordering)]</span>
+<span class="sd">        &quot;&quot;&quot;</span>  <span class="c1"># TODO: test if the orbit_params can be input directly into an ephem call</span>
+        <span class="nb">object</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_object</span><span class="p">([</span><span class="s1">&#39;marshal_id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;iauname&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;dec&#39;</span><span class="p">,</span> <span class="s1">&#39;typedesig&#39;</span><span class="p">,</span> <span class="s1">&#39;epoch&#39;</span><span class="p">],</span>
+                                    <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">object_id</span><span class="p">})</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">object</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: no object found matching the given object_id&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># object[0] should be positive or empty if successful</span>
+            <span class="k">return</span> <span class="nb">object</span>  <span class="c1"># this should carry the error message</span>
+        <span class="c1"># format the response depending on the typedesig</span>
+        <span class="k">if</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
+
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;e&#39;</span><span class="p">:</span>
+            <span class="n">orbit_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_elliptical_orbit</span><span class="p">([</span><span class="s1">&#39;inclination&#39;</span><span class="p">,</span> <span class="s1">&#39;longascnode_0&#39;</span><span class="p">,</span> <span class="s1">&#39;perihelion_o&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">,</span>
+                                                    <span class="s1">&#39;mjdepoch&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;M1&#39;</span><span class="p">,</span> <span class="s1">&#39;M2&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;object_id&#39;</span><span class="p">:</span> <span class="n">object_id</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">orbit_params</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># without an error orbit_params[0] should be a tuple</span>
+                <span class="k">return</span> <span class="n">orbit_params</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;h&#39;</span><span class="p">:</span>
+            <span class="n">orbit_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_hyperbolic_orbit</span><span class="p">([</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39;inclination&#39;</span><span class="p">,</span> <span class="s1">&#39;longascnode_0&#39;</span><span class="p">,</span> <span class="s1">&#39;perihelion_o&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span>
+                                                    <span class="s1">&#39;M1&#39;</span><span class="p">,</span> <span class="s1">&#39;M2&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;object_id&#39;</span><span class="p">:</span> <span class="n">object_id</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">orbit_params</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># without an error orbit_params[0] should be a tuple</span>
+                <span class="k">return</span> <span class="n">orbit_params</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;p&#39;</span><span class="p">:</span>
+            <span class="n">orbit_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_parabolic_orbit</span><span class="p">([</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39;inclination&#39;</span><span class="p">,</span> <span class="s1">&#39;perihelion_o&#39;</span><span class="p">,</span> <span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;longascnode_0&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span>
+                                                   <span class="s1">&#39;M1&#39;</span><span class="p">,</span> <span class="s1">&#39;M2&#39;</span><span class="p">,</span> <span class="s1">&#39;s&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;object_id&#39;</span><span class="p">:</span> <span class="n">object_id</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">orbit_params</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># without an error orbit_params[0] should be a tuple</span>
+                <span class="k">return</span> <span class="n">orbit_params</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;E&#39;</span><span class="p">:</span>
+            <span class="n">orbit_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_earth_satellite_orbit</span><span class="p">([</span><span class="s1">&#39;T&#39;</span><span class="p">,</span> <span class="s1">&#39;inclination&#39;</span><span class="p">,</span> <span class="s1">&#39;ra&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;pedigree&#39;</span><span class="p">,</span> <span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;decay&#39;</span><span class="p">,</span>
+                                                         <span class="s1">&#39;reforbit&#39;</span><span class="p">,</span> <span class="s1">&#39;drag&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;object_id&#39;</span><span class="p">:</span> <span class="n">object_id</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">orbit_params</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># without an error orbit_params[0] should be a tuple</span>
+                <span class="k">return</span> <span class="n">orbit_params</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">orbit_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+        <span class="k">elif</span> <span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;P&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>  <span class="c1"># TODO: add this</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: object has an invalid typedesig &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">object</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">],))</span></div>
+
+<div class="viewcode-block" id="DbTools.program_time_used"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.program_time_used">[docs]</a>    <span class="k">def</span> <span class="nf">program_time_used</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">program_id</span><span class="p">):</span>
+
+        <span class="c1"># TODO: return to SedmDb.py because of how much sql &quot;understanding&quot; it requires?</span>
+        <span class="c1"># TODO: evaluate assumption that the most recent change to the request will be setting &#39;status&#39; to &#39;COMPLETED&#39;</span>
+        <span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;program_id&#39;</span><span class="p">:</span> <span class="n">program_id</span><span class="p">,</span> <span class="s1">&#39;lastmodified&#39;</span><span class="p">:</span> <span class="s1">&#39;&gt;&#39;</span> <span class="o">+</span> <span class="n">start_date</span><span class="p">,</span> <span class="s1">&#39;lastmodified&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="n">end_date</span><span class="p">}</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;SELECT exptime, nexposures, phasesamples FROM request WHERE program_id=&#39;</span><span class="si">%s</span><span class="s2">&#39;, status=&#39;COMPLETED&#39;, &quot;</span>
+               <span class="s2">&quot;lastmodified&gt;&#39;</span><span class="si">%s</span><span class="s2">&#39;, lastmodified&lt;&#39;</span><span class="si">%s</span><span class="s2">&#39;;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">program_id</span><span class="p">,</span> <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">))</span>
+        <span class="c1"># TODO: fix this, it&#39;s really bad that it doesn&#39;t go through the checks of SedmDb functions</span>
+        <span class="c1"># TODO: allow where_dict values to be lists (if it is a list iterate through)?</span>
+        <span class="n">program_requests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute_sql</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">program_requests</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;exptime isn&#39;t guarenteed a particular format, and calculations aren&#39;t implemented&quot;</span><span class="p">)</span></div>
+        <span class="c1"># TODO: solidify what &quot;exptime&quot; is, then implement calculations</span>
+
+<div class="viewcode-block" id="DbTools.get_user_requests"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.get_user_requests">[docs]</a>    <span class="k">def</span> <span class="nf">get_user_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;object_id&#39;</span><span class="p">,</span> <span class="s1">&#39;program_id&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the parameters for all requests associated with a user</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            user_id (int): id of the user</span>
+<span class="sd">            username (str): username of the user</span>
+<span class="sd">                only needed if user_id is not provided</span>
+<span class="sd">            values (list): values to be returned</span>
+<span class="sd">                defaults to [&#39;id&#39;, &#39;object_id&#39;, &#39;program_id&#39;, &#39;status&#39;]</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of tuples conaining the ``values`` for each request of the user</span>
+<span class="sd">            (-1, &quot;ERROR ... &quot;) if there was an issue</span>
+<span class="sd">            [] if no requests are associated with the user</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">user_id</span><span class="p">:</span>
+            <span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;user_id&#39;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">username</span><span class="p">:</span>
+            <span class="n">user_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_users</span><span class="p">([</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">user_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ERROR: not user with that username!&#39;</span><span class="p">)</span>
+            <span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;user_id&#39;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: neither username nor user_id were provided!&quot;</span><span class="p">)</span>
+        <span class="n">user_requests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_request</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">where_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">user_requests</span></div>
+
+<div class="viewcode-block" id="DbTools.get_active_requests"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.get_active_requests">[docs]</a>    <span class="k">def</span> <span class="nf">get_active_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;object_id&#39;</span><span class="p">,</span> <span class="s1">&#39;user_id&#39;</span><span class="p">,</span> <span class="s1">&#39;program_id&#39;</span><span class="p">,</span> <span class="s1">&#39;marshal_id&#39;</span><span class="p">,</span> <span class="s1">&#39;exptime&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;maxairmass&#39;</span><span class="p">,</span> <span class="s1">&#39;priority&#39;</span><span class="p">,</span> <span class="s1">&#39;cadence&#39;</span><span class="p">,</span> <span class="s1">&#39;phasesamples&#39;</span><span class="p">,</span> <span class="s1">&#39;sampletolerance&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;filters&#39;</span><span class="p">,</span> <span class="s1">&#39;nexposures&#39;</span><span class="p">,</span> <span class="s1">&#39;ordering&#39;</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the parameters for all &#39;ACTIVE&#39; requests</span>
+<span class="sd">        Args:</span>
+<span class="sd">            values (list): the values to get for each request</span>
+<span class="sd">                defaults to [&#39;id&#39;, &#39;object_id&#39;, &#39;user_id&#39;, &#39;program_id&#39;, &#39;marshal_id&#39;, &#39;exptime&#39;,</span>
+<span class="sd">                             &#39;maxairmass&#39;, &#39;priority&#39;, &#39;cadence&#39;, &#39;phasesamples&#39;, &#39;sampletolerance&#39;,</span>
+<span class="sd">                             &#39;filters&#39;, &#39;nexposures&#39;, &#39;ordering&#39;]</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list of tuples conaining the ``values`` for each active request</span>
+<span class="sd">            (-1, &quot;ERROR ... &quot;) if there was an issue</span>
+<span class="sd">            [] if no requests are &#39;ACTIVE&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: test?</span>
+
+        <span class="n">active_requests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_request</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;ACTIVE&#39;</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">active_requests</span></div>
+
+<div class="viewcode-block" id="DbTools.cancel_request"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.cancel_request">[docs]</a>    <span class="k">def</span> <span class="nf">cancel_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requestid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Changes the status of the request and any related atomicrequests to &quot;CANCELED&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: return to SedmDb.py because of how much sql &quot;understanding&quot; it requires?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">update_request</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">requestid</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;CANCELED&#39;</span><span class="p">})</span>
+        <span class="c1"># cancel the associated atomicrequests</span>
+        <span class="c1"># TODO: allow more nuanced update function inputs (e.g. add a where_dict)?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute_sql</span><span class="p">(</span><span class="s2">&quot;UPDATE atomicrequest SET status=&#39;CANCELED&#39; WHERE request_id=&#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">requestid</span><span class="p">,))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Request canceled&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DbTools.create_atomic_requests"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.create_atomic_requests">[docs]</a>    <span class="k">def</span> <span class="nf">create_atomic_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Finds requests without atomicrequets and creates their atomicrequests</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (0, &quot;...&quot;) containing a list of the requests and which, if any, failed</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get the ids of the requests with no atomicrequest</span>
+        <span class="n">request_ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute_sql</span><span class="p">(</span><span class="s1">&#39;SELECT id FROM request WHERE NOT EXISTS &#39;</span>
+                                     <span class="s1">&#39;(SELECT id FROM atomicrequest WHERE request.id = atomicrequest.request_id);&#39;</span><span class="p">)</span>
+        <span class="c1"># TODO: make this only create for requests with status &#39;PENDING&#39;/&#39;ACTIVE&#39;?</span>
+        <span class="n">failed</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">request</span> <span class="ow">in</span> <span class="n">request_ids</span><span class="p">:</span>
+            <span class="n">success</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_request_atomic_requests</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">success</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">failed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">request</span> <span class="ow">in</span> <span class="n">failed</span><span class="p">:</span>
+            <span class="n">request_ids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Added atomicrequests for requests </span><span class="si">%s</span><span class="s2">, failed to add for request  </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">request_ids</span><span class="p">,</span> <span class="n">failed</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Added atomicrequests for requests </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">request_ids</span><span class="p">,))</span></div>
+
+<div class="viewcode-block" id="DbTools.create_request_atomic_requests"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.create_request_atomic_requests">[docs]</a>    <span class="k">def</span> <span class="nf">create_request_atomic_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        create atomicrequest entries for a given request</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            request_id: int</span>
+<span class="sd">                id of the request that needs atomicrequests</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (-1, &quot;ERROR: ...&quot;) if there was an issue</span>
+<span class="sd">            (0, &quot;Added (#) atomic requests for request (#)&quot;) if it was successful</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute_sql</span><span class="p">(</span><span class="s2">&quot;SELECT status FROM request WHERE id=</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">request_id</span><span class="p">,))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: request does not exist!&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;CANCELED&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: request has been canceled!&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s1">&#39;EXPIRED&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: request has expired!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute_sql</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM atomicrequest WHERE request_id=&#39;</span><span class="si">%s</span><span class="s2">&#39;;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">request_id</span><span class="p">,)):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: atomicrequests already exist for that request!&quot;</span><span class="p">)</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_request</span><span class="p">([</span><span class="s1">&#39;object_id&#39;</span><span class="p">,</span> <span class="s1">&#39;exptime&#39;</span><span class="p">,</span> <span class="s1">&#39;priority&#39;</span><span class="p">,</span> <span class="s1">&#39;inidate&#39;</span><span class="p">,</span> <span class="s1">&#39;enddate&#39;</span><span class="p">,</span> <span class="s1">&#39;cadence&#39;</span><span class="p">,</span> <span class="s1">&#39;phasesamples&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;sampletolerance&#39;</span><span class="p">,</span> <span class="s1">&#39;filters&#39;</span><span class="p">,</span> <span class="s1">&#39;nexposures&#39;</span><span class="p">,</span> <span class="s1">&#39;ordering&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">})[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># TODO: implement cadence/phasesamples/sampletolerance (I have no idea how they interact with nexposures)</span>
+        <span class="n">pardic</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;object_id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s1">&#39;priority&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="s1">&#39;inidate&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">3</span><span class="p">]),</span>
+                  <span class="s1">&#39;enddate&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">4</span><span class="p">]),</span> <span class="s1">&#39;request_id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">request_id</span><span class="p">)}</span>
+        <span class="n">obs_order</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">request</span><span class="p">[</span><span class="mi">10</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">num_fil</span> <span class="ow">in</span> <span class="n">request</span><span class="p">[</span><span class="mi">10</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">num_fil</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>  <span class="c1"># the number should be single digit</span>
+                    <span class="n">obs_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">num_fil</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">elif</span> <span class="n">request</span><span class="p">[</span><span class="mi">9</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">filter_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">8</span><span class="p">])):</span>
+                <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">9</span><span class="p">][</span><span class="n">filter_idx</span><span class="p">]):</span>
+                    <span class="n">obs_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="n">filter_idx</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: request contains neither nexposures nor ordering!&quot;</span><span class="p">)</span>  <span class="c1"># add_request should prevevnt this</span>
+        <span class="n">ifus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">obs_order</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;ifu&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ifus</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># TODO: rewrite, have another way of indicating a/b</span>
+            <span class="n">obs_order</span><span class="p">[</span><span class="n">ifus</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="s1">&#39;ifu_a&#39;</span>
+            <span class="n">obs_order</span><span class="p">[</span><span class="n">ifus</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="s1">&#39;ifu_b&#39;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([(</span><span class="n">filt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;ifu&#39;</span><span class="p">,</span> <span class="s1">&#39;ifu_a&#39;</span><span class="p">,</span> <span class="s1">&#39;ifu_b&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">filt</span> <span class="ow">in</span> <span class="n">obs_order</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: either filters or ordering has an invalid entry!&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">filter_des</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obs_order</span><span class="p">):</span>
+            <span class="n">pardic</span><span class="p">[</span><span class="s1">&#39;filter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filter_des</span>
+            <span class="n">pardic</span><span class="p">[</span><span class="s1">&#39;order_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span>
+            <span class="c1"># TODO: do exptime modifications here per filter and ab vs single exposure</span>
+            <span class="k">if</span> <span class="s1">&#39;ifu&#39;</span> <span class="ow">in</span> <span class="n">filter_des</span><span class="p">:</span>
+                <span class="n">pardic</span><span class="p">[</span><span class="s1">&#39;exptime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># TODO: make sure the sql returns the proper format</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pardic</span><span class="p">[</span><span class="s1">&#39;exptime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">add_return</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">add_atomicrequest</span><span class="p">(</span><span class="n">pardic</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">add_return</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: adding atomicrequest #</span><span class="si">%s</span><span class="s2">, filter:</span><span class="si">%s</span><span class="s2"> failed with message, &#39;</span><span class="si">%s</span><span class="s2">&#39;!&quot;</span>
+                        <span class="o">%</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">filter_des</span><span class="p">,</span> <span class="n">add_return</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Added </span><span class="si">%s</span><span class="s2"> atomic requests for request </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">obs_order</span><span class="p">),</span> <span class="n">request_id</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="DbTools.get_request_atomicrequests"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.get_request_atomicrequests">[docs]</a>    <span class="k">def</span> <span class="nf">get_request_atomicrequests</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request_id</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return the atomicreqests associated with a single request</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            request_id (int):</span>
+<span class="sd">                The request_id of the desired request</span>
+<span class="sd">            values (list):</span>
+<span class="sd">                list of values to be retreived about each atomicrequest</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of tuples:</span>
+<span class="sd">                (id, object_id, order_id, exptime, filter, status, priority)</span>
+<span class="sd">                for each atomicreqest associated with the desired request</span>
+<span class="sd">            [] if there were no atomicrequests matching the given request_id</span>
+<span class="sd">            (-1, &quot;ERROR...&quot;) if there was an issue</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="c1"># TODO: test</span>
+        <span class="n">atomic_requests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_atomicrequest</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;request_id&#39;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">atomic_requests</span></div>
+
+<div class="viewcode-block" id="DbTools.add_observation_fitsfile"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.DbTools.add_observation_fitsfile">[docs]</a>    <span class="k">def</span> <span class="nf">add_observation_fitsfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fitsfile</span><span class="p">,</span> <span class="n">atomicrequest_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds an observation from a fitsfile, sets the atomicobservation to &#39;OBSERVED&#39;. Checks if all the atomicobservations</span>
+<span class="sd">        associated with its request are observed, if so it sets the request&#39;s status to &#39;COMPLETED&#39;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fitsfile: str (fits file path)</span>
+<span class="sd">            atomicrequest_id: int (temporary until it is included in the header)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fitsfile</span><span class="p">)</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+        <span class="c1"># TODO: make sure all of the parameters are of the right type (so SedmDb.py doesn&#39;t kill it)</span>
+        <span class="n">header_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mjd&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;JD&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="mf">2400000.5</span><span class="p">,</span> <span class="s1">&#39;airmass&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;AIRMASS&#39;</span><span class="p">],</span> <span class="s1">&#39;exptime&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;EXPTIME&#39;</span><span class="p">],</span>
+                       <span class="s1">&#39;fitsfile&#39;</span><span class="p">:</span> <span class="n">fitsfile</span><span class="p">,</span> <span class="s1">&#39;lst&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;LST&#39;</span><span class="p">],</span> <span class="s1">&#39;ra&#39;</span><span class="p">:</span> <span class="n">ra_to_decimal</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;RA&#39;</span><span class="p">]),</span>
+                       <span class="s1">&#39;dec&#39;</span><span class="p">:</span> <span class="n">dec_to_decimal</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;DEC&#39;</span><span class="p">]),</span> <span class="s1">&#39;tel_ra&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TEL_RA&#39;</span><span class="p">],</span> <span class="s1">&#39;tel_dec&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TEL_DEC&#39;</span><span class="p">],</span>
+                       <span class="s1">&#39;tel_az&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TEL_AZ&#39;</span><span class="p">],</span> <span class="s1">&#39;tel_el&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TEL_EL&#39;</span><span class="p">],</span> <span class="s1">&#39;tel_pa&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TEL_PA&#39;</span><span class="p">],</span>
+                       <span class="s1">&#39;ra_off&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;RA_OFF&#39;</span><span class="p">],</span> <span class="s1">&#39;dec_off&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;DEC_OFF&#39;</span><span class="p">],</span> <span class="s1">&#39;camera&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;CAM_NAME&#39;</span><span class="p">],</span>
+                       <span class="s1">&#39;atomicrequest_id&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">atomicrequest_id</span><span class="p">)}</span>  <span class="c1"># TODO: remove atomicrequest_id arg from function</span>
+        <span class="c1"># header_dict[&#39;atomicrequest_id&#39;] = int(header[&#39;ATOM_ID&#39;])</span>
+        <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_atomicrequest</span><span class="p">([</span><span class="s1">&#39;request_id&#39;</span><span class="p">,</span> <span class="s1">&#39;object_id&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">header_dict</span><span class="p">[</span><span class="s1">&#39;atomicrequest_id&#39;</span><span class="p">]})[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">ids</span><span class="p">:</span>
+            <span class="n">header_dict</span><span class="p">[</span><span class="s1">&#39;request_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">header_dict</span><span class="p">[</span><span class="s1">&#39;object_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;ERROR: no atomicrequests found with an id matching the header&#39;s ATOM_ID!&quot;</span><span class="p">)</span>
+
+        <span class="n">obs_added</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">add_observation</span><span class="p">(</span><span class="n">header_dict</span><span class="p">)</span>
+        <span class="c1"># TODO: add ATOM_ID to the header (above)</span>
+        <span class="c1"># TODO: add &#39;imtype&#39;, generate from fitsfile name?</span>
+
+        <span class="n">tel_stats</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;date&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;OBSDATE&#39;</span><span class="p">],</span> <span class="s1">&#39;dome_status&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;DOMEST&#39;</span><span class="p">],</span> <span class="s1">&#39;in_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;IN_AIR&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;in_humidity&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;IN_HUM&#39;</span><span class="p">],</span> <span class="s1">&#39;in_dew&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;IN_DEW&#39;</span><span class="p">],</span> <span class="s1">&#39;out_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;OUT_AIR&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;out_humidity&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;OUT_HUM&#39;</span><span class="p">],</span> <span class="s1">&#39;out_dew&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;OUT_HUM&#39;</span><span class="p">],</span> <span class="s1">&#39;wind_dir&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;WIND_DIR&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;wsp_cur&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;WSP_CUR&#39;</span><span class="p">],</span> <span class="s1">&#39;wsp_avg&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;WSP_AVG&#39;</span><span class="p">],</span> <span class="s1">&#39;mir_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;MIR_TEMP&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;top_air&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TOP_AIR&#39;</span><span class="p">],</span> <span class="s1">&#39;pri_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;PRI_TEMP&#39;</span><span class="p">],</span> <span class="s1">&#39;sec_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;SEC_TEMP&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;flo_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;FLO_TEMP&#39;</span><span class="p">],</span> <span class="s1">&#39;bot_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;BOT_TEMP&#39;</span><span class="p">],</span> <span class="s1">&#39;mid_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;MID_TEMP&#39;</span><span class="p">],</span>
+                     <span class="s1">&#39;top_temp&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;TOP_TEMP&#39;</span><span class="p">]}</span>
+        <span class="n">observation_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_from_observations</span><span class="p">([</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;atomicrequest_id&#39;</span><span class="p">:</span> <span class="n">header_dict</span><span class="p">[</span><span class="s1">&#39;atomicrequest_id&#39;</span><span class="p">]})</span>
+        <span class="k">if</span> <span class="n">observation_id</span><span class="p">:</span>
+            <span class="n">tel_stats</span><span class="p">[</span><span class="s1">&#39;observation_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">observation_id</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obs_added</span>
+
+        <span class="n">stats_added</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">add_tel_stats</span><span class="p">(</span><span class="n">tel_stats</span><span class="p">)</span>
+
+        <span class="c1"># check if all of the request&#39;s atomicrequests are &#39;OBSERVED&#39;, if so set the request&#39;s status to &#39;COMPLETED&#39;</span>
+        <span class="c1"># TODO: must test with connected request/atomicrequest/fitsfile</span>
+        <span class="k">if</span> <span class="n">obs_added</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">update_atomicrequest</span><span class="p">(</span>
+                <span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">header_dict</span><span class="p">[</span><span class="s1">&#39;atomicrequest_id&#39;</span><span class="p">],</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;OBSERVED&#39;</span><span class="p">}))</span>  <span class="c1"># better way than print?</span>
+            <span class="n">request_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute_sql</span><span class="p">(</span><span class="s2">&quot;SELECT request_id FROM atomicrequest WHERE id=&#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                                        <span class="o">%</span> <span class="p">(</span><span class="n">header_dict</span><span class="p">[</span><span class="s1">&#39;atomicrequest_id&#39;</span><span class="p">],))</span>
+            <span class="n">atomic_requests</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_request_atomicrequests</span><span class="p">(</span><span class="n">request_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">request</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;OBSERVED&#39;</span> <span class="k">for</span> <span class="n">request</span> <span class="ow">in</span> <span class="n">atomic_requests</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">update_request</span><span class="p">({</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="s1">&#39;COMPLETED&#39;</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">obs_added</span></div></div>
+
+
+<div class="viewcode-block" id="ra_to_decimal"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.ra_to_decimal">[docs]</a><span class="k">def</span> <span class="nf">ra_to_decimal</span><span class="p">(</span><span class="n">ra</span><span class="p">):</span>
+    <span class="n">hms</span> <span class="o">=</span> <span class="n">ra</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">hms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="mi">15</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">hms</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">4</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">hms</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mi">240</span></div>
+
+
+<div class="viewcode-block" id="dec_to_decimal"><a class="viewcode-back" href="../../db.html#db.SedmDb_tools.dec_to_decimal">[docs]</a><span class="k">def</span> <span class="nf">dec_to_decimal</span><span class="p">(</span><span class="n">dec</span><span class="p">):</span>
+    <span class="n">dms</span> <span class="o">=</span> <span class="n">dec</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dms</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">dms</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">dms</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">dms</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mi">3600</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">dms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">dms</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">60</span><span class="o">+</span><span class="nb">float</span><span class="p">(</span><span class="n">dms</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mi">3600</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">SEDM Pipeline</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../drpifu.html">1. drpifu: IFU-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../drprc.html">2. drprc: RCam-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db.html">3. db: SEDM database software</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Don Neill, Nadia Blagorodnova, Nick Konidaris.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

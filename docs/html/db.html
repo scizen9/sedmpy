@@ -1,0 +1,294 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>3. db package &#8212; SEDM Pipeline 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="2. drprc package" href="drprc.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="db-package">
+<h1>3. db package<a class="headerlink" href="#db-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="db-sedmdb-module">
+<h2>3.1. db.SedmDb module<a class="headerlink" href="#db-sedmdb-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-db.SedmDb_tools">
+<span id="db-sedmdb-tools-module"></span><h2>3.2. db.SedmDb_tools module<a class="headerlink" href="#module-db.SedmDb_tools" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="db.SedmDb_tools.DbTools">
+<em class="property">class </em><code class="descclassname">db.SedmDb_tools.</code><code class="descname">DbTools</code><span class="sig-paren">(</span><em>db_class</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.add_observation_fitsfile">
+<code class="descname">add_observation_fitsfile</code><span class="sig-paren">(</span><em>fitsfile</em>, <em>atomicrequest_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.add_observation_fitsfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.add_observation_fitsfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an observation from a fitsfile, sets the atomicobservation to ‘OBSERVED’. Checks if all the atomicobservations
+associated with its request are observed, if so it sets the request’s status to ‘COMPLETED’.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fitsfile</strong> – str (fits file path)</li>
+<li><strong>atomicrequest_id</strong> – int (temporary until it is included in the header)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.cancel_request">
+<code class="descname">cancel_request</code><span class="sig-paren">(</span><em>requestid</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.cancel_request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.cancel_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Changes the status of the request and any related atomicrequests to “CANCELED”</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.create_atomic_requests">
+<code class="descname">create_atomic_requests</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.create_atomic_requests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.create_atomic_requests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds requests without atomicrequets and creates their atomicrequests</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(0, “…”) containing a list of the requests and which, if any, failed</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.create_request_atomic_requests">
+<code class="descname">create_request_atomic_requests</code><span class="sig-paren">(</span><em>request_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.create_request_atomic_requests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.create_request_atomic_requests" title="Permalink to this definition">¶</a></dt>
+<dd><p>create atomicrequest entries for a given request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>request_id</strong> – int
+id of the request that needs atomicrequests</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">…”) if there was an issue
+(0, “Added (#) atomic requests for request (#)”) if it was successful</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(-1, “ERROR</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.get_active_requests">
+<code class="descname">get_active_requests</code><span class="sig-paren">(</span><em>values=['id', 'object_id', 'user_id', 'program_id', 'marshal_id', 'exptime', 'maxairmass', 'priority', 'cadence', 'phasesamples', 'sampletolerance', 'filters', 'nexposures', 'ordering']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.get_active_requests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.get_active_requests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the parameters for all ‘ACTIVE’ requests
+:param values: the values to get for each request</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>defaults to [‘id’, ‘object_id’, ‘user_id’, ‘program_id’, ‘marshal_id’, ‘exptime’,</dt>
+<dd>‘maxairmass’, ‘priority’, ‘cadence’, ‘phasesamples’, ‘sampletolerance’,
+‘filters’, ‘nexposures’, ‘ordering’]</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of tuples conaining the <code class="docutils literal notranslate"><span class="pre">values</span></code> for each active request
+(-1, “ERROR … “) if there was an issue
+[] if no requests are ‘ACTIVE’</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.get_object_parameters">
+<code class="descname">get_object_parameters</code><span class="sig-paren">(</span><em>object_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.get_object_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.get_object_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes an object_id and returns the object’s information and orbit parameters for SSO
+:param object_id: id of the object
+:type object_id: int</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(-1, “ERROR…”) if an error occurred<p>[(‘marshal_id’, ‘name’, ‘iauname’, ‘ra’, ‘dec’, typedesig’, ‘epoch’), None] for fixed objects, or if there are
+no orbit parameters in the database</p>
+<p>[(‘marshal_id’, ‘name’, ‘iauname’, ‘ra’, ‘dec’, typedesig’, ‘epoch’), (orbit params arranged in ephem ordering)]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.get_request_atomicrequests">
+<code class="descname">get_request_atomicrequests</code><span class="sig-paren">(</span><em>request_id</em>, <em>values</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.get_request_atomicrequests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.get_request_atomicrequests" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the atomicreqests associated with a single request</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>request_id</strong> (<em>int</em>) – The request_id of the desired request</li>
+<li><strong>values</strong> (<em>list</em>) – list of values to be retreived about each atomicrequest</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>(id, object_id, order_id, exptime, filter, status, priority)</dt>
+<dd><p class="first last">for each atomicreqest associated with the desired request</p>
+</dd>
+</dl>
+<p>[] if there were no atomicrequests matching the given request_id
+(-1, “ERROR…”) if there was an issue</p>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of tuples</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.get_user_requests">
+<code class="descname">get_user_requests</code><span class="sig-paren">(</span><em>user_id=None, username=None, values=['id', 'object_id', 'program_id', 'status']</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.get_user_requests"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.get_user_requests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the parameters for all requests associated with a user</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>user_id</strong> (<em>int</em>) – id of the user</li>
+<li><strong>username</strong> (<em>str</em>) – username of the user
+only needed if user_id is not provided</li>
+<li><strong>values</strong> (<em>list</em>) – values to be returned
+defaults to [‘id’, ‘object_id’, ‘program_id’, ‘status’]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of tuples conaining the <code class="docutils literal notranslate"><span class="pre">values</span></code> for each request of the user
+(-1, “ERROR … “) if there was an issue
+[] if no requests are associated with the user</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.program_time_used">
+<code class="descname">program_time_used</code><span class="sig-paren">(</span><em>start_date</em>, <em>end_date</em>, <em>program_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.program_time_used"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.program_time_used" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="db.SedmDb_tools.DbTools.submit_asteroids_edb">
+<code class="descname">submit_asteroids_edb</code><span class="sig-paren">(</span><em>file='/home/sedm/kpy/ephem/asteroids.edb'</em>, <em>delimiter='</em>, <em>'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#DbTools.submit_asteroids_edb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.DbTools.submit_asteroids_edb" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="db.SedmDb_tools.dec_to_decimal">
+<code class="descclassname">db.SedmDb_tools.</code><code class="descname">dec_to_decimal</code><span class="sig-paren">(</span><em>dec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#dec_to_decimal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.dec_to_decimal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="db.SedmDb_tools.ra_to_decimal">
+<code class="descclassname">db.SedmDb_tools.</code><code class="descname">ra_to_decimal</code><span class="sig-paren">(</span><em>ra</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/db/SedmDb_tools.html#ra_to_decimal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#db.SedmDb_tools.ra_to_decimal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">SEDM Pipeline</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="drpifu.html">1. drpifu: IFU-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="drprc.html">2. drprc: RCam-specific DRP Software</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. db: SEDM database software</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="drprc.html" title="previous chapter">2. drprc package</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Don Neill, Nadia Blagorodnova, Nick Konidaris.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/db.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
