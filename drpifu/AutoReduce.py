@@ -450,7 +450,7 @@ def dosci(destdir='./', datestr=None):
                             print("Error running report for " +
                                   fn.split('.')[0])
                         # run Verify.py
-                        cmd = "~/kpy/SEDMr/Verify.py %s --contains %s" % \
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
                         os.system(cmd)
             else:
