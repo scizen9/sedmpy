@@ -496,7 +496,7 @@ def dosci(destdir='./', datestr=None):
                         if retcode > 0:
                             print("Error uploading spectra to marshal")
                         # run Verify.py
-                        cmd = "~/kpy/SEDMr/Verify.py %s --contains %s" % \
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
                         os.system(cmd)
     return ncp, copied
