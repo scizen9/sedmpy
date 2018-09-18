@@ -1,0 +1,163 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>1. drpifu package &#8212; SEDM Pipeline 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. drprc package" href="drprc.html" />
+    <link rel="prev" title="Welcome to SED Machines’s data reduction pipeline documentation" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="drpifu-package">
+<h1>1. drpifu package<a class="headerlink" href="#drpifu-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="drpifu-cosmicx-module">
+<h2>1.1. drpifu.CosmicX module<a class="headerlink" href="#drpifu-cosmicx-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="drpifu-debias-module">
+<h2>1.2. drpifu.Debias module<a class="headerlink" href="#drpifu-debias-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="drpifu-drpreport-module">
+<h2>1.3. drpifu.DrpReport module<a class="headerlink" href="#drpifu-drpreport-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="drpifu-imcombine-module">
+<h2>1.4. drpifu.Imcombine module<a class="headerlink" href="#drpifu-imcombine-module" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="drpifu-plan-module">
+<h2>1.5. drpifu.Plan module<a class="headerlink" href="#drpifu-plan-module" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-drpifu.Plan"></span><p>Generate Makefile for reducing ifu data</p>
+<dl class="function">
+<dt id="drpifu.Plan.MF_imcombine">
+<code class="descclassname">drpifu.Plan.</code><code class="descname">MF_imcombine</code><span class="sig-paren">(</span><em>objname</em>, <em>files</em>, <em>dependencies=''</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/drpifu/Plan.html#MF_imcombine"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#drpifu.Plan.MF_imcombine" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="drpifu.Plan.extract_info">
+<code class="descclassname">drpifu.Plan.</code><code class="descname">extract_info</code><span class="sig-paren">(</span><em>infiles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/drpifu/Plan.html#extract_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#drpifu.Plan.extract_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="drpifu.Plan.identify_observations">
+<code class="descclassname">drpifu.Plan.</code><code class="descname">identify_observations</code><span class="sig-paren">(</span><em>headers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/drpifu/Plan.html#identify_observations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#drpifu.Plan.identify_observations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of object name, observation number, and list of files.</p>
+<p>e.g. will return:</p>
+<dl class="docutils">
+<dt>{‘STD-BD+25d4655’: {1: [‘…’]}, {2: [‘…’]},</dt>
+<dd>‘ZTF14dvo’: {1: [‘…’, ‘…’]}}</dd>
+</dl>
+<p>where STD-BD+25d4655 was observed at the beginning and end of night. SN
+14dov was observed once with A-B.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="drpifu.Plan.make_plan">
+<code class="descclassname">drpifu.Plan.</code><code class="descname">make_plan</code><span class="sig-paren">(</span><em>headers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/drpifu/Plan.html#make_plan"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#drpifu.Plan.make_plan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert headers to a makefile, assuming headers sorted by JD.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="drpifu.Plan.to_makefile">
+<code class="descclassname">drpifu.Plan.</code><code class="descname">to_makefile</code><span class="sig-paren">(</span><em>objs</em>, <em>calibs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/drpifu/Plan.html#to_makefile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#drpifu.Plan.to_makefile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="drpifu-what-module">
+<h2>1.6. drpifu.What module<a class="headerlink" href="#drpifu-what-module" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-drpifu.What"></span><dl class="function">
+<dt id="drpifu.What.go">
+<code class="descclassname">drpifu.What.</code><code class="descname">go</code><span class="sig-paren">(</span><em>imfiles</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/drpifu/What.html#go"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#drpifu.What.go" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">SEDM Pipeline</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. drpifu: IFU-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="drprc.html">2. drprc: RCam-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="db.html">3. db: SEDM database software</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to SED Machines’s data reduction pipeline documentation</a></li>
+      <li>Next: <a href="drprc.html" title="next chapter">2. drprc package</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Don Neill, Nadia Blagorodnova, Nick Konidaris.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="_sources/drpifu.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

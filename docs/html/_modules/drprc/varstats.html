@@ -1,0 +1,236 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>drprc.varstats &#8212; SEDM Pipeline 0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for drprc.varstats</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Tue Dec  1 12:16:14 2015</span>
+
+<span class="sd">@author: nadiablago</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">datetime</span><span class="o">,</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pickle</span> 
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pylab</span> <span class="k">as</span> <span class="n">plt</span>
+
+<div class="viewcode-block" id="get_spectral_window"><a class="viewcode-back" href="../../drprc.html#drprc.varstats.get_spectral_window">[docs]</a><span class="k">def</span> <span class="nf">get_spectral_window</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">nu</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Computes the spectral window for the set of observations t, for each frequency in nu.</span>
+<span class="sd">    Source: equation 2, Eyer &amp; Bartholdi, 1998 (http://arxiv.org/pdf/astro-ph/9808176v1.pdf)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    
+    <span class="k">if</span><span class="p">(</span><span class="n">nu</span><span class="o">==</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">nu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span> <span class="p">,</span><span class="mf">20.</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+    
+    <span class="c1">#Transform datetime to seconds elapsed since 1970.</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">time</span><span class="o">.</span><span class="n">mktime</span><span class="p">(</span><span class="n">ti</span><span class="o">.</span><span class="n">timetuple</span><span class="p">())</span><span class="o">/</span><span class="p">(</span><span class="mi">24</span><span class="o">*</span><span class="mf">3600.</span><span class="p">)</span> <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="n">t</span><span class="p">])</span>
+    
+    <span class="n">T</span><span class="p">,</span> <span class="n">NU</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">nu</span><span class="p">)</span>
+    <span class="n">GNnu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span> <span class="n">NU</span> <span class="o">*</span> <span class="n">T</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span>
+    
+    <span class="k">return</span> <span class="n">nu</span><span class="p">,</span> <span class="n">GNnu</span> </div>
+    
+<div class="viewcode-block" id="get_time_lag"><a class="viewcode-back" href="../../drprc.html#drprc.varstats.get_time_lag">[docs]</a><span class="k">def</span> <span class="nf">get_time_lag</span><span class="p">(</span><span class="n">tobs</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Computes the time lag for a given set of observations.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">timelag</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="c1">#Compute lag for each field</span>
+    <span class="k">for</span> <span class="n">tcurr</span> <span class="ow">in</span> <span class="n">tobs</span><span class="p">:</span>
+        <span class="n">latert</span> <span class="o">=</span> <span class="n">tobs</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tobs</span><span class="o">&gt;</span><span class="n">tcurr</span><span class="p">)]</span>
+        <span class="n">diffs</span> <span class="o">=</span> <span class="n">latert</span> <span class="o">-</span> <span class="n">tcurr</span>
+        <span class="n">diffsd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="mi">24</span><span class="o">*</span><span class="mf">3600.</span><span class="p">))</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">diffs</span><span class="p">])</span>
+        <span class="n">timelag</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">diffsd</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">timelag</span></div>
+        
+<div class="viewcode-block" id="mkdate"><a class="viewcode-back" href="../../drprc.html#drprc.varstats.mkdate">[docs]</a><span class="k">def</span> <span class="nf">mkdate</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%M:%S.</span><span class="si">%f</span><span class="s1">&#39;</span><span class="p">)</span> </div>
+    
+<div class="viewcode-block" id="get_field_stats"><a class="viewcode-back" href="../../drprc.html#drprc.varstats.get_field_stats">[docs]</a><span class="k">def</span> <span class="nf">get_field_stats</span><span class="p">(</span><span class="n">myfile</span><span class="o">=</span><span class="s2">&quot;/scr2/nblago/kpy/SEDMrph/data/VariableStars/iPTF_exposures.tbl&quot;</span><span class="p">,</span> <span class="n">myfields</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Writes the observed dates and coordinates for each PTF field.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">basedir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">myfile</span><span class="p">)</span>
+    
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">myfile</span><span class="p">,</span> <span class="n">converters</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;dateobs&#39;</span><span class="p">:</span><span class="n">mkdate</span><span class="p">},</span> <span class="n">names</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s2">&quot;ptf_corners.tbl&quot;</span><span class="p">),</span> <span class="n">names</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
+                      <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;i8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra0&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec0&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra1&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec1&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra2&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec2&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra3&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec3&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra4&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec4&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f5&#39;</span><span class="p">)])</span>
+
+
+    <span class="c1">#print set(t[&#39;field&#39;])</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">myfields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">myfields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">])</span>
+        <span class="n">myfields</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">myfields</span><span class="p">)</span>
+        <span class="n">myfields</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        
+        
+    <span class="n">fields</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">])),</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;field&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;i8&#39;</span><span class="p">),</span> 
+                                              <span class="p">(</span><span class="s1">&#39;ra0&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec0&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;ra1&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec1&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span>
+                                                <span class="p">(</span><span class="s1">&#39;ra2&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec2&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),(</span><span class="s1">&#39;ra3&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec3&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span>
+                                                <span class="p">(</span><span class="s1">&#39;ra4&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;dec4&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;f8&#39;</span><span class="p">),</span> 
+                                                <span class="p">(</span><span class="s1">&#39;obsdate&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">object</span><span class="p">)])</span><span class="c1">#, (&#39;obssec&#39;, np.object), (&#39;timelags&#39;, np.object)])</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">myfields</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+        
+        <span class="c1">#Fill in the output vector</span>
+        <span class="n">fields</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+            <span class="n">fields</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;ra</span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;ra</span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">j</span><span class="p">]</span>        
+            <span class="n">fields</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;dec</span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span><span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;dec</span><span class="si">%d</span><span class="s1">&#39;</span><span class="o">%</span><span class="n">j</span><span class="p">]</span> 
+        <span class="n">fields</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;obsdate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tf</span><span class="p">[</span><span class="s1">&#39;dateobs&#39;</span><span class="p">]</span>
+
+        
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">fields</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;field_stats.pickle&#39;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">fields</span></div>
+    
+<div class="viewcode-block" id="plot_stats"><a class="viewcode-back" href="../../drprc.html#drprc.varstats.plot_stats">[docs]</a><span class="k">def</span> <span class="nf">plot_stats</span><span class="p">(</span><span class="n">stats</span><span class="p">,</span> <span class="n">myfields</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots the time lag and spectral window for all fields indicated into the folder &quot;plots&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">myfields</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">myfields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">])</span>
+        <span class="n">myfields</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">myfields</span><span class="p">)</span>
+        <span class="n">myfields</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        
+    <span class="n">timelag</span> <span class="o">=</span> <span class="p">{}</span>
+        
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">myfields</span><span class="p">):</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;field&#39;</span><span class="p">]</span><span class="o">==</span><span class="n">f</span><span class="p">)</span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="n">mask</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="c1">#Compute time lag.</span>
+        <span class="n">timelag</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_time_lag</span><span class="p">(</span><span class="n">tf</span><span class="p">[</span><span class="s1">&#39;obsdate&#39;</span><span class="p">])</span>
+        
+        <span class="c1">#Compute spectral window</span>
+        <span class="n">nu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.</span> <span class="p">,</span><span class="mf">20.</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+        <span class="n">nu</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">get_spectral_window</span><span class="p">(</span><span class="n">tf</span><span class="p">[</span><span class="s1">&#39;obsdate&#39;</span><span class="p">],</span> <span class="n">nu</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="s2">&quot;plots&quot;</span><span class="p">)):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;plots&quot;</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tf</span><span class="p">[</span><span class="s1">&#39;obsdate&#39;</span><span class="p">])</span> <span class="o">&gt;</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">timelag</span><span class="p">[</span><span class="n">f</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">3.5</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;log(Time$_i$ - Time$_j$ [days])&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Counts&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;plots/field_lag_</span><span class="si">%d</span><span class="s1">.png&#39;</span><span class="o">%</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+            
+            <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">nu</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Frequency [1/day]&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Spectral window&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;plots/field_swindow_</span><span class="si">%d</span><span class="s1">.png&#39;</span><span class="o">%</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span></div>
+    
+
+    
+<div class="viewcode-block" id="load_file"><a class="viewcode-back" href="../../drprc.html#drprc.varstats.load_file">[docs]</a><span class="k">def</span> <span class="nf">load_file</span><span class="p">(</span><span class="n">myfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loads the pickled file passed as a parameter.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">myfile</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">f</span></div>
+    
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">SEDM Pipeline</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../drpifu.html">1. drpifu: IFU-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../drprc.html">2. drprc: RCam-specific DRP Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../db.html">3. db: SEDM database software</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Don Neill, Nadia Blagorodnova, Nick Konidaris.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
