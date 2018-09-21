@@ -3,6 +3,7 @@ import numpy as np
 from astropy.time import Time
 from astropy.io import fits
 
+
 class DbTools(object):
     def __init__(self, db_class):
         self.db = db_class

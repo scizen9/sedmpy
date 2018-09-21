@@ -1,4 +1,4 @@
-import SedmDb
+import db.SedmDb
 import datetime
 
 # default entries (shouldn't be changed by functions)
@@ -9,7 +9,7 @@ import datetime
 # table: request; 'id': 1, 'object_id': 1, 'user_id': 1, 'exptime': '{ 2400, 360}', 'priority': 6.,
 #                 'inidate': '2016-12-30', 'enddate': '2017-02-12', 'nexposures': '{1, 2, 2, 2, 2}'
 # table: atomicrequest; 'id': 1 through 'id': 9
-db = SedmDb.SedmDB()
+db = db.SedmDb.SedmDB()
 
 
 def test_request_manipulation():
@@ -19,7 +19,7 @@ def test_request_manipulation():
     assert db.add_request(req) == (0, 'Request added')
     # test get_from and update
     assert (db.get_from_request(['user_id', 'inidate', 'nexposures'], {'enddate': '2017-04-25'})[0] ==
-            (1, datetime.date(2017, 02, 03), [1, 0, 4, 4, 0]))
+            (1, datetime.date(2017, 2, 3), [1, 0, 4, 4, 0]))
     id = db.get_from_request(['id'], {'enddate': '2017-04-25'})
     upd = {'id': id[0][0], 'status': 'ACTIVE', 'maxairmass': 2.2, 'user_id': 2} # user_id isn't allowed
     assert db.update_request(upd) == (0, "Requests updated")
@@ -78,8 +78,10 @@ def test_atomicrequest_manipulation():
     # test get_from failure
     assert db.get_from_atomicrequest(['status', 'priority'], {'inidate': 43}) == (-1, "ERROR: inidate must be of the "
                                                                                       "format 'year-month-day'!")
+
+
 # TODO: test create_atomicrequests_from_request
-import SedmDb_tools
+# import db.SedmDb_tools
 
 if __name__ == '__main__':
     test_request_manipulation()
