@@ -16,10 +16,10 @@ if __name__ == "__main__":
         if len(sys.argv) == 4:
             xs = sys.argv[2]
             ys = sys.argv[3]
-            print("extract_star.py %s --auto %s --autobins 6 --centroid %s %s",
+            print("extract_star.py %s --auto %s --autobins 6 --centroid %s %s" %
                   (dd, obid, xs, ys))
         else:
-            print("extract_star.py %s --auto %s --autobins 6 --display",
+            print("extract_star.py %s --auto %s --autobins 6 --display" %
                   (dd, obid))
         # Object name
         obname = glob.glob("spec_*_%s*.fits" %
