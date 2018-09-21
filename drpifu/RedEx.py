@@ -37,3 +37,4 @@ if __name__ == "__main__":
         # Prepare for upload
         upf = glob.glob("spec_*_%s_%s.upl" % (obid, obname))[0]
         print("rm %s" % upf)
+        print("be sure to run make ztfupload when you are done.")
