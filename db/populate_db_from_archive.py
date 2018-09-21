@@ -9,21 +9,22 @@ from __future__ import print_function
 import os, glob, shutil
 import numpy as np
 import argparse
-from SEDMrph import fitsutils
+from drprc import fitsutils
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
 import astropy.units as u
 import datetime
 from astropy.io import fits
-import archive_mod_sedmdb  # this file requires being able to submit observations with pre-determined id values, which isn't allowed in the original
+import db.archive_mod_sedmdb  # this file requires being able to submit observations with pre-determined id values, which isn't allowed in the original
 
 
 #cur_dir = os.getcwd()
 #os.chdir('/home/sedm/kpy/SEDMDb')
-sdb = archive_mod_sedmdb.SedmDB(dbname='sedmdbtest', host='localhost')
+sdb = db.archive_mod_sedmdb.SedmDB(dbname='sedmdbtest', host='localhost')
 #os.chdir(cur_dir)
 
 program_dict = {}
+
 
 def ra_to_decimal(ra):
     hms = ra.split(':')
@@ -77,9 +78,8 @@ def fill_par_dic_obs(fitsfile):
         pardic_obs['ra'] = ra_to_decimal(f[0].header['TEL_RA'])
         pardic_obs['dec'] = dec_to_decimal(f[0].header['TEL_DEC'])
     pardic_obs['camera'] = f[0].header['CAM_NAME']   
-    
-        
-    #Rtrieve the old obs_id from the header
+
+    # Rtrieve the old obs_id from the header
     if fitsutils.has_par(fitsfile, 'obs_id'):
         obs_id = f[0].header['obs_id']
         pardic_obs['id'] = obs_id  # if there is no obs_id, add_observation will add its own
@@ -107,7 +107,8 @@ def create_user(f):
         
         sdb.add_group({'designator': ''})
         return res[0]
-    
+
+
 def create_allocation(f, allocation_desig):
     '''
     Creates an allocation registry in the program table.
@@ -142,6 +143,7 @@ def create_allocation(f, allocation_desig):
     elif program_ident[:2] == "SE":
         al = sdb.add_allocation({'designator': allocation_desig, 'program_id': 20171002163457445})
     return al[0]
+
 
 def create_sci_request(files, inidate, enddate, scitype, object_id, allocation):
     filt = fitsutils.get_par(files[0], 'FILTER')
@@ -197,7 +199,8 @@ def create_cal_request(files, inidate, enddate, caltype, obj_id):
         if req[0] == -1:
             print(req[1], files)
         return req[0]
-        
+
+
 def create_obs(reqid, files, inidate, enddate, caltype, obj_id):
     '''
     For each file, creates the observation associated with the file.
@@ -222,7 +225,6 @@ def create_obs(reqid, files, inidate, enddate, caltype, obj_id):
         obs = sdb.add_observation(pardic_obs)
         if obs[0] < 0:
             print(obs[1])
-
 
     
 def log_calibrations(lfiles, caltype="test"):
@@ -261,8 +263,7 @@ def log_calibrations(lfiles, caltype="test"):
     create_obs(reqid, lfiles, inidate, enddate, caltype, obj_id)
 
     sdb.update_request({'id': reqid, 'STATUS': 'COMPLETED'})
-    
-    
+
     
 def log_science(lfiles, scitype):
     '''
@@ -291,7 +292,6 @@ def log_science(lfiles, scitype):
         if all_id == -1:  # if there was an issue creat_allocation will return -1
             print("Error finding or creating the allocation for file %s!" % (f,))
             continue  # skip to next file if we can't get a valid allocation
-        
 
         #Next make sure that its object exists
         name = fitsutils.get_par(f, "OBJNAME").replace('"', '').lower()
@@ -328,7 +328,6 @@ if __name__ == '__main__':
         %run populate_db_from_archive.py -d DIR 
             
         ''', formatter_class=argparse.RawTextHelpFormatter)
-
 
     parser.add_argument('-d', '--dir', type=str, help='Directory containing the nightly science fits directories.', default=None)
     

@@ -1,8 +1,8 @@
-import SedmDb
-import SedmDb_tools
+import db.SedmDb
+import db.SedmDb_tools
 
 
-db = SedmDb.SedmDB()
+db = db.SedmDb.SedmDB()
 
 # add default user
 db.add_user({'username': 'default_user', 'name': 'apo', 'email': 'kiwi'})
@@ -24,7 +24,7 @@ request = {'object_id': 1, 'user_id': 1, 'program_id': 1, 'exptime': '{ 2400, 36
 db.add_request(request)
 
 # add default atomic requests
-SedmDb_tools.create_request_atomic_requests(1)
+db.SedmDb_tools.create_request_atomic_requests(1)
 
 
 # add default observations?
