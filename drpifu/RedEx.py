@@ -20,7 +20,7 @@ if __name__ == "__main__":
             print("extract_star.py %s --auto %s --autobins 6 --centroid %s %s" %
                   (dd, obid, xs, ys))
             res = subprocess.run(["extract_star.py", dd, "--auto", obid,
-                                  "--autobins", 6, "--centroid", xs, ys])
+                                  "--autobins", "6", "--centroid", xs, ys])
             if res.returncode != 0:
                 print("Extraction failed.")
                 sys.exit(1)
@@ -28,7 +28,7 @@ if __name__ == "__main__":
             print("extract_star.py %s --auto %s --autobins 6 --display" %
                   (dd, obid))
             res = subprocess.run(["extract_star.py", dd, "--auto", obid,
-                                  "--autobins", 6, "--display"])
+                                  "--autobins", "6", "--display"])
             if res.returncode != 0:
                 print("Extraction failed.")
                 sys.exit(1)
