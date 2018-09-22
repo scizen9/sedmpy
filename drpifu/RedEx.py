@@ -47,9 +47,8 @@ if __name__ == "__main__":
             sys.exit(1)
         # Re-verify
         cfile = glob.glob("crr_b_ifu%s_%s.fits" % (dd, obid))[0].split('.')[0]
-        print("/scr2/sedmdrp/sedmpy/drpifu/Verify.py %s --contains %s" % (dd, cfile))
-        res = subprocess.run(["/scr2/sedmdrp/sedmpy/drpifu/Verify.py", dd,
-                              "--contains", cfile])
+        print("verify %s --contains %s" % (dd, cfile))
+        res = subprocess.run(["verify", dd, "--contains", cfile])
         if res.returncode != 0:
             print("Verify failed!")
             sys.exit(1)
