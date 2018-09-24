@@ -64,7 +64,7 @@ class SedmDB:
         """
         conn = self.pool_sedmdb.connect()
         cursor = conn.cursor()
-        print(sql)
+
         try:
             cursor.execute(sql)
         except exc.DBAPIError as e:
