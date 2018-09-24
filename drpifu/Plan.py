@@ -1,6 +1,5 @@
 """Generate Makefile for reducing ifu data"""
 
-import os
 import sys
 
 import astropy.io.fits as pf
@@ -13,13 +12,13 @@ def extract_info(infiles):
     print("-- Plan.py: Ingesting headers --")
 
     for ix, ifile in enumerate(infiles):
-        FF = pf.open(ifile)
-        FF[0].header['filename'] = ifile
-        if 'JD' not in FF[0].header:
+        ff = pf.open(ifile)
+        ff[0].header['filename'] = ifile
+        if 'JD' not in ff[0].header:
             # print("Skipping %s" % ifile)
             continue
-        headers.append(FF[0].header)
-        FF.close()
+        headers.append(ff[0].header)
+        ff.close()
 
     return sorted(headers, key=lambda x: x['JD'])
 
@@ -35,16 +34,16 @@ def identify_observations(headers):
     where STD-BD+25d4655 was observed at the beginning and end of night. SN
     14dov was observed once with A-B.
     """
-    JD = 0.
+    jd = 0.
 
     objcnt = {}
     objs = {}
     calibs = {}
 
     for header in headers:
-        if header['JD'] < JD:
+        if header['JD'] < jd:
             raise Exception("Headers not sorted by JD")
-        JD = header['JD']
+        jd = header['JD']
 
         fname = header['filename']
         obj = header['OBJECT'].lstrip()
@@ -55,35 +54,35 @@ def identify_observations(headers):
             continue
         if "Calib" in obj or "bias" in obj:
 
-            def appendToCalibs(Str):
+            def append_to_calibs(instr):
 
-                if Str in obj:
-                    if "bias" in Str and exptime == 0.:
-                        Str = "%s%1.1f" % (Str, adcspeed)
+                if instr in obj:
+                    if "bias" in instr and exptime == 0.:
+                        instr = "%s%1.1f" % (instr, adcspeed)
                         prefix = ""
                         suffix = ""
-                    elif "Xe" in Str or "Hg" in Str or "Cd" in Str or \
-                                    "Ne" in Str or "dome" in Str:
+                    elif "Xe" in instr or "Hg" in instr or "Cd" in instr or \
+                            "Ne" in instr or "dome" in instr:
                         prefix = "b_"
                         suffix = ""
                     else:
                         prefix = "crr_b_"
                         suffix = ""
 
-                    if "bias" in Str and exptime != 0.:
+                    if "bias" in instr and exptime != 0.:
                         print("Mis-labeled bias with exptime > 0: %9.1f" %
                               exptime)
                     else:
-                        calibs[Str] = calibs.get(Str, [])
-                        calibs[Str].append(prefix + fname + suffix)
+                        calibs[instr] = calibs.get(instr, [])
+                        calibs[instr].append(prefix + fname + suffix)
 
-            appendToCalibs("bias")
-            appendToCalibs("dome")
-            appendToCalibs("Xe")
-            appendToCalibs("Hg")
-            appendToCalibs("Cd")
-            appendToCalibs("Ne")
-            appendToCalibs("twilight")
+            append_to_calibs("bias")
+            append_to_calibs("dome")
+            append_to_calibs("Xe")
+            append_to_calibs("Hg")
+            append_to_calibs("Cd")
+            append_to_calibs("Ne")
+            append_to_calibs("twilight")
 
         if "Focus:" in obj:
             continue
@@ -190,7 +189,7 @@ finalreport:
 """
 
 
-def MF_imcombine(objname, files, dependencies=""):
+def makefile_imcombine(objname, files, dependencies=""):
 
     filelist = " ".join(["%s " % ifile for ifile in files])
     first = "%s.fits: %s %s\n" % (objname, filelist, dependencies)
@@ -215,23 +214,26 @@ def MF_imcombine(objname, files, dependencies=""):
 
 def to_makefile(objs, calibs):
 
-    MF = ""
+    makefile = ""
 
-    all = ""
+    all_targs = ""
 
-    for calibname, files in calibs.items():
+    for calibname, imfiles in calibs.items():
 
         if "bias" not in calibname:
             pass
-        MF += MF_imcombine(calibname, files)
-        all += "%s.fits " % calibname
+        makefile += makefile_imcombine(calibname, files)
+        all_targs += "%s.fits " % calibname
+
+    for objname, objfile in objs.items():
+        all_targs += "%s.fits " % objname
 
     preamble = make_preamble
 
     f = open("Makefile", "w")
-    clean = "\n\nclean:\n\trm %s" % all
+    clean = "\n\nclean:\n\trm %s" % all_targs
 
-    f.write(preamble + "\nall: %s%s" % (all, clean) + "\n" + MF)
+    f.write(preamble + "\nall: %s%s" % (all_targs, clean) + "\n" + makefile)
     f.close()
 
 

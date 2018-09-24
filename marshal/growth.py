@@ -356,7 +356,7 @@ def read_request(request_file):
 
 def update_target_by_object(objname, add_spectra=False, spectra_file='',
                             add_status=False, status='Completed',
-                            pull_requests=False,
+                            pull_requests=False, request_id=None,
                             add_phot=False, phot_file='', search_db=False,
                             target_dir='requests/', target_base_name='request'):
     """
@@ -367,6 +367,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     :param add_status:
     :param status:
     :param pull_requests:
+    :param request_id:
     :param add_phot:
     :param phot_file:
     :param search_db:
@@ -376,87 +377,94 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     """
     status_ret = False
     spec_ret = False
-    # 1. Start by looking at all files in the target directory
-    # this is currently the directory that holds all incoming request
-    # dictionary from growth.
-    if pull_requests:
-        print("Gathering all request files")
-        growth_watcher.pull_request_from_remote()
-    match_list = []
-    files = glob.glob('%s%s*' % (target_dir, target_base_name))
-
-    # TODO: Change this to either look at the directory or to the SEDm database
+    phot_ret = False
+    marshal_id = None
+    object_name = None
+    # Look in the SEDM Db
     if search_db:
-        print("Soon, but not yet.")
-    #    import db.SedmDb
-    #    sedmdb = db.SedmDb.SedmDB("sedmdb", "pharos.caltech.edu")
+        if request_id:
+            print("Searching SedmDB")
+            import db.SedmDb
+            sedmdb = db.SedmDb.SedmDB()
 
-    # 1a. Search for target in the database
-        # sedmdb.get_from_object(["id", "marshal_id"], {"id": })
-
-    for i in files:
-        targ = read_request(i)
-        # Add any request file that contains the objname.  There may be more
-        # than one if an update to the original request has been sent. Ignore
-        # any request with the status delete as we can not update those
-        if (targ['sourcename'].lower() == objname.lower() and
-                targ['status'] != 'delete'):
-
-            match_list.append(targ)
-         
-    if len(match_list) == 1:
-        print(match_list)
-        target = match_list[0]
-        print("Uploading target %s files" % objname)
-        if add_spectra:
-            print(target['requestid'])
-            spec_ret = upload_spectra(spectra_file, fill_by_file=True,
-                                      request_id=target['requestid'])
-        if add_phot:
-            phot_ret = upload_phot(phot_file, request_id=target['requestid'])
-
-        if add_status:
-            status_ret = update_request(status, request_id=target['requestid'])
-
-    elif len(match_list) == 0:
-        print("Could not match name with any request file")
-
-    else:
-        print('Multiple matches have been made for target: %s' % objname)
-        request_id_list = []
-        for j in match_list:
-            request_id_list.append(j['requestid'])
-        
-        # If all the request id matches then there is no problem and we can 
-        # send data
-        if all(x == request_id_list[0] for x in request_id_list):
-            
-            target = match_list[0]
-
+            # 1a. Search for target in the database
+            res = sedmdb.get_from_request(["marshal_id", "object_id"],
+                                          {"id": request_id})[0]
+            marshal_id = res[0]
+            object_id = res[1]
+            res = sedmdb.get_from_object(["name"], {"id": object_id})[0]
+            object_name = res[0]
         else:
-            # TODO: Handle case in which an update has been sent
-            # For now we just use highest value
-            request_id = sorted(request_id_list)[-1]
-            print(request_id_list)
-            for j in match_list:
-                if j['requestid'] == request_id:
-                    target = j
-                    break
+            print("No request id provided")
+    else:
+        # 1. Start by looking at all files in the target directory
+        # this is currently the directory that holds all incoming request
+        # dictionary from growth.
+        if pull_requests:
+            print("Gathering all request files")
+            growth_watcher.pull_request_from_remote()
+        match_list = []
+        files = glob.glob('%s%s*' % (target_dir, target_base_name))
 
+        for i in files:
+            targ = read_request(i)
+            # Add any request file that contains the objname.  There may be more
+            # than one if an update to the original request has been sent.
+            # Ignore any request with the status delete
+            # as we can not update those
+            if (targ['sourcename'].lower() == objname.lower() and
+                    targ['status'] != 'delete'):
+                match_list.append(targ)
+         
+        if len(match_list) == 1:
+            print(match_list)
+            target = match_list[0]
+            marshal_id = target['requestid']
+            object_name = target['sourcename']
+            print("Uploading target %s files" % objname)
+        elif len(match_list) == 0:
+            print("Could not match name with any request file")
+        else:
+            print('Multiple matches have been made for target: %s' % objname)
+            request_id_list = []
+            for j in match_list:
+                request_id_list.append(j['requestid'])
+
+            # If all the request id matches then there is no problem and we can
+            # send data
+            if all(x == request_id_list[0] for x in request_id_list):
+                target = match_list[0]
+
+            else:
+                # TODO: Handle case in which an update has been sent
+                # For now we just use highest value
+                request_id = sorted(request_id_list)[-1]
+                print(request_id_list)
+                for j in match_list:
+                    if j['requestid'] == request_id:
+                        target = j
+                        break
+            marshal_id = target['requestid']
+            object_name = target['sourcename']
+
+    if marshal_id is None:
+        print("Unable to find marshal id for target %s" % objname)
+        return None, None, None, None
+    else:
         print("Updating target %s" % objname)
         if add_spectra:
-            print(target['requestid'])
+            print(marshal_id)
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
-                                      request_id=target['requestid'])
+                                      request_id=marshal_id)
         if add_phot:
-            phot_ret = upload_phot(phot_file, request_id=target['requestid'])
+            phot_ret = upload_phot(phot_file, request_id=marshal_id)
 
         if add_status:
-            status_ret = update_request(status, request_id=target['requestid'])
+            status_ret = update_request(status, request_id=marshal_id)
 
-    return_link = growth_view_source_url + "name=%s" % target['sourcename']
+        return_link = growth_view_source_url + "name=%s" % object_name
 
-    return return_link, spec_ret, phot_ret, status_ret
+        return return_link, spec_ret, phot_ret, status_ret
 
           
 def parse_ztf_by_dir(target_dir, upfil=None):
@@ -480,9 +488,11 @@ def parse_ztf_by_dir(target_dir, upfil=None):
     for fi in files:
         # Has it already been uploaded?
         if os.path.exists(fi.split('.')[0] + ".upl"):
+            print("Already uploaded: %s" % fi)
             continue
         # Is it flux calibrated?
         if "notfluxcal" in fi:
+            print("Not flux calibrated: %s" % fi)
             continue
         # Is is it good quality?
         qualstr = subprocess.check_output(('grep', 'QUALITY', fi),
@@ -490,6 +500,13 @@ def parse_ztf_by_dir(target_dir, upfil=None):
         quality = int(qualstr.split(':', 1)[-1])
         if quality > 2:
             print("Low quality (%d>2) spectrum: %s" % (quality, fi))
+            continue
+        # Extract request ID
+        req_id = subprocess.check_output(('grep', 'REQ_ID', fi),
+                                         universal_newlines=True)
+        req_id = req_id.split(':', 1)[-1].strip()
+        if not req_id:
+            print("No REQ_ID found: %s" % fi)
             continue
         # Extract object name
         if "spec" in fi:
@@ -507,6 +524,7 @@ def parse_ztf_by_dir(target_dir, upfil=None):
                                                       status='Completed',
                                                       add_spectra=True,
                                                       spectra_file=fi,
+                                                      request_id=req_id,
                                                       pull_requests=pr)
         # Mark as uploaded
         os.system("touch " + fi.split('.')[0] + ".upl")
@@ -536,7 +554,11 @@ if __name__ == '__main__':
     import datetime
     import sys
 
-    reddir = '/scr2/sedmdrp/redux/'
+    try:
+        reddir = os.environ["SEDMREDUXPATH"]
+    except KeyError:
+        print("please set environment variable SEDMREDUXPATH")
+        sys.exit(1)
 
     if len(sys.argv) >= 2:
         utc = sys.argv[1]
@@ -560,5 +582,5 @@ if __name__ == '__main__':
             uplfil = sys.argv[2]
         else:
             uplfil = None
-      
+
         parse_ztf_by_dir(srcdir, upfil=uplfil)
