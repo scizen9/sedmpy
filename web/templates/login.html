@@ -1,4 +1,7 @@
 {% extends "sedm_base.html" %}
+{%  block head %}
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/login.css')}}">
+{% endblock %}
 {% block content %}
     {% if session['logged_in'] %}
         <p>You're logged in already!</p>

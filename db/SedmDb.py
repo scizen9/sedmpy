@@ -16,7 +16,7 @@ if sys.version_info > (3,):
 
 class SedmDB:
     class __SedmDB:
-        def __init__(self, dbname, host):
+        def __init__(self, dbname, host, port=5432):
             """
             Creates the instance of db connections.
             Needs the username as a parameter.
@@ -28,7 +28,7 @@ class SedmDB:
             self.user_sedmdb = p.stdout.read().decode("utf-8").replace('\n', '')
             self.dbname = dbname
             self.host = host
-
+            self.port = port
             self.pool_sedmdb = pool.QueuePool(self.__getSedmDBConn__, max_overflow=10, pool_size=2, recycle=True)
 
         def __str__(self):
@@ -38,7 +38,7 @@ class SedmDB:
             """
             Creates the connection to SedmDB.
             """
-            sedmdbcon = psycopg2.connect(host='localhost', port="5432", dbname=self.dbname,
+            sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
                                          user=self.user_sedmdb)
             return sedmdbcon
 
@@ -64,7 +64,7 @@ class SedmDB:
         """
         conn = self.pool_sedmdb.connect()
         cursor = conn.cursor()
-        print(sql)
+
         try:
             cursor.execute(sql)
         except exc.DBAPIError as e:
