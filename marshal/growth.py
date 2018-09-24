@@ -266,10 +266,11 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
 
     # TODO: Change this to either look at the directory or to the SEDm database
     # if search_db:
-    #    import SedmDb
-    #    sedmdb = SedmDb.SedmDB("sedmdb", "pharos.caltech.edu")
+    #    import db.SedmDb
+    #    sedmdb = db.SedmDb.SedmDB("sedmdb", "pharos.caltech.edu")
 
     # 1a. Search for target in the database
+        # sedmdb.get_from_object(["id", "marshal_id"], {"id": })
 
     for i in files:
         targ = read_request(i)
