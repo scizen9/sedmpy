@@ -47,9 +47,9 @@ def write_json_file(pydict, output_file):
     :return: json file path
     """
 
-    jsonFile = open(output_file, 'w')
-    jsonFile.write(json.dumps(pydict))
-    jsonFile.close()
+    json_file = open(output_file, 'w')
+    json_file.write(json.dumps(pydict))
+    json_file.close()
 
     return output_file
 
@@ -60,6 +60,90 @@ def timestamp():
     :return: 
     """
     return datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S")
+
+
+def send_instrument_configuration(instrument_id="",
+                                  options_programs=None,
+                                  post_url="", save=False):
+    """
+    Update the instrument configuration.  Updating this file will change the
+    available options shown on the growth marshal page
+
+    :param instrument_id:
+    :param options_programs:
+    :param post_url:
+    :param save:
+    :return:
+    """
+
+    if not instrument_id:
+        instrument_id = default_id
+
+    if not post_url:
+        post_url = add_target_url
+
+    # 1. Create the main json dictionary file
+    inst_config = {
+        'instrument_id': instrument_id,
+        'post_url': post_url,
+        'options': []
+    }
+
+    # 2. Check the options dictionary for values if none use default for SEDm
+    if options_programs:
+        inst_config['options'] = options_programs
+    else:
+        fourshot = {
+            'name': 'Followup',
+            'type': 'select',
+            'value': 'Four Shot (r,g,i,u)'
+        }
+
+        three_shot = {
+            'name': 'Followup',
+            'type': 'select',
+            'value': 'Three Shot (r,g,i)'
+        }
+
+        ifu = {
+            'name': 'Followup',
+            'type': 'select',
+            'value': 'IFU'
+        }
+
+        ifu_fourshot = {
+            'name': 'Followup',
+            'type': 'select',
+            'value': 'Fourshot + IFU'
+        }
+
+        check1 = {"name": "Filters", "type": "check", "value": "r"}
+
+        check2 = {"name": "Filters", "type": "check", "value": "g"}
+
+        check3 = {"name": "Filters", "type": "check", "value": "i"}
+
+        check4 = {"name": "Filters", "type": "check", "value": "ifu"}
+
+        inst_config['options'] = [fourshot, three_shot, ifu, ifu_fourshot,
+                                  check1, check2, check3, check4]
+
+    # 3. Create a json file with the request and read it in to memory
+    json_file = open(write_json_file(inst_config, 'config.txt'), 'r')
+
+    # 4. Send json file request to growth marshal
+    ret = requests.post(growth_inst_url,
+                        auth=(user, pwd),
+                        files={'jsonfile': json_file})
+
+    # 5. Close the file and save it if needed
+    json_file.close()
+
+    if not save:
+        os.remove('config.txt')
+
+    # 6. Return the request response for user to determine if it was a success
+    return ret
 
 
 def update_request(status, request_id, instrument_id='',
@@ -92,17 +176,17 @@ def update_request(status, request_id, instrument_id='',
     output_file = os.path.join(output_dir, filename)
 
     # 2. Create the new status dictionary
-    statusConfig = {'instrument_id': instrument_id,
-                    'request_id': request_id,
-                    'new_status': status}
+    status_config = {'instrument_id': instrument_id,
+                     'request_id': request_id,
+                     'new_status': status}
 
     # 3. Write and read in the json file to memory
-    jsonFile = open(write_json_file(statusConfig, output_file), 'r')
+    json_file = open(write_json_file(status_config, output_file), 'r')
 
     # 4. Send the request, close the file, and save if needed
     ret = requests.post(growth_stat_url, auth=(user, pwd),
-                        files={'jsonfile': jsonFile})
-    jsonFile.close()
+                        files={'jsonfile': json_file})
+    json_file.close()
 
     if not save:
         os.remove(output_file)
@@ -141,11 +225,62 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
     return return_dict
 
 
+def upload_phot(phot_file, instrument_id=65, request_id=''):
+    """
+
+    :param phot_file:
+    :param instrument_id:
+    :param request_id:
+    :return:
+    """
+
+    with open(phot_file, 'r') as photometryFile:
+        photometry = photometryFile.read()
+
+    photometry = photometry.split('\n')
+    column_names = photometry[0].split(',')
+    photometry = photometry[1:-1]
+
+    photometry_list = []
+    for entry in photometry:
+        new_dict = {}
+        photometry_point = entry.split(',')
+        for index, column in enumerate(column_names):
+            data = photometry_point[index]
+            if '"' in data:
+                data = data.replace('"', '')
+            elif data == 't':
+                data = True
+            elif data == 'f':
+                data = False
+            else:
+                data = float(data)
+            if data == 'None':
+                data = None
+            new_dict[column] = data
+        photometry_list.append(new_dict)
+
+        submission_dict = {
+            'photometry_list': photometry_list, 'instrument_id': instrument_id,
+            'request_id': request_id
+        }
+
+        json_file = open('photometryExample.txt', 'w')
+        json_file.write(json.dumps(submission_dict))
+        json_file.close()
+
+        json_file = open('photometryExample.txt', 'r')
+        ret = requests.post(growth_phot_url, auth=(user, pwd),
+                            files={'jsonfile': json_file})
+        json_file.close()
+        return ret
+
+
 def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
-                   request_id='', exptime=3600, get_id_from_db=True,
-                   observer='SEDmRobot', reducedby="Neill", obsdate="",
-                   output_dir='targets/', format_type='ascii',
-                   quality=1, check_quality=True, min_quality=2):
+                   request_id='', exptime=3600, observer='SEDmRobot',
+                   reducedby="auto", obsdate="", output_dir='targets/',
+                   format_type='ascii',
+                   check_quality=True, quality=1, min_quality=2):
     """
     Add spectra to the growth marshal.  If the fill_by_file is selected then
     most of the keywords will be filled from the spectra file itself.  If
@@ -157,14 +292,13 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     :param instrument_id:
     :param request_id: 
     :param exptime:
-    :param get_id_from_db:
     :param observer:
     :param reducedby: 
     :param obsdate: 
     :param output_dir: 
     :param format_type:
-    :param quality:
     :param check_quality:
+    :param quality:
     :param min_quality:
 
     :return: 
@@ -211,17 +345,17 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
         return False
     
     # 2. Open the configuration and spec file for transmission
-    jsonFile = open(write_json_file(submission_dict, output_file), 'r')
+    json_file = open(write_json_file(submission_dict, output_file), 'r')
     upfile = open(spec_file, 'r')
 
     # 3. Send the request
     ret = requests.post(growth_spec_url, auth=(user, pwd),
-                        files={'jsonfile': jsonFile, 'upfile': upfile})
+                        files={'jsonfile': json_file, 'upfile': upfile})
     print(ret)
 
     # 4. Close files and send request response
     upfile.close()
-    jsonFile.close()
+    json_file.close()
 
     return True
 
@@ -238,7 +372,7 @@ def read_request(request_file):
 def update_target_by_object(objname, add_spectra=False, spectra_file='',
                             add_status=False, status='Completed',
                             pull_requests=False,
-                            search_db=False,
+                            add_phot=False, phot_file='', search_db=False,
                             target_dir='requests/', target_base_name='request'):
     """
     Go through the request and find the one that matches the objname
@@ -248,6 +382,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     :param add_status:
     :param status:
     :param pull_requests:
+    :param add_phot:
+    :param phot_file:
     :param search_db:
     :param target_dir:
     :param target_base_name:
@@ -265,7 +401,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     files = glob.glob('%s%s*' % (target_dir, target_base_name))
 
     # TODO: Change this to either look at the directory or to the SEDm database
-    # if search_db:
+    if search_db:
+        print("Soon, but not yet.")
     #    import db.SedmDb
     #    sedmdb = db.SedmDb.SedmDB("sedmdb", "pharos.caltech.edu")
 
@@ -290,6 +427,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             print(target['requestid'])
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=target['requestid'])
+        if add_phot:
+            phot_ret = upload_phot(phot_file, request_id=target['requestid'])
 
         if add_status:
             status_ret = update_request(status, request_id=target['requestid'])
@@ -324,13 +463,15 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             print(target['requestid'])
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=target['requestid'])
+        if add_phot:
+            phot_ret = upload_phot(phot_file, request_id=target['requestid'])
 
         if add_status:
             status_ret = update_request(status, request_id=target['requestid'])
 
     return_link = growth_view_source_url + "name=%s" % target['sourcename']
 
-    return return_link, spec_ret, status_ret
+    return return_link, spec_ret, phot_ret, status_ret
 
           
 def parse_ztf_by_dir(target_dir, upfil=None):
@@ -376,12 +517,12 @@ def parse_ztf_by_dir(target_dir, upfil=None):
             if upfil not in fi:
                 continue
         # Upload
-        r, spec, stat = update_target_by_object(objname,
-                                                add_status=True,
-                                                status='Completed',
-                                                add_spectra=True,
-                                                spectra_file=fi,
-                                                pull_requests=pr)
+        r, spec, phot, stat = update_target_by_object(objname,
+                                                      add_status=True,
+                                                      status='Completed',
+                                                      add_spectra=True,
+                                                      spectra_file=fi,
+                                                      pull_requests=pr)
         # Mark as uploaded
         os.system("touch " + fi.split('.')[0] + ".upl")
         # Only need to pull requests the first time
