@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 import flask_login
-from forms import *
+from web.forms import *
 import json
 import os
-import model
+import web.model as model
 
 from bokeh.resources import INLINE
 
@@ -234,4 +234,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
