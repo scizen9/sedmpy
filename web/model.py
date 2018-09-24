@@ -19,7 +19,7 @@ from astropy.time import Time
 from scheduler.scheduler import ScheduleNight
 
 superuser_list = ['rsw', 'SEDm_admin', 189, 2, 20180523190352189]
-db = SedmDB(host='pharos.caltech.edu', dbname='sedmdb')
+
 pd.set_option('display.max_colwidth', -1)
 
 request_values = ['id', 'object_id', 'marshal_id',
@@ -50,21 +50,24 @@ request_form_values = ['request_id', 'object_id', 'marshal_id',
 
 rc_filter_list = ['r', 'g', 'i', 'u']
 schedule = ScheduleNight()
-#computer = 'pele'
-computer = 'pharos'
+computer = 'pele'
+#computer = 'pharos'
 
 if computer == 'pele':
     raw_dir = '/scr7/rsw/sedm/raw/'
     phot_dir = '/scr7/rsw/sedm/phot/'
     redux_dir = '/scr7/rsw/sedm/redux/'
+    host = 'pharos.caltech.edu'
 elif computer == 'pharos':
     raw_dir = '/scr2/sedm/raw/'
     phot_dir = '/scr2/sedm/phot/'
     redux_dir = '/scr2/sedmdrp/redux/'
+    host = 'localhost'
 
+db = SedmDB(host='pharos.caltech.edu', dbname='sedmdb')
 
 def get_db():
-    return SedmDB(host='localhost', dbname='sedmdb')
+    return SedmDB(host='pharos.caltech.edu', dbname='sedmdb')
 
 
 def tools():
