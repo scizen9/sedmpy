@@ -60,7 +60,8 @@ if __name__ == "__main__":
             print("pysedm_report.py failed!")
             sys.exit(1)
         # Prepare for upload
-        upf = glob.glob("spec_*_%s_%s.upl" % (obid, obname))[0]
-        print("removing %s" % upf)
-        os.remove(upf)
+        upf = glob.glob("spec_*_%s_%s.upl" % (obid, obname))
+        for uf in upf:
+            print("removing %s" % uf)
+            os.remove(uf)
         print("be sure to run make ztfupload when you are done.")
