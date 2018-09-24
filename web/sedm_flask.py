@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 import flask_login
-from forms import *
+from web.forms import *
 import json
 import os
-import model
+import web.model as model
 
 from bokeh.resources import INLINE
 
@@ -164,11 +164,19 @@ def objects():
     #form = AddFixedRequest()
     return render_template('sedm_base.html')
 
-
 @app.route('/project_stats', methods=['GET', 'POST'])
 def project_stats():
     #form = AddFixedRequest()
-    return render_template('sedm_base.html')
+    if request.is_json:
+        content = json.loads(request.get_json())
+    else:
+        content = request.args.to_dict(flat=True)
+
+    out = model.get_project_stats(content, user_id=flask_login.current_user.id)
+    out['js_resources'] = INLINE.render_js()
+    out['css_resources'] = INLINE.render_css()
+    return render_template('project_stats.html', sedm_dict=out)
+
 
 
 @app.route('/scheduler', methods=['GET', 'POST'])
@@ -234,4 +242,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
