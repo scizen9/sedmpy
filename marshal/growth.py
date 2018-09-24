@@ -3,6 +3,8 @@ import glob
 import requests
 import subprocess
 
+import marshal.growth_watcher as growth_watcher
+
 
 # Path constants
 add_target_url = 'http://nera.palomar.caltech.edu/cgi-bin/' \
@@ -20,23 +22,6 @@ growth_view_source_url = growth_base_url + 'view_source.cgi?'
 
 default_id = 65
 user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
-
-
-def pull_request_from_remote(site='rsw@nera.palomar.caltech.edu',
-                             remote_dir='/tmp/', remote_files='request',
-                             local_dir='requests/'):
-    """
-
-    :param site:
-    :param remote_dir:
-    :param remote_files:
-    :param local_dir:
-    :return:
-    """
-    remote_cmd = "scp -q %s:%s%s* %s" % (site, remote_dir, remote_files,
-                                         local_dir)
-
-    os.system(remote_cmd)
 
 
 def write_json_file(pydict, output_file):
@@ -396,7 +381,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     # dictionary from growth.
     if pull_requests:
         print("Gathering all request files")
-        pull_request_from_remote()
+        growth_watcher.pull_request_from_remote()
     match_list = []
     files = glob.glob('%s%s*' % (target_dir, target_base_name))
 
