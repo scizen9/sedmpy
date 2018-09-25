@@ -237,7 +237,6 @@ def get_request_page(userid, form1, content=None):
 
     # if an object id is given or a request id, prepopulate the field
     if content:
-        print(content)
         req_dict.update(populate_form(content, form1))
 
     # Set the start date if one is not given
@@ -282,7 +281,6 @@ def populate_form(content, form):
         ret_dict['status_id'] = ret_dict['status']
 
         ret_dict.update(parse_db_target_filters(ret_dict['obs_seq'], ret_dict['exptime']))
-        print(ret_dict)
     elif 'object_id' in content:
         ret_dict = get_object_values(objid=content['object_id'][0])
 
@@ -350,8 +348,6 @@ def populate_form(content, form):
     if 'last_obs_jd' in ret_dict:
         form.last_obs_jd.data = ret_dict['last_obs_jd']
     if 'do_ifu' in ret_dict:
-        print(type(ret_dict['do_ifu']))
-        print(ret_dict['do_ifu'])
         form.ifu.data = ret_dict['do_ifu']
     if 'ifu_exptime' in ret_dict:
         form.ifu_exptime.data = ret_dict['ifu_exptime']
@@ -586,16 +582,15 @@ def process_request_form(content, form, userid):
         obs_seq_dict['obj_mag'] = 17.5
 
     filter_dict = (make_obs_seq(obs_seq_dict))
-    print(filter_dict)
+
     if 'ERROR' in filter_dict:
         process_dict['message'] += filter_dict['ERROR']
     else:
         process_dict['message'] += filter_dict.pop("proc_message")
-        print(filter_dict)
+
         request_dict = {**filter_dict, **request_dict}
-        print(request_dict)
+
         if content['request_id']:
-            print(1)
 
             request_dict['id'] = int(content['request_id'])
             request_dict.pop('request_id')
@@ -604,14 +599,10 @@ def process_request_form(content, form, userid):
                     request_dict[k] = -1
             ret = db.update_request(request_dict)
         else:
-            print(2)
-            request_dict.pop('request_id')
 
-            print(request_dict)
+            request_dict.pop('request_id')
             ret = db.add_request(request_dict)
 
-        print(ret)
-    print(request_dict)
     return process_dict, form
 
 
@@ -757,7 +748,6 @@ def make_obs_seq(obs_seq_dict):
         return ret_dict
     else:
         if len(filters_list) == len(exptime_list):
-            print(ret_dict)
             ret_dict['obs_seq'] = '{%s}' % ','.join(filters_list)
             ret_dict['exptime'] = '{%s}' % ','.join(exptime_list)
         else:
@@ -1121,7 +1111,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-
+    print(calib_dict, 'calib products')
     # To get ifu products we first look to see if a what.list file has been
     # created. This way we will know which files to add to our dict and
     # whether the user has permissions to see the file
@@ -1157,11 +1147,9 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
-            print(targ_name)
 
             # 1. Get the object id
             object_ids = db.get_object_id_from_name(targ_name)
-            print(object_ids)
 
             if len(object_ids) == 1:
                 object_id = object_ids[0][0]
@@ -1203,7 +1191,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
-            print('%sifu_spaxels_*%s*.png' % (obsdir, fits_file))
+
             image_list = (glob.glob('%sifu_spaxels_*%s*.png' % (obsdir,
                                                                 fits_file)) +
                           glob.glob('%simage_%s*.png' % (obsdir, name)))
@@ -1225,7 +1213,6 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             div_str += """<h4>%s</h4>""" % obj
 
             # ToDO: Grab data from somewhere to put in the meta data column
-            print(obj_data)
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
@@ -1244,7 +1231,6 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             if show_finder:
                 finder_path = os.path.join(phot_dir, obsdate, 'finders')
                 if os.path.exists(finder_path):
-                    print(finder_path + '/*%s*.png' % obj)
                     finder_img = glob.glob(finder_path + '/*%s*.png' % obj)
                     if finder_img:
                         impathlink = "/data/%s/%s" % (obsdate, os.path.basename(finder_img[-1]))
@@ -1341,7 +1327,7 @@ def search_stats_file(mydate=None):
             newdate = curdate
             newdatedir = "%d%02d%02d" % (newdate.year, newdate.month, newdate.day)
             s = os.path.join(phot_dir, newdatedir, "stats/stats.log")
-            print(s)
+
             if os.path.isfile(s) and os.path.getsize(s) > 0:
                 return s, newdatedir
             i = i + 1
@@ -1350,7 +1336,7 @@ def search_stats_file(mydate=None):
 
 
 def load_p48seeing(obsdate):
-    print(obsdate)
+
     time, seeing = get_p18obsdata(obsdate)
     day_frac_diff = datetime.timedelta(
         np.ceil((datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
