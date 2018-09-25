@@ -3,6 +3,7 @@ import os
 import time
 import datetime
 import db.SedmDb
+import growth.growth as growth
 
 sedmdb = db.SedmDb.SedmDB()
 
@@ -80,7 +81,6 @@ def process_new_request(request, status='ACCEPTED', add2db=False,
     :param status: 
     :return: 
     """
-    import marshal.growth as growth
     # 1. Open the request
     req = growth.read_request(request)
 
@@ -121,7 +121,7 @@ def add_request_to_db(request, custom_dict=None, fill_by_custom_dict=False):
 
     # 0. If delete request, cancel it from the database if it has an entry
     if request['status'].lower() == 'delete':
-        # a. start by trying to get the request id from the marshal id 
+        # a. start by trying to get the request id from the marshal id
         sedm_requestid = sedmdb.get_from_request(
             values=['id'], where_dict={'marshal_id': request['requestid']})
          
