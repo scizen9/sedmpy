@@ -1104,6 +1104,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     # If a calibration frame doesn't exist then pop it out to avoid bad links
     # on the page
     remove_list = []
+    div_str = ''
     for k, v in calib_dict.items():
         if not os.path.exists(v):
             remove_list.append(k)
@@ -1112,6 +1113,23 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         for i in remove_list:
             calib_dict.pop(i)
     print(calib_dict, 'calib products')
+
+    div_str += """<div class="row">"""
+    div_str += """<h4>Calibrations</h4>"""
+    for k, v in calib_dict.items():
+        impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
+        impathlink = "/data/%s/%s" % (obsdate,
+                                      os.path.basename(v.replace('.png', '.pdf')))
+        if not os.path.exists(impathlink):
+            impathlink = impath
+        div_str += """<div class="col-md-{0}">
+          <div class="thumbnail">
+            <a href="{1}">
+              <img src="{2}" width="{3}px" height="{4}px">
+            </a>
+          </div>
+        </div>""".format(2, impathlink, impath, 400, 400)
+    div_str += "</div>"
     # To get ifu products we first look to see if a what.list file has been
     # created. This way we will know which files to add to our dict and
     # whether the user has permissions to see the file
@@ -1128,10 +1146,11 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     for targ in what_list:
         if 'Calib' in targ:
             pass
-        elif '[A]' in targ or '[B]' in targ:
+        elif '[A]' in targ or '[B]' in targ or 'STD' in targ:
             science_list.append(targ)
         elif 'STD' in targ:
-            standard_list.append(targ)
+            pass
+            #standard_list.append(targ)
         else:
             # There shouldn't be anything here but should put something in
             # later to verify this is the case
@@ -1147,35 +1166,38 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
+            if 'STD' not in targ_name:
+                # 1. Get the object id
+                object_ids = db.get_object_id_from_name(targ_name)
 
-            # 1. Get the object id
-            object_ids = db.get_object_id_from_name(targ_name)
-
-            if len(object_ids) == 1:
-                object_id = object_ids[0][0]
-            else:
-                # TODO       what really needs to happen here is that we need to
-                # TODO cont: find the id that is closest to the obsdate.
-                # TODO cont: For now I am just going to use last added
-                object_id = object_ids[-1][0]
-
-            target_requests = db.get_from_request(values=['allocation_id'],
-                                                  where_dict={'object_id':
-                                                                  object_id,
-                                                              'status':
-                                                                  'COMPLETED'})
-
-            # Right now I am only seeing if there exists a match between
-            # allocations of all request.  It's possible the request could
-            # have been made by another group as another follow-up and thus
-            # the user shouldn't be able to see it.  This should be able to
-            # be fixed once all request are listed in the headers of the
-            # science images.
-            for req in target_requests:
-                if req[0] in allocation_id_list:
-                    show_list.append((sci_targ, targ_name))
+                if len(object_ids) == 1:
+                    object_id = object_ids[0][0]
                 else:
-                    print("You can't see this")
+                    # TODO       what really needs to happen here is that we need to
+                    # TODO cont: find the id that is closest to the obsdate.
+                    # TODO cont: For now I am just going to use last added
+                    object_id = object_ids[-1][0]
+
+                target_requests = db.get_from_request(values=['allocation_id'],
+                                                      where_dict={'object_id':
+                                                                      object_id,
+                                                                  'status':
+                                                                      'COMPLETED'})
+
+                # Right now I am only seeing if there exists a match between
+                # allocations of all request.  It's possible the request could
+                # have been made by another group as another follow-up and thus
+                # the user shouldn't be able to see it.  This should be able to
+                # be fixed once all request are listed in the headers of the
+                # science images.
+                for req in target_requests:
+                    if req[0] in allocation_id_list:
+                        show_list.append((sci_targ, targ_name))
+                    else:
+                        print("You can't see this")
+            else:
+                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
+                show_list.append((sci_targ, targ_name))
 
     if len(standard_list) >= 1:
         for std_targ in standard_list:
@@ -1187,6 +1209,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     # compatible I have to look for two types of files
     if len(show_list) >= 1:
         science_dict = {}
+        count = 0
         for targ in show_list:
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
@@ -1200,21 +1223,32 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                          glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,
                                                                 fits_file)))
 
-            science_dict[name] = {'image_list': image_list,
-                                  'spec_list': spec_list}
-
+            if name not in science_dict:
+                science_dict[name] = {'image_list': image_list,
+                                      'spec_list': spec_list}
+            else:
+                # We do this to handle cases where there are two or more of
+                # the same object name
+                science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
+                                                           'spec_list': spec_list}
+            count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
 
         count = 0
-        div_str = ''
+
         for obj, obj_data in science_dict.items():
+            if '_xRx_' in obj:
+                obj = obj.split('_xRx_')[0]
+
             div_str += """<div class="row">"""
             div_str += """<h4>%s</h4>""" % obj
+
 
             # ToDO: Grab data from somewhere to put in the meta data column
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
+
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
                     impathlink = "/data/%s/%s" % (obsdate,
                                                   os.path.basename(i.replace('.png', '.pdf')))
