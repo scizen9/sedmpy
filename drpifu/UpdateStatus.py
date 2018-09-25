@@ -13,7 +13,7 @@ def update_status():
     print("\nSEDM DRP run in %s\nFound %d spec_*.txt files" %
           (os.getcwd(), len(flist)))
 
-    print("UTStart  Object                    Q Status")
+    print("UTStart  Object                    Qual  Status")
     recs = []
     for f in flist:
         # Get object name
@@ -33,7 +33,7 @@ def update_status():
             # check for request id
             req_id = [li for li in lines if "REQ_ID" in li]
             if req_id:
-                req_id = req_id.split()
+                req_id = req_id[0].split()
                 if len(req_id) > 2:
                     req_id = req_id[2]
                 else:
@@ -44,7 +44,7 @@ def update_status():
             # check for Quality
             quality = [li for li in lines if "QUALITY" in li]
             if len(quality) > 0:
-                quality = int(quality.split()[-1])
+                quality = int(quality[0].split()[-1])
             sfl.close()
 
         # Do we make an update?
@@ -56,7 +56,7 @@ def update_status():
         else:
             stat = "no request"
 
-        recs.append("%8s %-25s %d %7s" % (tstr, objname, quality, stat))
+        recs.append("%8s %-25s    %d  %7s" % (tstr, objname, quality, stat))
     recs.sort()
     for r in recs:
         print(r)
