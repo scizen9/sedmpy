@@ -206,7 +206,7 @@ def docp(src, dest, onsky=True, verbose=False):
         verbose (bool): print messages?
 
     Returns:
-        (int, int): number of images linked, number of standard
+        (int, int, int): number of images linked, number of standard
                     star images linked, number of sci objects linked
 
     """
@@ -1089,6 +1089,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     doit = False
                     # Normal termination
                     os.system("make report")
+                    os.system("make update")
                     ret = True
                 else:
                     print("No new image for %d minutes but UT = %02d/%02d "
