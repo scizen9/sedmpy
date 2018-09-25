@@ -237,7 +237,6 @@ def get_request_page(userid, form1, content=None):
 
     # if an object id is given or a request id, prepopulate the field
     if content:
-        print(content)
         req_dict.update(populate_form(content, form1))
 
     # Set the start date if one is not given
@@ -282,7 +281,6 @@ def populate_form(content, form):
         ret_dict['status_id'] = ret_dict['status']
 
         ret_dict.update(parse_db_target_filters(ret_dict['obs_seq'], ret_dict['exptime']))
-        print(ret_dict)
     elif 'object_id' in content:
         ret_dict = get_object_values(objid=content['object_id'][0])
 
@@ -350,8 +348,6 @@ def populate_form(content, form):
     if 'last_obs_jd' in ret_dict:
         form.last_obs_jd.data = ret_dict['last_obs_jd']
     if 'do_ifu' in ret_dict:
-        print(type(ret_dict['do_ifu']))
-        print(ret_dict['do_ifu'])
         form.ifu.data = ret_dict['do_ifu']
     if 'ifu_exptime' in ret_dict:
         form.ifu_exptime.data = ret_dict['ifu_exptime']
@@ -586,16 +582,15 @@ def process_request_form(content, form, userid):
         obs_seq_dict['obj_mag'] = 17.5
 
     filter_dict = (make_obs_seq(obs_seq_dict))
-    print(filter_dict)
+
     if 'ERROR' in filter_dict:
         process_dict['message'] += filter_dict['ERROR']
     else:
         process_dict['message'] += filter_dict.pop("proc_message")
-        print(filter_dict)
+
         request_dict = {**filter_dict, **request_dict}
-        print(request_dict)
+
         if content['request_id']:
-            print(1)
 
             request_dict['id'] = int(content['request_id'])
             request_dict.pop('request_id')
@@ -604,14 +599,10 @@ def process_request_form(content, form, userid):
                     request_dict[k] = -1
             ret = db.update_request(request_dict)
         else:
-            print(2)
-            request_dict.pop('request_id')
 
-            print(request_dict)
+            request_dict.pop('request_id')
             ret = db.add_request(request_dict)
 
-        print(ret)
-    print(request_dict)
     return process_dict, form
 
 
@@ -757,7 +748,6 @@ def make_obs_seq(obs_seq_dict):
         return ret_dict
     else:
         if len(filters_list) == len(exptime_list):
-            print(ret_dict)
             ret_dict['obs_seq'] = '{%s}' % ','.join(filters_list)
             ret_dict['exptime'] = '{%s}' % ','.join(exptime_list)
         else:
@@ -1116,6 +1106,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     # If a calibration frame doesn't exist then pop it out to avoid bad links
     # on the page
     remove_list = []
+    div_str = ''
     for k, v in calib_dict.items():
         if not os.path.exists(v):
             remove_list.append(k)
@@ -1123,7 +1114,24 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
+    print(calib_dict, 'calib products')
 
+    div_str += """<div class="row">"""
+    div_str += """<h4>Calibrations</h4>"""
+    for k, v in calib_dict.items():
+        impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
+        impathlink = "/data/%s/%s" % (obsdate,
+                                      os.path.basename(v.replace('.png', '.pdf')))
+        if not os.path.exists(impathlink):
+            impathlink = impath
+        div_str += """<div class="col-md-{0}">
+          <div class="thumbnail">
+            <a href="{1}">
+              <img src="{2}" width="{3}px" height="{4}px">
+            </a>
+          </div>
+        </div>""".format(2, impathlink, impath, 400, 400)
+    div_str += "</div>"
     # To get ifu products we first look to see if a what.list file has been
     # created. This way we will know which files to add to our dict and
     # whether the user has permissions to see the file
@@ -1140,10 +1148,11 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     for targ in what_list:
         if 'Calib' in targ:
             pass
-        elif '[A]' in targ or '[B]' in targ:
+        elif '[A]' in targ or '[B]' in targ or 'STD' in targ:
             science_list.append(targ)
         elif 'STD' in targ:
-            standard_list.append(targ)
+            pass
+            #standard_list.append(targ)
         else:
             # There shouldn't be anything here but should put something in
             # later to verify this is the case
@@ -1159,37 +1168,38 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
-            print(targ_name)
+            if 'STD' not in targ_name:
+                # 1. Get the object id
+                object_ids = db.get_object_id_from_name(targ_name)
 
-            # 1. Get the object id
-            object_ids = db.get_object_id_from_name(targ_name)
-            print(object_ids)
-
-            if len(object_ids) == 1:
-                object_id = object_ids[0][0]
-            else:
-                # TODO       what really needs to happen here is that we need to
-                # TODO cont: find the id that is closest to the obsdate.
-                # TODO cont: For now I am just going to use last added
-                object_id = object_ids[-1][0]
-
-            target_requests = db.get_from_request(values=['allocation_id'],
-                                                  where_dict={'object_id':
-                                                                  object_id,
-                                                              'status':
-                                                                  'COMPLETED'})
-
-            # Right now I am only seeing if there exists a match between
-            # allocations of all request.  It's possible the request could
-            # have been made by another group as another follow-up and thus
-            # the user shouldn't be able to see it.  This should be able to
-            # be fixed once all request are listed in the headers of the
-            # science images.
-            for req in target_requests:
-                if req[0] in allocation_id_list:
-                    show_list.append((sci_targ, targ_name))
+                if len(object_ids) == 1:
+                    object_id = object_ids[0][0]
                 else:
-                    print("You can't see this")
+                    # TODO       what really needs to happen here is that we need to
+                    # TODO cont: find the id that is closest to the obsdate.
+                    # TODO cont: For now I am just going to use last added
+                    object_id = object_ids[-1][0]
+
+                target_requests = db.get_from_request(values=['allocation_id'],
+                                                      where_dict={'object_id':
+                                                                      object_id,
+                                                                  'status':
+                                                                      'COMPLETED'})
+
+                # Right now I am only seeing if there exists a match between
+                # allocations of all request.  It's possible the request could
+                # have been made by another group as another follow-up and thus
+                # the user shouldn't be able to see it.  This should be able to
+                # be fixed once all request are listed in the headers of the
+                # science images.
+                for req in target_requests:
+                    if req[0] in allocation_id_list:
+                        show_list.append((sci_targ, targ_name))
+                    else:
+                        print("You can't see this")
+            else:
+                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
+                show_list.append((sci_targ, targ_name))
 
     if len(standard_list) >= 1:
         for std_targ in standard_list:
@@ -1201,11 +1211,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     # compatible I have to look for two types of files
     if len(show_list) >= 1:
         science_dict = {}
+        count = 0
         for targ in show_list:
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
-            print('%sifu_spaxels_*%s*.png' % (obsdir, fits_file))
+
             image_list = (glob.glob('%sifu_spaxels_*%s*.png' % (obsdir,
                                                                 fits_file)) +
                           glob.glob('%simage_%s*.png' % (obsdir, name)))
@@ -1214,22 +1225,32 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                          glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,
                                                                 fits_file)))
 
-            science_dict[name] = {'image_list': image_list,
-                                  'spec_list': spec_list}
-
+            if name not in science_dict:
+                science_dict[name] = {'image_list': image_list,
+                                      'spec_list': spec_list}
+            else:
+                # We do this to handle cases where there are two or more of
+                # the same object name
+                science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
+                                                           'spec_list': spec_list}
+            count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
 
         count = 0
-        div_str = ''
+
         for obj, obj_data in science_dict.items():
+            if '_xRx_' in obj:
+                obj = obj.split('_xRx_')[0]
+
             div_str += """<div class="row">"""
             div_str += """<h4>%s</h4>""" % obj
 
+
             # ToDO: Grab data from somewhere to put in the meta data column
-            print(obj_data)
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
+
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
                     impathlink = "/data/%s/%s" % (obsdate,
                                                   os.path.basename(i.replace('.png', '.pdf')))
@@ -1246,7 +1267,6 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             if show_finder:
                 finder_path = os.path.join(phot_dir, obsdate, 'finders')
                 if os.path.exists(finder_path):
-                    print(finder_path + '/*%s*.png' % obj)
                     finder_img = glob.glob(finder_path + '/*%s*.png' % obj)
                     if finder_img:
                         impathlink = "/data/%s/%s" % (obsdate, os.path.basename(finder_img[-1]))
@@ -1343,7 +1363,7 @@ def search_stats_file(mydate=None):
             newdate = curdate
             newdatedir = "%d%02d%02d" % (newdate.year, newdate.month, newdate.day)
             s = os.path.join(phot_dir, newdatedir, "stats/stats.log")
-            print(s)
+
             if os.path.isfile(s) and os.path.getsize(s) > 0:
                 return s, newdatedir
             i = i + 1
@@ -1352,7 +1372,7 @@ def search_stats_file(mydate=None):
 
 
 def load_p48seeing(obsdate):
-    print(obsdate)
+
     time, seeing = get_p18obsdata(obsdate)
     day_frac_diff = datetime.timedelta(
         np.ceil((datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
