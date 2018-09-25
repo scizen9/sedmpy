@@ -1,11 +1,10 @@
 import glob
 import os
-import growth
 import time
 import datetime
-import db.SedmDb as SedmDb
+import db.SedmDb
 
-sedmdb = SedmDb.SedmDB("sedmdb", "pharos.caltech.edu")
+sedmdb = db.SedmDb.SedmDB()
 
 
 def check_for_new_request(request_path="requests/", request_date="",
@@ -81,7 +80,7 @@ def process_new_request(request, status='ACCEPTED', add2db=False,
     :param status: 
     :return: 
     """
-
+    import marshal.growth as growth
     # 1. Open the request
     req = growth.read_request(request)
 
