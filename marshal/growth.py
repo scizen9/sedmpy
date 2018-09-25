@@ -3,7 +3,7 @@ import glob
 import requests
 import subprocess
 
-import marshal.growth_watcher as growth_watcher
+import growth_watcher
 
 
 # Path constants
