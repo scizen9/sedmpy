@@ -1,6 +1,6 @@
 import glob
 import os
-import marshal.growth as growth
+import growth
 import time
 import datetime
 import db.SedmDb as SedmDb
