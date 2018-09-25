@@ -222,7 +222,7 @@ def to_makefile(objs, calibs):
 
         if "bias" not in calibname:
             pass
-        makefile += makefile_imcombine(calibname, files)
+        makefile += makefile_imcombine(calibname, imfiles)
         all_targs += "%s.fits " % calibname
 
     for objname, objfile in objs.items():
