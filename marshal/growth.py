@@ -564,7 +564,7 @@ if __name__ == '__main__':
         utc = sys.argv[1]
     else:
         utc = datetime.datetime.utcnow().strftime("%Y%m%d")
-    srcdir = reddir + utc + '/'
+    srcdir = reddir + '/' + utc + '/'
     if not os.path.exists(srcdir):
         print("Dir not found: %s" % srcdir)
     else:
