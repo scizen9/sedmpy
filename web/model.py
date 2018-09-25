@@ -948,6 +948,8 @@ def plot_stats_allocation(data):
     Plots in the shape of bars the time available and spent for each active allocation.
     """
 
+    data = {key:np.nan_to_num(data[key]) for key in data}
+
     # Create the first plot with the allocation hours
     alloc_names = data['allocations']
     categories = ["spent_hours", "free_hours"]
