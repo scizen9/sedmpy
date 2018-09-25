@@ -2,6 +2,10 @@ import json
 import glob
 import requests
 import subprocess
+import argparse
+import os
+import datetime
+import sys
 
 import growth_watcher
 
@@ -21,7 +25,10 @@ growth_phot_url = growth_base_url + 'edit_phot_auto.cgi'
 growth_view_source_url = growth_base_url + 'view_source.cgi?'
 
 default_id = 65
-user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
+try:
+    user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
+except FileNotFoundError:
+    print("ERROR - could not find credentials file!")
 
 
 def write_json_file(pydict, output_file):
@@ -357,7 +364,7 @@ def read_request(request_file):
 def update_target_by_object(objname, add_spectra=False, spectra_file='',
                             add_status=False, status='Completed',
                             pull_requests=False, request_id=None,
-                            add_phot=False, phot_file='', search_db=False,
+                            add_phot=False, phot_file='', search_db=None,
                             target_dir='requests/', target_base_name='request'):
     """
     Go through the request and find the one that matches the objname
@@ -384,15 +391,13 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     if search_db:
         if request_id:
             print("Searching SedmDB")
-            import db.SedmDb
-            sedmdb = db.SedmDb.SedmDB()
 
             # 1a. Search for target in the database
-            res = sedmdb.get_from_request(["marshal_id", "object_id"],
-                                          {"id": request_id})[0]
+            res = search_db.get_from_request(["marshal_id", "object_id"],
+                                             {"id": request_id})[0]
             marshal_id = res[0]
             object_id = res[1]
-            res = sedmdb.get_from_object(["name"], {"id": object_id})[0]
+            res = search_db.get_from_object(["name"], {"id": object_id})[0]
             object_name = res[0]
         else:
             print("No request id provided")
@@ -467,9 +472,14 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         return return_link, spec_ret, phot_ret, status_ret
 
           
-def parse_ztf_by_dir(target_dir, upfil=None):
+def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
     """Given a target directory get all files that have ztf or ZTF as base 
-       name"""
+       name
+
+       :param target_dir:
+       :param upfil:
+       :param dbase:
+       """
 
     if target_dir[-1] != '/':
         target_dir += '/'
@@ -525,6 +535,7 @@ def parse_ztf_by_dir(target_dir, upfil=None):
                                                       add_spectra=True,
                                                       spectra_file=fi,
                                                       request_id=req_id,
+                                                      search_db=dbase,
                                                       pull_requests=pr)
         # Mark as uploaded
         os.system("touch " + fi.split('.')[0] + ".upl")
@@ -550,37 +561,52 @@ def parse_ztf_by_dir(target_dir, upfil=None):
 
 
 if __name__ == '__main__':
-    import os
-    import datetime
-    import sys
+    parser = argparse.ArgumentParser(
+        description="""
+                         
+Uploads results to the growth marshal.
+                         
+""",
+        formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('indate', type=str, default=None,
+                        help='input directory date (UT date as YYYYMMDD)')
+    parser.add_argument('--data_file', type=str, default=None,
+                        help='Data file to upload.')
+    parser.add_argument('--no_usedb', action="store_true", default=False,
+                        help='Do not use SEDM database')
+    args = parser.parse_args()
 
+    # Check environment
     try:
         reddir = os.environ["SEDMREDUXPATH"]
     except KeyError:
         print("please set environment variable SEDMREDUXPATH")
         sys.exit(1)
 
-    if len(sys.argv) >= 2:
-        utc = sys.argv[1]
+    # Get source dir
+    if args.indate:
+        utc = args.indate
     else:
         utc = datetime.datetime.utcnow().strftime("%Y%m%d")
     srcdir = reddir + '/' + utc + '/'
+
+    # Check source dir
     if not os.path.exists(srcdir):
         print("Dir not found: %s" % srcdir)
     else:
         print("Uploading from %s" % srcdir)
 
-        # Check requests, targets dirs
-        reqdir = srcdir + 'requests'
-        trgdir = srcdir + 'targets'
-        if not os.path.exists(reqdir):
-            os.mkdir(reqdir)
-        if not os.path.exists(trgdir):
-            os.mkdir(trgdir)
-
-        if len(sys.argv) >= 3:
-            uplfil = sys.argv[2]
+        # Will we use the database?
+        if args.no_usedb:
+            # Check requests, targets dirs
+            reqdir = srcdir + 'requests'
+            trgdir = srcdir + 'targets'
+            if not os.path.exists(reqdir):
+                os.mkdir(reqdir)
+            if not os.path.exists(trgdir):
+                os.mkdir(trgdir)
+            parse_ztf_by_dir(srcdir, upfil=args.data_file)
         else:
-            uplfil = None
-
-        parse_ztf_by_dir(srcdir, upfil=uplfil)
+            import db.SedmDb
+            sedmdb = db.SedmDb.SedmDB()
+            parse_ztf_by_dir(srcdir, upfil=args.data_file, dbase=sedmdb)
