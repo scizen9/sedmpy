@@ -7,8 +7,6 @@ import os
 import datetime
 import sys
 
-import growth_watcher
-
 
 # Path constants
 add_target_url = 'http://nera.palomar.caltech.edu/cgi-bin/' \
@@ -407,6 +405,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         # dictionary from growth.
         if pull_requests:
             print("Gathering all request files")
+            import marshal.growth_watcher as growth_watcher
             growth_watcher.pull_request_from_remote()
         match_list = []
         files = glob.glob('%s%s*' % (target_dir, target_base_name))
