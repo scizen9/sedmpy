@@ -8,7 +8,7 @@
     <div class="container" id="message">
         <p>{{ sedm_dict.message }}</p>
     </div>
-    
+
     <div id="weatherStats" class="container">
         <div id="script_div"> {{ sedm_dict.script | safe}}</div>
         <div id="plot_div">{{ sedm_dict.div | safe}}</div>
@@ -16,6 +16,5 @@
 {% endblock %}
 
 {% block footer %}
-
-
+{{ super() }}
 {% endblock footer %}
