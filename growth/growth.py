@@ -501,7 +501,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
 
         return_link = growth_view_source_url + "name=%s" % object_name
 
-        print("Send to %s at %s\nRequest status = %s\n%s",
+        print("Send to %s at %s\nRequest status = %s\n%s" %
               (username, email, status, return_link))
 
     return return_link, spec_ret, phot_ret, status_ret
