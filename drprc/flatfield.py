@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  3 15:34:47 2016
@@ -38,7 +39,7 @@ def get_flats_counts(directory):
             flatlist.append(f)
             
     if (len(flatlist)==0):
-        print "No suitable twilight flats found in directory: %s"%directory
+        print ("No suitable twilight flats found in directory: %s"%directory) 
         return
         
     counts = {"u":[], "g":[], "r":[], "i":[]}
@@ -46,8 +47,8 @@ def get_flats_counts(directory):
     colors = {"u":"purple", "g":"green", "r":"r", "i":"orange"}
     
     for f in flatlist:
-        print f
-        print fitsutils.get_par(f, "JD")
+        print (f) 
+        print (fitsutils.get_par(f, "JD")) 
         
         bias = rcred.get_overscan_bias_rc(f)
         exptime = fitsutils.get_par(f, "EXPTIME")
@@ -58,7 +59,7 @@ def get_flats_counts(directory):
         
         if (elapsed > 5000):
             continue
-        print elapsed, utc, st
+        print (elapsed, utc, st) 
         
         
         data = pf.open(f)[0].data
@@ -75,7 +76,7 @@ def get_flats_counts(directory):
 
 
     for band in corners.keys():
-        print sun_decs[band], np.log10(counts[band])
+        print (sun_decs[band], np.log10(counts[band])) 
         coefs = np.polyfit(sun_decs[band], np.log10(counts[band]), deg=2)#, w=1./np.sqrt(np.log10(counts[band])))
         p = np.poly1d(coefs)
         x = np.linspace(np.min(sun_decs[band]), np.max(sun_decs[band]), 1000)
@@ -113,7 +114,7 @@ def get_flat_itime(band, elapsed, counts=20000):
     
     p0 = pint(elapsed)
     
-    print "Initial counts", logcounts
+    print ("Initial counts", logcounts) 
     
     #Line up the different exposure times. Maximum 100s after the elapsed time
     l = np.arange(400) + elapsed
@@ -124,7 +125,7 @@ def get_flat_itime(band, elapsed, counts=20000):
         myint = np.trapz(10**p(l[0:exptime]), l[0:exptime])
         exptime = exptime + 1
     
-    print "Number of counts",myint, "Exposure time",exptime
+    print ("Number of counts",myint, "Exposure time",exptime) 
     
     
     
