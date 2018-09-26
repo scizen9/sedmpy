@@ -50,8 +50,11 @@ request_form_values = ['request_id', 'object_id', 'marshal_id',
 
 rc_filter_list = ['r', 'g', 'i', 'u']
 schedule = ScheduleNight()
-computer = 'pele'
+
+# this all needs to go in some sort of config file instead of changing the source code constantly
+#computer = 'pele'
 #computer = 'pharos'
+computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
     raw_dir = '/scr7/rsw/sedm/raw/'
@@ -65,7 +68,7 @@ elif computer == 'pharos':
     redux_dir = '/scr2/sedmdrp/redux/'
     host = 'localhost'
 
-db = SedmDB(host='pharos.caltech.edu', dbname='sedmdb')
+db = SedmDB(host=host, dbname='sedmdb')
 
 
 def get_db():
