@@ -323,7 +323,8 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     submission_dict.update({'format': format_type.rstrip().lstrip(),
                            'instrument_id': instrument_id,
                             'request_id': request_id,
-                            'observer': observer.rstrip().lstrip()})
+                            'observer': observer.rstrip().lstrip(),
+                            'proprietary': 1})
     
     # print(type(submission_dict['instrument_id']))
 
@@ -380,23 +381,30 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     :param target_base_name:
     :return: 
     """
-    status_ret = False
-    spec_ret = False
-    phot_ret = False
+
     marshal_id = None
     object_name = None
+    username = None
+    email = None
     # Look in the SEDM Db
     if search_db:
         if request_id:
             print("Searching SedmDB")
 
             # 1a. Search for target in the database
-            res = search_db.get_from_request(["marshal_id", "object_id"],
+            res = search_db.get_from_request(["marshal_id",
+                                              "object_id",
+                                              "user_id"],
                                              {"id": request_id})[0]
             marshal_id = res[0]
             object_id = res[1]
+            user_id = res[2]
             res = search_db.get_from_object(["name"], {"id": object_id})[0]
             object_name = res[0]
+            res = search_db.get_from_users(["name", "email"],
+                                           {"id": user_id})[0]
+            username = res[0]
+            email = res[1]
         else:
             print("No request id provided")
     else:
@@ -425,6 +433,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             target = match_list[0]
             marshal_id = target['requestid']
             object_name = target['sourcename']
+            username = target['username']
             print("Uploading target %s files" % objname)
         elif len(match_list) == 0:
             print("Could not match name with any request file")
@@ -450,25 +459,52 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                         break
             marshal_id = target['requestid']
             object_name = target['sourcename']
+            username = target['username']
 
+    # Return values
+    spec_ret = None
+    phot_ret = None
+    status_ret = None
+    return_link = None
+    spec_stat = ''
+    phot_stat = ''
+    # Did we get a marshal ID?
     if marshal_id is None:
         print("Unable to find marshal id for target %s" % objname)
-        return None, None, None, None
     else:
-        print("Updating target %s" % objname)
+        print("Updating target %s using id %d" % (objname, marshal_id))
+
         if add_spectra:
-            print(marshal_id)
+
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=marshal_id)
+            if not spec_ret:
+                spec_stat = 'IFU: Failed'
+            else:
+                spec_stat = 'IFU: Complete'
+
         if add_phot:
             phot_ret = upload_phot(phot_file, request_id=marshal_id)
+            if not phot_ret:
+                phot_stat = 'RC: Failed'
+            else:
+                phot_stat = 'RC: Complete'
 
         if add_status:
+            if add_spectra and add_phot:
+                status = spec_stat + ', ' + phot_stat
+            elif add_spectra:
+                status = spec_stat
+            elif add_phot:
+                status = phot_stat
             status_ret = update_request(status, request_id=marshal_id)
 
         return_link = growth_view_source_url + "name=%s" % object_name
 
-        return return_link, spec_ret, phot_ret, status_ret
+        print("Send to %s at %s\nRequest status = %s\n%s",
+              (username, email, status, return_link))
+
+    return return_link, spec_ret, phot_ret, status_ret
 
           
 def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
