@@ -7,12 +7,28 @@ if __name__ == "__main__":
     import os
     import glob
     import subprocess
+    import argparse
 
-    if len(sys.argv) < 2:
+    # setup arguments parser
+    parser = argparse.ArgumentParser(
+        description="""Re-do an extraction.""",
+        formatter_class=argparse.RawTextHelpFormatter)
+    # setup arguments
+    parser.add_argument('obs_id', type=str, default=None,
+                        help='observation timestamp as HH_MM_SS')
+    parser.add_argument('new_x', type=str, default=None, nargs='?',
+                        help='new x position (spaxels)')
+    parser.add_argument('new_y', type=str, default=None, nargs='?',
+                        help='new y position (spaxels)')
+    parser.add_argument('--noslack', action='store_true', default=False,
+                        help='do not update slack pysedm-report channel')
+    args = parser.parse_args()
+
+    if not args.obs_id:
         print("Usage - redex <obs_id> [<x> <y>]")
     else:
         # Check inputs and environment
-        ob_id = sys.argv[1]
+        ob_id = args.obs_id
         dd = os.getcwd().split('/')[-1]
         rd = '/'.join(os.getcwd().split('/')[:-1])
         reddir = os.environ['SEDMREDUXPATH']
@@ -21,9 +37,9 @@ if __name__ == "__main__":
             sys.exit(1)
 
         print("Re-extracting observation %s in %s" % (ob_id, dd))
-        if len(sys.argv) == 4:
-            xs = sys.argv[2]
-            ys = sys.argv[3]
+        if args.new_x and args.new_y:
+            xs = args.new_x
+            ys = args.new_y
             pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins", "6",
                     "--centroid", xs, ys]
             print("Running" + " ".join(pars))
@@ -62,12 +78,15 @@ if __name__ == "__main__":
             print("Verify failed!")
             sys.exit(1)
         # Re-report
-        pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
-        print("Running" + " ".join(pars))
-        res = subprocess.run(pars)
-        if res.returncode != 0:
-            print("pysedm_report.py failed!")
-            sys.exit(1)
+        if args.noslack:
+            print("Be sure to update slack manually")
+        else:
+            pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
+            print("Running" + " ".join(pars))
+            res = subprocess.run(pars)
+            if res.returncode != 0:
+                print("pysedm_report.py failed!")
+                sys.exit(1)
         # Prepare for upload
         upf = glob.glob("spec_*_%s_%s.upl" % (ob_id, obname))
         for uf in upf:

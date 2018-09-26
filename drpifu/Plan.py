@@ -134,11 +134,12 @@ def identify_observations(headers):
 make_preamble = """
 PY = ~/spy
 PYC = ~/sedmpy/drpifu
-PYM = ~/sedmpy/marshal
+PYG = ~/sedmpy/growth
 IMCOMBINE = $(PY) $(PYC)/Imcombine.py
 REPORT = $(PY) $(PYC)/DrpReport.py
 CLASS = $(PY) $(PYC)/Classify.py
-ZTFUPLOAD = $(PY) $(PYM)/growth.py
+ZTFUPLOAD = $(PY) $(PYG)/growth.py
+UPDSTAT = $(PY) $(PYC)/UpdateStatus.py
 
 BSUB = $(PY) $(PYC)/Debias.py
 CRRSUB =  $(PY) $(PYC)/CosmicX.py
@@ -175,6 +176,9 @@ calimgs: dome.fits Hg.fits Cd.fits Xe.fits
 
 report:
 	$(REPORT) | tee report.txt
+	
+update:
+	$(UPDSTAT)
 
 ztfupload:
 	$(ZTFUPLOAD) $(current_dir)
