@@ -1084,7 +1084,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     :return: 
     """
     ifu_dict = {}
-
+    sedm_dict = {}
     # Look first to make sure there is a data directory.
     if not os.path.exists(obsdir):
         return {'message': 'No data directory could be located for %s UT' %
@@ -1292,7 +1292,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
             div_str += "</div>"
 
-        sedm_dict = {'sci_data': div_str}
+        sedm_dict['sci_data'] = div_str
+
     return sedm_dict
 
 
