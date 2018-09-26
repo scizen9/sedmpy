@@ -207,6 +207,13 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
             if k.upper() == 'EXPTIME':
                 outstr = out.split(sep, 1)[-1]
                 return_dict[k] = int(outstr.split('.')[0])
+            elif v.upper() == 'OBSDATE':
+                date_str = out.split(sep, 1)[-1]
+                out = subprocess.check_output('grep OBSTIME %s' % inputfile,
+                                              shell=True,
+                                              universal_newlines=True)
+                date_str += " " + out.split(sep, 1)[-1]
+                return_dict[k] = date_str
             else:
                 return_dict[k] = out.split(sep, 1)[-1]
         except subprocess.CalledProcessError:
@@ -308,11 +315,11 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
                            'reducedby': reducedby}
     else:
         keywords_dict = {'reducedby': 'REDUCER',
-                         'obsdate': 'OBSUTC',
+                         'obsdate': 'OBSDATE',
                          'exptime': 'EXPTIME',
                          'quality': 'QUALITY'}
-        if 'crr_b_ifu' in spec_file:
-            keywords_dict.update({'obsdate': 'OBSDATE'})
+        if '_SEDM' in spec_file:
+            keywords_dict.update({'obsdate': 'OBSUTC'})
 
         submission_dict = get_keywords_from_file(spec_file, keywords_dict)
 
@@ -325,8 +332,6 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
                             'request_id': request_id,
                             'observer': observer.rstrip().lstrip(),
                             'proprietary': 1})
-    
-    # print(type(submission_dict['instrument_id']))
 
     # 1a. [Optional] Check the quality if it is smaller or equal to min quality
     # then upload spectra
@@ -535,17 +540,12 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
         if os.path.exists(fi.split('.')[0] + ".upl"):
             print("Already uploaded: %s" % fi)
             continue
+
         # Is it flux calibrated?
         if "notfluxcal" in fi:
             print("Not flux calibrated: %s" % fi)
             continue
-        # Is is it good quality?
-        qualstr = subprocess.check_output(('grep', 'QUALITY', fi),
-                                          universal_newlines=True)
-        quality = int(qualstr.split(':', 1)[-1])
-        if quality > 2:
-            print("Low quality (%d>2) spectrum: %s" % (quality, fi))
-            continue
+
         # Extract request ID
         req_id = subprocess.check_output(('grep', 'REQ_ID', fi),
                                          universal_newlines=True)
