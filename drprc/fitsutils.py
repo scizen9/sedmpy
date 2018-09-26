@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar 10 13:18:46 2015
@@ -5,9 +6,6 @@ Created on Tue Mar 10 13:18:46 2015
 @author: nadiablago
 """
 
-import StringIO
-import urllib, base64
-from matplotlib import image
 from matplotlib import pylab as plt
 import glob
 from astropy.io import fits as pf
@@ -43,12 +41,12 @@ if __name__ == '__main__':
     dec = options.__dict__['dec']
     pattern = options.__dict__['pattern']
 
-    print ra, dec
+    print (ra, dec) 
     
     if (not os.path.isdir(plot_dir)):
         os.makedirs(plot_dir)
     for f in glob.glob(mydir + "/" + pattern):
-        print "Plotting",os.path.basename(f).replace(".fits", ".png")
+        print ("Plotting",os.path.basename(f).replace(".fits", ".png")) 
         hdulist = pf.open(f)
         if len(hdulist)>1:
             indices = np.arange(len(hdulist)-1)+1
@@ -67,10 +65,10 @@ if __name__ == '__main__':
                 try:
                     target_pix = wcs.wcs_sky2pix([(np.array([ra,dec], np.float_))], 1)[0]
                 except:
-                    print "ERROR when converting sky to wcs. Is astrometry in place? Default coordinates assigned."
+                    print ("ERROR when converting sky to wcs. Is astrometry in place? Default coordinates assigned.") 
                     target_pix = [+nx/2., ny/2.]
     
-                print target_pix
+                print (target_pix) 
             else:
                 target_pix = [+nx/2., ny/2.]
                
@@ -93,13 +91,13 @@ def move_to_discarded(mydir, myfilter, ra, dec):
         if len(frames_with_target) == 0:
             discarddir = os.path.join(mydir, "discarded")
             if (not os.path.isdir(discarddir)):
-                print "Creating directory for discarded files (with no target)"
+                print ("Creating directory for discarded files (with no target)") 
                 os.makedirs(discarddir)
-            print "Moving file ",f," to discarded directory",discarddir
+            print ("Moving file ",f," to discarded directory",discarddir) 
             shutil.move(f, os.path.join(discarddir, os.path.basename(f)))
         else:
-            print "Object found in frames", frames_with_target, " in file ",f
-            print "Extracting this field"
+            print ("Object found in frames", frames_with_target, " in file ",f) 
+            print ("Extracting this field") 
             extract_field_from_moscaic(mydir, os.path.basename(f), frames_with_target, origname=True)
             
 def get_frames_with_target(myfile, ra, dec, debug=False):
@@ -124,10 +122,10 @@ def get_frames_with_target(myfile, ra, dec, debug=False):
             try:
                 target_pix = wcs.wcs_sky2pix([(np.array([ra,dec], np.float_))], 1)[0]
             except:
-                print "ERROR when converting sky to wcs. Is astrometry in place? Default coordinates assigned."
+                print ("ERROR when converting sky to wcs. Is astrometry in place? Default coordinates assigned.") 
                 target_pix = [+nx/2., ny/2.]
 
-            if debug: print i, target_pix
+            if debug: print (i, target_pix) 
         else:
             target_pix = [+nx/2., ny/2.]
         
@@ -151,10 +149,10 @@ def cut_frame_with_target(myfile, ra, dec, h=4000, w=2000, debug=False):
         try:
             target_pix = wcs.wcs_sky2pix([(np.array([ra,dec], np.float_))], 1)[0]
         except:
-            print "ERROR when converting sky to wcs. Is astrometry in place? Default coordinates assigned."
+            print ("ERROR when converting sky to wcs. Is astrometry in place? Default coordinates assigned.") 
             target_pix = [+nx/2., ny/2.]
 
-        if debug: print i, target_pix
+        if debug: print (i, target_pix) 
     else:
         target_pix = [+nx/2., ny/2.]
     
@@ -165,7 +163,7 @@ def cut_frame_with_target(myfile, ra, dec, h=4000, w=2000, debug=False):
         ymin = np.maximum(0, target_pix[1]-h/2.)
         ymax = np.minimum(ny, target_pix[1]+h/2.)
         
-        print "Target", target_pix, xmin, xmax, ymin, ymax
+        print ("Target", target_pix, xmin, xmax, ymin, ymax) 
         
         newhdu = pf.PrimaryHDU()
         newhdu.header = hdulist.header
@@ -173,10 +171,10 @@ def cut_frame_with_target(myfile, ra, dec, h=4000, w=2000, debug=False):
         
         newname = os.path.join(os.path.dirname(myfile),"out.fits")
         newhdu.writeto(newname, output_verify="fix", clobber=False)
-        print "Extracted region around target and stored to ",newname
+        print ("Extracted region around target and stored to ",newname) 
 
     else:
-        print "Target not in the frame!"
+        print ("Target not in the frame!") 
     
 def extract_field_from_moscaic(mydir, myfilter, nfields=None, origname=False):
 
@@ -216,7 +214,7 @@ def unify_header(prihdr):
         try:
             telescope = prihdr["HIERARCH FPA.TELESCOPE"]
         except:
-            print "Could not locate the telescope field"
+            print ("Could not locate the telescope field") 
             return
         
     if telescope == "NOT":
@@ -310,7 +308,7 @@ def unify_header(prihdr):
                 dic["RDNOISE"] = 9
         
     else:
-        print "Telescope unknown!"
+        print ("Telescope unknown!") 
     
     for i, k in enumerate(dic.keys()):
         if not k in prihdr.keys():
@@ -323,7 +321,7 @@ def unify_fits(myfits, overwrite=False, field=-1):
     '''
     hdulist = pf.open(myfits)
     
-    print hdulist.info()
+    print (hdulist.info()) 
     
     nfields = len(hdulist)
     datafields = 0
@@ -334,8 +332,8 @@ def unify_fits(myfits, overwrite=False, field=-1):
             
     if nfields > 1:
         if (field==-1 and datafields>1):
-            print "WARNING, there are several images stored. Plsease, specify which number you want to extract."
-            print "Exiting..."
+            print ("WARNING, there are several images stored. Plsease, specify which number you want to extract.") 
+            print ("Exiting...") 
             return 
             
         nfields = np.arange(len(hdulist)-1)+1
@@ -380,10 +378,10 @@ def get_par(myfits, par):
     try:
         hdu = pf.open(myfits, ignore_missing_end=True)
         header = hdu[0].header
-	if str.upper(par) in header.keys():
-	        return header[str.upper(par)]
-	else:
-		return None
+        if str.upper(par) in header.keys():
+            return header[str.upper(par)]
+        else:
+            return None
     except IOError:
         return None       
 	 
@@ -433,7 +431,7 @@ def arrange_fits_in_directories(mydir, myfilter, destdir):
         destination = os.path.join(destdir, "%s/%s/%d"%(instrument,filt, mjd)) 
         if (not os.path.isdir(destination) ):
             os.makedirs(destination)
-            print "Creating directory", destination
+            print ("Creating directory", destination) 
         shutil.move(f, os.path.join(destination, os.path.basename(f)))
         
     
@@ -467,9 +465,9 @@ def get_gain_ron_combined_i(gain, ron, n, mode="median"):
             gain = 2.*n*gain/3.
             ron = np.sqrt(2.*n/3)*ron
     else:
-            print "Unknown selected mode. Avaialable values: (sum, average, median)"
+            print ("Unknown selected mode. Avaialable values: (sum, average, median)") 
     
-    print np.round(gain, 5), np.round(ron, 5)
+    print (np.round(gain, 5), np.round(ron, 5)) 
     return np.round(gain, 5), np.round(ron, 5)
     
 
@@ -490,7 +488,7 @@ def align_combine(fitsdir, myfilter, examine=True):
     listfiles.sort()
     
     if (examine):
-        print "Opening ",listfiles[0]," to examine."
+        print ("Opening ",listfiles[0]," to examine.") 
         iraf.imexamine(input=listfiles[0], \
                     logfile="coords.dat", \
                     keeplog="yes")
@@ -499,7 +497,7 @@ def align_combine(fitsdir, myfilter, examine=True):
             for i in listfiles:
                 f.write(i+"\n")
     
-    print "Aligning with reference:",listfiles[0]
+    print ("Aligning with reference:",listfiles[0]) 
     iraf.imalign( input   =  "@align.list", referenc= listfiles[0], coords  =  "coords.dat", output  = "a_@align.list")  
     
     listfiles = glob.glob("a_"+myfilter)
@@ -508,7 +506,7 @@ def align_combine(fitsdir, myfilter, examine=True):
         for i in listfiles:
             f.write(i+"\n")
             
-    print "Combining"        
+    print ("Combining"        ) 
     iraf.imcombine(input = "@comb.list",\
                    output = "out.fits",\
                    combine= "median")

@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Sat May 23 18:23:02 2015
@@ -15,7 +16,7 @@ import datetime
 try:
     from pyraf import iraf 
 except:
-    print "Not loading iraf"
+    print ("Not loading iraf") 
 import os, sys, math
 from astropy.io import fits as pf
 import zscale
@@ -28,7 +29,7 @@ import matplotlib.lines as mlines
 import subprocess
 import warnings
 
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 import codecs
 
 parser = SafeConfigParser()
@@ -76,7 +77,7 @@ def get_app_phot(coords, image, plot_only=False, store=True, wcsin="world", fwhm
     out_name = os.path.join(plotdir, imname +  ".seq.mag")
     clean_name = os.path.join(plotdir, imname +  ".app.mag")
 
-    print "Will create output files", out_name, clean_name
+    print ("Will create output files", out_name, clean_name) 
 
     # Read values from .ec file
     
@@ -89,14 +90,14 @@ def get_app_phot(coords, image, plot_only=False, store=True, wcsin="world", fwhm
     if (fitsutils.has_par(image, 'AIRMASS')):
         airmass_value = fitsutils.get_par(image, 'AIRMASS')
     else:
-	airmass_value = 1.3
+        airmass_value = 1.3
  
     exptime = fitsutils.get_par(image, 'EXPTIME')
     gain = fitsutils.get_par(image, 'GAIN')
     noise = fitsutils.get_par(image, 'RDNOISE')
 
     
-    print "FWHM: %.1f pixels, %.1f arcsec"%(fwhm_value, fwhm_value*arcsecpix)
+    print ("FWHM: %.1f pixels, %.1f arcsec"%(fwhm_value, fwhm_value*arcsecpix)) 
     aperture_rad = math.ceil(float(fwhm_value)*1.5)      # Set aperture radius to three times the PSF radius
     sky_rad= math.ceil(aperture_rad)*4
     
@@ -138,7 +139,7 @@ def get_app_phot(coords, image, plot_only=False, store=True, wcsin="world", fwhm
     if (ma.size > 0):    
         m = ma[~np.isnan(ma["fit_mag"])]
     else:
-        print "Only one object found!"
+        print ("Only one object found!") 
         m = np.array([ma])
         
     hdulist = pf.open(image)
@@ -153,14 +154,14 @@ def get_app_phot(coords, image, plot_only=False, store=True, wcsin="world", fwhm
     outerrad = sky_rad+10
     cutrad = outerrad + 15
     
-    print "Cutrad %.1f"%cutrad
+    print ("Cutrad %.1f"%cutrad) 
 
     plt.suptitle("FWHM=%.2f arcsec. %d stars"%(fwhm_value*arcsecpix, len(m)))
     for i in np.arange(dimX):
         for j in np.arange(dimY):
             if ( i*dimY + j < len(m)):
                 k = i*dimY + j
-		#print dimX, dimY, i, j, k
+		#print (dimX, dimY, i, j, k) 
                 ax = plt.subplot2grid((dimX,dimY),(i, j))
                 y1, y2, x1, x2 = m[k]["X"]-cutrad, m[k]["X"]+cutrad, m[k]["Y"]-cutrad, m[k]["Y"]+cutrad
                 y1, y2, x1, x2 = int(y1), int(y2), int(x1), int(x2)
@@ -168,8 +169,8 @@ def get_app_phot(coords, image, plot_only=False, store=True, wcsin="world", fwhm
                 try:
                     zmin, zmax = zscale.zscale(img[x1:x2,y1:y2], nsamples=1000, contrast=0.25)
                 except ValueError:
-		    print y1, y2, x1, x2 
-		    print img[x1:x2,y1:y2]
+                    print (y1, y2, x1, x2 ) 
+                    print (img[x1:x2,y1:y2]) 
                     sh= img[x1:x2,y1:y2].shape
                     if sh[0]>0 and sh[1]>0:
                         zmin = np.nanmin(img[x1:x2,y1:y2])
@@ -239,7 +240,7 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
             ra, dec = cc.hour2deg(fitsutils.get_par(image, 'OBJRA'), fitsutils.get_par(image, 'OBJDEC'))
         else:
             ra, dec = cc.hour2deg(fitsutils.get_par(image, 'RA'), fitsutils.get_par(image, 'DEC'))
-        print "Assuming ra=%.5f, dec=%.5f"%(ra, dec)
+        print ("Assuming ra=%.5f, dec=%.5f"%(ra, dec)) 
         pra, pdec = get_xy_coords(image, ra, dec)
 
     else:
@@ -249,10 +250,10 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
         #Using new method to derive the X, Y pixel coordinates, as wcs module does not seem to be working well.
             try:
                 #pra, pdec = wcs.wcs_sky2pix(ra, dec, 1)
-                #print "Retrieved the pixel number"
+                #print ("Retrieved the pixel number") 
                 pra, pdec = get_xy_coords(image, ra, dec)
             except IndexError:
-                print "Error with astrometry.net. trying the rudimentary method."
+                print ("Error with astrometry.net. trying the rudimentary method.") 
                 pra, pdec = wcs.wcs_sky2pix(ra, dec, 1)
             #pra, pdec = wcs.wcs_sky2pix(np.array([ra, dec], ndmin=2), 1)[0]
 
@@ -261,8 +262,8 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
     if (pra > 0)  and (pra < shape[0]) and (pdec > 0) and (pdec < shape[1]):
         pass
     else:
-        print image, "ERROR! Object coordinates are outside this frame. Skipping any aperture photometry!!"
-        print pra, pdec, shape
+        print (image, "ERROR! Object coordinates are outside this frame. Skipping any aperture photometry!!") 
+        print (pra, pdec, shape) 
         return
     
         
@@ -299,15 +300,15 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
     exptime = fitsutils.get_par(image, 'EXPTIME')
     gain = fitsutils.get_par(image, 'GAIN')
     
-    #print "FWHM", fwhm_value
+    #print ("FWHM", fwhm_value) 
     aperture_rad = math.ceil(float(fwhm_value)*app)      # Set aperture radius to two times the PSF radius
     sky_rad= math.ceil(aperture_rad*app*2)
     
-    #print aperture_rad, sky_rad
+    #print (aperture_rad, sky_rad) 
 
     
     
-    print "Saving coodinates for the object in pixels",pra,pdec
+    print ("Saving coodinates for the object in pixels",pra,pdec) 
     coords = "/tmp/coords.dat"    
     np.savetxt("/tmp/coords.dat", np.array([[pra, pdec]]), fmt="%.4f %.4f")
 
@@ -353,8 +354,8 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
         ma = np.array([ma])
         m = ma[~np.isnan(ma["fit_mag"])]
     else:
-        print "Only one object found!"
         m = np.array([ma])
+        print ("Only one object found!", m) 
         
 
     insmag =  np.round(ma['fit_mag'][0] , 3)
@@ -363,8 +364,8 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
         mag =  insmag + float(fitsutils.get_par(image, "ZEROPT"))
         magerr = np.sqrt(insmagerr**2+ float(fitsutils.get_par(image, "ZEROPTU"))**2)  
     else:
-	mag = 0
-	magerr = 0
+        mag = 0
+        magerr = 0
 	
     if np.isnan(mag):
         mag, magerr = 0, 0
@@ -384,9 +385,9 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, store=True, wcsin="
         #zmin, zmax = zscale.zscale(impf[0].data)
            
         #im = plt.imshow(impf[0].data, vmin=zmin, vmax=zmax, origin="bottom")
-        print np.percentile(impf[0].data, 5), np.percentile(impf[0].data, 95)
+        print (np.percentile(impf[0].data, 5), np.percentile(impf[0].data, 95)) 
         impf[0].data[np.isnan(impf[0].data)] = np.nanmedian(impf[0].data)
-        print np.percentile(impf[0].data, 5), np.percentile(impf[0].data, 95)
+        print (np.percentile(impf[0].data, 5), np.percentile(impf[0].data, 95)) 
 
         im = plt.imshow(impf[0].data, vmin=np.percentile(impf[0].data, 5), vmax=np.percentile(impf[0].data, 95), origin="bottom")
        
@@ -464,7 +465,7 @@ if __name__ == '__main__':
 
     for f in glob.glob("*.fits"):
         if(fitsutils.has_par(f, "IMGTYPE") and fitsutils.get_par(f, "IMGTYPE") == "SCIENCE" or fitsutils.get_par(f, "IMGTYPE") == "ACQUISITION"):
-		#print f
+		#print (f) 
         	get_app_phot_target(f, box=5)
          
     cmd = 'echo "FILE ONTARGET NAME FILTER JD LST APPMAG APPMAGER INSMAG INSMAGER ZEROPT ZEROPTU" > photometry/magnitudes.dat; gethead ONTARGET NAME FILTER JD LST APPMAG APPMAGER INSMAG INSMAGER ZEROPT ZEROPTU *fits | grep -E "fits[\ ]+1" >> photometry/magnitudes.dat'

@@ -10,10 +10,9 @@ import urllib
 import datetime
 from astropy.io import votable
 import numpy as np
-import os, sys
+import os
 import logging
 import warnings
-from numpy.lib import recfunctions as rfn
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
@@ -35,11 +34,6 @@ class QueryCatalogue:
         self.logger = logger
         
         if (logger is None):
-            FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
-            '''now = datetime.datetime.utcnow()
-            timestamp=datetime.datetime.isoformat(now)
-            creationdate = timestamp
-            timestamp=timestamp.split("T")[0]'''
 
             console = logging.StreamHandler()
             
@@ -51,12 +45,6 @@ class QueryCatalogue:
             
             #logging.basicConfig(format=FORMAT, level=logging.INFO)
             self.logger = logging.getLogger('QueryCatalogue')
-    
-            '''ch = logging.StreamHandler(sys.stdout)
-            ch.setFormatter(format)
-            self.logger.addHandler(ch)'''
-            
-            #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
   
 
 
@@ -212,9 +200,9 @@ class QueryCatalogue:
 
         if catalog.as_array() is None:
         	#Clean temporary file.\
-        	if (os.path.isfile(tmp_file)):
-            		os.remove(tmp_file)
-		return None
+            	if (os.path.isfile(tmp_file)):
+                    os.remove(tmp_file)
+                    return None
 
         catalog = catalog.as_array().data
 
