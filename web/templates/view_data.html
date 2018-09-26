@@ -8,6 +8,7 @@
 
 {% block content %}
     {{ calendar_picker('content', name='obsdate') }}
+    <h2>Data for the night of {{ sedm_dict.obsdate }}</h2>
     <div class="container">
         {{ sedm_dict.sci_data| safe}}
     </div>

@@ -50,8 +50,11 @@ request_form_values = ['request_id', 'object_id', 'marshal_id',
 
 rc_filter_list = ['r', 'g', 'i', 'u']
 schedule = ScheduleNight()
-computer = 'pele'
+
+# this all needs to go in some sort of config file instead of changing the source code constantly
+#computer = 'pele'
 #computer = 'pharos'
+computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
     raw_dir = '/scr7/rsw/sedm/raw/'
@@ -65,7 +68,7 @@ elif computer == 'pharos':
     redux_dir = '/scr2/sedmdrp/redux/'
     host = 'localhost'
 
-db = SedmDB(host='pharos.caltech.edu', dbname='sedmdb')
+db = SedmDB(host=host, dbname='sedmdb')
 
 
 def get_db():
@@ -1090,11 +1093,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     # Look first to make sure there is a data directory.
     if not os.path.exists(obsdir):
         return {'message': 'No data directory could be located for %s UT' %
-                           os.path.basename(os.path.normpath(obsdir))}
+                           os.path.basename(os.path.normpath(obsdir)),
+                'obsdate': obsdate}
 
     if not obsdate:
         obsdate = os.path.basename(os.path.normpath(obsdir))
-
+    sedm_dict = {'obsdate': obsdate}
     # Now lets get the non-science products (i.e. calibrations)
     calib_dict = {'flat3d': os.path.join(obsdir, '%s_flat3d.png' % obsdate),
                   'wavesolution': os.path.join(obsdir,
@@ -1294,7 +1298,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
             div_str += "</div>"
 
-        sedm_dict = {'sci_data': div_str}
+        sedm_dict['sci_data'] = div_str
+
     return sedm_dict
 
 
