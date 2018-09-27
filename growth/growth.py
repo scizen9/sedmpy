@@ -410,6 +410,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                                            {"id": user_id})[0]
             username = res[0]
             email = res[1]
+            out_dir = ''
         else:
             print("No request id provided")
     else:
@@ -465,6 +466,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             marshal_id = target['requestid']
             object_name = target['sourcename']
             username = target['username']
+            out_dir = 'targets/'
 
     # Return values
     spec_ret = None
@@ -482,7 +484,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         if add_spectra:
 
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
-                                      request_id=marshal_id)
+                                      request_id=marshal_id,
+                                      output_dir=out_dir)
             if not spec_ret:
                 spec_stat = 'IFU: Failed'
             else:
