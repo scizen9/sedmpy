@@ -1353,7 +1353,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     # ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority', 'status', 'lastmodified', 'obs_seq', 'exptime', 'UPDATE']
     
     allowed_allocs = get_allocations_user(userid)
-    active[np.in1d(active['allocation'], allowed_allocs['allocation'])]['allocation'] = 'other'
+    active['allocation'].mask(~np.in1d(active['allocation'], allowed_allocs['allocation']), other='other', inplace=True)
 
     programs = {i['allocation']:i['program'] for _, i in allowed_allocs.iterrows()}
     programs['other'] = ['other']
