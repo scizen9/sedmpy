@@ -106,7 +106,7 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, auth, sourceid=None
         print(r.text)
         return False
 
-def add_SNID_autoannot(filename, auth, sourcelist=None):
+def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
     '''
     if z < 0.3 and rlap > 5.0
         adds autoannotations with SNID rlap, z, type, etc
@@ -126,6 +126,10 @@ def add_SNID_autoannot(filename, auth, sourcelist=None):
         header = {line.split(':')[0][1:].strip().lower(): line.split(':', 1)[-1].strip() for line in f if line[0] == '#'}
     header['snidmatchmatch'] = '{snidmatchtype}-{snidmatchsubtype}'.format(**header)
 
+    # I haven't checked the pysedm_report, but probably the path is the only thing that could be wrong
+    pysedm_report = glob(filename.replace(filename.split('/')[-1], 'pysedm_report_*_{name}*.png'.format(**header)))[-1] # TODO use os.path.dir or something
+    if not add_spec_attachment(header['name'], 'pysedm_report', pysedm_report, auth, obsdate=header['obsdate'], sourcelist=sourcelist):
+        return False     
 
     if header['snidmatchtype'].lower() == 'none':
         print('no match')
@@ -160,7 +164,7 @@ if __name__ == "__main__":
     
     successes = []
     for filename in glob('*ZTF?????????.txt'):
-        if add_SNID_autoannot(filename, auth, sourcelist=sourcelist):
+        if add_SNID_pysedm_autoannot(filename, auth, sourcelist=sourcelist):
             print('success!')
             successes.append(re.findall(r'ZTF\d{2}[a-z]{7}', filename)[-1])
             break
