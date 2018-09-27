@@ -505,7 +505,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 status = spec_stat
             elif add_phot:
                 status = phot_stat
-            status_ret = update_request(status, request_id=marshal_id)
+            status_ret = update_request(status, request_id=marshal_id,
+                                        output_dir=out_dir)
 
         return_link = growth_view_source_url + "name=%s" % object_name
 
