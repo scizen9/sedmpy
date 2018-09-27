@@ -144,6 +144,13 @@ def data_static(filename):
     else:
         return send_from_directory(os.path.join(config['path']['path_archive'], _p), _f)
 
+@app.route('/visibility')
+def active_visibility():
+    sedm_dict = model.get_active_visibility(flask_login.current_user.id)
+    sedm_dict['js_resources'] = INLINE.render_js() # TODO
+    sedm_dict['css_resources'] = INLINE.render_css()
+
+    return render_template('visibility.html', sedm_dict=sedm_dict)
 
 @app.route('/weather_stats', methods=['GET', 'POST'])
 def weather_stats():

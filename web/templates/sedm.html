@@ -6,6 +6,7 @@
     <div class="container">
         <div class="active-requests">
             <h4>{{sedm_dict.active.title}}</h4>
+	    <a href="{{sedm_dict.visibility.url}}">{{sedm_dict.visibility.title}}</a>
             {{ sedm_dict.active.table | safe }}
         </div>
         <div class="completed-requests">
