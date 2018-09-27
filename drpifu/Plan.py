@@ -178,7 +178,7 @@ report:
 	$(REPORT) | tee report.txt
 	
 update:
-	$(UPDSTAT)
+	$(UPDSTAT) | tee update.txt
 
 ztfupload:
 	$(ZTFUPLOAD) $(current_dir)
