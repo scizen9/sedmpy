@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Sun Jun 14 13:11:52 2015
@@ -30,7 +31,7 @@ import zeropoint
 from astropy.io import fits
 import coordinates_conversor as cc
 
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 import codecs
 
 parser = SafeConfigParser()
@@ -310,22 +311,22 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
         lfiles = []
         for f in glob.glob('b_*_%s.fits'%b):
             fi = fits.open(f)
-	    d = fi[0].data
+            d = fi[0].data
             status = "rejected" 
             if np.percentile(d, 90)>4000 and np.percentile(d, 90)<45000:
                 lfiles.append(f)
-		mymode = 1. * np.median(d.flatten())
-		d[d>45000] = mymode
-		fi[0].data = d
-		fi.writeto(f, clobber=True)
-		status = "accepted"
+                mymode = 1. * np.median(d.flatten())
+        d[d>45000] = mymode
+        fi[0].data = d
+        fi.writeto(f, clobber=True)
+        status = "accepted"
 
-            if (plot):
+        if (plot):
                 plt.title("Flat filter %s. %s"%(b, status))
                 plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
-		plt.colorbar()
-                plt.savefig("reduced/flats/%s"%(f.replace(".fits", ".png")))
-                plt.close()
+        plt.colorbar()
+        plt.savefig("reduced/flats/%s"%(f.replace(".fits", ".png")))
+        plt.close()
             #Make sure that the optimum number of counts is not too low and not saturated.
         if len(lfiles) == 0:
             logger.error( "WARNING!!! Could not find suitable flats for band %s"%b)
@@ -551,7 +552,7 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
     if (os.path.isfile(maskname) and not overwrite):
         return maskname
 
-    print "Creating mask %s"%maskname
+    print ("Creating mask %s"%maskname) 
     
     hdulist = fits.open(image)
     header = hdulist[0].header
@@ -579,7 +580,7 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
             
             
     if (plot):
-        print image
+        print (image) 
         plt.imshow(np.log10(np.abs(hdulist[0].data)), alpha=0.9)
         plt.imshow(data, alpha=0.5)
         plt.show()
@@ -685,10 +686,9 @@ def copy_ref_calib(curdir, calib="Flat"):
     '''
 
     if calib == "Bias": 
-   	calib_dic = { 	"Bias_rc_fast.fits" : False,
-			"Bias_rc_slow.fits" : False}
+        calib_dic = { 	"Bias_rc_fast.fits" : False, "Bias_rc_slow.fits" : False}
     else:
-    	calib_dic = { 	"Flat_rc_u_norm.fits" : False,
+        calib_dic = { 	"Flat_rc_u_norm.fits" : False,
 			"Flat_rc_g_norm.fits" : False,
 			"Flat_rc_r_norm.fits" : False,
 			"Flat_rc_i_norm.fits" : False}
@@ -698,13 +698,12 @@ def copy_ref_calib(curdir, calib="Flat"):
 
     #Check if we have all the calibrations we need.
     for cal in calib_dic.keys():
-	calib_dic[cal] = os.path.isfile(os.path.join(curdir, cal))
+        calib_dic[cal] = os.path.isfile(os.path.join(curdir, cal))
 
-    print calib_dic
 
     #If all the calibration files are in place, nothing to do.
     if np.all(calib_dic.values()):
-	return
+        return
 
     #Check which dates have the calibration files that we need.
     listcalib = glob.glob(os.path.join(curdir, "../../refphot/*/", calib+"*"))
@@ -729,17 +728,17 @@ def copy_ref_calib(curdir, calib="Flat"):
     #Try to go 100 days before the data was taken.
     i = 0
     while i < 1000 and not np.all(calib_dic.values()):
-	i = i+1
-	newdate = curdate - datetime.timedelta(i)
-	newdatedir = "%d%02d%02d"%(newdate.year, newdate.month, newdate.day)
-	print "Checking day %s"%newdatedir
-	for cal in np.array(calib_dic.keys())[~np.array(calib_dic.values())]:
-		c = os.path.join(curdir, "../../refphot/", newdatedir, cal)
-		#print "testing %s"%c
-		if os.path.isfile(c):
-			print "Copying calibration file %s to directory %s"%(c, curdir)
-        		shutil.copy(c, os.path.join(curdir, os.path.basename(c)))     
-			calib_dic[cal] = True
+        i = i+1
+        newdate = curdate - datetime.timedelta(i)
+        newdatedir = "%d%02d%02d"%(newdate.year, newdate.month, newdate.day)
+        print ("Checking day %s"%newdatedir) 
+        for cal in np.array(calib_dic.keys())[~np.array(calib_dic.values())]:
+            c = os.path.join(curdir, "../../refphot/", newdatedir, cal)
+ 
+            if os.path.isfile(c):
+                print ("Copying calibration file %s to directory %s"%(c, curdir)) 
+                shutil.copy(c, os.path.join(curdir, os.path.basename(c)))
+                calib_dic[cal] = True
 			
 
         
@@ -791,19 +790,22 @@ def solve_astrometry(img, outimage=None, radius=3, with_pix=True, overwrite=Fals
 
     if os.path.isfile(astro):
         try:
-		is_on_target(img)
+            is_on_target(img)
         except InconsistentAxisTypesError as e:
-		fitsutils.update_par(img, "ONTARGET", 0)
-		print "Error detected with WCS when reading file %s. \n %s"%(img, e)
-        
+            fitsutils.update_par(img, "ONTARGET", 0)
+            print ("Error detected with WCS when reading file %s. \n %s"%(img, e)) 
+    
+    #If no name is provided, and overwrite si tru, we move the astrometry solved file into the image with name outimage.    
     if (not outimage is None and overwrite and os.path.isfile(astro)):
         shutil.move(astro, outimage)
-	return outimage
+        return outimage
+    #If ther is no name, we overwrite the old file.
     elif (outimage is None and overwrite and os.path.isfile(astro)):
         shutil.move(astro, img)
-	return img
+        return img
+    #Otherwise, we just return the name of the astrometry sovled image
     else:
-    	return astro
+        return astro
 
 
 
@@ -1004,7 +1006,7 @@ def plot_image(image):
     '''
     logger.info("Plotting image %s"% image)    
 
-    print "Plotting image ", image    
+    print ("Plotting image ", image    ) 
 
     
     image = os.path.abspath(image)
@@ -1051,7 +1053,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
     
     logger.info("Reducing image %s"% image)    
 
-    print "Reducing image ", image    
+    print ("Reducing image ", image    ) 
 
     
     image = os.path.abspath(image)
@@ -1062,7 +1064,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
         logger.error( "ERROR, image "+ image + " does not have a NAME or a FILTER!!!")
         return
 
-    print "For object", objectname
+    print ("For object", objectname) 
     logger.info( "For object %s"% objectname)
 
 
@@ -1171,7 +1173,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
 
     #Slicing the image for flats  
     slice_names = slice_rc(debiased)
-    print "Creating sliced files, ", slice_names
+    print ("Creating sliced files, ", slice_names) 
 
     
     #Remove un-sliced image
@@ -1221,10 +1223,10 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
         
         #Get basic statistics for the image
         nsrc, fwhm, ellip, bkg = sextractor.get_image_pars(image)
-	plot_image(image)
+        plot_image(image)
         
         logger.info( "Sextractor statistics: nscr %d, fwhm (arcsec) %.2f, ellipticity %.2f"% (nsrc, fwhm, ellip))
-        print "Sextractor statistics: nscr %d, fwhm (arcsec) %.2f, ellipticity %.2f"% (nsrc, fwhm, ellip)
+        print ("Sextractor statistics: nscr %d, fwhm (arcsec) %.2f, ellipticity %.2f"% (nsrc, fwhm, ellip)) 
     
         
         dic = {"FWHM": np.round(fwhm, 3) , "FWHMPIX": np.round(fwhm/0.394, 3) , "NSRC":nsrc, "ELLIP": np.round(ellip, 3)}
@@ -1332,57 +1334,55 @@ if __name__ == '__main__':
         
     else:
 
-    	if (photdir is None):
-        	timestamp=datetime.datetime.isoformat(datetime.datetime.utcnow())
-        	timestamp = timestamp.split("T")[0].replace("-","")
-        	photdir = os.path.join(_photpath, timestamp)
+        if (photdir is None):
+            timestamp=datetime.datetime.isoformat(datetime.datetime.utcnow())
+            timestamp = timestamp.split("T")[0].replace("-","")
+            photdir = os.path.join(_photpath, timestamp)
+                
+            s = ("WARNING! You did not specify the directory or the list:",
+                "- A filelist name with the images you want to reduce [-l] OR",
+                "- The name of the directory which you want to reduce [-d].",
+                "",
+                "A default name for the directory will be assumed on today s date: %s"%photdir)
 
-		print '''WARNING! You did not specify the directory or the list:\n
-        	- A filelist name with the images you want to reduce [-l]
-	        OR
-        	- The name of the directory which you want to reduce [-d].
-	
-		A default name for the directory will be assumed on today's date: %s
-		'''%photdir
-
-        mydir = os.path.abspath(photdir)
-        #Gather all RC fits files in the folder with the keyword IMGTYPE=SCIENCE
-        for f in glob.glob(os.path.join(mydir, "rc*fits")):
-            try:
-            	if (fitsutils.has_par(f, "IMGTYPE") and ( (fitsutils.get_par(f, "IMGTYPE").upper()=="SCIENCE") or ( "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper())) ):
-                	myfiles.append(f)
-            except:
-            	print "problems opening file %s"%f
+    mydir = os.path.abspath(photdir)
+    #Gather all RC fits files in the folder with the keyword IMGTYPE=SCIENCE
+    for f in glob.glob(os.path.join(mydir, "rc*fits")):
+        try:
+            if (fitsutils.has_par(f, "IMGTYPE") and ( (fitsutils.get_par(f, "IMGTYPE").upper()=="SCIENCE") or ( "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper())) ):
+                myfiles.append(f)
+        except:
+            print ("problems opening file %s"%f) 
 
     create_masterbias(mydir)
-    print "Create masterflat",mydir
+    print ("Create masterflat",mydir) 
     create_masterflat(mydir) 
  
     if (len(myfiles)== 0):
-        print "Found no files to process"
-	sys.exit()
+        print ("Found no files to process") 
+        sys.exit()
     else:
-        print "Found %d files to process"%len(myfiles)
+        print ("Found %d files to process"%len(myfiles)) 
 
     
     #Reduce them
     reducedfiles = []
     for f in myfiles:
-        print f
+        print (f) 
         #make_mask_cross(f)
         if ( fitsutils.has_par(f, "IMGTYPE") and (fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE" or ("ACQUI" in fitsutils.get_par(f, "IMGTYPE").upper() )) ):
-		try:
-            		reduced = reduce_image(f, cosmic=cosmic, overwrite=overwrite)
-            		reducedfiles.extend(reduced)
-		except:
-            		print "Error when reducing image %s"%f
-            		pass
+            try:
+                reduced = reduce_image(f, cosmic=cosmic, overwrite=overwrite)
+                reducedfiles.extend(reduced)
+            except:
+                print ("Error when reducing image %s"%f) 
+                pass
 
     #If copy is requested, then we copy the whole folder or just the missing files to transient.
     try:
-    	zeropoint.lsq_zeropoint(os.path.join(mydir, "reduced/allstars_zp.log"), os.path.join(mydir, "reduced/zeropoint"))
+        	zeropoint.lsq_zeropoint(os.path.join(mydir, "reduced/allstars_zp.log"), os.path.join(mydir, "reduced/zeropoint"))
     except ValueError:
-	print "Could not calibrate zeropoint for file %s"%(os.path.join(mydir, "reduced/allstars_zp.log"))
+        print ("Could not calibrate zeropoint for file %s"%(os.path.join(mydir, "reduced/allstars_zp.log"))) 
 
     dayname = os.path.basename(os.path.dirname(os.path.abspath(myfiles[0])))
     reducedname = os.path.join(os.path.dirname(os.path.abspath(myfiles[0])), "reduced")
