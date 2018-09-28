@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar  1 20:19:04 2016
@@ -13,13 +14,13 @@ from astropy.io import fits as pf
 try:
     import rcred
 except:
-    print "RCRED not imported"
+    print ("RCRED not imported") 
 import datetime
 import fitsutils
 import scipy.stats
 from matplotlib import pylab as plt
 
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 import codecs
 
 parser = SafeConfigParser()
@@ -57,7 +58,7 @@ def run_sex(flist, mask=False, cosmics=False, overwrite=False):
 
         if (os.path.isfile(newimage) and not overwrite):
             newlist.append(newimage)
-            print "Sextracted image %s already exists."%newimage
+            print ("Sextracted image %s already exists."%newimage) 
         else:
             try:
                 f = os.path.abspath(f)
@@ -71,11 +72,11 @@ def run_sex(flist, mask=False, cosmics=False, overwrite=False):
     
                 cmd="sex -c %s/config/daofind.sex %s"%(os.environ["SEDMPH"], out) 
                 subprocess.call(cmd, shell=True)
-                print cmd
+                print (cmd) 
                 shutil.move("image.sex", newimage)
                 newlist.append(newimage)
             except IOError:
-                print "IOError detected reading file",f
+                print ("IOError detected reading file",f) 
                 pass
         
     return newlist
@@ -116,7 +117,7 @@ def analyse_sex(sexfileslist, plot=True, interactive=False):
         pos= float(FF[0].header['focpos'])
 
         s = np.genfromtxt(f, comments="#")
-        print f, "Initial number of sources", len(s)
+        print (f, "Initial number of sources", len(s)) 
         	
         s = s[s[:,1]< 2000]
         s = s[s[:,10] != 4]
@@ -129,7 +130,7 @@ def analyse_sex(sexfileslist, plot=True, interactive=False):
         s = s[s[:,4]<np.percentile(s[:,4], 30)]
         #Select round sources (ellipticity is 1-axis_ratio)
         s = s[s[:,8]<np.percentile(s[:,8], 30)]
-        print f, "number of sources", len(s)
+        print (f, "number of sources", len(s)) 
  
         focpos.append(pos)
         fwhms.append(np.nanmean(s[:,7]*0.394))
@@ -149,7 +150,7 @@ def analyse_sex(sexfileslist, plot=True, interactive=False):
     selected_ids = selected_ids + best_seeing_id
     selected_ids = np.minimum(selected_ids, n-1)
     selected_ids = np.maximum(selected_ids, 0)
-    print "FWHMS: %s, focpos: %s, Best seeing id: %d. Selected ids %s"%(fwhms, focpos, best_seeing_id, selected_ids)
+    print ("FWHMS: %s, focpos: %s, Best seeing id: %d. Selected ids %s"%(fwhms, focpos, best_seeing_id, selected_ids)) 
     selected_ids = np.array(list(set(selected_ids)))
 
 
@@ -163,7 +164,7 @@ def analyse_sex(sexfileslist, plot=True, interactive=False):
     
     x = np.linspace(np.min(focpos), np.max(focpos), 100)
     p = np.poly1d(coefs)
-    print "Best focus:%.2f"% x[np.argmin(p(x))], coefs,std_fwhm
+    print ("Best focus:%.2f"% x[np.argmin(p(x))], coefs,std_fwhm) 
     
     
     if (plot==True):
@@ -218,7 +219,7 @@ def analyse_sex_ifu_spectrograph(sexfileslist, plot=True, interactive=False, deb
     trace_width_std = []
     
     for i, f in enumerate(sexfileslist):
-        print f
+        print (f) 
         fits = f.replace("sextractor/", "").replace(".sex", ".fits")
         FF = pf.open(fits)
 
@@ -302,7 +303,7 @@ def analyse_sex_ifu_spectrograph(sexfileslist, plot=True, interactive=False, deb
     pmag = np.poly1d(coefs_mag)
     pwidth = np.poly1d(coefs_width)
     
-    print "Best focus:%.2f"% x[np.argmax(p(x))], coefs,std_fwhm
+    print ("Best focus:%.2f"% x[np.argmax(p(x))], coefs,std_fwhm) 
 
     if (plot==True):
         plt.title("Best focus:%.2f"% x[np.argmax(p(x))])
@@ -378,7 +379,7 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False, ifu
     mags98perc = []
 
     for i, f in enumerate(sexfileslist):
-        print f
+        print (f) 
         fits = f.replace("sextractor/", "").replace(".sex", ".fits")
         FF = pf.open(fits)
 
@@ -420,8 +421,8 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False, ifu
             plt.clf()
         
         focpos.append(pos)
-	avex = np.average(sb["x"])
-	avey = np.average(sb["y"])
+        avex = np.average(sb["x"])
+        avey = np.average(sb["y"])
         mags.append( np.std(np.sqrt((sb["x"]-avex)**2+ (sb["y"]-avey)**2)))
         #mags.append(np.percentile(sb["mag"], 25))
         std_mags.append(np.std(sb["mag"] < np.percentile(sb["mag"], 25)))
@@ -435,11 +436,11 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False, ifu
     
     x = np.linspace(np.min(focpos), np.max(focpos), 100)
     p = np.poly1d(coefs)
-    print "Best focus:%.2f"% x[np.argmax(p(x))], coefs,std_mags
+    print ("Best focus:%.2f"% x[np.argmax(p(x))], coefs,std_mags) 
     
     
     if (plot==True):
-	plt.figure()
+        plt.figure()
         plt.title("Best focus IFU:%.2f"% x[np.argmax(p(x))])
         with open(os.path.join(rootdir, "focus"), "w") as f:
             f.write(str(focpos))
@@ -453,7 +454,7 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False, ifu
         else:
             plt.savefig(os.path.join(os.path.dirname(sexfileslist[0]),"focus_ifu_%s.png"%(datetime.datetime.utcnow()).strftime("%Y%m%d-%H:%M:%S")))
             plt.clf()
-	plt.close("all")
+        plt.close("all")
 
     return x[np.argmax(p(x))], coefs[0]
     
@@ -493,7 +494,7 @@ def analyse_image(sexfile, arcsecpix=0.394, is_rccam=True):
         ("background", np.float), ("flags", np.float), ("a_image", np.float), ("b_image", np.float),("theta_image", np.float), ("petro_radius", np.float)])
 
     if (s is None or s.ndim==0 or len(s)==0):
-        print "Empty content of the file for file %s. The length of the file is %d"%(sexfile, len(s))
+        print ("Empty content of the file for file %s. The length of the file is %d"%(sexfile, len(s))) 
         return 0,0,0,0
         
     #Select sources inside of the cross
@@ -544,7 +545,7 @@ def get_focus_ifu(lfiles, plot=True, debug=False, interactive=False):
     sexfiles = run_sex(lfiles)
     res = analyse_sex_ifu(sexfiles, plot=plot, debug=debug, interactive=interactive)
     
-    print res
+    print (res) 
     focus, sigma = res
     return focus, sigma
     
@@ -583,14 +584,12 @@ def plot_quadrants(lfiles, quadsize=125):
 
         for i in range(3):
             for j in range(3):
-
-		    plt.subplot(3,3,i*3+j+1)
-		    imgslice = img[i*dx:i*dx+quadsize, j*dy:j*dy+quadsize].T
-		    #zmin, zmax = zscale.zscale()
-		    zmin = np.percentile(imgslice.flatten(), 5)
-		    zmax = np.percentile(imgslice.flatten(), 98)
+                plt.subplot(3,3,i*3+j+1)
+                imgslice = img[i*dx:i*dx+quadsize, j*dy:j*dy+quadsize].T
+                zmin = np.percentile(imgslice.flatten(), 5)
+                zmax = np.percentile(imgslice.flatten(), 98)
 	       
-		    plt.imshow(imgslice.T, vmin=zmin, vmax=zmax)
+            plt.imshow(imgslice.T, vmin=zmin, vmax=zmax)
 		
         findername = os.path.join(os.path.dirname(myfile), 'sextractor', os.path.basename(myfile).replace(".fits", "_corners.png"))
 

@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  3 19:23:29 2016
@@ -132,10 +133,10 @@ def reduce_on_the_fly(photdir):
             for n in new:
 
                 if (not fitsutils.has_par(n, "IMGTYPE")):
-                    print "Image",n,"Does not have an IMGTYPE"
+                    print ("Image",n,"Does not have an IMGTYPE") 
                     time.sleep(0.5)
                     if (not fitsutils.has_par(n, "IMGTYPE")):
-                        print "Image",n,"STILL Does not have an IMGTYPE"
+                        print ("Image",n,"STILL Does not have an IMGTYPE") 
                         continue
 
                 plot_image(n)
