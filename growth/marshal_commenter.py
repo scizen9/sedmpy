@@ -7,7 +7,7 @@ import growth
 
 growth_base_url = growth.growth_base_url
 auth = (growth.user, growth.pwd)
-sourcelist = requests.get(growth_base_url + "list_program_sources.cgi", 
+sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
                           data={'programidx': -1}, auth=auth).json()
 
 
@@ -18,14 +18,14 @@ def get_missing_info(ztfname, obsdate, sourceid, sourcelist, specid):
         Should probably make a ztf_object class, then save specid etc to that,
         then call add_spec_attachment, etc methods to it. Another day '\_0_/'
     """
-    
+
     obsdate = obsdate.replace('-', '') #YYYYMMDD or YYYY-MM-DD or Y-YY-YM-MDD
     if not sourceid:
         if not sourcelist:
-            sourcelist = requests.get(growth_list_all_sources_url, 
+            sourcelist = requests.get(growth_list_all_sources_url,
                                       auth=auth).json()
         try:
-            sourceid = [source['id'] for source in sourcelist 
+            sourceid = [source['id'] for source in sourcelist
                             if source['name'] == ztfname][-1]
         except IndexError:
             print("you probably don't have permissions to view this source")
@@ -36,18 +36,18 @@ def get_missing_info(ztfname, obsdate, sourceid, sourcelist, specid):
                                       + str(sourceid), auth=auth).json()
         try:
             specid = [spec['specid']
-                        for spec in source_summary['uploaded_spectra'] 
-                          if spec['obsdate'].replace('-', '') == obsdate 
+                        for spec in source_summary['uploaded_spectra']
+                          if spec['obsdate'].replace('-', '') == obsdate
                             and spec['instrumentid'] == 65
                             and spec['reducedby'].strip() == 'auto'][-1]
         except IndexError as e:
             print(e)
-            pprint([(spec['reducedby'], spec['obsdate']) 
-                      for spec in source_summary['uploaded_spectra'] 
+            pprint([(spec['reducedby'], spec['obsdate'])
+                      for spec in source_summary['uploaded_spectra']
                         if spec['instrumentid'] == 65])
             raise
     return sourceid, sourcelist, specid
-    
+
 
 def add_spec_attachment(ztfname, comment, filename, auth, sourceid=None,
                         specid=None, obsdate=None, sourcelist=None):
@@ -112,7 +112,7 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, auth,
     return: True if success, False if not
     """
 
-    sourceid, sourcelist, specid = get_missing_info(ztfname, obsdate, sourceid, 
+    sourceid, sourcelist, specid = get_missing_info(ztfname, obsdate, sourceid,
                                                     sourcelist, specid)
 
     r = requests.post(growth_base_url + "add_spec.cgi", auth=auth,
@@ -152,38 +152,57 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
     returns: True if all four comments/attachments works, False
             (and it'll exit early) otherwise
     """
-    # TODO if we look at the _snid.output we can get more info, eg phase 
+    # TODO if we look at the _snid.output we can get more info, eg phase
     file_ext = filename.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
     with open(filename) as f:
-        header = {line.split(':', 1)[0][1:].strip().lower(): 
-                  line.split(':', 1)[-1].strip() 
+        header = {line.split(':', 1)[0][1:].strip().lower():
+                  line.split(':', 1)[-1].strip()
                     for line in f if line[0] == '#'}
-    header['snidmatchmatch'] = '-'.join([header['snidmatchtype'], 
+
+    # get the specid by comparing all the header info
+    if not sourcelist:
+        sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
+                          data={'programidx': -1}, auth=auth).json()
+    sourceid = [source['id'] for source in sourcelist
+                  if source['name'] == ztfname]
+    source_summary = requests.get(growth_base_url + 'source_summary.cgi?' \
+                                  'sourceid={}'.format(sourceid), auth=auth)
+
+    for spec in source_summary['uploaded_spectra']:
+        with requests.get(spec['datapath'], auth=auth).text as f:
+            fheader = {line.split(':', 1)[0][1:].strip().lower():
+                        line.split(':', 1)[-1].strip()
+                        for line in f if line[0] == '#'}
+            if header == fheader:
+                specid = spec['id']
+                break
+
+    header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
                                          header['snidmatchsubtype']])
 
     # I haven't checked the pysedm_report, but probably the path is the only
     # thing that could be wrong
     pysedm_report = glob(filename.replace(
-        filename.split('/')[-1], 
+        filename.split('/')[-1],
         'pysedm_report_*_{name}*.png'.format(**header)))[-1]
         # TODO use os.path.dir or something
-        
+
     if not add_spec_attachment(header['name'], 'pysedm_report', pysedm_report,
                                auth, obsdate=header['obsdate'],
                                sourcelist=sourcelist):
-        return False     
+        return False
 
     if header['snidmatchtype'].lower() == 'none':
         print('no match')
         return False
-        
+
     elif float(header['snidmatchrlap']) < 5:
         print('bad rlap, only {}'.format(header['rlap']))
         return False
-        
-    elif (header['snidmatchtype'][0] == 'I') 
+
+    elif (header['snidmatchtype'][0] == 'I')
           and not (0.01 <= float(header['snidmatchredshift']) <= 0.3):
         print('bad redshift, {snidmatchredshift} '\
                             'for {snidmatchtype}'.format(**header))
@@ -196,24 +215,24 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
                                   obsdate=header['obsdate'],
                                   sourcelist=sourcelist):
             return False
-        
+
     # NOTE: this makes a major assumption about the naming scheme of snid plots
-    image_filename = filename.replace('.txt', 
+    image_filename = filename.replace('.txt',
                                       '_{}.png'.format(header['snidmatchtype']))
     assert glob(image_filename)
     if not add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
                                auth,  obsdate=header['obsdate'],
                                sourcelist=sourcelist):
         return False
-    
+
     return True
 
 
 if __name__ == "__main__":
     auth = (input('GROWTH marshal username:'), getpass())
-    sourcelist = requests.get(growth_base_url + "list_program_sources.cgi", 
+    sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
                               data={'programidx': -1}, auth=auth).json()
-    
+
     successes = []
     for filename in glob('*ZTF?????????.txt'):
         if add_SNID_pysedm_autoannot(filename, auth, sourcelist=sourcelist):
