@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan  7 11:30:32 2016
@@ -69,12 +70,12 @@ def solve_astrometry(img, radius=3.0, with_pix=True, tweak=3):
     
     astro = os.path.join( os.path.dirname(img), "a_" + os.path.basename(img))
     
-    print "Solving astrometry on field with (ra,dec)=", ra, dec, "Image",img, "New image", astro
+    print ("Solving astrometry on field with (ra,dec)=", ra, dec, "Image",img, "New image", astro) 
     
     cmd = " solve-field --ra %s --dec %s --radius %.4f -p --new-fits %s --cpulimit 45 -W none -B none -P none -M none -R none -S none -t %d --overwrite %s "%(ra, dec, radius, astro, tweak, img)
     if (with_pix):
         cmd = cmd + " --scale-units arcsecperpix  --scale-low 0.375 --scale-high 0.425"
-    print cmd
+    print (cmd) 
     logger.info(cmd)
     
     cmd = cmd + " > /tmp/astrometry_fail  2>/tmp/astrometry_fail"
@@ -96,7 +97,7 @@ def solve_astrometry(img, radius=3.0, with_pix=True, tweak=3):
         
         
     if(not os.path.isfile(astro)):
-        print "Astrometry FAILED!"
+        print ("Astrometry FAILED!") 
         logger.error("Astrometry FAILED!")
         
     return astro
@@ -134,7 +135,7 @@ def get_offset_center_failed_astro(f, plot=False, interactive=True):
     pra, pdec = wcs.wcs_pix2sky(np.array([[newx[0], newy[0]]] , np.float_), 0)[0]
     dra, ddec = cc.get_offset(ra, dec, pra, pdec)
     
-    print "Offset", dra, ddec, "Position RA,DEC", pra, pdec
+    print ("Offset", dra, ddec, "Position RA,DEC", pra, pdec) 
 
     x,y, fwhmx, fwhmy, bkg, amp = fit_utils.fit_gauss(imageloc)   
     
@@ -173,7 +174,7 @@ def get_offset_center(f, plot=False, interactive=False):
     '''
     
     if(not os.path.isfile(f)):
-        print "File %s does not exist! Returning Zero offsets..."%f
+        print ("File %s does not exist! Returning Zero offsets..."%f) 
         return -1, 0,0
     else:
         image = pf.open(f)
@@ -191,7 +192,7 @@ def get_offset_center(f, plot=False, interactive=False):
         if imageloc.shape[0]==0 or imageloc.shape[1]==0:
             logger.warn( "Astrometry has FAILED on this! The object is outside the frame! Resending to the numb astrometric solution")
             logger.error("Astrometry has FAILED on this! The object is outside the frame! Resending to the numb astrometric solution")
-            print "Pixels are", xl, xu, yl, yu
+            print ("Pixels are", xl, xu, yl, yu) 
             try:
                 code, dra, ddec = get_offset_center_failed_astro(f, plot=plot, interactive=interactive)
                 return 2, dra, ddec
@@ -202,7 +203,7 @@ def get_offset_center(f, plot=False, interactive=False):
             
             zmin, zmax = zscale.zscale(imageloc)
 
-            #print zmin, zmax, imageloc, (xl,xu,yl,yu)
+            #print (zmin, zmax, imageloc, (xl,xu,yl,yu)) 
     
             obj = fitsutils.get_par(f, "OBJECT")
             plt.suptitle(obj, fontsize=20)
@@ -311,7 +312,7 @@ def get_offsets_A_B(f, plot=False, interactive=False):
 
             nx, ny = ifuwin1.shape
             
-            #print nx,ny, ifuwin1.shape
+            #print (nx,ny, ifuwin1.shape) 
             
             #Retrieve the offset A image of the object
             x0, y0 = wcs.wcs_sky2pix(ra_off_op+20./3600, dec_off_op-20./3600, 0)
@@ -399,12 +400,12 @@ def main(infile, isAB, astro=True, plot=False):
     '''
     offset_file = "/tmp/%s_dra_ddec.txt"%(os.path.basename(infile).replace(".fits", ""))
 
-    print "Found image %s as first acquisition image after the slew. Computing offset for IFU..."%infile
+    print ("Found image %s as first acquisition image after the slew. Computing offset for IFU..."%infile) 
     '''if (os.path.isfile(offset_file)):
-        #print "Offset file %s already exists for the image."%offset_file
+        #print ("Offset file %s already exists for the image."%offset_file) 
         return
     else:
-	print "Found image %s as first acquisition image after the slew. Computing offset for IFU..."%infile'''
+	print ("Found image %s as first acquisition image after the slew. Computing offset for IFU..."%infile''') 
         
     newfile = ""
     retcode = 0
@@ -483,6 +484,6 @@ if __name__ == '__main__':
     plot = args.plot
     
     ret = main(infile, isAB, astro, plot)
-    print ret
+    print (ret) 
     logger.info("Returned from offseets with code %s"% ret[0])
     #retcode, offsets 

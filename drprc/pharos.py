@@ -1,3 +1,4 @@
+from __future__ import print_function
 import socket
 import time
 import os
@@ -44,7 +45,7 @@ class Reduce:
 
         time.sleep(2)
         data = s.recv(1024)
-        print "Got %s" % data
+        print ("Got %s" % data) 
 
         s.close()
         return data
@@ -64,7 +65,7 @@ class Reduce:
 
         time.sleep(1)
         data = s.recv(1024)
-        print "Got %s" % data
+        print ("Got %s" % data) 
 
         s.close()
         return data
@@ -78,7 +79,7 @@ class Reduce:
 
         time.sleep(1)
         data = s.recv(1024)
-        print "Got %s" % data
+        print ("Got %s" % data) 
 
         s.close()
 
@@ -92,7 +93,7 @@ class Reduce:
 
         time.sleep(1)
         data = s.recv(1024)
-        print "Got %s" % data
+        print ("Got %s" % data) 
 
         s.close()
 
@@ -123,5 +124,5 @@ s.send()
 s.send('SOLVE %s\n' % '/20160302/rc20160302_06_25_02.fits' )
 time.sleep(.3)
 data = s.recv(2048)
-print data
+print (data) 
 """

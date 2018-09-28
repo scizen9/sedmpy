@@ -1,3 +1,4 @@
+from __future__ import print_function
 #:4-*- coding: utf-8 -*-
 """
 Created on Sat May 21 10:26:37 2016
@@ -55,7 +56,7 @@ def compile_stats_pointing():
             jd = fitsutils.get_par(f, "JD")
             status, dra, ddec = recenter_ifu.get_offset_center(f, plot=False, interactive=False)
         
-            print f, ra, newra, imtype, jd, dra, ddec
+            print (f, ra, newra, imtype, jd, dra, ddec) 
             out.write("%s,%s,%s,%.2f,%s,%.5f,%.5f,%.2f,%.2f\n"%(f, imtype, obj, jd, myfilter, newra, newdec, dra, ddec))
         ra = newra
         dec = newdec
@@ -146,9 +147,9 @@ def get_sextractor_stats(files):
                     ns, fwhm, ellipticity, bkg = sextractor.analyse_image(sf)
                     out.write("%s,%s,%.3f,%d,%.2f,%.3f,%.3f,%.2f,%.1f,%s,%.2f,%.2f\n"%(os.path.abspath(f),obj,jd,ns,fwhm,ellipticity,bkg,airmass,in_temp,imtype,out_temp,in_hum))
                 except Exception as e:
-                    print "Error when retrieving the stats parameters from the header of file %s.\n Error %s"%(f, e)
+                    print ("Error when retrieving the stats parameters from the header of file %s.\n Error %s"%(f, e)) 
             except IOError:
-                print "Error when opening file %s"%f
+                print ("Error when opening file %s"%f) 
             
 def plot_stats(statfile):
     
@@ -232,16 +233,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     photdir = args.photdir
-    print "Parameter directory where stats are run : %s."%photdir
+    print ("Parameter directory where stats are run : %s."%photdir) 
     
     if (photdir is None):
         timestamp=datetime.datetime.isoformat(datetime.datetime.utcnow())
         timestamp = timestamp.split("T")[0].replace("-","")
         photdir = os.path.join(_photpath, timestamp)
-	print "New directory %s"%photdir
+	print ("New directory %s"%photdir) 
     else:
         timestamp=os.path.basename(os.path.abspath(photdir))
-    print "Running stats on", glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits"))
+    print ("Running stats on", glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits"))) 
     get_sextractor_stats(glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits")))
     plot_stats(os.path.join(os.path.abspath(photdir), "stats/stats.log")) 
 
