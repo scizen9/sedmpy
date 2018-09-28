@@ -1,0 +1,8 @@
+Message from Auto-SEDm:
+
+Request for follow-up on {object_name} has been determine to not be possible due to the following:
+{reject_reason}
+
+From Auto-SEDm
+
+http://pharos.caltech.edu
