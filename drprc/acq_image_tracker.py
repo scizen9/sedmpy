@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan  7 12:22:15 2016
@@ -30,12 +31,12 @@ def compute_offsets(fitsdir):
                 if (fitsutils.has_par(f, "ABPAIR") and fitsutils.get_par(f, "ABPAIR")=="True"):
                     isAB = True
                 if ((ra!="" and dec !="" and (ra != ra_prev or dec != dec_prev)) or (fitsutils.get_par(f, "OBJTYPE")=="ACQUISITION")):
-                    #print "Found image %s as first acquisition image after the slew. Computing offset for IFU..."%f
+                    #print ("Found image %s as first acquisition image after the slew. Computing offset for IFU..."%f) 
                     recenter_ifu.main(os.path.abspath(f), isAB, astro=True, plot=True)
                 ra_prev = ra
                 dec_prev = dec
         except KeyError:
-            print "File %s does not have a good header."%f
+            print ("File %s does not have a good header."%f) 
             
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=\
@@ -57,10 +58,10 @@ if __name__ == '__main__':
 
     os.chdir(fitsdir)
     
-    print os.getcwd()
+    print (os.getcwd()) 
     
     while (True):
         compute_offsets(fitsdir)
-        print "Brief nap before scanning for more new images..."
+        print ("Brief nap before scanning for more new images...") 
         time.sleep(5)
     

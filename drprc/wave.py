@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Sat Nov 28 18:48:13 2015
@@ -78,15 +79,15 @@ def rms_wl(npyfile, plot=False):
                 plt.plot(w[c], mod)
             wlInt = fit[0]            
             sigInt = fit[1]
-            #print "Wavelength", wlInt, "Sigma", sigInt, "Fit", fit
+            #print ("Wavelength", wlInt, "Sigma", sigInt, "Fit", fit) 
             if (sigInt) < 60:
                 allwave.append(wlInt-wh)
         if (plot):
             plt.show()
         
-        print "Wavelength", wh, "Median deviation", np.median(allwave), "Std", np.std(allwave)
+        print ("Wavelength", wh, "Median deviation", np.median(allwave), "Std", np.std(allwave)) 
         plt.hist(allwave)
-        print npyfile.replace('.npy', '%.1d.png'%wh)
+        print (npyfile.replace('.npy', '%.1d.png'%wh)) 
         plt.savefig(npyfile.replace('.npy', '%.1d.png'%wh).replace('data/spec', 'plots/wavelengths'))
         plt.clf()
 

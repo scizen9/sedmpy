@@ -1,3 +1,4 @@
+from __future__ import print_function
 #!/usr/local/EPD/epd-7.2.2/bin/python
 
 
@@ -65,7 +66,7 @@ def get_sedm_paramters(sedmfile):
                     sedmp[key] = value
         return  sedmp
     else:
-        print "File %s does not exist!"%sedmfile
+        print ("File %s does not exist!"%sedmfile) 
         return None
     
 
@@ -110,7 +111,7 @@ def upload_sedm(sedmfile, db):
     # commit the entry to the DB
     newrow = ptf.altertable(db, 'spec', -1, params)
     
-    print newrow
+    print (newrow) 
 
 def upload_snid_plot(sedmfile, plotfile, db):            
     ''' commit the classification comments
@@ -127,7 +128,7 @@ def upload_snid_plot(sedmfile, plotfile, db):
     else:
         comment = 'SNID could not find a good match'
     
-    print comment
+    print (comment) 
 
     #Fill the parameters for the DB with the right values.
     params = {}
@@ -144,7 +145,7 @@ def upload_snid_plot(sedmfile, plotfile, db):
     # commit the entry to the DB
     newrow = ptf.altertable(db, 'annotations', -1, params)
     
-    print newrow
+    print (newrow) 
     
 
 if __name__ == '__main__':
@@ -170,7 +171,7 @@ if __name__ == '__main__':
     name = os.path.basename(sedmfile).split("_")[0]
     plotfile = glob.glob( os.path.join(os.path.dirname(sedmfile), "*"+name+"*png"))
    
-    print "PLOTFILES",plotfile
+    print ("PLOTFILES",plotfile) 
  
     if (len(plotfile)>0):
         copyplotfile = True
@@ -178,7 +179,7 @@ if __name__ == '__main__':
     else:
         copyplotfile = False
     
-    print "Uploading SEDM file :", sedmfile
+    print ("Uploading SEDM file :", sedmfile) 
     
     
     #We copy the file to its final marshal destination.
@@ -188,7 +189,7 @@ if __name__ == '__main__':
         
         #If the file does not exist in destination, we copy it
         if (not os.path.isfile(sedmfiledest)):
-            print "File %s does not exist in destination as %s. Moving it there and updating the marshal."%(sedmfile, sedmfiledest)
+            print ("File %s does not exist in destination as %s. Moving it there and updating the marshal."%(sedmfile, sedmfiledest)) 
             shutil.move(sedmfile, sedmfiledest)
         #If the file does exist
         else:
@@ -198,12 +199,12 @@ if __name__ == '__main__':
                 match = re.search(r'_v\(?([0-9]+)\)?', os.path.basename(sedmfile))
                 version = int(match.group(1))
                 sedmfiledest = os.path.join(os.path.dirname(sedmfiledest), os.path.basename(sedmfile).replace("_v%d."%version, "_v%d."%(version+1)))
-                print "Moving file %s to %s"%(sedmfile, sedmfiledest)
+                print ("Moving file %s to %s"%(sedmfile, sedmfiledest)) 
                 shutil.move(sedmfile, sedmfiledest)
             #If the file already exists and we don't overwrite, we just delete it from the reception folter.
             #Generally this means that the spectrum is already in the marshal.
             else:
-                print "File %s already exists in destination as %s. No overwrite selected. Skipping."%(sedmfile, sedmfiledest)
+                print ("File %s already exists in destination as %s. No overwrite selected. Skipping."%(sedmfile, sedmfiledest)) 
                 os.remove(sedmfile)
 		if copyplotfile:
 			os.remove(plotfile)
@@ -218,18 +219,18 @@ if __name__ == '__main__':
         
         #If the file does not exist in destination, we copy it
         if (not os.path.isfile(sedmfiledest)):
-            print "File %s does not exist in destination as %s. Moving it there and updating the marshal."%(plotfile, sedmplotfiledest)
+            print ("File %s does not exist in destination as %s. Moving it there and updating the marshal."%(plotfile, sedmplotfiledest)) 
             shutil.move(plotfile, sedmplotfiledest)
         #If the file does exist
         else:
             #If it is said to overwrite, we create a new version.
             if (overwrite):
-                print "Moving file %s to %s"%(plotfile, sedmplotfiledest)
+                print ("Moving file %s to %s"%(plotfile, sedmplotfiledest)) 
                 shutil.move(plotfile, sedmplotfiledest)
             #If the file already exists and we don't overwrite, we just delete it from the reception folter.
             #Generally this means that the spectrum is already in the marshal.
             else:
-                print "File %s already exists in destination as %s. No overwrite selected. Skipping."%(plotfile, sedmplotfiledest)
+                print ("File %s already exists in destination as %s. No overwrite selected. Skipping."%(plotfile, sedmplotfiledest)) 
                 os.remove(plotfile)
                 sys.exit(0)
     else:
@@ -241,5 +242,5 @@ if __name__ == '__main__':
         if (copyplotfile):
             upload_snid_plot(sedmfiledest, sedmplotfiledest, db)
     except IOError:
-        print "Exception when uploading the file to the DB"
+        print ("Exception when uploading the file to the DB") 
 	pass
