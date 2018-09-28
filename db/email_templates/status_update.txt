@@ -1,0 +1,9 @@
+Message from Auto-SEDm:
+
+The status for follow-up on {object_name} has been updated to {new_status} at {status_change_time}.
+
+This is an auto-generated alert.
+
+From Auto-SEDm
+
+http://pharos.caltech.edu

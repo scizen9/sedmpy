@@ -30,7 +30,7 @@ import rcred
 import time_utils
 import matplotlib.dates as md
 
-from ConfigParser import SafeConfigParser
+from configparser import SafeConfigParser
 import codecs
 
 parser = SafeConfigParser()
@@ -142,7 +142,7 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
     for i, (x_i,y_i) in enumerate(zip(xpos, ypos)):
 
         x_i = int(x_i)
-	y_i = int(y_i)
+        y_i = int(y_i)
         hrad = int(math.ceil(rad/2.))
         sub = img[x_i-hrad:x_i+hrad, y_i-hrad:y_i+hrad]
         x = np.linspace(0, len(sub), len(sub))
@@ -318,8 +318,8 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False, re
     #Select only stars isolated in a radius of ~12 arcsec.
     mask2 = np.array(are_isolated(cat_ra[mask], cat_dec[mask], 10.))
     if (len(mask2)==0):
-	logger.error("No good stars left")
-	return False   
+        logger.error("No good stars left")
+        return False   
  
     #Select only stars that are within the proper magnitude range
     mask3 = (mag[mask][mask2] < maxmag) * (mag[mask][mask2] > minmag) 
@@ -380,7 +380,6 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False, re
             header='x y objid ra dec U B V R I dU dB dV dR dI'
         np.savetxt('/tmp/sdss_cat_det_%s.txt'%creationdate, z[mask_valid_fwhm], fmt=fmt, \
         header=header)
-        #print ("Saved to /tmp/sdss_cat_det_%s.txt"%creationdate)
         
             
         
@@ -463,7 +462,7 @@ def add_to_zp_cal(ref_stars, image, logname):
     exptime = fitsutils.get_par(image, "exptime")
     fwhm = fitsutils.get_par(image, "FWHM")
     if fwhm is None:
-	fwhm = 0
+        fwhm = 0
     airmass = 1.3
     name = "object"
     if (fitsutils.has_par(image, "NAME")):
@@ -659,7 +658,6 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
         #M[:,7] = ab['dx']
         #M[:,8] = ab['dy']
         
-        #print M
         
         depend = ab['std']-ab['inst']
                 
@@ -684,8 +682,6 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
         rms =  np.sqrt(np.sum((depend-est_zp)**2)/(len(depend)-1))
         mad = stats.funcs.median_absolute_deviation(depend-est_zp)
         
-        #print ("Filter %s ZP %.2f Color index %.2f RMS %.2f MAD %.2f"%(b, coef[0], coef[1], rms, mad))
-        
         #Remove outliers
         mask = np.abs(depend-est_zp) < 5*mad
         
@@ -693,7 +689,6 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
         
         M = np.zeros((len(ab), 13))
         M[:,0] = 1      
-        #M[:,1] = ab['inst']
         M[:,1] = ab['color'] 
         M[:,2] = ab['airmass'] - 1.3
         M[:,3] = ab['jd'] 
@@ -708,10 +703,7 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
         #M[:,12] = ab['x']**4
         #M[:,13] = ab['y']**4
         M[:,12] = ab['fwhm']-1.5
-        #M[:,6] = ab['fwhm']-1.5
         
-        
-        #print M
         
         depend = ab['std']-ab['inst']
         
@@ -959,8 +951,6 @@ def lsq_zeropoint_partial(logfile, plot=True):
         M[:,1] = ab['color'] 
 
         
-        #print M
-        
         depend = ab['std']-ab['inst']
         
         lsq_result = np.linalg.lstsq(M, depend)
@@ -1034,7 +1024,7 @@ def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
     if np.count_nonzero(mask_color) > 2:
     	r = r[mask_color]
     	my = my[mask_color]
-        ids = ids[mask_color]
+    ids = ids[mask_color]
  
 
     coefs, residuals, rank, singular_values, rcond = np.polyfit(r[band]-r[col_band], r[band] - my["fit_mag"], w=1./np.maximum(0.1, np.sqrt(my["fiterr"]**2 + r['d'+band]**2)), deg=1, full=True)
@@ -1048,8 +1038,6 @@ def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
     measured = r[band]- my["fit_mag"]
     mad = stats.funcs.median_absolute_deviation(pred-measured)
     
-    #print ("MAD1",  mad)
-    
     if len(r) > 4:
         mask = np.abs(pred-measured)/mad < 3
             
@@ -1058,10 +1046,10 @@ def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
         ids = ids[mask]
         
         try:
-		coefs, residuals, rank, singular_values, rcond = np.polyfit(r[band]-r[col_band], r[band] - my["fit_mag"], w=1./np.maximum(0.2, np.sqrt(my["fiterr"]**2 + r['d'+band]**2)), deg=1, full=True)
+            coefs, residuals, rank, singular_values, rcond = np.polyfit(r[band]-r[col_band], r[band] - my["fit_mag"], w=1./np.maximum(0.2, np.sqrt(my["fiterr"]**2 + r['d'+band]**2)), deg=1, full=True)
         except:
-		logger.error("Critical failure for polyfit for object %s"%image)
-		return 0,0,0
+            logger.error("Critical failure for polyfit for object %s"%image)
+            return 0,0,0
         
         logger.info("Coefficients for 1 deg polynomial fit to the zeropoint: %s. After outlier rejection."% coefs)
         p = np.poly1d(coefs)
@@ -1069,7 +1057,6 @@ def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
         pred = p(r[band]-r[col_band])
         measured = r[band]- my["fit_mag"]
         mad = stats.funcs.median_absolute_deviation(pred-measured)
-        #print ("MAD2",  mad)
 
         
     if (plot):
@@ -1082,7 +1069,7 @@ def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
         plt.xlabel("{:} - {:}".format(band, col_band))
         plt.ylabel("ZP")
         plotname = os.path.join( plotdir, os.path.basename(image).replace('.fits', ".zp.png").replace('.new', ".zp.png"))
-	plt.tight_layout()
+        plt.tight_layout()
         plt.savefig( plotname)
 
         print ("Plotting into %s."%plotname)
@@ -1167,11 +1154,11 @@ def calibrate_zeropoint(image, plot=True, plotdir=None, astro=False, debug=False
     #If extraction worked, we can get the FWHM        
     fwhm = fitsutils.get_par(image, "fwhm")
     if (not fwhm is None):
-	fwhm_pix = fwhm / 0.394
+        fwhm_pix = fwhm / 0.394
     else:
-	fwhm = 0
-	fwhm_pix = 0
-	logger.error("No FWHM value has been computed for soruce %s."%image)
+        fwhm = 0
+        fwhm_pix = 0
+        logger.error("No FWHM value has been computed for soruce %s."%image)
 
     #Run aperture photometry on the positions of the stars.
     app_phot.get_app_phot("/tmp/sdss_cat_det_%s.txt"%creationdate, image, wcsin='logic', plotdir=plotdir, box=15)
@@ -1245,8 +1232,8 @@ def plot_zp(zpfile, plotdir=None):
     if (plotdir is None):
         plt.show()
     else:
-	plt.savefig(os.path.join(plotdir, "zeropoint_per_exposure.png"))
-	plt.clf()
+        plt.savefig(os.path.join(plotdir, "zeropoint_per_exposure.png"))
+        plt.clf()
     
 def plot_zp_airmass(zpfile):
     import datetime
