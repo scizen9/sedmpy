@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Aug 11 11:23:00 2016
@@ -97,7 +98,7 @@ def parse_and_fill(spec, snidoutput):
                 pars["bestMatchSubtype"] = '-'
             pars["bestMatchRedshift"] = float(lines[best_match_line].split()[5])
 
-    print pars
+    print (pars) 
 
     with open(spec, "r") as specIn:
         spec_lines = specIn.readlines()
@@ -157,7 +158,7 @@ def run_snid(spec_dir='./', overwrite=False):
     """
     
     for fl in glob.glob(os.path.join(spec_dir, "PTF*_SEDM.txt")):
-        print fl
+        print (fl) 
         # retrieve the quality of the spectra.
         with open(fl, "r") as sfl:
             l = sfl.readlines()
@@ -173,7 +174,7 @@ def run_snid(spec_dir='./', overwrite=False):
             # If quality is good, check for previous classification
             if q < 3:
                 clas = [li for li in l if "TYPE" in li]
-                print "classification: ", clas
+                print ("classification: ", clas) 
                 # If the file has been classified, move to the next
                 if len(clas) > 0 and not overwrite:
                     continue
@@ -183,11 +184,11 @@ def run_snid(spec_dir='./', overwrite=False):
         # If we are here, we run the classification with snid
         cm = "snid wmin=4500 wmax=9500 skyclip=1 medlen=20 aband=1" \
              " rlapmin=4 inter=0 plot=2 %s" % fl
-        print cm
+        print (cm) 
         try:
             subprocess.call(cm, shell=True)
         except:
-            print "Error running snid"
+            print ("Error running snid") 
             continue
         
         snidoutput = fl.replace(".txt", "_snid.output")
@@ -221,7 +222,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     specdir = args.specdir
-    print "Directory where reduced spectra reside: ", specdir
+    print ("Directory where reduced spectra reside: ", specdir) 
     
     if specdir is None:
         timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
@@ -232,14 +233,14 @@ if __name__ == '__main__':
         timestamp = os.path.basename(specdir)
         os.chdir(specdir)
 
-    print os.getcwd()
+    print (os.getcwd()) 
 
     # Run snid on extracted spectra
-    print "Running snid on PTF*_SEDM.txt files in %s" % specdir
+    print ("Running snid on PTF*_SEDM.txt files in %s" % specdir) 
     run_snid(spec_dir=specdir)
 
     sedmfiles = glob.glob("PTF*.txt")
-    print "Copying", sedmfiles
+    print ("Copying", sedmfiles) 
     
     versions = {}
     
@@ -286,11 +287,11 @@ if __name__ == '__main__':
             else:
                 cmd2 = ""
 
-            print cmd, cmd2
+            print (cmd, cmd2) 
 
             try:
                 subprocess.call(cmd, shell=True)
                 subprocess.call(cmd2, shell=True)
             except:
-                print "Error copying the file"
+                print ("Error copying the file") 
                 pass
