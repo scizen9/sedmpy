@@ -91,7 +91,7 @@ def add_spec_attachment(ztfname, comment, filename, auth, sourceid=None,
                             }, files={"attachment": att})
 
     if 'Updating Database' in r.text or 'copied file successfully' in r.text:
-        print('{} uploaded'.format(filename))
+        print('{} uploaded'.format(filename.split('/')[-1]))
         return True
     else:
         print('error submitting comment')
@@ -139,7 +139,7 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, auth,
                        })
 
     if 'Updating Database' in r.text or 'copied file successfully' in r.text:
-        print('{}:{} posted'.format(annot_type, value))
+        print('{}: {} posted'.format(annot_type, value))
         return True
     else:
         print('error submitting comment')
@@ -191,16 +191,26 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
             specid = spec['specid']
             break
 
+    # PYSEDM_REPORT
+    # must be posted after the SNID plot or else it'll be overwritten
+    try:
+        # TODO use os.path.dir or something
+        pysedm_report = glob(filename.replace(filename.split('/')[-1],
+                         'pysedm_report_*_{name}*.png'.format(**header)))[-1]
+
+        pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
+                                   pysedm_report, auth,
+                                   obsdate=header['obsdate'],
+                                   sourcelist=sourcelist)
+    except IndexError:
+        print('no pysedm_report for {}?'.format(header['name']))
+        pr_posted = False
+
     # SNID RESULTS
     if not 'snidmatchtype' in header:
-        continue
+        print(filename, "never run through snid?")
+        return False
         
-    if header['snidmatchsubtype'] == '-':
-        header['snidmatchmatch'] = [header['snidmatchtype']
-    else:
-        header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
-                                             header['snidmatchsubtype']])
-
     if header['snidmatchtype'].lower() == 'none':
         print('no match')
         return False
@@ -209,11 +219,17 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
         print('bad rlap, only {}'.format(header['snidmatchrlap']))
         return False
 
-    elif (header['snidmatchtype'][0] == 'I')
+    elif (header['snidmatchtype'][0] == 'I')\
           and not (0.01 <= float(header['snidmatchredshift']) <= 0.3):
         print('bad redshift, {snidmatchredshift} '\
                             'for {snidmatchtype}'.format(**header))
         return False
+
+    if header['snidmatchsubtype'] == '-':
+        header['snidmatchmatch'] = header['snidmatchtype']
+    else:
+        header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
+                                             header['snidmatchsubtype']])
 
     dtypes = {'match': 'STRING', 'rlap': 'FLOAT', 'redshift': 'FLOAT'}
     for key in dtypes:
@@ -223,30 +239,19 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
                                   sourcelist=sourcelist):
             return False
 
+    if pr_posted:
+        return True # we already have an attachment comment so don't overwrite
+
     # SNID PLOT
     # NOTE: this makes a major assumption about the naming scheme of snid plots
     image_filename = filename.replace('.txt',
                                       '_{}.png'.format(header['snidmatchtype']))
-    assert glob(image_filename)
-    if not add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
-                               auth,  obsdate=header['obsdate'],
-                               sourcelist=sourcelist):
+    if not glob(image_filename):
         return False
+    add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
+                               auth,  obsdate=header['obsdate'],
+                               sourcelist=sourcelist)
 
-    # PYSEDM_REPORT
-    # must be posted after the SNID plot or else it'll be overwritten
-    try:
-        # TODO use os.path.dir or something
-        pysedm_report = glob(filename.replace(filename.split('/')[-1],
-                         'pysedm_report_*_{name}*.png'.format(**header)))[-1]
-        
-        if not add_spec_attachment(header['name'], 'pysedm_report', 
-                                   pysedm_report, auth, 
-                                   obsdate=header['obsdate'],
-                                   sourcelist=sourcelist):
-            return False
-    except IndexError:
-        print('no pysedm_report for {}?'.format(header['name']))
     return True
 
 
