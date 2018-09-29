@@ -6,6 +6,8 @@ import argparse
 import os
 import datetime
 import sys
+from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+from growth.marshal_commenter import sourcelist, auth
 
 
 # Path constants
@@ -490,6 +492,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 spec_stat = 'IFU: Failed'
             else:
                 spec_stat = 'IFU: Complete'
+                annots_posted = add_annots(spectra_file, auth, 
+                                           sourcelist=sourcelist)
 
         if add_phot:
             phot_ret = upload_phot(phot_file, request_id=marshal_id)
