@@ -4,9 +4,17 @@ from glob import glob
 from getpass import getpass
 from pprint import pprint
 import growth
+import json
 
-growth_base_url = growth.growth_base_url
-auth = (growth.user, growth.pwd)
+growth_base_url = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
+growth_source_summary_url = growth_base_url + 'source_summary.cgi?sourceid='
+
+try:
+    config = json.load(open('config.json'))
+except FileNotFoundError:
+    print("ERROR - could not find credentials file!")
+
+auth = tuple(config['growth_auth']['adugas'])
 sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
                           data={'programidx': -1}, auth=auth).json()
 
@@ -83,6 +91,7 @@ def add_spec_attachment(ztfname, comment, filename, auth, sourceid=None,
                             }, files={"attachment": att})
 
     if 'Updating Database' in r.text or 'copied file successfully' in r.text:
+        print('{} uploaded'.format(filename))
         return True
     else:
         print('error submitting comment')
@@ -130,6 +139,7 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, auth,
                        })
 
     if 'Updating Database' in r.text or 'copied file successfully' in r.text:
+        print('{}:{} posted'.format(annot_type, value))
         return True
     else:
         print('error submitting comment')
@@ -166,40 +176,37 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
         sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
                           data={'programidx': -1}, auth=auth).json()
     sourceid = [source['id'] for source in sourcelist
-                  if source['name'] == ztfname]
+                  if source['name'] == header['name']][-1]
     source_summary = requests.get(growth_base_url + 'source_summary.cgi?' \
-                                  'sourceid={}'.format(sourceid), auth=auth)
+                                  'sourceid={}'.format(sourceid), auth=auth).json()
 
     for spec in source_summary['uploaded_spectra']:
-        with requests.get(spec['datapath'], auth=auth).text as f:
-            fheader = {line.split(':', 1)[0][1:].strip().lower():
+        f = requests.get('http://skipper.caltech.edu:8080/growth-data/' \
+                         + spec['datapath'],
+                         auth=auth).text
+        fheader = {line.split(':', 1)[0][1:].strip().lower():
                         line.split(':', 1)[-1].strip()
-                        for line in f if line[0] == '#'}
-            if header == fheader:
-                specid = spec['id']
-                break
+                        for line in f.split('\n') if '#' in line}
+        if header == fheader:
+            specid = spec['specid']
+            break
 
-    header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
-                                         header['snidmatchsubtype']])
-
-    # I haven't checked the pysedm_report, but probably the path is the only
-    # thing that could be wrong
-    pysedm_report = glob(filename.replace(
-        filename.split('/')[-1],
-        'pysedm_report_*_{name}*.png'.format(**header)))[-1]
-        # TODO use os.path.dir or something
-
-    if not add_spec_attachment(header['name'], 'pysedm_report', pysedm_report,
-                               auth, obsdate=header['obsdate'],
-                               sourcelist=sourcelist):
-        return False
+    # SNID RESULTS
+    if not 'snidmatchtype' in header:
+        continue
+        
+    if header['snidmatchsubtype'] == '-':
+        header['snidmatchmatch'] = [header['snidmatchtype']
+    else:
+        header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
+                                             header['snidmatchsubtype']])
 
     if header['snidmatchtype'].lower() == 'none':
         print('no match')
         return False
 
     elif float(header['snidmatchrlap']) < 5:
-        print('bad rlap, only {}'.format(header['rlap']))
+        print('bad rlap, only {}'.format(header['snidmatchrlap']))
         return False
 
     elif (header['snidmatchtype'][0] == 'I')
@@ -216,6 +223,7 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
                                   sourcelist=sourcelist):
             return False
 
+    # SNID PLOT
     # NOTE: this makes a major assumption about the naming scheme of snid plots
     image_filename = filename.replace('.txt',
                                       '_{}.png'.format(header['snidmatchtype']))
@@ -225,6 +233,20 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
                                sourcelist=sourcelist):
         return False
 
+    # PYSEDM_REPORT
+    # must be posted after the SNID plot or else it'll be overwritten
+    try:
+        # TODO use os.path.dir or something
+        pysedm_report = glob(filename.replace(filename.split('/')[-1],
+                         'pysedm_report_*_{name}*.png'.format(**header)))[-1]
+        
+        if not add_spec_attachment(header['name'], 'pysedm_report', 
+                                   pysedm_report, auth, 
+                                   obsdate=header['obsdate'],
+                                   sourcelist=sourcelist):
+            return False
+    except IndexError:
+        print('no pysedm_report for {}?'.format(header['name']))
     return True
 
 
