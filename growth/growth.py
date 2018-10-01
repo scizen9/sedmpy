@@ -6,8 +6,8 @@ import argparse
 import os
 import datetime
 import sys
-from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
-from growth.marshal_commenter import sourcelist, auth
+from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+from marshal_commenter import sourcelist, auth
 
 
 # Path constants
@@ -29,6 +29,7 @@ try:
     user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
 except FileNotFoundError:
     print("ERROR - could not find credentials file!")
+auth = (user, pwd)
 
 
 def write_json_file(pydict, output_file):
