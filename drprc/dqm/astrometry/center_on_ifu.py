@@ -224,4 +224,4 @@ if __name__ == "__main__":
     #print(ret)
     #print(get_offset_to_reference(ret))
     print(calculate_offset(image2, False))
-    #print(get_offset_to_brightest(image2))
+    print(get_offset_to_brightest(image2))

@@ -3042,8 +3042,9 @@ class SedmDB:
             print(int(a[0]))
             self.update_allocation_time(int(a[0]))
 
-    def send_email_by_request(self, requestid, to=None, msg=None, subject=None,
-                              template='', template_dict=None, use_html=False):
+    def send_email_by_request(self, requestid=None,userid=None,
+                              to=None, msg=None, subject=None,
+                              template='', template_dict=None):
         """
         Allow 
         :param requestid: 
@@ -3071,7 +3072,28 @@ class SedmDB:
         # ToDo: Setup auto email user
         msg['From'] = 'rsw@astro.caltech.edu'
 
+        # 2. Choose the email template to use
+        template_file = '%s/email_templates/%s.txt' % (SITE_ROOT,
+                                                       template.lower())
+        print(template_file)
+        if os.path.exists(template_file):
+            with open(template_file) as f:
+                email_template = f.read()
 
+            print(email_template)
+            print(template_dict)
+
+            email_content = email_template.format(**template_dict)
+
+            msg.set_content(email_content)
+
+        else:
+            return "Template does not exist"
+
+        # 3. Send the message
+        # Send the message via local SMTP server.
+        with smtplib.SMTP('smtp-server.astro.caltech.edu') as s:
+            s.send_message(msg)
 
 def _data_type_check(keys, pardic, value_types):
     """
@@ -3233,3 +3255,14 @@ def _id_from_time():
     id = time.iso
     id = id.replace('-', '').replace(' ', '').replace(':', '').replace('.', '')
     return long(id)
+
+if __name__ == "__main__":
+    import datetime
+    x = SedmDB(host="pharos.caltech.edu")
+
+
+    template_dict = {'object_name': 'Test', 'new_status': 'NEW',
+                     'status_change_time': datetime.datetime.utcnow()}
+    x.send_email_by_request(to='rsw@astro.caltech.edu', subject="Test",
+                          template='status_update', template_dict=template_dict)
+
