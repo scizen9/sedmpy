@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  3 04:01:07 2016
@@ -77,7 +78,7 @@ def get_sao_rec(hra, hdec, radius):
     '''
     Runs the scat program to get an SAO star.
     '''
-    print "Looking for an SAO at %s %s with radius %d"%(hra, hdec,radius)
+    print ("Looking for an SAO at %s %s with radius %d"%(hra, hdec,radius)) 
     sao_path = os.environ["SAOCAT"]
     os.chdir(sao_path)
     cmd = "scat -c sao  %s %s J2000 -r %d -mx 7,9 > /tmp/sao"%(hra, hdec, radius)
@@ -86,7 +87,7 @@ def get_sao_rec(hra, hdec, radius):
     try:
         sao = np.genfromtxt("/tmp/sao", dtype="str")
         sao = np.array(sao, ndmin=2)
-        print sao
+        print (sao) 
     except IOError:
         sao = np.array([])
     

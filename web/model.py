@@ -13,9 +13,15 @@ from bokeh.io import curdoc
 from bokeh.layouts import row, column
 from bokeh.models import ColumnDataSource, Label
 from bokeh.models import CDSView, GroupFilter
+from bokeh.models.tools import HoverTool
+from bokeh.models.ranges import Range1d
+from bokeh.models.axes import LinearAxis
+from bokeh.models.annotations import BoxAnnotation
 from bokeh.plotting import figure
 from bokeh.embed import components
 from astropy.time import Time
+import astropy.units as u
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun, get_moon
 from scheduler.scheduler import ScheduleNight
 
 superuser_list = ['rsw', 'SEDm_admin', 189, 2, 20180523190352189]
@@ -174,6 +180,9 @@ def get_homepage(userid, username):
                                                     index=False,
                                                     col_space=10),
                                 'title': 'Your Active Allocations'}
+
+    sedm_dict['visibility'] = {'title': 'Visibilities for active requests',
+                               'url':   '/visibility'}
 
     # Make a greeting statement
     sedm_dict['greeting'] = 'Hello %s!' % username
@@ -1302,6 +1311,189 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
     return sedm_dict
 
+###############################################################################
+# THIS SECTION HANDLES THE ACTIVE_VISIBILITIES PAGE.                          #
+# KEYWORD:VISIBILITIES #???                                                   #
+###############################################################################
+def get_active_visibility(userid):
+    sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+                 'inidate': datetime.datetime.utcnow() - datetime.timedelta(days=7, hours=8)}
+
+    # 1. Get a dataframe of all requests for the current user
+    requests = get_requests_for_user(userid, sedm_dict['inidate'], sedm_dict['enddate'])
+
+    # organize requests into dataframes by whether they are completed or not
+    active = requests[(requests['status'] == 'PENDING') | (requests['status'] == 'ACTIVE')]
+
+    # retrieve information about the user's allocations
+    ac = get_allocations_user(userid)
+
+    # Create html tables
+    sedm_dict['active'] = {'table': active.to_html(escape=False,
+                                                   classes='table',
+                                                   index=False),
+                           'title': 'Active Requests for the last 7 days'}
+
+    sedm_dict['script'], sedm_dict['div'] = plot_visibility(userid, sedm_dict)
+    return sedm_dict
+
+def plot_visibility(userid, sedm_dict, obsdate=None):
+    '''
+     plots visibilities for active requests at the current date. Will be adapted to plot previous observations and arbitrary objects
+    userid: user whose allocations will be shown in color with details. Others will be greyed out
+    sedm_dict: should have ['active']['table'] and ['enddate'] and ['inidate']
+    obsdate: <str> YYYYMMDD. if "None", will use current date
+
+    returns: components of a bokeh figure with the appropriate plot
+    '''
+
+    allocpalette = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6', '#ffff99']
+    requests = get_requests_for_user(2, sedm_dict['inidate'], sedm_dict['enddate']) #admin
+    active = requests[(requests['status'] == 'PENDING') | (requests['status'] == 'ACTIVE')]
+    # ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority', 'status', 'lastmodified', 'obs_seq', 'exptime', 'UPDATE']
+    
+    allowed_allocs = get_allocations_user(userid)
+    active['allocation'].mask(~np.in1d(active['allocation'], allowed_allocs['allocation']), other='other', inplace=True)
+
+    programs = {i['allocation']:i['program'] for _, i in allowed_allocs.iterrows()}
+    programs['other'] = ['other']
+    active.sort_values('allocation') # this needs to be alphabetical for the legend to look correct
+    
+    p = figure(plot_width=700, plot_height=500, toolbar_location='above',
+               y_range=(0, 90), y_axis_location="right")
+    
+    ### setup with axes, sun/moon, frames, background 
+    # TODO Dima says to never ever use SkyCoord in production code
+    palomar_mountain = EarthLocation(lon=243.1361*u.deg, lat=33.3558*u.deg, height=1712*u.m)
+    utcoffset = -7 * u.hour  # Pacific Daylight Time
+
+    
+    if obsdate is None: # plotting a single object, or the pending objects in future
+        time = (Time.now() - utcoffset).datetime # date is based on local time
+        time = Time(datetime.datetime(time.year, time.month, time.day))
+    else: # past observations on a particular night
+        time = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]), int(obsdate[6:8])))
+        all_requests = all_requests[all_requests['status'] == 'COMPLETED']
+        all_requests = all_requests[time - 12 * u.hour <= all_requests['lastmodified'] < time + 12 * u.hour]
+    midnight = time - utcoffset # 7am local time of correct date, midnight UTC
+
+    delta_midnight = np.linspace(-8, 8, 500) * u.hour
+    t = midnight + delta_midnight
+    abstimes = np.asarray([i.datetime.strftime('%I:%M %p') for i in t + utcoffset])
+
+    frame = AltAz(obstime=t, location=palomar_mountain)
+    sun_alt  =  get_sun(t).transform_to(frame).alt
+    moon_alt = get_moon(t).transform_to(frame).alt
+    
+    # shading for nighttime and twilight
+    dark_times    = delta_midnight[sun_alt < 0].value
+    twilit_times  = delta_midnight[sun_alt < -18 * u.deg].value
+    plotted_times = delta_midnight[sun_alt <   5 * u.deg].value
+    
+    twilight = BoxAnnotation(left=min(twilit_times), right=max(twilit_times), bottom=0, 
+                             fill_alpha=0.15, fill_color='black', level='underlay')
+    night    = BoxAnnotation(left=min(dark_times),    right=max(dark_times),    bottom=0, 
+                             fill_alpha=0.25, fill_color='black', level='underlay')
+    earth    = BoxAnnotation(top=0, fill_alpha=0.8, fill_color='sienna')
+    
+    p.add_layout(night)
+    p.add_layout(twilight)
+    p.add_layout(earth)
+    
+    # sun and moon
+    sun  = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun", legend='Sun', line_dash='dashed')
+    moon = p.line(delta_midnight, moon_alt, line_color='yellow', line_dash='dashed', 
+                                                   name="Moon", legend='Moon')
+    # labels and axes
+    p.title.text = "Visibility for %s UTC" %midnight
+    p.xaxis.axis_label = "Hours from PDT Midnight"
+    p.x_range.start = min(plotted_times)
+    p.x_range.end   = max(plotted_times)
+    p.yaxis.axis_label = "Airmass"
+    
+    # primary airmass label on right
+    airmasses = (1.01, 1.1, 1.25, 1.5, 2., 3., 6.)
+    ticker = [90 - np.arccos(1./i) * 180/np.pi for i in airmasses]
+    p.yaxis.ticker = ticker
+    p.yaxis.major_label_overrides = {tick: str(airmasses[i]) for i, tick in enumerate(ticker)}
+    
+    # add supplementary alt label on left
+    p.extra_y_ranges = {"altitude": Range1d(0, 90)}
+    p.add_layout(LinearAxis(y_range_name="altitude", axis_label='Altitude [deg]'), 'left')
+
+    ##########################################################################
+    ### adding data from the actual objects
+    #objs = SkyCoord(np.array(ras,  dtype=np.float), 
+    #                np.array(decs, dtype=np.float), unit="deg")
+    
+    approx_midnight = int(Time.now().jd - .5) + .5 - utcoffset.value/24.
+    palo_sin_lat = 0.549836545
+    palo_cos_lat = 0.835272275
+    palo_long = 243.1362
+
+    alloc_color = {}
+    for i, val in allowed_allocs.iterrows():
+        alloc_color[val['allocation']] = allocpalette[i % len(allocpalette)]
+    alloc_color['other'] = 'lightgray'
+        
+    tooltipped = [] # things with tooltips
+    tooltips = [('obj',        '@name'), # make it #name when we get to bokeh 0.13
+                ('time',       '@abstime'), 
+                ('altitude',   u"@alt\N{DEGREE SIGN}"), 
+                ('airmass',    '@airmass')]
+
+    for _, req in active.iterrows():
+        req['ra'] = float(req['RA'])
+        req['dec'] = float(req['DEC']) # iterrows doesn't preserve datatypes and turns ra, dec into decimals?
+        color = alloc_color[req['allocation']]
+        # vvv I got this formula from some website for the navy but forgot to copy the url
+        alt = 180 / np.pi * np.arcsin(palo_cos_lat * \
+              np.cos(np.pi/180 * (palo_long - req['ra'] + 15 * (18.697374558 + 24.06570982 * (delta_midnight.value/24. + approx_midnight - 2451545)))) * \
+              np.cos(req['dec'] * np.pi/180) + palo_sin_lat * np.sin(req['dec'] * np.pi/180))
+        airmass = 1./np.cos((90 - alt) * np.pi/180)
+        source = ColumnDataSource(    dict(times=delta_midnight, 
+                                             alt=alt,
+                                         airmass=airmass,
+                                         abstime=abstimes,
+                                        priority=np.full(len(t), int(req['priority'])),
+                                           alloc=np.full(len(t), req['allocation'][6:]),
+                                            name=np.full(len(abstimes), req['object']))) # delete the name when we get to bokeh 0.13
+        if len(active) == 1: # single object
+            legend = req['object']
+            line_width = 5
+        else:
+            legend = '{}'.format(programs[req['allocation']])
+            #tooltips += [('priority',   '@priority'), ('allocation', '@alloc')]
+            
+            if req['status'] == 'COMPLETED': # plot that highlights observed part of the night
+                # full path of the night
+                dotted = p.line('times', 'alt', color=color, source=source, line_dash='2 2',
+                                name=req['object'], line_width=1, legend=legend)
+                # manually crop the source so only thick observed part has tooltips
+                endtime = req['lastmodified']
+                exptime = {req['obs_seq'][i]:req['exptime'][i] for i in range(len(req['obs_seq']))}['1ifu'] #TODO sometimes it's 2ifu or no ifu
+                initime = endtime - exptime * u.second
+
+                mask = np.logical_and(delta_midnight + midnight + utcoffset > initime,
+                                      delta_midnight + midnight + utcoffset < endtime)
+                source = ColumnDataSource(pd.DataFrame(source.data)[mask])
+                line_width = int(req['priority'] + 3) # all it changes is the line width      
+            else:
+                line_width = int(req['priority'])
+        
+        path = p.line('times', 'alt', color=color, source=source, name=''.format(req['object']),
+                      line_width=line_width, legend=legend)
+        if not req['allocation'] == 'other':
+            tooltipped.append(path)
+        
+    p.legend.click_policy = 'hide'
+    p.legend.location = 'bottom_right'
+    p.add_tools(HoverTool(renderers=tooltipped, tooltips=tooltips))
+    
+    curdoc().add_root(p)
+    curdoc().title = 'Visibility plot'
+    
+    return components(p)
 
 ###############################################################################
 # THIS SECTION IS THE WEATHER STATS SECTION.                                  #

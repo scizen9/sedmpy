@@ -1,0 +1,17 @@
+{% extends "sedm_base.html" %}
+
+{% block head %}
+    {{ super() }}
+    {{ sedm_dict.js_resources | safe}}
+    {{ sedm_dict.css_resources | safe}}
+{% endblock head %}
+
+{% block content %}
+<div id="visibilityPlot" class="container">
+    <div id="plot_script">{{ sedm_dict.script | safe }}</div>
+    <div id="plot_div">{{ sedm_dict.div | safe }}</div>
+</div>
+<div id="active_table" class="container">
+    {{ sedm_dict.active.table | safe }}
+</div>
+{% endblock content %}

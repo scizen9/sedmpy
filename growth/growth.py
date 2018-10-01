@@ -6,6 +6,12 @@ import argparse
 import os
 import datetime
 import sys
+try:
+    from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from marshal_commenter import sourcelist, auth
+except ImportError:
+    from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from growth.marshal_commenter import sourcelist, auth
 
 
 # Path constants
@@ -23,10 +29,11 @@ growth_phot_url = growth_base_url + 'edit_phot_auto.cgi'
 growth_view_source_url = growth_base_url + 'view_source.cgi?'
 
 default_id = 65
-try:
-    user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
-except FileNotFoundError:
-    print("ERROR - could not find credentials file!")
+if auth:
+    user, pwd = auth
+else:
+    user = None
+    pwd = None
 
 
 def write_json_file(pydict, output_file):
@@ -410,6 +417,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                                            {"id": user_id})[0]
             username = res[0]
             email = res[1]
+            out_dir = ''
         else:
             print("No request id provided")
     else:
@@ -465,6 +473,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             marshal_id = target['requestid']
             object_name = target['sourcename']
             username = target['username']
+            out_dir = 'targets/'
 
     # Return values
     spec_ret = None
@@ -482,11 +491,18 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         if add_spectra:
 
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
-                                      request_id=marshal_id)
+                                      request_id=marshal_id,
+                                      output_dir=out_dir)
             if not spec_ret:
                 spec_stat = 'IFU: Failed'
             else:
                 spec_stat = 'IFU: Complete'
+                annots_posted = add_annots(spectra_file, auth, 
+                                           sourcelist=sourcelist)
+                if annots_posted:
+                    print("Annotations successfully posted")
+                else:
+                    print("Warning: Annotations encountered a problem")
 
         if add_phot:
             phot_ret = upload_phot(phot_file, request_id=marshal_id)
@@ -502,7 +518,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 status = spec_stat
             elif add_phot:
                 status = phot_stat
-            status_ret = update_request(status, request_id=marshal_id)
+            status_ret = update_request(status, request_id=marshal_id,
+                                        output_dir=out_dir)
 
         return_link = growth_view_source_url + "name=%s" % object_name
 

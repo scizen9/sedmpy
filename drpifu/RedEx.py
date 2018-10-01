@@ -42,7 +42,7 @@ if __name__ == "__main__":
             ys = args.new_y
             pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins", "6",
                     "--centroid", xs, ys]
-            print("Running" + " ".join(pars))
+            print("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
                 print("Extraction failed.")
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         else:
             pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins", "6",
                     "--display"]
-            print("Running" + " ".join(pars))
+            print("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
                 print("Extraction failed.")
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         # Re-verify
         cfile = glob.glob("crr_b_ifu%s_%s.fits" % (dd, ob_id))[0].split('.')[0]
         pars = ["verify", dd, "--contains", cfile]
-        print("Running" + " ".join(pars))
+        print("Running " + " ".join(pars))
         res = subprocess.run(pars)
         if res.returncode != 0:
             print("Verify failed!")
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             print("Be sure to update slack manually")
         else:
             pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
-            print("Running" + " ".join(pars))
+            print("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
                 print("pysedm_report.py failed!")
