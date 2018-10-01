@@ -12,14 +12,18 @@ growth_list_all_sources_url = growth_base_url + \
 
 try:
     user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
+    auth = (user, pwd)
     # config = json.load(open('config.json'))
+    # auth = tuple(config['growth_auth']['adugas'])
 except FileNotFoundError:
     print("ERROR - could not find credentials file!")
-auth = (user, pwd)
+    auth = None
 
-# auth = tuple(config['growth_auth']['adugas'])
-sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
-                          data={'programidx': -1}, auth=auth).json()
+if auth:
+    sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
+                              data={'programidx': -1}, auth=auth).json()
+else:
+    sourcelist = None
 
 
 def get_missing_info(ztfname, obsdate, sourceid, sourcelist, specid):
