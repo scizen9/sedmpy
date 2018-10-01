@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 import numpy as np
 import subprocess
+import time
 
 
 def solve_astrometry(img, radius=3.0, with_pix=True,
@@ -18,7 +19,7 @@ def solve_astrometry(img, radius=3.0, with_pix=True,
     :param tweak: 
     :return: 
     """
-
+    s = time.time()
     # 1. Get the needed header information for the solve field command
     image_header = fits.getheader(img)
     try:
@@ -45,8 +46,12 @@ def solve_astrometry(img, radius=3.0, with_pix=True,
     print(cmd)
 
     cmd = cmd + " > /tmp/astrometry_fail  2>/tmp/astrometry_fail"
-
-    subprocess.call(cmd, shell=True)
+    try:
+        subprocess.call(cmd, shell=True, timeout=60)
+    except Exception as e:
+        print(str(e))
+        print(time.time()-s)
+        print("astrometry failed")
 
     # Cleaning after astrometry.net
     if os.path.isfile(img.replace(".fits", ".axy")):
@@ -61,15 +66,16 @@ def solve_astrometry(img, radius=3.0, with_pix=True,
     # 8degree radius
     if not os.path.isfile(astro) and first_call:
         print("Astrometry failed on file %s! Trying with a larger radius..."
-              % astro)
+              % img)
 
-        solve_astrometry(img, radius=8, with_pix=True, first_call=False)
+        #solve_astrometry(img, radius=8, with_pix=True, first_call=False)
 
         if not os.path.isfile(astro):
             print("Astrometry FAILED!")
 
     # We return the basename of the file even though there is a chance it
     # doesn't exist.
+    print(time.time()-s)
     return astro
 
 
@@ -93,10 +99,10 @@ def get_offset_to_brightest(image):
     wcs = WCS(image_header)
     pra, pdec = wcs.all_world2pix(objCoords.ra.degree, objCoords.dec.degree, 0)
 
-    imageloc = image_data[1293 - 150:1293 + 150, 1280 - 150:1280 + 150]
+    imageloc = image_data[1293 - 50:1293 + 50, 1280 - 50:1280 + 50]
 
-    nx = 150
-    ny = 150
+    nx = 50
+    ny = 50
 
     def_x = np.argmax(np.sum(imageloc, axis=0))
     def_y = np.argmax(np.sum(imageloc, axis=1))
@@ -124,7 +130,7 @@ def get_offset_to_reference(image, get_ref_from_header=False,
 
     # 1. Start by checking if the image exists
     if not os.path.exists(image):
-        print("File %s does not exist! Returning Zero offsets...") % image
+        print("File %s does not exist! Returning Zero offsets..." % image)
         return -1, 0, 0
 
     # 2. Get the object coordinates from header and convert to degrees when
@@ -154,9 +160,68 @@ def get_offset_to_reference(image, get_ref_from_header=False,
 
     return 0, -1*dra.arcsec, -1*ddec.arcsec
 
+
+def find_closest_offsets(az, el):
+    """
+    Find the closest offset value of previously solved astrometry
+    :param az: 
+    :param el: 
+    :return: 
+    """
+
+    return 3, 0, 0
+
+
+def find_average_offsets(obsdate):
+    """
+    
+    :param obsdate: 
+    :return: 
+    """
+
+    return 4, 0, 0
+
+
+def calculate_offset(raw_image, overwrite=True, use_brightest=True,
+                     use_closest=False, use_average=False):
+    """
+    
+    :param raw_image: 
+    :param overwrite: 
+    :param use_brightest: 
+    :param use_closest: 
+    :param use_average: 
+    :return: 
+    """
+
+    # 1. Check if the solved output file exist for the raw file, we
+    # expect the files to be in the same directory.
+    astro = os.path.join(os.path.dirname(raw_image),
+                         "a_" + os.path.basename(raw_image))
+
+    if overwrite:
+        astro = solve_astrometry(raw_image)
+
+    # 2. Now check if the solved file exist and solve the offset
+    if os.path.exists(astro):
+        return get_offset_to_reference(astro)
+
+    # 3. If it doesn't exist then try the next method of return
+    if use_brightest:
+        return get_offset_to_brightest(raw_image)
+
+    if use_closest:
+        return find_closest_offsets(1, 1)
+
+    if use_average:
+        return find_average_offsets("20180928")
+
+
 if __name__ == "__main__":
-    image2 = "/data2/sedm/20180918/rc20180918_06_09_25.fits"
+    image2 = "/scr7/rsw/sedm/phot/20180813/rc20180813_07_24_09.fits"
     # image = "/data2/sedm/20180914/a_rc20180914_12_36_56.fits"
-    ret = solve_astrometry(image2)
-    print(get_offset_to_reference(ret))
+    #ret = solve_astrometry(image2)
+    #print(ret)
+    #print(get_offset_to_reference(ret))
+    print(calculate_offset(image2, False))
     print(get_offset_to_brightest(image2))
