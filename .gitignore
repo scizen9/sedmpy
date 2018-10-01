@@ -1,4 +1,5 @@
 *.json
+*growth_creds*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -58,8 +58,6 @@ rc_filter_list = ['r', 'g', 'i', 'u']
 schedule = ScheduleNight()
 
 # this all needs to go in some sort of config file instead of changing the source code constantly
-#computer = 'pele'
-#computer = 'pharos'
 computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
