@@ -6,8 +6,12 @@ import argparse
 import os
 import datetime
 import sys
-from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
-from marshal_commenter import sourcelist, auth
+try:
+    from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from marshal_commenter import sourcelist, auth
+except ImportError:
+    from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from growth.marshal_commenter import sourcelist, auth
 
 
 # Path constants
