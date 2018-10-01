@@ -6,6 +6,12 @@ import argparse
 import os
 import datetime
 import sys
+try:
+    from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from marshal_commenter import sourcelist, auth
+except ImportError:
+    from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from growth.marshal_commenter import sourcelist, auth
 
 
 # Path constants
@@ -23,10 +29,11 @@ growth_phot_url = growth_base_url + 'edit_phot_auto.cgi'
 growth_view_source_url = growth_base_url + 'view_source.cgi?'
 
 default_id = 65
-try:
-    user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
-except FileNotFoundError:
-    print("ERROR - could not find credentials file!")
+if auth:
+    user, pwd = auth
+else:
+    user = None
+    pwd = None
 
 
 def write_json_file(pydict, output_file):
@@ -490,6 +497,12 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 spec_stat = 'IFU: Failed'
             else:
                 spec_stat = 'IFU: Complete'
+                annots_posted = add_annots(spectra_file, auth, 
+                                           sourcelist=sourcelist)
+                if annots_posted:
+                    print("Annotations successfully posted")
+                else:
+                    print("Warning: Annotations encountered a problem")
 
         if add_phot:
             phot_ret = upload_phot(phot_file, request_id=marshal_id)
