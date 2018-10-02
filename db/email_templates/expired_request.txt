@@ -1,9 +1,5 @@
 Message from Auto-SEDm:
 
-Request for follow-up on {object_name} has exceeded it's end date and has expired.
+Request for follow-up on {object_name} has exceeded it's end date and has been set to expired.
 
 This is an auto-generated alert.
-
-From Auto-SEDm
-
-http://pharos.caltech.edu
