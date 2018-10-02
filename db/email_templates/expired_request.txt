@@ -1,5 +1,15 @@
 Message from Auto-SEDm:
 
+<<<<<<< HEAD
 Request for follow-up on {object_name} has exceeded it's end date and has been set to expired.
 
 This is an auto-generated alert.
+=======
+Request for follow-up on {object_name} has exceeded it's end date and has expired.
+
+This is an auto-generated alert.
+
+From Auto-SEDm
+
+http://pharos.caltech.edu
+>>>>>>> origin/dqm_update
