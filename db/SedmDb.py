@@ -1663,7 +1663,7 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def expire_requests(self):
+    def expire_requests(self, send_alerts=False, update_growth=True):
         """
         Updates the request table. For all the active requests that were not completed,
             and had an expiry date before than NOW(), are marked as "EXPIRED".
@@ -1674,8 +1674,33 @@ class SedmDB:
         # TODO: move to logic layer? (requires sql "knowledge")
         # TODO: make it more discerning of other statuses
         # tests written
+        # 1. Get a list of request that are set to be expired.
+        ret = self.execute_sql("SELECT u.id, o.name, u.email, r.marshal_id  FROM request r "
+                               "INNER JOIN object o ON (object_id = o.id) "
+                               "INNER JOIN users u ON (user_id = u.id) "
+                               "WHERE r.enddate < NOW() AND r.status ='PENDING';")
+        if update_growth:
+            from growth import growth
+
+        if send_alerts:
+
+            for i in ret:
+                self.send_email_by_request(to=i[2],
+                                           subject='Target for request %s '
+                                                   'has expired' % i[1],
+                                           template='expired_request',
+                                           template_dict={'object_name': i[1]})
+
+                if update_growth:
+                    # if the entry is greater than 1000 then it should have come from the GROWTH MARSHAL
+                    if i[3] > 1000:
+                        ret = growth.update_request(request_id=i[3], output_dir='/scr7/rsw/',
+                                                    status='EXPIRED')
+                        print(ret)
+
         sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() WHERE enddate < NOW() AND status ='PENDING';"
         self.execute_sql(sql)
+        
         return 0, "Requests expired"
 
     def add_observation(self, header_dict):
@@ -3260,9 +3285,5 @@ if __name__ == "__main__":
     import datetime
     x = SedmDB(host="pharos.caltech.edu")
 
-
-    template_dict = {'object_name': 'Test', 'new_status': 'NEW',
-                     'status_change_time': datetime.datetime.utcnow()}
-    x.send_email_by_request(to='rsw@astro.caltech.edu', subject="Test",
-                          template='status_update', template_dict=template_dict)
+    x.expire_requests(send_alerts=True)
 
