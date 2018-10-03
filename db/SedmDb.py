@@ -3094,8 +3094,8 @@ class SedmDB:
         msg['Subject'] = subject
 
         # ToDo: Setup auto email user
-        # msg['From'] = 'rsw@astro.caltech.edu'
-        msg['From'] = 'sedm-auto@lists.astro.caltech.edu'
+        msg['From'] = 'rsw@astro.caltech.edu'
+
         # 2. Choose the email template to use
         template_file = '%s/email_templates/%s.txt' % (SITE_ROOT,
                                                        template.lower())
