@@ -1105,7 +1105,9 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
     if not obsdate:
         obsdate = os.path.basename(os.path.normpath(obsdir))
-    sedm_dict = {'obsdate': obsdate}
+    sedm_dict = {'obsdate': obsdate,
+                 'sci_data': ''}
+
     # Now lets get the non-science products (i.e. calibrations)
     calib_dict = {'flat3d': os.path.join(obsdir, '%s_flat3d.png' % obsdate),
                   'wavesolution': os.path.join(obsdir,
@@ -1143,6 +1145,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
           </div>
         </div>""".format(2, impathlink, impath, 400, 400)
     div_str += "</div>"
+    sedm_dict['sci_data'] += div_str
     # To get ifu products we first look to see if a what.list file has been
     # created. This way we will know which files to add to our dict and
     # whether the user has permissions to see the file
@@ -1223,6 +1226,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if len(show_list) >= 1:
         science_dict = {}
         count = 0
+        div_str = ''
         for targ in show_list:
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
@@ -1305,7 +1309,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
             div_str += "</div>"
 
-        sedm_dict['sci_data'] = div_str
+        sedm_dict['sci_data'] += div_str
 
     return sedm_dict
 
