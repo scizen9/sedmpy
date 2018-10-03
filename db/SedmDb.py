@@ -1700,6 +1700,7 @@ class SedmDB:
 
         sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() WHERE enddate < NOW() AND status ='PENDING';"
         self.execute_sql(sql)
+        
         return 0, "Requests expired"
 
     def add_observation(self, header_dict):
