@@ -1,21 +1,32 @@
 import glob
 import os
-import time
+import sys
+import datetime
 import subprocess
+import argparse
+import db.SedmDb
 
 
-def update_status():
-    """Generate DRP report using output spec_*.txt files"""
+def update_status(target_dir, upfil=None, dbase=None):
+    """Generate DRP report using output spec_*.txt files
 
-    flist = glob.glob("spec_*.txt")
+    :param target_dir:
+    :param upfil:
+    :param dbase:
+
+    """
+
+    if target_dir[-1] != '/':
+        target_dir += '/'
+
+    flist = glob.glob("%sspec_*.txt" % target_dir)
     flist.sort()
-    print("\nStatus update report generated on %s" % time.strftime("%c"))
-    print("\nSEDM DRP run in %s\nFound %d spec_*.txt files" %
-          (os.getcwd(), len(flist)))
 
-    print("UTStart  Object                    Qual  Status")
-    recs = []
     for f in flist:
+        # Have we already updated this one?
+        if os.path.exists(f.split('.')[0] + ".upd"):
+            print("Already updated: %s" % f)
+            continue
         # Get object name
         tname = f.split('ifu')[-1].split('_')[4:]
         if len(tname) > 1:
@@ -23,10 +34,7 @@ def update_status():
         else:
             objname = tname[0].split('.txt')[0]
 
-        # Get time string
-        tstr = ':'.join(f.split('ifu')[-1].split('_')[1:4])
-
-        # check the ascii spectrum file for quality data
+        # check the ascii spectrum file for status data
         with open(f, "r") as sfl:
             lines = sfl.readlines()
 
@@ -37,14 +45,37 @@ def update_status():
                 if len(req_id) > 2:
                     req_id = req_id[2]
                 else:
-                    req_id = None
+                    print("no request ID found for %s" % f)
+                    continue
             else:
-                req_id = None
+                print("no request ID found for %s" % f)
+                continue
+            # Get observation id
+            res = dbase.get_from_observation(["id"], {"request_id": req_id})[0]
 
             # check for Quality
             quality = [li for li in lines if "QUALITY" in li]
-            if len(quality) > 0:
-                quality = int(quality[0].split()[-1])
+            if quality:
+                quality = quality[0].split()
+                if len(quality) > 2:
+                    quality = int(quality[2])
+                else:
+                    quality = None
+            else:
+                quality = None
+
+            # check for e-mail
+            email = [li for li in lines if "EMAIL" in li]
+            if email:
+                email = email[0].split()
+                if len(email) > 2:
+                    email = email[2]
+                else:
+                    email = None
+            else:
+                email = None
+
+            # close spectrum file
             sfl.close()
 
         # Do we make an update?
@@ -56,10 +87,6 @@ def update_status():
         else:
             stat = "no request"
 
-        recs.append("%8s %-25s    %d  %7s" % (tstr, objname, quality, stat))
-    recs.sort()
-    for r in recs:
-        print(r)
     # Check for failed extractions
     flist = glob.glob("spec_*failed.fits")
     if len(flist) > 0:
@@ -76,4 +103,39 @@ def update_status():
 
 
 if __name__ == '__main__':
-    update_status()
+    parser = argparse.ArgumentParser(
+        description="""
+
+    Updates database status.
+
+    """,
+        formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('indate', type=str, default=None,
+                        help='input directory date (UT date as YYYYMMDD)')
+    parser.add_argument('--data_file', type=str, default=None,
+                        help='Data file to upload.')
+
+    args = parser.parse_args()
+
+    # Check environment
+    try:
+        reddir = os.environ["SEDMREDUXPATH"]
+    except KeyError:
+        print("please set environment variable SEDMREDUXPATH")
+        sys.exit(1)
+
+    # Get source dir
+    if args.indate:
+        utc = args.indate
+    else:
+        utc = datetime.datetime.utcnow().strftime("%Y%m%d")
+    srcdir = reddir + '/' + utc + '/'
+
+    # Check source dir
+    if not os.path.exists(srcdir):
+        print("Dir not found: %s" % srcdir)
+    else:
+        print("Getting spec status from %s" % srcdir)
+
+        sedmdb = db.SedmDb.SedmDB()
+        update_status(srcdir, upfil=args.data_file, dbase=sedmdb)

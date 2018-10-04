@@ -1719,8 +1719,6 @@ class SedmDB:
                     'lst' (str),
                     'ra' (float),
                     'dec' (float),
-                    'tel_ra' (str),
-                    'tel_dec' (str),
                     'tel_az' (float),
                     'tel_el' (float),
                     'tel_pa' (float),
@@ -1728,7 +1726,8 @@ class SedmDB:
                     'dec_off' (float),
                 optional:
                     'imtype' (str),
-                    'time_elapsed' (datetime.timedelta object or float/int seconds),
+                    'time_elapsed' (datetime.timedelta object or
+                                    float/int seconds),
                     'filter' (str),
                         options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
                     'camera' (str)
@@ -1738,26 +1737,36 @@ class SedmDB:
 
             (id (long), "Observation added") if it completed successfully
         """
-        header_types = {'id': int, 'object_id': int, 'request_id': int, 'mjd': float, 'airmass': float,
-                        'exptime': float, 'fitsfile': str, 'lst': str, 'ra': float, 'dec': float, 'tel_ra': str,
-                        'tel_dec': str, 'tel_az': float, 'tel_el': float, 'tel_pa': float, 'ra_off': float,
-                        'dec_off': float, 'imtype': str, 'camera': str, 'filter': str, 'time_elapsed': 'timedelta'}
-        id = _id_from_time()
-        header_dict['id'] = id
+        header_types = {'id': int, 'object_id': int, 'request_id': int,
+                        'mjd': float, 'airmass': float, 'airmass_end': float,
+                        'parang': float, 'parang_end':float, 'exptime': float,
+                        'fitsfile': str, 'lst': str, 'ra': float, 'dec': float,
+                        'tel_az': float, 'tel_el': float, 'tel_pa': float,
+                        'ra_off': float, 'dec_off': float, 'imtype': str,
+                        'camera': str, 'filter': str,
+                        'time_elapsed': 'timedelta'}
+
+        required_keys = ['object_id', 'request_id', 'mjd', 'airmass', 'exptime',
+                         'fitsfile', 'lst', 'ra', 'dec', 'tel_az', 'tel_el',
+                         'tel_pa', 'ra_off', 'dec_off']
+
+        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']
+
+        header_dict['id'] = _id_from_time()
 
         header_keys = list(header_dict.keys())
-        if 'filter' in header_keys:
-            if header_dict['filter'] not in ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']:  # check the filter is valid
-                return -1, "ERROR: invalid filter given!"
 
-        for key in ['object_id', 'request_id', 'mjd', 'airmass', 'exptime', 'fitsfile', 'lst',
-                    'ra', 'dec', 'tel_ra', 'tel_dec', 'tel_az', 'tel_el', 'tel_pa', 'ra_off', 'dec_off']:
+        # Test for valid filter
+        if 'filter' in header_keys:
+            if header_dict['filter'] not in valid_filters:
+                return -1, "ERROR: invalid filter given!"
+        # Test for required keys
+        for key in required_keys:
             if key not in header_keys:
                 return -1, "ERROR: %s not provided!" % (key,)
+        # Test for valid keys
         for key in reversed(header_keys):
-            if key not in ['id', 'object_id', 'request_id', 'mjd', 'airmass', 'exptime',
-                           'fitsfile', 'imtype', 'lst', 'ra', 'dec', 'tel_ra', 'tel_dec', 'tel_az',
-                           'tel_el', 'tel_pa', 'ra_off', 'dec_off', 'camera', 'filter', 'time_elapsed']:
+            if key not in header_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(header_keys, header_dict, header_types)
         if type_check:
@@ -1767,9 +1776,11 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: adding observation sql command failed with an IntegrityError!"
+            return -1, "ERROR: adding observation sql command failed with an " \
+                       "IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: adding observation sql command failed with a ProgrammingError!"
+            return -1, "ERROR: adding observation sql command failed with a " \
+                       "ProgrammingError!"
         return id, "Observation added"
 
     def update_observation(self, pardic):
@@ -2566,15 +2577,20 @@ class SedmDB:
 
     def add_spec_calib(self, pardic):
         """
-        Creates a new object in the spec calib table with the parameters specified in the dictionary.
+        Creates a new object in the spec calib table with the parameters
+        specified in the dictionary.
 
         Args:
             pardic:
                 required:
-                    'bias' (abspath str)
                     'flat' (abspath str)
+                    'hexagrid' (abspath str)
+                    'tracematch' (abspath str)
+                    'tracematch_withmasks' (abspath str)
+                    'wavesolution' (abspath str)
+
                 optional:
-                    'dome' (abspath str)
+                    'dome_master' (abspath str)
                     'cosmic_filter' (bool)
                     'drpver' (float)
                     'Hg_master' (abspath str)
@@ -2587,36 +2603,50 @@ class SedmDB:
         Returns:
             (-1: "ERROR...") if there is an issue
 
-            (id (long), "Spectrum calibration added") if it completes successfully
+            (id (long), "Spectrum calibration added") if successfully added
         """
-        param_types = {'id': int, 'dome': str, 'bias': str, 'flat': str, 'cosmic_filter': bool, 'drpver': float,
-                       'Hg_master': str, 'Cd_master': str, 'Xe_master': str, 'avg_rms': str, 'min_rms': str,
-                       'max_rms': str}
-        id = _id_from_time()
-        pardic['id'] = id
-        # TODO: which parameters are required? test
+        param_types = {'id': int, 'dome_master': str, 'bias_slow_master': str,
+                       'bias_fast_master': str, 'flat': str,
+                       'cosmic_filter': bool, 'drpver': str, 'hg_master': str,
+                       'cd_master': str, 'xe_master': str, 'avg_rms': str,
+                       'min_rms': str, 'max_rms': str, 'hexagrid': str,
+                       'tracematch': str, 'tracematch_withmasks': str,
+                       'wavesolution': str, 'dispersionmap': str,
+                       'flatmap': str, 'nspaxels': int, 'wave_rms_avg': float,
+                       'wave_rms_min': float, 'wave_rms_max': float,
+                       'width_rms_age': float, 'width_rms_min': float,
+                       'width_rms_max': float, 'utdate': str}
+
+        required_keys = ['flat', 'hexagrid', 'tracematch',
+                         'tracematch_withmasks', 'wavesolution', 'utdate']
+        pardic['id'] = _id_from_time()
+
         keys = list(pardic.keys())
 
-        for key in ['bias', 'flat']:
+        # Test for required keys
+        for key in required_keys:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
-
+        # Test for valid keys
         for key in reversed(keys):
-            if key not in ['id', 'dome', 'bias', 'flat', 'cosmic_filter', 'drpver', 'Hg_master', 'Cd_master',
-                           'Xe_master', 'avg_rms', 'min_rms', 'max_rms']:
+            if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
+        # Check types
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
             return -1, type_check
-
+        # Generate insert sql command
         sql = _generate_insert_sql(pardic, keys, 'spec_calib')
         print(sql, type_check)
+        # Attempt to insert record into db
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_spec_calib sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_spec_calib sql command failed with an " \
+                       "IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_spec_calib sql command failed with a ProgrammingError!"
+            return -1, "ERROR: add_spec_calib sql command failed with a " \
+                       "ProgrammingError!"
         return id, "Spectrum calibration added"
 
     def update_spec_calib(self, pardic):
