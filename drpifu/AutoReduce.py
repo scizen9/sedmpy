@@ -33,6 +33,7 @@ import os
 import astropy.io.fits as pf
 import argparse
 import ephem
+import db.SedmDb
 
 from astropy.time import Time
 
@@ -253,6 +254,37 @@ def docp(src, dest, onsky=True, verbose=False):
     # END: docp
 
 
+def update_observation(input_fitsfile):
+    """ Update the SEDM database on pharos by adding the observation"""
+
+    header_dict = {
+        'object_id': 'OBJ_ID', 'request_id': 'REQ_ID', 'mjd': 'MJD_OBS',
+        'airmass': 'AIRMASS', 'airmass_end': 'AIREND', 'exptime': 'EXPTIME',
+        'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
+        'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
+        'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
+        'filter': 'FILTER'
+    }
+    obs_dict = {
+        'object_id': 0, 'request_id': 0, 'mjd': 0.,
+        'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
+        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
+        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0.,
+        'imtype': ' ', 'camera': ' ', 'filter': ' ',
+        'fitsfile': input_fitsfile.split('/')[-1]
+    }
+    ff = pf.open(input_fitsfile)
+
+    for hk in header_dict.keys():
+        key = header_dict[hk]
+        if key in ff[0].header:
+            obs_dict[hk] = ff[0].header[key]
+    ff.close()
+
+    sedmdb = db.SedmDb.SedmDB()
+    sedmdb.add_observation(obs_dict)
+
+
 def proc_bias_crrs(ncp=1, piggyback=False):
     """Process biases and CR rejection steps.
 
@@ -464,7 +496,7 @@ def dosci(destdir='./', datestr=None):
                 if retcode > 0:
                     print("Error generating cube for " + fn)
                 else:
-                    # Use forced psf for faint targets
+                    # Use forced psf for science targets
                     print("Extracting object spectra for " + fn)
                     cmd = "extract_star.py %s --auto %s --autobins 6" \
                           % (datestr, fn)
