@@ -1323,9 +1323,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         sedm_dict['e3d_list'] = [
                    {'url': "/data/%s/%s" % (obsdate, os.path.basename(i)),
                    'name': obj.split('_xRx_')[0]}
-                for i in science_dict[obj]['e3d_list']
                 for obj in science_dict
-
+                for i in science_dict[obj]['e3d_list']]
 
         sedm_dict['sci_data'] += div_str
 
