@@ -1106,7 +1106,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if not obsdate:
         obsdate = os.path.basename(os.path.normpath(obsdir))
     sedm_dict = {'obsdate': obsdate,
-                 'sci_data': ''}
+                 'sci_data': '',
+                 'instrument': 'ifu'}
 
     # Now lets get the non-science products (i.e. calibrations)
     calib_dict = {'flat3d': os.path.join(obsdir, '%s_flat3d.png' % obsdate),
@@ -1155,6 +1156,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
     # Go throught the what list and return all non-calibration entries
     with open(os.path.join(obsdir, 'what.list')) as f:
+        # eg "ifu20180921_23_43_19.fits (1.354/2.0/30.0 s): Calib: Cd 1 of 5"
+        # or "ifu20180922_05_51_31.fits (1.410/0.1/2430.0 s): ZTF18abvxoty  [A]"
         what_list = f.read().splitlines()
 
     science_list = []
@@ -1180,8 +1183,9 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
         for sci_targ in science_list:
 
-            # Start by pulling up all request that match the science target
+            # Start by pulling up all requests that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
+            # I think targ_name is eg "Calib" or "ZTF18abvxoty"
             if 'STD' not in targ_name:
                 # 1. Get the object id
                 object_ids = db.get_object_id_from_name(targ_name)
@@ -1228,6 +1232,9 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         count = 0
         div_str = ''
         for targ in show_list:
+            # I think targ[0] is something like
+            # "ifu20180922_05_51_31.fits (1.410/0.1/2430.0 s): ZTF18abvxoty  [A]"
+            # and targ[1] is like "ZTF18abvxoty"
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
@@ -1239,15 +1246,20 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             spec_list = (glob.glob('%s%s_SEDM.png' % (obsdir, name)) +
                          glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,
                                                                 fits_file)))
+                                                                
+            e3d_list = glob.glob('{}e3d_*_{}_{}.fits'.format(obsdir,
+                                                             fits_file, name))
 
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list,
-                                      'spec_list': spec_list}
+                                      'spec_list': spec_list,
+                                      'e3d_list': e3d_list}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
                 science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
-                                                           'spec_list': spec_list}
+                                                           'spec_list': spec_list,
+                                                           'e3d_list': e3d_list}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
@@ -1262,7 +1274,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             div_str += """<h4>%s</h4>""" % obj
 
 
-            # ToDO: Grab data from somewhere to put in the meta data column
+            # TODO: Grab data from somewhere to put in the metadata column
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
 
@@ -1306,8 +1318,13 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         </a>
                       </div>
                     </div>""".format(4, impathlink, impath, 400, 400)
-
             div_str += "</div>"
+
+        sedm_dict['e3d_list'] = [
+                   {'url': "/data/%s/%s" % (obsdate, os.path.basename(i)),
+                   'name': obj.split('_xRx_')[0]}
+                for obj in science_dict
+                for i in science_dict[obj]['e3d_list']]
 
         sedm_dict['sci_data'] += div_str
 
