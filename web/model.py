@@ -1106,7 +1106,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if not obsdate:
         obsdate = os.path.basename(os.path.normpath(obsdir))
     sedm_dict = {'obsdate': obsdate,
-                 'sci_data': ''}
+                 'sci_data': '',
+                 'instrument': 'ifu'}
 
     # Now lets get the non-science products (i.e. calibrations)
     calib_dict = {'flat3d': os.path.join(obsdir, '%s_flat3d.png' % obsdate),
