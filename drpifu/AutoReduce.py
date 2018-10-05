@@ -418,21 +418,21 @@ def proc_bias_crrs(ncp=1, piggyback=False):
         cproc = subprocess.run("~/spy what ifu*.fits > what.list", shell=True)
         if cproc.returncode == 0:
             # Generate new Makefile
-            cproc2 = subprocess.run("~/spy plan ifu*.fits", shell=True)
-            if cproc2.returncode == 0:
+            cproc = subprocess.run("~/spy plan ifu*.fits", shell=True)
+            if cproc.returncode == 0:
                 # Make bias + bias subtraction
-                cproc3 = subprocess.run(("make", "-j", "16", "bias"))
-                if cproc3.returncode != 0:
+                cproc = subprocess.run(("make", "-j", "16", "bias"))
+                if cproc.returncode != 0:
                     print("bias failed, try again")
-                    cproc3 = subprocess.run(("make", "bias"))
-                if cproc3.returncode == 0:
+                    cproc = subprocess.run(("make", "bias"))
+                if cproc.returncode == 0:
                     # Make CR rejection
-                    cproc4 = subprocess.run(("make", "-j", "8", "crrs"))
-                    if cproc4.returncode != 0:
+                    cproc = subprocess.run(("make", "-j", "8", "crrs"))
+                    if cproc.returncode != 0:
                         print("crrs failed, try again")
-                        cproc4 = subprocess.run(("make", "-j", "8", "crrs"))
+                        cproc = subprocess.run(("make", "-j", "8", "crrs"))
                     # Success on all fronts!
-                    if cproc4.returncode == 0:
+                    if cproc.returncode == 0:
                         print("bias, crrs processed for %d new images" % ncp)
                         ret = True
                     # Report failures
@@ -568,7 +568,7 @@ def dosci(destdir='./', datestr=None):
                 print("Building STD cube for " + fn)
                 # Don't solve WCS for standards (always brightest in IFU)
                 cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--noguider")
-                print(" ".join(cmd))
+                print(" ".join(cmd), flush=True)
                 cproc = subprocess.run(cmd)
                 # Check results
                 if cproc.returncode > 0:
@@ -577,7 +577,7 @@ def dosci(destdir='./', datestr=None):
                     # Use auto psf aperture for standard stars
                     print("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
-                    print(" ".join(cmd))
+                    print(" ".join(cmd), flush=True)
                     cproc = subprocess.run(cmd)
                     if cproc.returncode > 0:
                         print("Error extracting std star spectra for " + fn)
@@ -588,7 +588,7 @@ def dosci(destdir='./', datestr=None):
                     else:
                         cmd = ("pysedm_report.py", datestr, "--contains",
                                fn.split('.')[0], "--slack")
-                        print(" ".join(cmd))
+                        print(" ".join(cmd), flush=True)
                         cproc = subprocess.run(cmd)
                         if cproc.returncode > 0:
                             print("Error running report for " +
@@ -602,7 +602,7 @@ def dosci(destdir='./', datestr=None):
                 print("Building science cube for " + fn)
                 # Solve WCS for science targets
                 cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
-                print(" ".join(cmd))
+                print(" ".join(cmd), flush=True)
                 cproc = subprocess.run(cmd)
                 # Check results
                 if cproc.returncode > 0:
@@ -612,7 +612,7 @@ def dosci(destdir='./', datestr=None):
                     print("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
                            "--autobins", "6")
-                    print(" ".join(cmd))
+                    print(" ".join(cmd), flush=True)
                     cproc = subprocess.run(cmd)
                     if cproc.returncode > 0:
                         print("Error extracting object spectrum for " + fn)
@@ -623,13 +623,13 @@ def dosci(destdir='./', datestr=None):
                     else:
                         print("Running SNID for " + fn)
                         cmd = ("make", "classify")
-                        print(" ".join(cmd))
+                        print(" ".join(cmd), flush=True)
                         cproc = subprocess.run(cmd)
                         if cproc.returncode > 0:
                             print("Error running SNID")
                         cmd = ("pysedm_report.py", datestr, "--contains",
                                fn.split('.')[0], "--slack")
-                        print(" ".join(cmd))
+                        print(" ".join(cmd), flush=True)
                         cproc = subprocess.run(cmd)
                         if cproc.returncode > 0:
                             print("Error running report for " +
@@ -1047,8 +1047,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         # Now loop until we have the raw cal files we need or sun is down
         while not cal_proc_ready(outdir, ncp=ncp, test_cal_ims=piggyback):
             # Wait a minute
-            print("waiting 60s...")
-            sys.stdout.flush()
+            print("waiting 60s...", flush=True)
             now = ephem.now()
             time.sleep(60)
             if piggyback:
@@ -1063,8 +1062,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 else:
                     print("checking %s for new raw cal files..." % srcdir)
                     ncp = cpcal(srcdir, outdir)
-                print("Linked %d raw cal files from %s" % (ncp, srcdir))
-                sys.stdout.flush()
+                print("Linked %d raw cal files from %s" % (ncp, srcdir),
+                      flush=True)
             if ncp <= 0:
                 # Check to see if we are still before an hour after sunset
                 now = ephem.now()
@@ -1076,7 +1075,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                                                sunset.tuple()[1],
                                                sunset.tuple()[2],
                                                sunset.tuple()[3],
-                                               sunset.tuple()[4]))
+                                               sunset.tuple()[4]),
+                          flush=True)
                 else:
                     print("UT = %02d/%02d %02d:%02d >= sunset "
                           "(%02d/%02d %02d:%02d) + 1hr, "
@@ -1087,7 +1087,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                                                      sunset.tuple()[1],
                                                      sunset.tuple()[2],
                                                      sunset.tuple()[3],
-                                                     sunset.tuple()[4]))
+                                                     sunset.tuple()[4]),
+                          flush=True)
                     break
             else:
                 # Get new listing
@@ -1107,8 +1108,10 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     subprocess.run(("make", "calimgs"))
                 # Process calibration
                 start_time = time.time()
-                subprocess.run(("ccd_to_cube.py", cur_date_str, "--tracematch",
-                                "--hexagrid"))
+                cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
+                       "--hexagrid")
+                print(" ".join(cmd), flush=True)
+                subprocess.run(cmd)
                 procg_time = int(time.time() - start_time)
                 if os.path.exists(
                    os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
@@ -1116,20 +1119,27 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     start_time = time.time()
                     # Spawn nsub sub-processes to solve wavelengths faster
                     nsub = 8
-                    subprocess.Popen(("derive_wavesolution.py", cur_date_str,
-                                      "--nsub", "%d" % nsub))
+                    cmd = ("derive_wavesolution.py", cur_date_str,
+                           "--nsub", "%d" % nsub)
+                    print(" ".join(cmd), flush=True)
+                    subprocess.Popen(cmd)
                     time.sleep(60)
                     # Get a list of solved spaxels
                     wslist = glob.glob(os.path.join(outdir, cur_date_str +
                                                     '_WaveSolution_range*.pkl'))
                     # Wait until they are all finished
-                    while len(wslist) < nsub:
+                    nfin = len(wslist)
+                    while nfin < nsub:
                         time.sleep(60)
                         wslist = glob.glob(
                             os.path.join(outdir, cur_date_str +
                                          '_WaveSolution_range*.pkl'))
-                        print("Finished %d out of %d parts"
-                              % (len(wslist), nsub))
+                        if len(wslist) != nfin:
+                            print("\nFinished %d out of %d parts"
+                                  % (len(wslist), nsub))
+                            nfin = len(wslist)
+                        else:
+                            print(".", end="")
                     print("Finished all %d parts, merging..." % nsub)
                     # Merge the solutions
                     subprocess.run(("derive_wavesolution.py", cur_date_str,
@@ -1139,7 +1149,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                    os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
                     # Process flat
                     start_time = time.time()
-                    subprocess.run(("ccd_to_cube.py", cur_date_str, "--flat"))
+                    cmd = ("ccd_to_cube.py", cur_date_str, "--flat")
+                    print(" ".join(cmd), flush=True)
+                    subprocess.run(cmd)
                     if not (os.path.exists(
                             os.path.join(outdir, cur_date_str + '_Flat.fits'))):
                         print("Making of %s_Flat.fits failed!" % cur_date_str)
