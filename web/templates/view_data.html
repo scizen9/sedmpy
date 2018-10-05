@@ -9,7 +9,26 @@
 {% block content %}
     {{ calendar_picker('content', name='obsdate') }}
     <h2>Data for the night of {{ sedm_dict.obsdate }}</h2>
-    <div class="container">
+    {% if sedm_dict.instrument == 'IFU' %}
+        <div class="container col-sm-3">
+            <table>
+                <tbody>
+                    {% for e3d in sedm_dict.e3d_files %}
+                        <tr>
+                            <td>
+                                <a href={{ e3d.url }} download>
+                                    {{ e3d.url }}
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="container col-sm-9">
+    {% else %}
+        <div class="container">
+    {% endif %}
         {{ sedm_dict.sci_data| safe}}
     </div>
 {% endblock %}
