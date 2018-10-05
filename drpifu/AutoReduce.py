@@ -30,6 +30,7 @@ import time
 import glob
 import sys
 import os
+import subprocess
 import astropy.io.fits as pf
 import argparse
 import ephem
@@ -291,6 +292,7 @@ def update_observation(input_fitsfile):
     observation_id, status = sedmdb.add_observation(obs_dict)
     print(status)
     return observation_id
+    # END: update_observation
 
 
 def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
@@ -392,6 +394,7 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
     spec_calib_id, status = sedmdb.add_spec_calib(spec_calib_dict)
     print(status)
     return spec_calib_id
+    # END: update_calibration
 
 
 def proc_bias_crrs(ncp=1, piggyback=False):
@@ -412,24 +415,24 @@ def proc_bias_crrs(ncp=1, piggyback=False):
         ret = True
     else:
         # Get new listing
-        retcode = os.system("~/spy what ifu*.fits > what.list")
-        if retcode == 0:
+        cproc = subprocess.run("~/spy what ifu*.fits > what.list", shell=True)
+        if cproc.returncode == 0:
             # Generate new Makefile
-            retcode2 = os.system("~/spy plan ifu*.fits")
-            if retcode2 == 0:
+            cproc2 = subprocess.run("~/spy plan ifu*.fits", shell=True)
+            if cproc2.returncode == 0:
                 # Make bias + bias subtraction
-                retcode3 = os.system("make -j 16 bias")
-                if retcode3 != 0:
+                cproc3 = subprocess.run(("make", "-j", "16", "bias"))
+                if cproc3.returncode != 0:
                     print("bias failed, try again")
-                    retcode3 = os.system("make bias")
-                if retcode3 == 0:
+                    cproc3 = subprocess.run(("make", "bias"))
+                if cproc3.returncode == 0:
                     # Make CR rejection
-                    retcode4 = os.system("make -j 8 crrs")
-                    if retcode4 != 0:
+                    cproc4 = subprocess.run(("make", "-j", "8", "crrs"))
+                    if cproc4.returncode != 0:
                         print("crrs failed, try again")
-                        retcode4 = os.system("make crrs")
+                        cproc4 = subprocess.run(("make", "-j", "8", "crrs"))
                     # Success on all fronts!
-                    if retcode4 == 0:
+                    if cproc4.returncode == 0:
                         print("bias, crrs processed for %d new images" % ncp)
                         ret = True
                     # Report failures
@@ -564,82 +567,82 @@ def dosci(destdir='./', datestr=None):
                 # Build cube for STD observation
                 print("Building STD cube for " + fn)
                 # Don't solve WCS for standards (always brightest in IFU)
-                cmd = "ccd_to_cube.py %s --build %s --noguider" % (datestr, fn)
-                print(cmd)
-                retcode = os.system(cmd)
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--noguider")
+                print(" ".join(cmd))
+                cproc = subprocess.run(cmd)
                 # Check results
-                if retcode > 0:
+                if cproc.returncode > 0:
                     print("Error generating cube for " + fn)
                 else:
                     # Use auto psf aperture for standard stars
                     print("Extracting std star spectra for " + fn)
-                    cmd = "extract_star.py %s --auto %s --std" % (datestr, fn)
-                    print(cmd)
-                    retcode = os.system(cmd)
-                    if retcode > 0:
+                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
+                    print(" ".join(cmd))
+                    cproc = subprocess.run(cmd)
+                    if cproc.returncode > 0:
                         print("Error extracting std star spectra for " + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
-                        cmd = "touch %s" % badfn
-                        os.system(cmd)
+                        cmd = ("touch", badfn)
+                        subprocess.run(cmd)
                     else:
-                        cmd = "pysedm_report.py %s --contains %s --slack" % \
-                              (datestr, fn.split('.')[0])
-                        print(cmd)
-                        retcode = os.system(cmd)
-                        if retcode > 0:
+                        cmd = ("pysedm_report.py", datestr, "--contains",
+                               fn.split('.')[0], "--slack")
+                        print(" ".join(cmd))
+                        cproc = subprocess.run(cmd)
+                        if cproc.returncode > 0:
                             print("Error running report for " +
                                   fn.split('.')[0])
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
-                        os.system(cmd)
+                        subprocess.run(cmd, shell=True)
             else:
                 # Build cube for science observation
                 print("Building science cube for " + fn)
                 # Solve WCS for science targets
-                cmd = "ccd_to_cube.py %s --build %s --solvewcs" % (datestr, fn)
-                print(cmd)
-                retcode = os.system(cmd)
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
+                print(" ".join(cmd))
+                cproc = subprocess.run(cmd)
                 # Check results
-                if retcode > 0:
+                if cproc.returncode > 0:
                     print("Error generating cube for " + fn)
                 else:
                     # Use forced psf for science targets
                     print("Extracting object spectra for " + fn)
-                    cmd = "extract_star.py %s --auto %s --autobins 6" \
-                          % (datestr, fn)
-                    print(cmd)
-                    retcode = os.system(cmd)
-                    if retcode > 0:
+                    cmd = ("extract_star.py", datestr, "--auto", fn,
+                           "--autobins", "6")
+                    print(" ".join(cmd))
+                    cproc = subprocess.run(cmd)
+                    if cproc.returncode > 0:
                         print("Error extracting object spectrum for " + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
-                        cmd = "touch %s" % badfn
-                        os.system(cmd)
+                        cmd = ("touch", badfn)
+                        subprocess.run(cmd)
                     else:
                         print("Running SNID for " + fn)
-                        cmd = "make classify"
-                        print(cmd)
-                        retcode = os.system(cmd)
-                        if retcode > 0:
+                        cmd = ("make", "classify")
+                        print(" ".join(cmd))
+                        cproc = subprocess.run(cmd)
+                        if cproc.returncode > 0:
                             print("Error running SNID")
-                        cmd = "pysedm_report.py %s --contains %s --slack" % \
-                              (datestr, fn.split('.')[0])
-                        print(cmd)
-                        retcode = os.system(cmd)
-                        if retcode > 0:
+                        cmd = ("pysedm_report.py", datestr, "--contains",
+                               fn.split('.')[0], "--slack")
+                        print(" ".join(cmd))
+                        cproc = subprocess.run(cmd)
+                        if cproc.returncode > 0:
                             print("Error running report for " +
                                   fn.split('.')[0])
                         # Upload spectrum to marshal
-                        cmd = "make ztfupload"
-                        retcode = os.system(cmd)
-                        if retcode > 0:
+                        cmd = ("make", "ztfupload")
+                        cproc = subprocess.run(cmd)
+                        if cproc.returncode > 0:
                             print("Error uploading spectra to marshal")
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
-                        os.system(cmd)
+                        subprocess.run(cmd, shell=True)
     return ncp, copied
     # END: dosci
 
@@ -1088,8 +1091,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     break
             else:
                 # Get new listing
-                retcode = os.system("~/spy what ifu*.fits > what.list")
-                if retcode > 0:
+                cproc = subprocess.run("~/spy what ifu*.fits > what.list",
+                                       shell=True)
+                if cproc.returncode > 0:
                     print("what oops!")
 
         # Process calibrations if we are using them
@@ -1100,11 +1104,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 procb_time = int(time.time() - start_time)
                 if not piggyback:
                     # Make cal images
-                    os.system("make calimgs")
+                    subprocess.run(("make", "calimgs"))
                 # Process calibration
                 start_time = time.time()
-                os.system("ccd_to_cube.py %s --tracematch --hexagrid"
-                          % cur_date_str)
+                subprocess.run(("ccd_to_cube.py", cur_date_str, "--tracematch",
+                                "--hexagrid"))
                 procg_time = int(time.time() - start_time)
                 if os.path.exists(
                    os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
@@ -1112,8 +1116,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     start_time = time.time()
                     # Spawn nsub sub-processes to solve wavelengths faster
                     nsub = 8
-                    os.system("derive_wavesolution.py %s --nsub %d"
-                              % (cur_date_str, nsub))
+                    subprocess.Popen(("derive_wavesolution.py", cur_date_str,
+                                      "--nsub", "%d" % nsub))
                     time.sleep(60)
                     # Get a list of solved spaxels
                     wslist = glob.glob(os.path.join(outdir, cur_date_str +
@@ -1128,14 +1132,14 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                               % (len(wslist), nsub))
                     print("Finished all %d parts, merging..." % nsub)
                     # Merge the solutions
-                    os.system("derive_wavesolution.py %s --merge"
-                              % cur_date_str)
+                    subprocess.run(("derive_wavesolution.py", cur_date_str,
+                                    "--merge"))
                 procw_time = int(time.time() - start_time)
                 if os.path.exists(
                    os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
                     # Process flat
                     start_time = time.time()
-                    os.system("ccd_to_cube.py %s --flat" % cur_date_str)
+                    subprocess.run(("ccd_to_cube.py", cur_date_str, "--flat"))
                     if not (os.path.exists(
                             os.path.join(outdir, cur_date_str + '_Flat.fits'))):
                         print("Making of %s_Flat.fits failed!" % cur_date_str)
@@ -1178,6 +1182,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     else:
         print("Calibrations already present in %s" % outdir)
 
+    # TODO: add call to calibration_update
     print("Calibration stage complete, ready for science!")
     # Link recent flux cal file
     find_recent_fluxcal(redd, 'fluxcal*.fits', outdir)
@@ -1229,7 +1234,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     print("Time to wait until we have a new raw directory")
                     doit = False
                     # Normal termination
-                    os.system("make report")
+                    subprocess.run(("make", "report"))
                     ret = True
                 else:
                     print("No new image for %d minutes but UT = %02d/%02d "
