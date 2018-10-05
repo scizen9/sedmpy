@@ -1139,7 +1139,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                                   % (len(wslist), nsub))
                             nfin = len(wslist)
                         else:
-                            print(".", end="")
+                            print(".", end="", flush=True)
                     print("Finished all %d parts, merging..." % nsub)
                     # Merge the solutions
                     subprocess.run(("derive_wavesolution.py", cur_date_str,
