@@ -1752,7 +1752,8 @@ class SedmDB:
 
         valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']
 
-        header_dict['id'] = _id_from_time()
+        observation_id = _id_from_time()
+        header_dict['id'] = observation_id
 
         header_keys = list(header_dict.keys())
 
@@ -1781,7 +1782,7 @@ class SedmDB:
         except exc.ProgrammingError:
             return -1, "ERROR: adding observation sql command failed with a " \
                        "ProgrammingError!"
-        return id, "Observation added"
+        return observation_id, "Observation added"
 
     def update_observation(self, pardic):
         """
@@ -1807,32 +1808,41 @@ class SedmDB:
                     'dec_off' (float),
                     'imtype' (str),
                     'camera' (str),
-                    'time_elapsed (datetime.timedelta object or float/int seconds),
+                    'time_elapsed (datetime.timedelta object or
+                                    float/int seconds),
                     'filter' (str)
                         options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
 
         Returns:
             (-1, "ERROR...") if there was an issue
 
-            (id, "Observation updated, columns 'column_names'") if it completed successfully
+            (id, "Observation updated, columns 'column_names'")
+                    if it completed successfully
         """
-        param_types = {'id': int, 'mjd': float, 'airmass': float, 'filter': str,
-                       'exptime': float, 'fitsfile': str, 'lst': str, 'ra': float, 'dec': float, 'tel_ra': str,
-                       'tel_dec': str, 'tel_az': float, 'tel_el': float, 'tel_pa': float, 'ra_off': float,
-                       'dec_off': float, 'imtype': str, 'camera': str, 'time_elapsed': 'timedelta'}
+        param_types = {'id': int, 'object_id': int, 'request_id': int,
+                       'mjd': float, 'airmass': float, 'airmass_end': float,
+                       'parang': float, 'parang_end':float, 'exptime': float,
+                       'fitsfile': str, 'lst': str, 'ra': float, 'dec': float,
+                       'tel_az': float, 'tel_el': float, 'tel_pa': float,
+                       'ra_off': float, 'dec_off': float, 'imtype': str,
+                       'camera': str, 'filter': str,
+                       'time_elapsed': 'timedelta'}
+
+        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']
+
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM observation;')]:
+        elif pardic['id'] not in [x[0] for x in self.execute_sql(
+                'SELECT id FROM observation;')]:
             return -1, "ERROR: observation does not exist!"
         keys.remove('id')
         if 'filter' in keys:
-            if pardic['filter'] not in ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']:  # check the filter is valid
+            if pardic['filter'] not in valid_filters:
                 return -1, "ERROR: invalid filter given!"
 
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
-            if key not in ['mjd', 'airmass', 'exptime', 'fitsfile', 'lst', 'ra', 'dec', 'tel_ra', 'tel_dec', 'tel_az',
-                           'tel_el', 'tel_pa', 'ra_off', 'dec_off', 'imtype', 'camera', 'filter', 'time_elapsed']:
+        for key in reversed(keys):
+            if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
             return -1, "ERROR: no parameters given to update!"
@@ -1844,9 +1854,11 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_observation sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_observation sql command failed with an " \
+                       "IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_observation sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_observation sql command failed with a " \
+                       "ProgrammingError!"
         return pardic['id'], "Observation updated, columns " + str(keys)[1:-1]
 
     def get_from_observation(self, values, where_dict={}, compare_dict={}):
@@ -2619,7 +2631,8 @@ class SedmDB:
 
         required_keys = ['flat', 'hexagrid', 'tracematch',
                          'tracematch_withmasks', 'wavesolution', 'utdate']
-        pardic['id'] = _id_from_time()
+        spec_calib_id = _id_from_time()
+        pardic['id'] = spec_calib_id
 
         keys = list(pardic.keys())
 
@@ -2647,7 +2660,7 @@ class SedmDB:
         except exc.ProgrammingError:
             return -1, "ERROR: add_spec_calib sql command failed with a " \
                        "ProgrammingError!"
-        return id, "Spectrum calibration added"
+        return spec_calib_id, "Spectrum calibration added"
 
     def update_spec_calib(self, pardic):
         """
@@ -2673,35 +2686,51 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if it failed to update
 
-            (id (long), "Spec_calib updated, columns 'column_names'") if the entry is updated successfully
+            (id (long), "Spec_calib updated, columns 'column_names'")
+                        if the entry is updated successfully
         """
-        param_types = {'id': int, 'dome': str, 'bias': str, 'flat': str, 'cosmic_filter': bool, 'drpver': float,
-                       'Hg_master': str, 'Cd_master': str, 'Xe_master': str, 'avg_rms': str, 'min_rms': str,
-                       'max_rms': str}
+        param_types = {'id': int, 'dome_master': str, 'bias_slow_master': str,
+                       'bias_fast_master': str, 'flat': str,
+                       'cosmic_filter': bool, 'drpver': str, 'hg_master': str,
+                       'cd_master': str, 'xe_master': str, 'avg_rms': str,
+                       'min_rms': str, 'max_rms': str, 'hexagrid': str,
+                       'tracematch': str, 'tracematch_withmasks': str,
+                       'wavesolution': str, 'dispersionmap': str,
+                       'flatmap': str, 'nspaxels': int, 'wave_rms_avg': float,
+                       'wave_rms_min': float, 'wave_rms_max': float,
+                       'width_rms_age': float, 'width_rms_min': float,
+                       'width_rms_max': float, 'utdate': str}
+
         keys = list(pardic.keys())
+        # Check if id included
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
-
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM spec_calib;')]:
+        # Test if id exists
+        elif pardic['id'] not in [x[0] for x in self.execute_sql(
+                'SELECT id FROM spec_calib;')]:
             return -1, "ERROR: no spec_calib entry with the id!"
         keys.remove('id')
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
-            if key not in ['dome', 'bias', 'flat', 'cosmic_filter', 'drpver', 'Hg_master', 'Cd_master',
-                           'Xe_master', 'avg_rms', 'min_rms', 'max_rms']:
+        # Check if input keys are valid
+        for key in reversed(keys):
+            if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
+        # Do we have any keys left?
         if len(keys) == 0:
             return -1, "ERROR: no parameters given to update!"
+        # Verify types
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
             return -1, type_check
-
+        # Make update sql command
         sql = _generate_update_sql(pardic, keys, 'spec_calib')
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_spec_calib sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_spec_calib sql command failed with an " \
+                       "IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_spec_calib sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_spec_calib sql command failed with a " \
+                       "ProgrammingError!"
         return pardic['id'], "Spec_calib updated, columns " + str(keys)[1:-1]
 
     def get_from_spec_calib(self, values, where_dict={}, compare_dict={}):

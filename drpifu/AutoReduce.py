@@ -36,6 +36,9 @@ import ephem
 import db.SedmDb
 
 from astropy.time import Time
+import Version
+
+drp_ver = Version.ifu_drp_version()
 
 
 def cube_ready(caldir='./', cur_date_str=None):
@@ -255,7 +258,8 @@ def docp(src, dest, onsky=True, verbose=False):
 
 
 def update_observation(input_fitsfile):
-    """ Update the SEDM database on pharos by adding the observation"""
+    """ Update the SEDM database observation table on pharos
+        by adding a new observation"""
 
     header_dict = {
         'object_id': 'OBJ_ID', 'request_id': 'REQ_ID', 'mjd': 'MJD_OBS',
@@ -279,10 +283,115 @@ def update_observation(input_fitsfile):
         key = header_dict[hk]
         if key in ff[0].header:
             obs_dict[hk] = ff[0].header[key]
+        else:
+            print("Invalid key: %s" % key)
     ff.close()
 
     sedmdb = db.SedmDb.SedmDB()
-    sedmdb.add_observation(obs_dict)
+    observation_id, status = sedmdb.add_observation(obs_dict)
+    print(status)
+    return observation_id
+
+
+def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
+    """ Update the SEDM dataabase spec_calib table on pharos
+        by adding a new spectral calibration"""
+
+    spec_calib_dict = {}
+
+    src = os.path.join(src_dir, utdate)
+    if os.path.exists(src):
+
+        dome_master = os.path.join(src, 'dome.fits')
+        if os.path.exists(dome_master):
+            spec_calib_dict['dome_master'] = dome_master
+        else:
+            print("spec cal item not found: %s" % dome_master)
+
+        bias_slow_master = os.path.join(src, 'bias0.1.fits')
+        if os.path.exists(bias_slow_master):
+            spec_calib_dict['bias_slow_master'] = bias_slow_master
+        else:
+            print("spec cal item not found: %s" % bias_slow_master)
+
+        bias_fast_master = os.path.join(src, 'bias2.0.fits')
+        if os.path.exists(bias_fast_master):
+            spec_calib_dict['bias_fast_master'] = bias_fast_master
+        else:
+            print("spec cal item not found: %s" % bias_fast_master)
+
+        flat = os.path.join(src, utdate + '_Flat.fits')
+        if os.path.exists(flat):
+            spec_calib_dict['flat'] = flat
+        else:
+            print("spec cal item not found: %s" % flat)
+
+        hg_master = os.path.join(src, 'Hg.fits')
+        if os.path.exists(hg_master):
+            spec_calib_dict['hg_master'] = hg_master
+        else:
+            print("spec cal item not found: %s" % hg_master)
+
+        xe_master = os.path.join(src, 'Xe.fits')
+        if os.path.exists(xe_master):
+            spec_calib_dict['xe_master'] = xe_master
+        else:
+            print("spec cal item not found: %s" % xe_master)
+
+        cd_master = os.path.join(src, 'Cd.fits')
+        if os.path.exists(cd_master):
+            spec_calib_dict['cd_master'] = cd_master
+        else:
+            print("spec cal item not found: %s" % cd_master)
+
+        hexagrid = os.path.join(src, utdate + '_HexaGrid.pkl')
+        if os.path.exists(hexagrid):
+            spec_calib_dict['hexagrid'] = hexagrid
+        else:
+            print("spec cal item not found: %s" & hexagrid)
+
+        tracematch = os.path.join(src, utdate + '_TraceMatch.pkl')
+        if os.path.exists(tracematch):
+            spec_calib_dict['tracematch'] = tracematch
+        else:
+            print("spec cal item not found: %s" % tracematch)
+
+        tracematch_withmasks = os.path.join(
+            src, utdate + '_TraceMatch_WithMasks.pkl')
+        if os.path.exists(tracematch_withmasks):
+            spec_calib_dict['tracematch_withmasks'] = tracematch_withmasks
+        else:
+            print("spec cal item not found: %s" % tracematch_withmasks)
+
+        wavesolution = os.path.join(src, utdate + '_WaveSolution.pkl')
+        if os.path.exists(wavesolution):
+            spec_calib_dict['wavesolution'] = wavesolution
+        else:
+            print("spec cal item not found: %s" % wavesolution)
+
+        dispersionmap = os.path.join(
+            src, utdate + '_wavesolution_dispersionmap.png')
+        if os.path.exists(dispersionmap):
+            spec_calib_dict['dispersionmap'] = dispersionmap
+        else:
+            print("spec cal item not found: %s" % dispersionmap)
+
+        flatmap = os.path.join(src, utdate + '_flat3d.png')
+        if os.path.exists(flatmap):
+            spec_calib_dict['flatmap'] = flatmap
+        else:
+            print("spec cal item not found: %s" % flatmap)
+
+    else:
+        print("Source dir does not exist: %s" % src)
+
+    spec_calib_dict['utdate'] = utdate
+    spec_calib_dict['drpver'] = drp_ver
+
+    sedmdb = db.SedmDb.SedmDB()
+    spec_calib_id, status = sedmdb.add_spec_calib(spec_calib_dict)
+    print(status)
+    return spec_calib_id
 
 
 def proc_bias_crrs(ncp=1, piggyback=False):
