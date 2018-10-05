@@ -611,6 +611,7 @@ def process_request_form(content, form, userid):
         else:
 
             request_dict.pop('request_id')
+            print(request_dict)
             ret = db.add_request(request_dict)
 
     return process_dict, form
@@ -1236,14 +1237,17 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                          glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,
                                                                 fits_file)))
 
+            e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list,
-                                      'spec_list': spec_list}
+                                      'spec_list': spec_list,
+                                      'e3d_list': e3d_list}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
                 science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
-                                                           'spec_list': spec_list}
+                                                             'spec_list': spec_list,
+                                                             'e3d_list': e3d_list}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
@@ -1254,9 +1258,23 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             if '_xRx_' in obj:
                 obj = obj.split('_xRx_')[0]
 
-            div_str += """<div class="row">"""
-            div_str += """<h4>%s</h4>""" % obj
+            if 'ZTF' in obj:
+                obj_link = ('<a href="http://skipper.caltech.edu:8080/'
+                            'cgi-bin/growth/view_source.cgi?name=%s">%s</a>' %
+                            (obj, obj))
 
+                div_str += """<div class="row">"""
+                div_str += """<h4>%s</h4>""" % obj_link
+            else:
+                div_str += """<div class="row">"""
+                div_str += """<h4>%s</h4>""" % obj
+
+            if obj_data['e3d_list']:
+                for j in obj_data['e3d_list']:
+                    impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
+                    div_str += ('<div class="col-md-{2}">'
+                                '<a href="%s">E3D File</a>'
+                                '</div>' % impath)
 
             # ToDO: Grab data from somewhere to put in the meta data column
             if obj_data['image_list']:
