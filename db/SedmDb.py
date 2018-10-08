@@ -1725,6 +1725,11 @@ class SedmDB:
                     'ra_off' (float),
                     'dec_off' (float),
                 optional:
+                    'airmass_end' (float),
+                    'parang' (float),
+                    'parang_end' (float),
+                    'ra_off' (float),
+                    'dec_off' (float),
                     'imtype' (str),
                     'time_elapsed' (datetime.timedelta object or
                                     float/int seconds),
@@ -1792,6 +1797,8 @@ class SedmDB:
                 required:
                     'id' (int/long)
                 optional:
+                    'object_id' (int/long),
+                    'request_id' (int/long),
                     'mjd' (float),
                     'airmass' (float),
                     'exptime' (float),
@@ -1799,19 +1806,22 @@ class SedmDB:
                     'lst' (str),
                     'ra' (float),
                     'dec' (float),
-                    'tel_ra' (str),
-                    'tel_dec' (str),
                     'tel_az' (float),
                     'tel_el' (float),
                     'tel_pa' (float),
                     'ra_off' (float),
                     'dec_off' (float),
+                    'airmass_end' (float),
+                    'parang' (float),
+                    'parang_end' (float),
+                    'ra_off' (float),
+                    'dec_off' (float),
                     'imtype' (str),
-                    'camera' (str),
-                    'time_elapsed (datetime.timedelta object or
+                    'time_elapsed' (datetime.timedelta object or
                                     float/int seconds),
-                    'filter' (str)
+                    'filter' (str),
                         options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                    'camera' (str)
 
         Returns:
             (-1, "ERROR...") if there was an issue
@@ -1884,18 +1894,22 @@ class SedmDB:
                 'lst' (str),
                 'ra' (float),
                 'dec' (float),
-                'tel_ra' (str),
-                'tel_dec' (str),
                 'tel_az' (float),
                 'tel_el' (float),
                 'tel_pa' (float),
                 'ra_off' (float),
                 'dec_off' (float),
+                'airmass_end' (float),
+                'parang' (float),
+                'parang_end' (float),
+                'ra_off' (float),
+                'dec_off' (float),
                 'imtype' (str),
-                'camera' (str),
-                'time_elapsed (datetime.timedelta object or float/int seconds),
-                'filter' (str)
+                'time_elapsed' (datetime.timedelta object or
+                               float/int seconds),
+                'filter' (str),
                     options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                'camera' (str)
 
         Returns:
             list of tuples containing the values for each observation matching the criteria
@@ -1904,13 +1918,17 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'object_id': int, 'request_id': int, 'mjd': float, 'airmass': float,
-                          'exptime': float, 'fitsfile': str, 'lst': str, 'ra': float, 'dec': float, 'tel_ra': str,
-                          'tel_dec': str, 'tel_az': float, 'tel_el': float, 'tel_pa': float, 'ra_off': float,
-                          'dec_off': float, 'imtype': str, 'camera': str, 'id': int, 'filter': str,
-                          'time_elapsed': 'timedelta'}
-
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'observation')  # checks type and
+        allowed_params = {'id': int, 'object_id': int, 'request_id': int,
+                          'mjd': float, 'airmass': float, 'airmass_end': float,
+                          'parang': float, 'parang_end': float,
+                          'exptime': float, 'fitsfile': str, 'lst': str,
+                          'ra': float, 'dec': float, 'tel_az': float,
+                          'tel_el': float, 'tel_pa': float, 'ra_off': float,
+                          'dec_off': float, 'imtype': str, 'camera': str,
+                          'filter': str, 'time_elapsed': 'timedelta'}
+        # checks type
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'observation')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -2600,17 +2618,29 @@ class SedmDB:
                     'tracematch' (abspath str)
                     'tracematch_withmasks' (abspath str)
                     'wavesolution' (abspath str)
+                    'utdate' (YYYYMMDD date str)
 
                 optional:
                     'dome_master' (abspath str)
+                    'bias_slow_master' (abspath str)
+                    'bias fast_master' (abspath str)
                     'cosmic_filter' (bool)
                     'drpver' (float)
-                    'Hg_master' (abspath str)
-                    'Cd_master' (abspath str)
-                    'Xe_master' (abspath str)
+                    'hg_master' (abspath str)
+                    'cd_master' (abspath str)
+                    'xe_master' (abspath str)
                     'avg_rms' (abspath str)
                     'min_rms' (abspath str)
                     'max_rms' (abspath str)
+                    'dispersionmap' (abspath str)
+                    'flatmap' (abspath str)
+                    'nspaxels' (int)
+                    'wave_rms_avg' (float)
+                    'wave_rms_min' (float)
+                    'wave_rms_max' (float)
+                    'width_rms_avg' (float)
+                    'width_rms_min' (float)
+                    'width_rms_max' (float)
 
         Returns:
             (-1: "ERROR...") if there is an issue
@@ -2626,7 +2656,7 @@ class SedmDB:
                        'wavesolution': str, 'dispersionmap': str,
                        'flatmap': str, 'nspaxels': int, 'wave_rms_avg': float,
                        'wave_rms_min': float, 'wave_rms_max': float,
-                       'width_rms_age': float, 'width_rms_min': float,
+                       'width_rms_avg': float, 'width_rms_min': float,
                        'width_rms_max': float, 'utdate': str}
 
         required_keys = ['flat', 'hexagrid', 'tracematch',
@@ -2671,17 +2701,32 @@ class SedmDB:
                 required:
                     'id' (int/long)
                 optional:
-                    'bias' (abspath str)
                     'flat' (abspath str)
-                    'dome' (abspath str)
+                    'hexagrid' (abspath str)
+                    'tracematch' (abspath str)
+                    'tracematch_withmasks' (abspath str)
+                    'wavesolution' (abspath str)
+                    'utdate' (YYYYMMDD date str)
+                    'dome_master' (abspath str)
+                    'bias_slow_master' (abspath str)
+                    'bias fast_master' (abspath str)
                     'cosmic_filter' (bool)
                     'drpver' (float)
-                    'Hg_master' (abspath str)
-                    'Cd_master' (abspath str)
-                    'Xe_master' (abspath str)
+                    'hg_master' (abspath str)
+                    'cd_master' (abspath str)
+                    'xe_master' (abspath str)
                     'avg_rms' (abspath str)
                     'min_rms' (abspath str)
                     'max_rms' (abspath str)
+                    'dispersionmap' (abspath str)
+                    'flatmap' (abspath str)
+                    'nspaxels' (int)
+                    'wave_rms_avg' (float)
+                    'wave_rms_min' (float)
+                    'wave_rms_max' (float)
+                    'width_rms_avg' (float)
+                    'width_rms_min' (float)
+                    'width_rms_max' (float)
 
         Returns:
             (-1, "ERROR...") if it failed to update
@@ -2698,7 +2743,7 @@ class SedmDB:
                        'wavesolution': str, 'dispersionmap': str,
                        'flatmap': str, 'nspaxels': int, 'wave_rms_avg': float,
                        'wave_rms_min': float, 'wave_rms_max': float,
-                       'width_rms_age': float, 'width_rms_min': float,
+                       'width_rms_avg': float, 'width_rms_min': float,
                        'width_rms_max': float, 'utdate': str}
 
         keys = list(pardic.keys())
@@ -2747,29 +2792,55 @@ class SedmDB:
                 if no inequality is provided, '=' is assumed
             values/keys options:
                 'id' (int/long)
-                'dome' (abspath str)
-                'bias' (abspath str)
                 'flat' (abspath str)
+                'hexagrid' (abspath str)
+                'tracematch' (abspath str)
+                'tracematch_withmasks' (abspath str)
+                'wavesolution' (abspath str)
+                'utdate' (YYYYMMDD date str)
+                'dome_master' (abspath str)
+                'bias_slow_master' (abspath str)
+                'bias fast_master' (abspath str)
                 'cosmic_filter' (bool)
                 'drpver' (float)
-                'Hg_master' (abspath str)
-                'Cd_master' (abspath str)
-                'Xe_master' (abspath str)
+                'hg_master' (abspath str)
+                'cd_master' (abspath str)
+                'xe_master' (abspath str)
                 'avg_rms' (abspath str)
                 'min_rms' (abspath str)
                 'max_rms' (abspath str)
+                'dispersionmap' (abspath str)
+                'flatmap' (abspath str)
+                'nspaxels' (int)
+                'wave_rms_avg' (float)
+                'wave_rms_min' (float)
+                'wave_rms_max' (float)
+                'width_rms_avg' (float)
+                'width_rms_min' (float)
+                'width_rms_max' (float)
         Returns:
-            list of tuples containing the values for calibration matching the criteria
+            list of tuples containing the values for calibration matching
+                the criteria
 
-            empty list if no spec_calib entries match the ``where_dict`` criteria
+            empty list if no spec_calib entries match ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'dome': str, 'bias': str, 'flat': str, 'cosmic_filter': bool, 'drpver': float,
-                          'Hg_master': str, 'Cd_master': str, 'Xe_master': str, 'avg_rms': str, 'min_rms': str,
-                          'max_rms': str}
-
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'spec_calib')  # checks type and
+        allowed_params = {'id': int, 'dome_master': str,
+                          'bias_slow_master': str, 'bias_fast_master': str,
+                          'flat': str, 'cosmic_filter': bool, 'drpver': str,
+                          'hg_master': str, 'cd_master': str, 'xe_master': str,
+                          'avg_rms': str, 'min_rms': str, 'max_rms': str,
+                          'hexagrid': str, 'tracematch': str,
+                          'tracematch_withmasks': str, 'wavesolution': str,
+                          'dispersionmap': str, 'flatmap': str, 'nspaxels': int,
+                          'wave_rms_avg': float, 'wave_rms_min': float,
+                          'wave_rms_max': float, 'width_rms_avg': float,
+                          'width_rms_min': float, 'width_rms_max': float,
+                          'utdate': str}
+        # checks types
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'spec_calib')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
