@@ -2203,19 +2203,23 @@ class SedmDB:
 
     def add_spec(self, pardic):
         """
-        Adds the reduced spectrum or, if the observation already has a spectrum, updates it
+        Adds the reduced spectrum or, if the observation already has a spectrum,
+            updates it
 
         Args:
             pardic (dict):
                 required:
                     'observation_id' (int/long),
+                    'spec_calib_id' (int/long),
+                    'asciifile' (abspath str),
+                    'quality' (int),
+                optional:
                     'fitsfile' (abspath str),
                     'npyfile' (abspath str),
-                    'asciifile' (abspath str),
                     'imgset' (str),
-                    'quality' (int),
                     'cubefile' (abspath str),
                     'standardfile' (abspath str),
+                    'marshal_id' (int/long),
                     'skysub' ('true' or 'false'),
                     'extract_x' (float),
                     'extract_y' (float),
@@ -2227,79 +2231,122 @@ class SedmDB:
                     'prlltc' (float),
                     'flexure_x_corr_nm' (float),
                     'flexure_y_corr_pix' (float),
-                    'reducer' (float),
+                    'reducer' (str),
                     'fwhm' (float),
                     'background' (float),
-                    'line_fwhm' (float)
+                    'line_fwhm' (float),
+                    'pos_ok' (bool),
+                    'pos_x_spax' (float),
+                    'pos_y_spax' (float),
+                    'psf_model' (str),
+                    'psf_fwhm' (float),
+                    'psf_ell' (float),
+                    'psf_adr_pa' (float),
+                    'psf_adr_z' (float),
+                    'psf_adr_c2' (float),
+                    'fluxcal' (bool),
+                    'fluxcalfile', (abspath str)
+                    'extr_type' (str)
 
         Returns:
             (-1, "ERROR...") if there was an issue
 
             (id (long), "Spectrum added")  if the spectrum was added successfully
 
-            (id (long), "Spectrum updated for observation_id ...") if the spectrum existed and was updated
+            (id (long), "Spectrum updated for observation_id ...")
+                        if the spectrum existed and was updated
         """
-        param_types = {'id': int, 'observation_id': int,
-                       'imgset': str, 'quality': int, 'cubefile': str, 'standardfile': str, 'skysub': 'bool',
-                       'extract_x': float, 'extract_y': float, 'extract_pa': float, 'extract_a': float,
-                       'extract_b': float, 'ad_red': float, 'ad_blue': float, 'prlltc': float,
-                       'flexure_x_corr_nm': float, 'flexure_y_corr_pix': float, 'reducer': float, 'fwhm': float,
-                       'background': float, 'line_fwhm': float, 'fitsfile': str, 'npyfile': str, 'asciifile': str}
-        id = _id_from_time()
-        pardic['id'] = id
-        # TODO: which parameters are required? test
+        # TODO: add the following columns once created in db table 'spec'
+        # 'cube_id': int
+        param_types = {'id': int, 'spec_calib_id': int, 'observation_id': int,
+                       'asciifile': str, 'npyfile': str, 'fitsfile': str,
+                       'imgset': str, 'quality': int, 'cubefile': str,
+                       'standardfile': str, 'marshal_spec_id': int,
+                       'skysub': bool, 'extract_x': float, 'extract_y': float,
+                       'extract_pa': float, 'extract_a': float,
+                       'extract_b': float, 'ad_red': float, 'ad_blue': float,
+                       'prlltc': float, 'flexure_x_corr_nm': float,
+                       'flexure_y_corr_pix': float, 'reducer': float,
+                       'fwhm': float, 'background': float, 'line_fwhm': float,
+                       'pos_ok': bool, 'srcpos': str, 'pos_x_spax': float,
+                       'pos_y_spax': float, 'psf_model': str, 'psf_fwhm': float,
+                       'psf_ell': float, 'psf_adr_pa': float,
+                       'psf_adr_z': float, 'psf_adr_c2': float, 'fluxcal': bool,
+                       'fluxcalfile': str, 'extr_type': str}
+
+        required_keys = ('spec_calib_id', 'observation_id', 'asciifile',
+                         'quality')
+
+        new_spec_id = _id_from_time()
+        pardic['id'] = new_spec_id
+
         keys = list(pardic.keys())
-        if 'observation_id' not in keys:
-            return -1, "ERROR: observation_id not provided!"
-        spec_id = self.get_from_spec(['id'], {'observation_id': pardic['observation_id']})
-        if spec_id:  # if there is already an entry for that observation, update instead
+
+        # Test for required keys
+        for key in required_keys:
+            if key not in keys:
+                return -1, "ERROR: %s not provided!" % (key,)
+
+        spec_id = self.get_from_spec(['id'], {'observation_id':
+                                              pardic['observation_id']})
+        # Test if observation already has a spectrum
+        if spec_id:
+            # Verify spec_id
             if spec_id[0] == -1:
-                return spec_id
+                return spec_id, "ERROR: something went wrong getting spec id!"
+            # Validate input keys
             for key in reversed(keys):  # TODO: test the updating
-                if key not in ['fitsfile', 'npyfile', 'asciifile', 'imgset', 'quality',
-                               'cubefile', 'standardfile', 'marshal_spec_id', 'skysub', 'extract_x', 'extract_y',
-                               'extract_pa', 'extract_a', 'extract_b', 'ad_red', 'ad_blue', 'prlltc',
-                               'flexure_x_corr_nm', 'flexure_y_corr_pix', 'reducer', 'fwhm', 'background', 'line_fwhm']:
+                if key not in param_types:
                     return -1, "ERROR: %s is an invalid key!" % (key,)
+            # Update existing record with input values
             pardic['id'] = spec_id[0][0]
             update_sql = _generate_update_sql(pardic, keys, 'spec')
             print(update_sql)
             try:
                 self.execute_sql(update_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_reduced_spectrum update sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_spec sql command failed with an " \
+                           "IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_reduced_spectrum update sql command failed with a ProgrammingError!"
-            return (spec_id[0][0], "Spectrum updated for observation_id %s, columns " % (pardic['observation_id'],)
+                return -1, "ERROR: add_spec sql command failed with a " \
+                           "ProgrammingError!"
+            return (spec_id[0][0],
+                    "Spectrum updated for observation_id %s, columns " %
+                    (pardic['observation_id'],)
                     + str(keys)[1:-1])
-        obs_id = self.get_from_observation(['id'], {'id': pardic['observation_id']})
-        if not obs_id:
-            return -1, "ERROR: no observation exists with the given id!"
-        elif obs_id[0] == -1:
-            return obs_id
-
-        for key in ['observation_id', 'fitsfile', 'imgset', 'quality', 'cubefile',
-                    'standardfile', 'skysub']:
-            if key not in keys:
-                return -1, "ERROR: %s not provided!" % (key,)
-
-        for key in reversed(keys):
-            if key not in ['id', 'observation_id', 'fitsfile', 'npyfile', 'asciifile', 'imgset', 'quality',
-                           'cubefile', 'standardfile', 'marshal_spec_id', 'skysub', 'extract_x', 'extract_y',
-                           'extract_pa', 'extract_a', 'extract_b', 'ad_red', 'ad_blue', 'prlltc',
-                           'flexure_x_corr_nm', 'flexure_y_corr_pix', 'reducer', 'fwhm', 'background', 'line_fwhm']:
-                return -1, "ERROR: %s is an invalid key!" % (key,)
-        type_check = _data_type_check(keys, pardic, param_types)
-        if type_check:
-            return -1, type_check
-
-        sql = _generate_insert_sql(pardic, keys, 'spec')
-        try:
-            self.execute_sql(sql)
-        except exc.IntegrityError:
-            return -1, "ERROR: add_reduced_spectrum sql command failed with an IntegrityError!"
-        except exc.ProgrammingError:
-            return -1, "ERROR: add_reduced_spectrum sql command failed with a ProgrammingError!"
+        # New entry in spec table
+        else:
+            # Test if observation id is valid
+            obs_id = self.get_from_observation(['id'],
+                                               {'id': pardic['observation_id']})
+            if not obs_id:
+                return -1, "ERROR: no observation exists with the given id!"
+            elif obs_id[0] == -1:
+                return obs_id, "ERROR: something went wrong " \
+                               "getting observation id!"
+            # Test for required keys
+            for key in required_keys:
+                if key not in keys:
+                    return -1, "ERROR: %s not provided!" % (key,)
+            # Test for valid keys
+            for key in reversed(keys):
+                if key not in param_types:
+                    return -1, "ERROR: %s is an invalid key!" % (key,)
+            # Check input parameter types
+            type_check = _data_type_check(keys, pardic, param_types)
+            if type_check:
+                return -1, type_check
+            # Generate SQL command
+            sql = _generate_insert_sql(pardic, keys, 'spec')
+            try:
+                self.execute_sql(sql)
+            except exc.IntegrityError:
+                return -1, "ERROR: add_spec sql command failed with an " \
+                           "IntegrityError!"
+            except exc.ProgrammingError:
+                return -1, "ERROR: add_spec sql command failed with a " \
+                           "ProgrammingError!"
+            return new_spec_id, "Spectrum added with columns " + str(keys)[1:-1]
 
     def get_from_spec(self, values, where_dict={}, compare_dict={}):
         """
@@ -2316,14 +2363,16 @@ class SedmDB:
             values/keys options:
                 'id' (int/long),
                 'observation_id' (int/long),
+                'spec_calib_id' (int/long),
+                'asciifile' (abspath str),
+                'quality' (int),
                 'fitsfile' (abspath str),
                 'npyfile' (abspath str),
-                'asciifile' (abspath str),
                 'imgset' (str),
-                'quality' (int),
                 'cubefile' (abspath str),
                 'standardfile' (abspath str),
-                'skysub' ('true' or 'false')
+                'marshal_id' (int/long),
+                'skysub' ('true' or 'false'),
                 'extract_x' (float),
                 'extract_y' (float),
                 'extract_pa' (float),
@@ -2334,27 +2383,51 @@ class SedmDB:
                 'prlltc' (float),
                 'flexure_x_corr_nm' (float),
                 'flexure_y_corr_pix' (float),
-                'reducer' (float),
+                'reducer' (str),
                 'fwhm' (float),
                 'background' (float),
-                'line_fwhm' (float)
+                'line_fwhm' (float),
+                'pos_ok' (bool),
+                'pos_x_spax' (float),
+                'pos_y_spax' (float),
+                'psf_model' (str),
+                'psf_fwhm' (float),
+                'psf_ell' (float),
+                'psf_adr_pa' (float),
+                'psf_adr_z' (float),
+                'psf_adr_c2' (float),
+                'fluxcal' (bool),
+                'fluxcalfile', (abspath str)
+                'extr_type' (str)
 
         Returns:
-            list of tuples containing the values for spectra matching the criteria
+            list of tuples containing the values for spectra matching
+                the criteria
 
             empty list if no spec entries match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'observation_id': int, 'fitsfile': str, 'npyfile': str, 'asciifile': str,
-                          'imgset': str, 'quality': int, 'cubefile': str, 'standardfile': str,
-                          'skysub': 'bool', 'id': int,
-                          'extract_x': float, 'extract_y': float, 'extract_pa': float, 'extract_a': float,
-                          'extract_b': float, 'ad_red': float, 'ad_blue': float, 'prlltc': float,
-                          'flexure_x_corr_nm': float, 'flexure_y_corr_pix': float, 'reducer': float, 'fwhm': float,
-                          'background': float, 'line_fwhm': float}
+        allowed_params = {'id': int, 'spec_calib_id': int,
+                          'observation_id': int, 'asciifile': str,
+                          'npyfile': str, 'fitsfile': str, 'imgset': str,
+                          'quality': int, 'cubefile': str, 'standardfile': str,
+                          'marshal_spec_id': int, 'skysub': bool,
+                          'extract_x': float, 'extract_y': float,
+                          'extract_pa': float, 'extract_a': float,
+                          'extract_b': float, 'ad_red': float, 'ad_blue': float,
+                          'prlltc': float, 'flexure_x_corr_nm': float,
+                          'flexure_y_corr_pix': float, 'reducer': float,
+                          'fwhm': float, 'background': float,
+                          'line_fwhm': float, 'pos_ok': bool, 'srcpos': str,
+                          'pos_x_spax': float, 'pos_y_spax': float,
+                          'psf_model': str, 'psf_fwhm': float, 'psf_ell': float,
+                          'psf_adr_pa': float, 'psf_adr_z': float,
+                          'psf_adr_c2': float, 'fluxcal': bool,
+                          'fluxcalfile': str, 'extr_type': str}
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'spec')  # checks type and
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'spec')  # checks type and
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -2661,6 +2734,7 @@ class SedmDB:
 
         required_keys = ['flat', 'hexagrid', 'tracematch',
                          'tracematch_withmasks', 'wavesolution', 'utdate']
+
         spec_calib_id = _id_from_time()
         pardic['id'] = spec_calib_id
 
