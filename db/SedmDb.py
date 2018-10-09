@@ -1734,7 +1734,7 @@ class SedmDB:
                     'time_elapsed' (datetime.timedelta object or
                                     float/int seconds),
                     'filter' (str),
-                        options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                        options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
                     'camera' (str)
 
         Returns:
@@ -1757,8 +1757,8 @@ class SedmDB:
 
         valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']
 
-        observation_id = _id_from_time()
-        header_dict['id'] = observation_id
+        new_observation_id = _id_from_time()
+        header_dict['id'] = new_observation_id
 
         header_keys = list(header_dict.keys())
 
@@ -1777,17 +1777,25 @@ class SedmDB:
         type_check = _data_type_check(header_keys, header_dict, header_types)
         if type_check:
             return -1, type_check
-
-        sql = _generate_insert_sql(header_dict, header_keys, 'observation')
-        try:
-            self.execute_sql(sql)
-        except exc.IntegrityError:
-            return -1, "ERROR: adding observation sql command failed with an " \
-                       "IntegrityError!"
-        except exc.ProgrammingError:
-            return -1, "ERROR: adding observation sql command failed with a " \
-                       "ProgrammingError!"
-        return observation_id, "Observation added"
+        # Check if observation already exists in DB
+        observation_id = self.get_from_observation(['id'],
+                                                   {'fitsfile':
+                                                    header_dict['fitsfile']},
+                                                   {'fitsfile': '~'})
+        if observation_id:
+            return -1, "ERROR: %s already in database with id %d!" % \
+                   (header_dict['fitsfile'], observation_id[0][0])
+        else:
+            sql = _generate_insert_sql(header_dict, header_keys, 'observation')
+            try:
+                self.execute_sql(sql)
+            except exc.IntegrityError:
+                return -1, "ERROR: adding observation sql command failed " \
+                           "with an IntegrityError!"
+            except exc.ProgrammingError:
+                return -1, "ERROR: adding observation sql command failed " \
+                           "with a ProgrammingError!"
+            return new_observation_id, "Observation added"
 
     def update_observation(self, pardic):
         """
@@ -1820,7 +1828,7 @@ class SedmDB:
                     'time_elapsed' (datetime.timedelta object or
                                     float/int seconds),
                     'filter' (str),
-                        options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                        options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
                     'camera' (str)
 
         Returns:
@@ -1908,7 +1916,7 @@ class SedmDB:
                 'time_elapsed' (datetime.timedelta object or
                                float/int seconds),
                 'filter' (str),
-                    options: 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                    options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
                 'camera' (str)
 
         Returns:
