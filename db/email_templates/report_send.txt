@@ -7,7 +7,3 @@ Request for follow-up on {object_name} has completed. Please visit
 to see the reduced spectra.
 
 This is an auto-generated alert.
-
-From Auto-SEDm
-
-http://pharos.caltech.edu
