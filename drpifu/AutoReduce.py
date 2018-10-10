@@ -247,6 +247,12 @@ def docp(src, dest, onsky=True, verbose=False):
                 nobj = 1
                 print('Target %s linked to %s' % (obj, dest))
             ncp = 1
+            # Record in database
+            obs_id = update_observation(src)
+            if obs_id > 0:
+                print("SEDM db accepted observation at id %d" % obs_id)
+            else:
+                print("SEDM db rejected observation")
         # Report skipping and type
         else:
             if verbose and 'test' in hdr['OBJECT']:
@@ -280,12 +286,12 @@ def update_observation(input_fitsfile):
     }
     ff = pf.open(input_fitsfile)
 
-    for hk in header_dict.keys():
-        key = header_dict[hk]
-        if key in ff[0].header:
-            obs_dict[hk] = ff[0].header[key]
+    for key in header_dict.keys():
+        hk = header_dict[key]
+        if hk in ff[0].header:
+            obs_dict[key] = ff[0].header[hk]
         else:
-            print("Invalid key: %s" % key)
+            print("Header keyword not found: %s" % hk)
     ff.close()
 
     sedmdb = db.SedmDb.SedmDB()
