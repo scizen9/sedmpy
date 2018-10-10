@@ -3319,12 +3319,11 @@ class SedmDB:
             with open(template_file) as f:
                 email_template = f.read()
 
-            print(email_template)
-            print(template_dict)
-
             email_content = email_template.format(**template_dict)
 
             msg.set_content(email_content)
+
+            print(msg)
 
         else:
             return "Template does not exist"
