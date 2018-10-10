@@ -3298,7 +3298,7 @@ class SedmDB:
         if to:
             msg['To'] = to
         else:
-            userid = self.get_from_request(values=['userid'],
+            userid = self.get_from_request(values=['user_id'],
                                         where_dict={'id': requestid})[0]
 
             user_email = self.get_from_users(values=['email'],
