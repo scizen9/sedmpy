@@ -659,8 +659,29 @@ def dosci(destdir='./', datestr=None):
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
                         subprocess.run(cmd, shell=True)
+                        # notify user that followup successfully completed
+                        if os.path.exists(proced):
+                            email_user(proced, datestr, obj)
+                        else:
+                            print("Not found: %s" % proced)
     return ncp, copied
     # END: dosci
+
+
+def email_user(spec_file, utdate, object_name):
+    """ Send e-mail to requestor indicating followup completed"""
+    # get request id
+    out = subprocess.check_output(('grep', 'REQ_ID', spec_file),
+                                  universal_newlines=True)
+    request = int(out.split(':', 1)[-1])
+    link = 'http://pharos.caltech.edu/data_access/ifu?obsdate=%s' % utdate
+    subj = 'SEDM followup status report for %s on %s' % (object_name, utdate)
+
+    sedmdb = db.SedmDb.SedmDB()
+    sedmdb.send_email_by_request(requestid=request, template='report_send',
+                                 subject=subj,
+                                 template_dict={'object_name': object_name,
+                                                'link': link})
 
 
 def find_recent(redd, fname, destdir, dstr):
