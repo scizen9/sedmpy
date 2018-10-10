@@ -1734,7 +1734,8 @@ class SedmDB:
                     'time_elapsed' (datetime.timedelta object or
                                     float/int seconds),
                     'filter' (str),
-                        options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                        options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b',
+                                    'NA'
                     'camera' (str)
 
         Returns:
@@ -1755,7 +1756,7 @@ class SedmDB:
                          'fitsfile', 'lst', 'ra', 'dec', 'tel_az', 'tel_el',
                          'tel_pa', 'ra_off', 'dec_off']
 
-        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']
+        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b', 'NA']
 
         new_observation_id = _id_from_time()
         header_dict['id'] = new_observation_id
@@ -1828,7 +1829,8 @@ class SedmDB:
                     'time_elapsed' (datetime.timedelta object or
                                     float/int seconds),
                     'filter' (str),
-                        options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                        options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b',
+                                    'NA'
                     'camera' (str)
 
         Returns:
@@ -1846,7 +1848,7 @@ class SedmDB:
                        'camera': str, 'filter': str,
                        'time_elapsed': 'timedelta'}
 
-        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b']
+        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b', 'NA']
 
         keys = list(pardic.keys())
         if 'id' not in keys:
@@ -1916,7 +1918,7 @@ class SedmDB:
                 'time_elapsed' (datetime.timedelta object or
                                float/int seconds),
                 'filter' (str),
-                    options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b'
+                    options - 'u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b', 'NA'
                 'camera' (str)
 
         Returns:
