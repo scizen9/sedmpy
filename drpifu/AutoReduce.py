@@ -279,14 +279,14 @@ def update_observation(input_fitsfile):
         'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
         'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
         'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
-        'filter': 'FILTER'
+        'filter': 'FILTER', 'parang': 'TEL_PA'
     }
     obs_dict = {
         'object_id': 0, 'request_id': 0, 'mjd': 0.,
         'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
         'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
         'tel_pa': 0., 'ra_off': 0., 'dec_off': 0.,
-        'imtype': ' ', 'camera': ' ', 'filter': ' ',
+        'imtype': ' ', 'camera': ' ', 'filter': ' ', 'parang': 0.,
         'fitsfile': input_fitsfile.split('/')[-1]
     }
     ff = pf.open(input_fitsfile)
