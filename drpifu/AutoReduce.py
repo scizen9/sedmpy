@@ -37,7 +37,12 @@ import ephem
 import db.SedmDb
 
 from astropy.time import Time
-import Version
+from astropy.coordinates import Angle
+
+try:
+    import Version
+except ImportError:
+    import drpifu.Version as Version
 
 drp_ver = Version.ifu_drp_version()
 
@@ -289,7 +294,10 @@ def update_observation(input_fitsfile):
     for key in header_dict.keys():
         hk = header_dict[key]
         if hk in ff[0].header:
-            obs_dict[key] = ff[0].header[hk]
+            if key is 'dec' or key is 'ra':
+                obs_dict[key] = Angle(ff[0].header[hk]).degree
+            else:
+                obs_dict[key] = ff[0].header[hk]
         else:
             print("Header keyword not found: %s" % hk)
     ff.close()
