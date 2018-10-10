@@ -294,8 +294,10 @@ def update_observation(input_fitsfile):
     for key in header_dict.keys():
         hk = header_dict[key]
         if hk in ff[0].header:
-            if key is 'dec' or key is 'ra':
-                obs_dict[key] = Angle(ff[0].header[hk]).degree
+            if key is 'dec':
+                obs_dict[key] = Angle(ff[0].header[hk]+' degrees').degree
+            elif key is 'ra':
+                obs_dict[key] = Angle(ff[0].header[hk]+' hours').degree
             else:
                 obs_dict[key] = ff[0].header[hk]
         else:
