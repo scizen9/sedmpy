@@ -466,46 +466,43 @@ def add_object_to_db(content):
     :return: 
     """
 
-    return_dict = {}
+    return_dict = {'message': ''}
 
     # Add the object to the database
     if content['obj_ra'] and content['obj_dec']:
         ra = content['obj_ra']
         dec = content['obj_dec']
         if ":" in ra or ":" in dec:
-            return_dict['message'] += ("This is embarrassing, I know I said "
-                                       "I would take coordinates in this "
-                                       "format but I haven't actually "
-                                       "implemented it yet...  Please "
-                                       "resubmit using degrees and then "
-                                       "bug me to fix this...--")
-            objid = False
+            c = SkyCoord(ra=ra, dec=dec, unit=(u.hourangle, u.deg))
+            ra = c.ra.degree
+            dec = c.dec.degree
+
+
+        if content['obj_epoch']:
+            epoch = content['obj_epoch']
         else:
-            if content['obj_epoch']:
-                epoch = content['obj_epoch']
-            else:
-                epoch = 2000
+            epoch = 2000
 
-            objdict = {
-                'name': content['obj_name'],
-                'ra': ra,
-                'dec': dec,
-                'typedesig': 'f',
-                'epoch': epoch,
-            }
+        objdict = {
+            'name': content['obj_name'],
+            'ra': ra,
+            'dec': dec,
+            'typedesig': 'f',
+            'epoch': epoch,
+        }
 
-            if content['obj_mag']:
-                objdict['magnitude'] = content['obj_mag']
+        if content['obj_mag']:
+            objdict['magnitude'] = content['obj_mag']
 
-            objid, msg = db.add_object(objdict)
+        objid, msg = db.add_object(objdict)
 
-            if objid == -1:
-                return_dict['message'] += msg + ('--For now I am going to '
-                                                 'assume that you want to '
-                                                 'use this object and will '
-                                                 'go ahead with the rest '
-                                                 'of the request--')
-                objid = msg.split()[-1]
+        if objid == -1:
+            return_dict['message'] += msg + ('--For now I am going to '
+                                             'assume that you want to '
+                                             'use this object and will '
+                                             'go ahead with the rest '
+                                             'of the request--')
+            objid = msg.split()[-1]
 
     else:
         return_dict['message'] = ("How am I suppose to add your request "
@@ -549,7 +546,7 @@ def process_request_form(content, form, userid):
             return {**process_dict, **message}, form
         else:
             if 'message' in message:
-                process_dict['meesage'] += message['message']
+                process_dict['message'] += message['message']
 
     request_dict['object_id'] = int(objid)
 
