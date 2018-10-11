@@ -1764,9 +1764,9 @@ class SedmDB:
         header_keys = list(header_dict.keys())
 
         # Test for valid filter
-        if 'filter' in header_keys:
-            if header_dict['filter'] not in valid_filters:
-                return -1, "ERROR: invalid filter given!"
+        # if 'filter' in header_keys:
+        #    if header_dict['filter'] not in valid_filters:
+        #        return -1, "ERROR: invalid filter given!"
         # Test for required keys
         for key in required_keys:
             if key not in header_keys:
@@ -1857,9 +1857,9 @@ class SedmDB:
                 'SELECT id FROM observation;')]:
             return -1, "ERROR: observation does not exist!"
         keys.remove('id')
-        if 'filter' in keys:
-            if pardic['filter'] not in valid_filters:
-                return -1, "ERROR: invalid filter given!"
+        # if 'filter' in keys:
+        #    if pardic['filter'] not in valid_filters:
+        #        return -1, "ERROR: invalid filter given!"
 
         for key in reversed(keys):
             if key not in param_types:
