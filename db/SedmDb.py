@@ -1756,17 +1756,11 @@ class SedmDB:
                          'fitsfile', 'lst', 'ra', 'dec', 'tel_az', 'tel_el',
                          'tel_pa', 'ra_off', 'dec_off']
 
-        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b', 'NA']
-
         new_observation_id = _id_from_time()
         header_dict['id'] = new_observation_id
 
         header_keys = list(header_dict.keys())
 
-        # Test for valid filter
-        # if 'filter' in header_keys:
-        #    if header_dict['filter'] not in valid_filters:
-        #        return -1, "ERROR: invalid filter given!"
         # Test for required keys
         for key in required_keys:
             if key not in header_keys:
@@ -1851,8 +1845,6 @@ class SedmDB:
                        'camera': str, 'filter': str,
                        'time_elapsed': 'timedelta'}
 
-        valid_filters = ['u', 'g', 'r', 'i', 'ifu', 'ifu_a', 'ifu_b', 'NA']
-
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
@@ -1860,9 +1852,6 @@ class SedmDB:
                 'SELECT id FROM observation;')]:
             return -1, "ERROR: observation does not exist!"
         keys.remove('id')
-        # if 'filter' in keys:
-        #    if pardic['filter'] not in valid_filters:
-        #        return -1, "ERROR: invalid filter given!"
 
         for key in reversed(keys):
             if key not in param_types:
