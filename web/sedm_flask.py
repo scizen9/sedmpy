@@ -111,8 +111,11 @@ def add_csv():
 
 
 @app.route('/data_access/<path:instrument>', methods=['GET'])
-@flask_login.login_required
+#@flask_login.login_required
 def data_access(instrument):
+    if not flask_login.current_user.is_authenticated:
+        return redirect('login')
+
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
     if request.is_json:
