@@ -1791,8 +1791,11 @@ class SedmDB:
             try:
                 self.execute_sql(sql)
             except exc.IntegrityError:
-                return -1, "ERROR: adding observation sql command failed " \
-                           "with an IntegrityError!"
+                return -1, "ERROR(exc): adding observation sql command " \
+                           "failed with an IntegrityError!"
+            except psycopg2.IntegrityError:
+                return -1, "ERROR(psycopg2): adding observation sql command " \
+                           "failed with an IntegrityError!"
             except exc.ProgrammingError:
                 return -1, "ERROR: adding observation sql command failed " \
                            "with a ProgrammingError!"
@@ -1874,8 +1877,11 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_observation sql command failed with an " \
-                       "IntegrityError!"
+            return -1, "ERROR(exc): adding observation sql command " \
+                       "failed with an IntegrityError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): adding observation sql command " \
+                       "failed with an IntegrityError!"
         except exc.ProgrammingError:
             return -1, "ERROR: update_observation sql command failed with a " \
                        "ProgrammingError!"
