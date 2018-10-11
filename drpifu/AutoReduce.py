@@ -253,11 +253,11 @@ def docp(src, dest, onsky=True, verbose=False):
                 print('Target %s linked to %s' % (obj, dest))
             ncp = 1
             # Record in database
-            # obs_id = update_observation(src)
-            # if obs_id > 0:
-            #    print("SEDM db accepted observation at id %d" % obs_id)
-            # else:
-            #    print("SEDM db rejected observation")
+            obs_id = update_observation(src)
+            if obs_id > 0:
+                print("SEDM db accepted observation at id %d" % obs_id)
+            else:
+                print("SEDM db rejected observation")
         # Report skipping and type
         else:
             if verbose and 'test' in hdr['OBJECT']:
