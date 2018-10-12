@@ -566,7 +566,7 @@ def dosci(destdir='./', datestr=None):
             hdr = ff[0].header
             ff.close()
             # Get OBJECT keyword
-            obj = hdr['OBJECT']
+            obj = hdr['OBJECT'].split()[0]
             # Get DOMEST keyword
             dome = hdr['DOMEST']
             # skip Cal files
