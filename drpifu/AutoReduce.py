@@ -672,9 +672,8 @@ def dosci(destdir='./', datestr=None):
 def email_user(spec_file, utdate, object_name):
     """ Send e-mail to requestor indicating followup completed"""
     # get request id
-    out = subprocess.check_output(('grep', 'REQ_ID', spec_file),
-                                  universal_newlines=True)
-    request = int(out.split(':', 1)[-1])
+    ff = pf.open(spec_file)
+    request = int(ff[0].header['REQ_ID'])
     link = 'http://pharos.caltech.edu/data_access/ifu?obsdate=%s' % utdate
     subj = 'SEDM followup status report for %s on %s' % (object_name, utdate)
 
