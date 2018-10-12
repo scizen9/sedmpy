@@ -24,13 +24,12 @@ import os
 import sys
 import glob
 import argparse
-
-from matplotlib import pylab as plt
-
 from configparser import ConfigParser
 import codecs
-import matplotlib
-matplotlib.use("Agg")
+
+# import matplotlib
+# matplotlib.use("Agg")
+from matplotlib import pylab as plt
 
 cfg_parser = ConfigParser()
 
