@@ -262,10 +262,13 @@ if __name__ == "__main__":
              "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
                 ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
             filesacq.append(f)
-    
-    print("Found %d files for finders:\n%s" % (len(filesacq), filesacq))
-    
+
+    n_acq = len(filesacq)
+    print("Found %d files for finders:\n%s" % (n_acq, filesacq))
+
+    n_find = 0
     for f in filesacq:
+        n_acq += 1
         try:
             objnam = fitsutils.get_par(f, "OBJECT").upper()
         except:
@@ -284,7 +287,10 @@ if __name__ == "__main__":
         if not os.path.isfile(finderpath):
             # link rc image into reduxdir
             dest = os.path.join(reduxdir, f.split('/')[-1])
-            os.symlink(f, dest)
+            if os.path.isfile(dest):
+                print("%s already exists" % dest)
+            else:
+                os.symlink(f, dest)
             print("Solving astrometry", dest)
             # Solving for astrometry
             returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom', dest])
@@ -297,7 +303,7 @@ if __name__ == "__main__":
             if not os.path.isfile(astrof):
                 print("Astrometry results not found %s" % astrof)
                 continue
-            print("Generating finder", finderpath)
+            print("Generating finder %d of %d: %s", (n_find, n_acq, finderpath))
             try:
                 finder(astrof, finderpath)
             except AttributeError:
