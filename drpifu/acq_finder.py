@@ -295,7 +295,7 @@ if __name__ == "__main__":
                 continue
             # Check results
             astrof = dest.replace(".fits", "_astrom.fits")
-            if not os.isfile(astrof):
+            if not os.path.isfile(astrof):
                 print("Astrometry results not found %s" % astrof)
                 continue
             print("Generating finder", finderpath)
