@@ -303,7 +303,8 @@ if __name__ == "__main__":
             if not os.path.isfile(astrof):
                 print("Astrometry results not found %s" % astrof)
                 continue
-            print("Generating finder %d of %d: %s", (n_find, n_acq, finderpath))
+            print("Generating finder %d of %d: %s" %
+                  (n_find, n_acq, finderpath))
             try:
                 finder(astrof, finderpath)
             except AttributeError:
