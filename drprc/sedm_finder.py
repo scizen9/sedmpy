@@ -13,8 +13,14 @@ from astropy import units as u
 
 import numpy as np
 import aplpy
-import drprc.coordinates_conversor as coordinates_conversor
-import drprc.fitsutils as fitsutils
+try:
+    import coordinates_conversor
+except ImportError:
+    import drprc.coordinates_conversor as coordinates_conversor
+try:
+    import fitsutils
+except ImportError:
+    import drprc.fitsutils as fitsutils
 import datetime
 import os
 import sys
@@ -23,23 +29,25 @@ import argparse
 
 from matplotlib import pylab as plt
 
-import drprc.rcred as rcred
- 
-from ConfigParser import SafeConfigParser
+try:
+    import rcred
+except ImportError:
+    import drprc.rcred as rcred
+
+from configparser import ConfigParser
 import codecs
 import matplotlib
 matplotlib.use("Agg")
 
-parser = SafeConfigParser()
+cfg_parser = ConfigParser()
 
 configfile = os.environ["SEDMCONFIG"]
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
-    parser.readfp(f)
+    cfg_parser.read_file(f)
 
-_logpath = parser.get('paths', 'logpath')
-_photpath = parser.get('paths', 'photpath')
+_photpath = cfg_parser.get('paths', 'photpath')
 
 
 def finder(myfile, findername, searchrad=0.2/60.):
@@ -82,7 +90,7 @@ def finder(myfile, findername, searchrad=0.2/60.):
     print("Min: %.1f, max: %.1f" % (zmin, zmax))
     gc = aplpy.FITSFigure(myfile, figsize=(10, 9), north=True)
     gc.show_grayscale(vmin=zmin, vmax=zmax, smooth=1, kernel="gauss")
-    gc.show_scalebar(0.1/60.)
+    gc.add_scalebar(0.1/60.)
     gc.scalebar.set_label('10 arcsec')
     gc.scalebar.set_color('white')
     gc.recenter(ra, dec, searchrad)
@@ -263,7 +271,7 @@ if __name__ == "__main__":
             continue
     
         # We generate only one finder for each object.
-    	name = f.split(".")[0]
+        name = f.split(".")[0]
         finderplotf = 'finder_%s_%s_%s.png' % (name,
                                                fitsutils.get_par(f, "NAME"),
                                                fitsutils.get_par(f, "FILTER"))

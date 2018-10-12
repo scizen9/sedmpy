@@ -6,16 +6,20 @@ Created on Sun Jun 14 13:11:52 2015
 @author: nadiablago
 """
 
-import matplotlib
-matplotlib.use('Agg')
 
-import fitsutils
-import os, glob, shutil, sys
+try:
+    import fitsutils
+except ImportError:
+    import drprc.fitsutils as fitsutils
+import os
+import glob
+import shutil
+import sys
 import numpy as np
 try:
     from pyraf import iraf 
     from pyraf import IrafError
-except:
+except ImportError:
     pass
 from astropy.io import fits
 from astropy.wcs import WCS
@@ -26,21 +30,33 @@ import argparse
 import time
 import datetime
 import logging
-import sextractor
-import zeropoint
+try:
+    import sextractor
+except ImportError:
+    import drprc.sextractor as sextractor
+try:
+    import zeropoint
+except ImportError:
+    import drprc.zeropoint as zeropoint
 from astropy.io import fits
-import coordinates_conversor as cc
+try:
+    import coordinates_conversor as cc
+except ImportError:
+    import drprc.coordinates_conversor as cc
 
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 import codecs
 
-parser = SafeConfigParser()
+import matplotlib
+matplotlib.use('Agg')
+
+parser = ConfigParser()
 
 configfile = os.environ["SEDMCONFIG"]
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
-    parser.readfp(f)
+    parser.read_file(f)
 
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
@@ -49,32 +65,37 @@ _db = parser.get('persistence', 'db')
 
 FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 now = datetime.datetime.utcnow()
-timestamp=datetime.datetime.isoformat(now)
+timestamp = datetime.datetime.isoformat(now)
 creationdate = timestamp
-timestamp=timestamp.split("T")[0]
+timestamp = timestamp.split("T")[0]
 
 try:
-    #Log into a file
+    # Log into a file
     root_dir = _logpath
-    logging.basicConfig(format=FORMAT, filename=os.path.join(root_dir, "rcred_{0}.log".format(timestamp)), level=logging.INFO)
+    logging.basicConfig(
+        format=FORMAT,
+        filename=os.path.join(root_dir,
+                              "rcred_{0}.log".format(timestamp)),
+        level=logging.INFO)
     logger = logging.getLogger('rcred')
 except:
-    logging.basicConfig(format=FORMAT, filename=os.path.join("/tmp", "rcred_{0}.log".format(timestamp)), level=logging.INFO)
-    logger= logging.getLogger("rcred")
-    
-
+    logging.basicConfig(
+        format=FORMAT,
+        filename=os.path.join("/tmp", "rcred_{0}.log".format(timestamp)),
+        level=logging.INFO)
+    logger = logging.getLogger("rcred")
 
     
 def get_xy_coords(image, ra, dec):
-    '''
-    Uses the wcs-rd2xy routine to compute the proper pixel number where the target is.
-    Sometime the wcs module does not seem to be providing the correct answer, as it does not seem
-    to be using the SIP extension.
-    
-    '''
+    """
+    Uses the wcs-rd2xy routine to compute the proper pixel number where the
+    target is.  Sometime the wcs module does not seem to be providing the
+    correct answer, as it does not seem to be using the SIP extension.
+
+    """
     import re
     import subprocess
-    cmd = "wcs-rd2xy -w %s -r %.5f -d %.5f"%(image, ra, dec)
+    cmd = "wcs-rd2xy -w %s -r %.5f -d %.5f" % (image, ra, dec)
     proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
     output = proc.stdout.read()    
     output = output.split("->")[1]
@@ -85,13 +106,14 @@ def get_xy_coords(image, ra, dec):
         
     return coords
 
+
 def get_rd_coords(image, x, y):
-    '''
-    Uses the wcs-xy2rd routine to compute the ra, dec where the target is for a given pixel.
-    Sometime the wcs module does not seem to be providing the correct answer, as it does not seem
-    to be using the SIP extension.
-    
-    '''
+    """
+    Uses the wcs-xy2rd routine to compute the ra, dec where the target is for
+    a given pixel.  Sometime the wcs module does not seem to be providing the
+    correct answer, as it does not seem to be using the SIP extension.
+
+    """
     import re
     import subprocess
     cmd = "wcs-xy2rd -w %s -x %.5f -y %.5f"%(image, x, y)
@@ -108,9 +130,9 @@ def get_rd_coords(image, x, y):
 
     
 def create_masterbias(biasdir=None, channel='rc'):
-    '''
+    """
     Combines slow and fast readout mode biases for the specified channel.
-    '''
+    """
     
     iraf.noao(_doprint=0)
     iraf.imred(_doprint=0)
@@ -123,13 +145,13 @@ def create_masterbias(biasdir=None, channel='rc'):
 
     doslow = True
     dofast = True
-    if (os.path.isfile(os.path.join(biasdir,outs))): 
+    if os.path.isfile(os.path.join(biasdir, outs)):
         logger.warn( "%s master Bias exists!"%outs)
         doslow = False
-    if ( os.path.isfile(os.path.join(biasdir,outf))):
+    if os.path.isfile(os.path.join(biasdir, outf)):
         logger.warn("%s master Bias exists!"%outs)
         dofast = False
-    if(doslow or dofast):
+    if doslow or dofast:
         logger.info("Starting the Master Bias creation!")
     else:
         return
@@ -139,11 +161,11 @@ def create_masterbias(biasdir=None, channel='rc'):
     lfastbias = []
     lslowbias = []
     
-    #Select all filts that are Bias with same instrument
+    # Select all filts that are Bias with same instrument
     for f in glob.glob("rc*fits"):
         try:
-            if ( "BIAS" in str.upper(fitsutils.get_par(f, "IMGTYPE").upper()) ):
-                if (fitsutils.get_par(f, "ADCSPEED")==2):
+            if "BIAS" in str.upper(fitsutils.get_par(f, "IMGTYPE").upper()):
+                if fitsutils.get_par(f, "ADCSPEED")==2:
                     lfastbias.append(f)
                 else:
                     lslowbias.append(f)
@@ -154,82 +176,82 @@ def create_masterbias(biasdir=None, channel='rc'):
     logger.info( "Files for bias FAST mode: %s"% lfastbias)
     
     if len(lfastbias) > 0 and dofast:
-        bfile_fast ="lbias_fast_"+channel
+        bfile_fast = "lbias_fast_" + channel
         np.savetxt(bfile_fast, np.array(lfastbias), fmt="%s")
-        if (os.path.isfile("Bias_stats_fast")): 
+        if os.path.isfile("Bias_stats_fast"):
             os.remove("Bias_stats_fast")
         iraf.imstat("@"+bfile_fast, Stdout="Bias_stats_fast")
         
         st = np.genfromtxt("Bias_stats_fast", names=True, dtype=None)
         logger.info("%s"%st)
         
-        iraf.imcombine(input = "@"+bfile_fast, \
-                    output = outf, \
-                    combine = "median",\
-                    scale = "mode")
+        iraf.imcombine(input="@"+bfile_fast, output=outf, combine="median",
+                       scale="mode")
         os.remove(bfile_fast)
         
-        #copy into the reference folder with current date
-        newdir = os.path.join("../../refphot/", os.path.basename(os.path.abspath(biasdir)))
-        if (not os.path.isdir(newdir)):
+        # copy into the reference folder with current date
+        newdir = os.path.join("../../refphot/",
+                              os.path.basename(os.path.abspath(biasdir)))
+        if not os.path.isdir(newdir):
             os.makedirs(newdir)
-            shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)) )
+            shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
         else:
             copy_ref_calib(biasdir, "Bias")
 
-
     if len(lslowbias) > 0 and doslow:
 
-        bfile_slow ="lbias_slow_"+channel
+        bfile_slow = "lbias_slow_" + channel
         np.savetxt(bfile_slow, np.array(lslowbias), fmt="%s")
-        if (os.path.isfile("Bias_stats_slow")): os.remove("Bias_stats_slow")
+        if os.path.isfile("Bias_stats_slow"):
+            os.remove("Bias_stats_slow")
         iraf.imstat("@"+bfile_slow, Stdout="Bias_stats_slow")
         
         st = np.genfromtxt("Bias_stats_slow", names=True, dtype=None)
-        logger.info("%s"%st)
+        logger.info("%s" % st)
         
-        iraf.imcombine(input = "@"+bfile_slow, \
-                    output = outs, \
-                    combine = "median",\
-                    scale = "mode")
+        iraf.imcombine(input="@"+bfile_slow, output=outs, combine="median",
+                       scale="mode")
         os.remove(bfile_slow)
         
-        #copy into the reference folder with current date
-        newdir = os.path.join("../../refphot/", os.path.basename(os.path.abspath(biasdir)))
-        if (not os.path.isdir(newdir)):
+        # copy into the reference folder with current date
+        newdir = os.path.join("../../refphot/",
+                              os.path.basename(os.path.abspath(biasdir)))
+        if not os.path.isdir(newdir):
             os.makedirs(newdir)
-        shutil.copy(outs, os.path.join(newdir, os.path.basename(outs)) )  
+        shutil.copy(outs, os.path.join(newdir, os.path.basename(outs)))
     else:
         copy_ref_calib(biasdir, outs)
 
-def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
-    '''
-    Creates a masterflat from both dome flats and sky flats if the number of counts in the given filter
-    is not saturated and not too low (between 3000 and 40000). 
-    '''
-    
-    
-    if (flatdir == None or flatdir==""): flatdir = "."
-        
-    if (biasdir == None or biasdir==""): biasdir = flatdir
-        
-    os.chdir(flatdir)
-    
-    if (plot and not os.path.isdir("reduced/flats")):
-        os.makedirs("reduced/flats")
-    
-    if (len(glob.glob("Flat_%s*norm.fits"%channel)) == 4):
-        logger.info( "Master Flat exists!")
-        return 
-    if (len(glob.glob("Flat_%s*norm.fits"%channel)) > 0):
-        logger.info( "Some Master Flat exist!")
-    else:
-        logger.info( "Starting the Master Flat creation!")
 
-    bias_slow = "Bias_%s_slow.fits"%channel
-    bias_fast = "Bias_%s_fast.fits"%channel
-    
-    if (not os.path.isfile(bias_slow) and not os.path.isfile(bias_fast) ):
+def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
+    """
+    Creates a masterflat from both dome flats and sky flats if the number of
+    counts in the given filter is not saturated and not too low
+    (between 3000 and 40000).
+    """
+    if flatdir is None or flatdir == "":
+        flatdir = "."
+        
+    if biasdir is None or biasdir == "":
+        biasdir = flatdir
+
+    os.chdir(flatdir)
+
+    if plot and not os.path.isdir("reduced/flats"):
+        os.makedirs("reduced/flats")
+
+    if len(glob.glob("Flat_%s*norm.fits" % channel)) == 4:
+        logger.info("Master Flat exists!")
+        return 
+    if len(glob.glob("Flat_%s*norm.fits" % channel)) > 0:
+        logger.info("Some Master Flat exist!")
+    else:
+        logger.info("Starting the Master Flat creation!")
+
+    bias_slow = "Bias_%s_slow.fits" % channel
+    bias_fast = "Bias_%s_fast.fits" % channel
+
+    if not os.path.isfile(bias_slow) and not os.path.isfile(bias_fast):
         create_masterbias(biasdir)
      
     lsflat = []
@@ -238,7 +260,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
     obj = ""
     imtype = ""
     
-    #Select all filts that are Flats with same instrument
+    # Select all filts that are Flats with same instrument
     for f in glob.glob(channel+"*fits"):
         try:
             if fitsutils.has_par(f, "OBJECT"):
@@ -251,10 +273,12 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             else:
                 continue
         
-            #if ("RAINBOW CAM" in str.upper(fitsutils.get_par(f, "CAM_NAME")) and  ("DOME" in  obj or "FLAT" in obj or "Twilight" in obj or "TWILIGHT" in imtype or "DOME" in imtype)):
-            if ( "twilight" in imtype.lower()):
+            # if ("RAINBOW CAM" in str.upper(fitsutils.get_par(f, "CAM_NAME"))
+            # and  ("DOME" in  obj or "FLAT" in obj or "Twilight" in obj or
+            # "TWILIGHT" in imtype or "DOME" in imtype)):
+            if "twilight" in imtype.lower():
 
-                if (fitsutils.get_par(f, "ADCSPEED")==2):
+                if fitsutils.get_par(f, "ADCSPEED")==2:
                     lfflat.append(f)
                 else:
                     lsflat.append(f)
@@ -262,118 +286,123 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             logger.error( "Error with retrieving parameters for file %s"% f)
             pass
                 
-    logger.info( "Files for slow flat %s"% lsflat)
-    logger.info( "Files for fast flat %s"% lfflat)
+    logger.info("Files for slow flat %s" % lsflat)
+    logger.info("Files for fast flat %s" % lfflat)
     
-    fsfile ="lflat_slow_"+channel
+    fsfile = "lflat_slow_" + channel
     np.savetxt(fsfile, np.array(lsflat), fmt="%s")
-    fffile ="lflat_fast_"+channel
+    fffile = "lflat_fast_" + channel
     np.savetxt(fffile, np.array(lfflat), fmt="%s")
-
 
     # Running IRAF
     iraf.noao(_doprint=0)
     iraf.imred(_doprint=0)
     iraf.ccdred(_doprint=0)
     
-    #Remove bias from the flat
-    if len(lsflat) >0:
+    # Remove bias from the flat
+    if len(lsflat) > 0:
         iraf.imarith("@"+fsfile, "-", bias_slow, "b_@"+fsfile)
     
-    if len(lfflat) >0:
+    if len(lfflat) > 0:
         iraf.imarith("@"+fffile, "-", bias_fast, "b_@"+fffile)    
     
-    #Remove the list files
+    # Remove the list files
     os.remove(fsfile)
     os.remove(fffile)
     
-    #Slices the flats.
+    # Slices the flats.
     debiased_flats = glob.glob("b_*.fits")
     for f in debiased_flats:
-        logger.info( "Slicing file %s"% f)
+        logger.info("Slicing file %s"% f)
         try:
             slice_rc(f)
         except:
-            logger.error("Error when slicing file... deleting the unsliced one...")
-        #Remove the un-sliced file
+            logger.error("Error when slicing file, "
+                         "deleting the unsliced one...")
+        # Remove the un-sliced file
         os.remove(f)
         
-    #Selects the ones that are suitable given the number of counts and combines them.
+    # Selects the ones that are suitable given
+    # the number of counts and combines them.
     bands = ['u', 'g', 'r', 'i']
     for b in bands:
         out = "Flat_%s_%s.fits"%(channel, b)
         out_norm = out.replace(".fits","_norm.fits")
 
-        if (os.path.isfile(out_norm)):
-            logger.error( "Master Flat for filter %s exists. Skipping..."%b)
+        if os.path.isfile(out_norm):
+            logger.error("Master Flat for filter %s exists. Skipping..." % b)
             continue
         
         lfiles = []
-        for f in glob.glob('b_*_%s.fits'%b):
+        for f in glob.glob('b_*_%s.fits' % b):
             fi = fits.open(f)
             d = fi[0].data
             status = "rejected" 
-            if np.percentile(d, 90)>4000 and np.percentile(d, 90)<45000:
+            if 4000 < np.percentile(d, 90) < 45000:
                 lfiles.append(f)
                 mymode = 1. * np.median(d.flatten())
-        d[d>45000] = mymode
+        d[d > 45000] = mymode
         fi[0].data = d
         fi.writeto(f, clobber=True)
         status = "accepted"
 
-        if (plot):
+        if plot:
                 plt.title("Flat filter %s. %s"%(b, status))
                 plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
         plt.colorbar()
-        plt.savefig("reduced/flats/%s"%(f.replace(".fits", ".png")))
+        plt.savefig("reduced/flats/%s" % (f.replace(".fits", ".png")))
         plt.close()
-            #Make sure that the optimum number of counts is not too low and not saturated.
+        # Make sure that the optimum number of counts
+        # is not too low and not saturated.
         if len(lfiles) == 0:
-            logger.error( "WARNING!!! Could not find suitable flats for band %s"%b)
+            logger.error("WARNING!!! Could not find suitable flats for band %s"
+                         % b)
             continue
         if len(lfiles) < 3:
-            logger.error( "WARNING!!! Could find less than 3 flats for band %s. Skipping, as it is not reliable..."%b)
+            logger.error("WARNING!!! Could find less than 3 flats for band %s."
+                         "Skipping, as it is not reliable..." % b)
             continue
-        ffile ="lflat_"+b
+        ffile = "lflat_" + b
         np.savetxt(ffile, np.array(lfiles), fmt="%s")
-    
-        
-        #Cleaning of old files
-        if(os.path.isfile(out)): os.remove(out)
-        if(os.path.isfile(out_norm)): os.remove(out_norm)
-        if(os.path.isfile("Flat_stats")): os.remove("Flat_stats")
-        
-        
-        #Combine flats
-        iraf.imcombine(input = "@"+ffile, \
-                        output = out, \
-                        combine = "median",\
-                        scale = "mode",
-                        reject = "sigclip", lsigma = 2., hsigma = 2, gain=1.7, rdnoise=4.)
-        iraf.imstat(out, fields="image,npix,mean,stddev,min,max,mode", Stdout="Flat_stats")
+
+        # Cleaning of old files
+        if os.path.isfile(out):
+            os.remove(out)
+        if os.path.isfile(out_norm):
+            os.remove(out_norm)
+        if os.path.isfile("Flat_stats"):
+            os.remove("Flat_stats")
+
+        # Combine flats
+        iraf.imcombine(input="@"+ffile, output=out, combine="median",
+                       scale="mode", reject="sigclip", lsigma=2., hsigma=2,
+                       gain=1.7, rdnoise=4.)
+        iraf.imstat(out, fields="image,npix,mean,stddev,min,max,mode",
+                    Stdout="Flat_stats")
         st = np.genfromtxt("Flat_stats", names=True, dtype=None)
-        #Normalize flats
+        # Normalize flats
         iraf.imarith(out, "/", st["MODE"], out_norm)
         
-        #Do some cleaning
+        # Do some cleaning
         logger.info( 'Removing from lfiles')
         for f in glob.glob('b_*_%s.fits'%b):
             os.remove(f)
 
         os.remove(ffile)
-        
-        
+
         if os.path.isfile(fsfile):
             os.remove(fsfile)
         if os.path.isfile(fffile):
             os.remove(fffile)
 
-        #copy into the reference folder with current date
-        newdir = os.path.join("../../refphot/", os.path.basename(os.path.abspath(flatdir)))
-        if (not os.path.isdir(newdir)):
+        # copy into the reference folder with current date
+        newdir = os.path.join("../../refphot/",
+                              os.path.basename(os.path.abspath(flatdir)))
+        if not os.path.isdir(newdir):
             os.makedirs(newdir)
-        shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)) )   
+        shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)))
     copy_ref_calib(flatdir, "Flat")	
+
 
 def create_masterguide(lfiles, out=None):
     '''

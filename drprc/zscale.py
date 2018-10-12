@@ -8,7 +8,8 @@ BAD_PIXEL = 1
 KREJ = 2.5
 MAX_ITERATIONS = 5
 
-def zscale (image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
+
+def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
     """Implement IRAF zscale algorithm
     nsamples=1000 and contrast=0.25 are the IRAF display task defaults
     bpmask and zmask not implemented yet
@@ -17,14 +18,14 @@ def zscale (image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
     """
 
     # Sample the image
-    samples = zsc_sample (image, nsamples, bpmask, zmask)
+    samples = zsc_sample(image, nsamples, bpmask, zmask)
     npix = len(samples)
     samples.sort()
     zmin = samples[0]
     zmax = samples[-1]
     # For a zero-indexed array
     center_pixel = (npix - 1) / 2
-    if npix%2 == 1:
+    if npix % 2 == 1:
         median = samples[center_pixel]
     else:
         median = 0.5 * (samples[center_pixel] + samples[center_pixel + 1])
@@ -32,20 +33,22 @@ def zscale (image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
     #
     # Fit a line to the sorted array of samples
     minpix = max(MIN_NPIXELS, int(npix * MAX_REJECT))
-    ngrow = max (1, int (npix * 0.01))
-    ngoodpix, zstart, zslope = zsc_fit_line (samples, npix, KREJ, ngrow,
-                                             MAX_ITERATIONS)
+    ngrow = max(1, int(npix * 0.01))
+    ngoodpix, zstart, zslope = zsc_fit_line(samples, npix, KREJ, ngrow,
+                                            MAX_ITERATIONS)
 
     if ngoodpix < minpix:
         z1 = zmin
         z2 = zmax
     else:
-        if contrast > 0: zslope = zslope / contrast
-        z1 = max (zmin, median - (center_pixel - 1) * zslope)
-        z2 = min (zmax, median + (npix - center_pixel) * zslope)
+        if contrast > 0:
+            zslope = zslope / contrast
+        z1 = max(zmin, median - (center_pixel - 1) * zslope)
+        z2 = min(zmax, median + (npix - center_pixel) * zslope)
     return z1, z2
 
-def zsc_sample (image, maxpix, bpmask=None, zmask=None):
+
+def zsc_sample(image, maxpix, bpmask=None, zmask=None):
     
     # Figure out which pixels to use for the zscale algorithm
     # Returns the 1-d array samples
@@ -53,12 +56,13 @@ def zsc_sample (image, maxpix, bpmask=None, zmask=None):
     # Sample in a square grid, and return the first maxpix in the sample
     nc = image.shape[0]
     nl = image.shape[1]
-    stride = max (1.0, math.sqrt((nc - 1) * (nl - 1) / float(maxpix)))
-    stride = int (stride)
-    samples = image[::stride,::stride].flatten()
+    stride = max(1.0, math.sqrt((nc - 1) * (nl - 1) / float(maxpix)))
+    stride = int(stride)
+    samples = image[::stride, ::stride].flatten()
     return samples[:maxpix]
-    
-def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
+
+
+def zsc_fit_line(samples, npix, krej, ngrow, maxiter):
 
     #
     # First re-map indices from -1.0 to 1.0
@@ -67,7 +71,7 @@ def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
     xnorm = xnorm * xscale - 1.0
 
     ngoodpix = npix
-    minpix = max (MIN_NPIXELS, int (npix*MAX_REJECT))
+    minpix = max(MIN_NPIXELS, int(npix*MAX_REJECT))
     last_ngoodpix = npix + 1
 
     # This is the mask used in k-sigma clipping.  0 is good, 1 is bad
@@ -99,7 +103,7 @@ def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
         flat = samples - fitted
 
         # Compute the k-sigma rejection threshold
-        ngoodpix, mean, sigma = zsc_compute_sigma (flat, badpix, npix)
+        ngoodpix, mean, sigma = zsc_compute_sigma(flat, badpix, npix)
 
         threshold = sigma * krej
 
@@ -113,7 +117,7 @@ def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
         badpix[above] = BAD_PIXEL
         
         # Convolve with a kernel of length ngrow
-        kernel = numpy.ones(ngrow,dtype="int32")
+        kernel = numpy.ones(ngrow, dtype="int32")
         badpix = numpy.convolve(badpix, kernel, mode='same')
 
         ngoodpix = len(numpy.where(badpix == GOOD_PIXEL)[0])
@@ -126,7 +130,8 @@ def zsc_fit_line (samples, npix, krej, ngrow, maxiter):
 
     return ngoodpix, zstart, zslope
 
-def zsc_compute_sigma (flat, badpix, npix):
+
+def zsc_compute_sigma(flat, badpix, npix):
 
     # Compute the rms deviation from the mean of a flattened array.
     # Ignore rejected pixels
@@ -148,6 +153,6 @@ def zsc_compute_sigma (flat, badpix, npix):
         if temp < 0:
             sigma = 0.0
         else:
-            sigma = math.sqrt (temp)
+            sigma = math.sqrt(temp)
 
     return ngoodpix, mean, sigma
