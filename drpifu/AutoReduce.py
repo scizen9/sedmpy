@@ -660,6 +660,7 @@ def dosci(destdir='./', datestr=None):
                               (datestr, fn.split('.')[0])
                         subprocess.run(cmd, shell=True)
                         # notify user that followup successfully completed
+                        proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
                         else:
