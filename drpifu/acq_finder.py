@@ -27,11 +27,6 @@ import argparse
 
 from matplotlib import pylab as plt
 
-try:
-    import rcred
-except ImportError:
-    import drprc.rcred as rcred
-
 from configparser import ConfigParser
 import codecs
 import matplotlib
