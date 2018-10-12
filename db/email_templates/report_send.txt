@@ -1,9 +1,13 @@
 Message from Auto-SEDm:
 
-Request for follow-up on {object_name} has completed. Please visit
+Request for follow-up on {object_name} has completed with status:
+
+{status}
+
+Please visit
 
 {link}
 
-to see the reduced spectra.
+to see the results.
 
 This is an auto-generated alert.

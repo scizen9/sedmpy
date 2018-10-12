@@ -674,6 +674,16 @@ def email_user(spec_file, utdate, object_name):
     # get request id
     ff = pf.open(spec_file)
     request = int(ff[0].header['REQ_ID'])
+    quality = int(ff[0].header['QUALITY'])
+    if quality == 3:
+        status = 'IFU auto-extraction failed: target outside IFU.'
+    elif quality == 4:
+        status = 'IFU auto-extraction failed: > 20% of flux is negative.'
+    elif quality == 5:
+        status = 'IFU auto-extraction failed: guider astrometry failure - ' \
+                 'may be fixed by manual extraction.'
+    else:
+        status = 'IFU auto-extraction succeeded.'
     link = 'http://pharos.caltech.edu/data_access/ifu?obsdate=%s' % utdate
     subj = 'SEDM followup status report for %s on %s' % (object_name, utdate)
 
@@ -681,7 +691,7 @@ def email_user(spec_file, utdate, object_name):
     sedmdb.send_email_by_request(requestid=request, template='report_send',
                                  subject=subj,
                                  template_dict={'object_name': object_name,
-                                                'link': link})
+                                                'link': link, 'status': status})
 
 
 def find_recent(redd, fname, destdir, dstr):

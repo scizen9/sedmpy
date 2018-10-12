@@ -95,10 +95,10 @@ def build_image_report(indir=None, fspec=None):
     t_obs = time_from_fspec(filespec=fspec)
     try:
         if is_std:
-            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_NA.png" % \
+            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name.split("STD-")[-1])
         else:
-            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_NA.png" % \
+            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
         # do we have more than one finder for this object name?
@@ -113,7 +113,7 @@ def build_image_report(indir=None, fspec=None):
 
         img_find = pil.Image.open(finder_file)
     except IndexError:
-        print("Cannot find /scr2/sedm/phot/%s/finders/finder_*ACQ-%s_NA.png" %
+        print("Cannot find /scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" %
               (indir, object_name))
         img_find = pil.get_buffer([13, 7], "Finder image missing",
                                   **prop_missing)
