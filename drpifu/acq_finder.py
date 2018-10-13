@@ -273,7 +273,7 @@ if __name__ == "__main__":
              "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
                 ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
             if objnam:
-                if objnam.upper() in fitsutils.get_par(f, "OBJECT").upper:
+                if objnam.upper() in fitsutils.get_par(f, "OBJECT").upper():
                     filesacq.append(f)
             else:
                 filesacq.append(f)
