@@ -230,38 +230,53 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--reduxdir', type=str, dest="reduxdir",
                         help='Directory with reduced ifu images from tonight.',
                         default=None)
+    parser.add_argument('-i', '--imfile', type=str, dest="imfile",
+                        help='IFU image that requires a finder',
+                        default=None)
     
     args = parser.parse_args()
-    
-    rcdir = args.rcdir
-    reduxdir = args.reduxdir
 
-    if rcdir is None:
-        timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
-        timestamp = timestamp.split("T")[0].replace("-", "")
+    imfile = args.imfile
+
+    if imfile:
+        timestamp = imfile.split('/')[-2]
         rcdir = os.path.join(_rawpath, timestamp)
+        reduxdir = '/'.join(imfile.split('/')[0:-2])
+        objnam = fitsutils.get_par(imfile, "OBJNAME")
     else:
-        timestamp = os.path.basename(os.path.abspath(rcdir))
+        rcdir = args.rcdir
+        reduxdir = args.reduxdir
+        if rcdir is None:
+            timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
+            timestamp = timestamp.split("T")[0].replace("-", "")
+            rcdir = os.path.join(_rawpath, timestamp)
+        else:
+            timestamp = os.path.basename(os.path.abspath(rcdir))
 
-    if reduxdir is None:
-        reduxdir = os.path.join(_reduxpath, timestamp)
-    
+        if reduxdir is None:
+            reduxdir = os.path.join(_reduxpath, timestamp)
+        objnam = None
+
     os.chdir(reduxdir)
     print("Changed to directory where the reduced data is: %s" % reduxdir)
-    
+
     if not (os.path.isdir("finders")):
         os.makedirs("finders")
-    
+
     # We gather all RC images to locate the Acquisition ones.
     files = glob.glob(os.path.join(rcdir, "rc*fits"))
     files.sort()
     filesacq = []
-    
+
     for f in files:
         if ((fitsutils.get_par(f, "IMGTYPE").upper() == "ACQUISITION" or
              "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
                 ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
-            filesacq.append(f)
+            if objnam:
+                if fitsutils.get_par(f, "OBJECT").upper == objnam:
+                    filesacq.append(f)
+            else:
+                filesacq.append(f)
 
     n_acq = len(filesacq)
     print("Found %d files for finders:\n%s" % (n_acq, filesacq))
@@ -276,7 +291,7 @@ if __name__ == "__main__":
             print('There is no object in this file %s. Skipping the finder'
                   ' and moving to the next file.' % f)
             continue
-    
+
         # We generate only one finder for each object.
         name = f.split('/')[-1].split(".")[0]
         finderplotf = 'finder_%s_%s_%s.png' % (name,
@@ -311,7 +326,7 @@ if __name__ == "__main__":
                 print("Error when generating the finder for file %s" % f)
                 print(sys.exc_info()[0])
                 simple_finder_astro(astrof, finderpath)
-    
+
             except:
                 print("Error when generating the finder for file %s. "
                       "Probably montage is broken." % astrof)
