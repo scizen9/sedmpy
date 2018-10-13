@@ -575,6 +575,8 @@ def dosci(destdir='./', datestr=None):
             # skip if dome closed
             if 'CLOSED' in dome or 'closed' in dome:
                 continue
+            # make finder
+            make_finder(f)
             # record action
             copied.append(fn)
             ncp += 1
@@ -692,6 +694,13 @@ def email_user(spec_file, utdate, object_name):
                                  subject=subj,
                                  template_dict={'object_name': object_name,
                                                 'link': link, 'status': status})
+
+
+def make_finder(ffile):
+    """ Spawn a process that makes a finder for the ifu file """
+    cmd = ("/scr2/sedmdrp/spy", "/scr2/sedmdrp/sedmpy/drpifu/acq_finder.py",
+           "--imfile", ffile)
+    subprocess.Popen(cmd)
 
 
 def find_recent(redd, fname, destdir, dstr):
