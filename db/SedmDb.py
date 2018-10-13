@@ -3448,7 +3448,7 @@ def _generate_insert_sql(pardic, param_list, table):
     columns = "("
     values = "("
     for param in param_list:
-        if pardic[param]:  # make sure that there is a value
+        if not pardic[param] is None:  # make sure that there is a value
             columns += (param + ", ")
             values += "'%s', " % (pardic[param],)
     columns = columns[:-2] + ')'
