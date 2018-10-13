@@ -241,11 +241,12 @@ if __name__ == "__main__":
     if imfile:
         timestamp = imfile.split('/')[-2]
         rcdir = os.path.join(_rawpath, timestamp)
-        reduxdir = '/'.join(imfile.split('/')[0:-2])
-        objnam = fitsutils.get_par(imfile, "OBJNAME")
+        reduxdir = '/'.join(imfile.split('/')[0:-1])
+        objnam = fitsutils.get_par(imfile, "OBJECT").split()[0]
     else:
         rcdir = args.rcdir
         reduxdir = args.reduxdir
+        objnam = None
         if rcdir is None:
             timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
             timestamp = timestamp.split("T")[0].replace("-", "")
@@ -255,7 +256,6 @@ if __name__ == "__main__":
 
         if reduxdir is None:
             reduxdir = os.path.join(_reduxpath, timestamp)
-        objnam = None
 
     os.chdir(reduxdir)
     print("Changed to directory where the reduced data is: %s" % reduxdir)
@@ -273,7 +273,7 @@ if __name__ == "__main__":
              "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
                 ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
             if objnam:
-                if fitsutils.get_par(f, "OBJECT").upper == objnam:
+                if objnam.upper() in fitsutils.get_par(f, "OBJECT").upper:
                     filesacq.append(f)
             else:
                 filesacq.append(f)
