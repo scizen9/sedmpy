@@ -268,7 +268,8 @@ if __name__ == "__main__":
 
     n_find = 0
     for f in filesacq:
-        n_acq += 1
+        n_find += 1
+        print("Testing finder %d of %d: %s" % (n_find, n_acq, f))
         try:
             objnam = fitsutils.get_par(f, "OBJECT").upper()
         except:
@@ -303,8 +304,7 @@ if __name__ == "__main__":
             if not os.path.isfile(astrof):
                 print("Astrometry results not found %s" % astrof)
                 continue
-            print("Generating finder %d of %d: %s" %
-                  (n_find, n_acq, finderpath))
+
             try:
                 finder(astrof, finderpath)
             except AttributeError:
