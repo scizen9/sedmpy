@@ -279,13 +279,13 @@ def update_observation(input_fitsfile):
         'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
         'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
         'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
-        'filter': 'FILTER', 'parang': 'TEL_PA'
+        'filter': 'FILTER', 'parang': 'TEL_PA', 'time_elapsed': 'ELAPTIME'
     }
     obs_dict = {
         'object_id': 0, 'request_id': 0, 'mjd': 0.,
         'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
         'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
-        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0.,
+        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0., 'time_elapsed': 0.,
         'imtype': ' ', 'camera': ' ', 'filter': ' ', 'parang': 0.,
         'fitsfile': input_fitsfile.split('/')[-1]
     }
@@ -312,7 +312,7 @@ def update_observation(input_fitsfile):
 
 
 def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
-    """ Update the SEDM dataabase spec_calib table on pharos
+    """ Update the SEDM database spec_calib table on pharos
         by adding a new spectral calibration"""
 
     spec_calib_dict = {}
@@ -615,6 +615,7 @@ def dosci(destdir='./', datestr=None):
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
                         subprocess.run(cmd, shell=True)
+                        # TODO: update SedmDb spec table
             else:
                 # Build cube for science observation
                 print("Building science cube for " + fn)
@@ -665,6 +666,7 @@ def dosci(destdir='./', datestr=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
+                            # TODO: update spec table in SedmDb
                         else:
                             print("Not found: %s" % proced)
     return ncp, copied
@@ -1251,6 +1253,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         print("Calibrations already present in %s" % outdir)
 
     # TODO: add call to calibration_update
+    spec_calib_id = update_calibration(cur_date_str)
+    print("SedmDb table spec_calib updated with id %d" % spec_calib_id)
     print("Calibration stage complete, ready for science!")
     # Link recent flux cal file
     find_recent_fluxcal(redd, 'fluxcal*.fits', outdir)

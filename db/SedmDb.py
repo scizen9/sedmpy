@@ -1750,7 +1750,7 @@ class SedmDB:
                         'tel_az': float, 'tel_el': float, 'tel_pa': float,
                         'ra_off': float, 'dec_off': float, 'imtype': str,
                         'camera': str, 'filter': str,
-                        'time_elapsed': 'timedelta'}
+                        'time_elapsed': float}
 
         required_keys = ['object_id', 'request_id', 'mjd', 'airmass', 'exptime',
                          'fitsfile', 'lst', 'ra', 'dec', 'tel_az', 'tel_el',
@@ -1843,7 +1843,7 @@ class SedmDB:
                        'tel_az': float, 'tel_el': float, 'tel_pa': float,
                        'ra_off': float, 'dec_off': float, 'imtype': str,
                        'camera': str, 'filter': str,
-                       'time_elapsed': 'timedelta'}
+                       'time_elapsed': float}
 
         keys = list(pardic.keys())
         if 'id' not in keys:
@@ -1930,7 +1930,7 @@ class SedmDB:
                           'ra': float, 'dec': float, 'tel_az': float,
                           'tel_el': float, 'tel_pa': float, 'ra_off': float,
                           'dec_off': float, 'imtype': str, 'camera': str,
-                          'filter': str, 'time_elapsed': 'timedelta'}
+                          'filter': str, 'time_elapsed': float}
         # checks type
         sql = _generate_select_sql(values, where_dict, allowed_params,
                                    compare_dict, 'observation')
