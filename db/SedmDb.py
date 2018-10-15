@@ -2740,36 +2740,76 @@ class SedmDB:
         required_keys = ['flat', 'hexagrid', 'tracematch',
                          'tracematch_withmasks', 'wavesolution', 'utdate']
 
-        spec_calib_id = _id_from_time()
-        pardic['id'] = spec_calib_id
-
         keys = list(pardic.keys())
 
         # Test for required keys
         for key in required_keys:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
-        # Test for valid keys
-        for key in reversed(keys):
-            if key not in param_types:
-                return -1, "ERROR: %s is an invalid key!" % (key,)
-        # Check types
-        type_check = _data_type_check(keys, pardic, param_types)
-        if type_check:
-            return -1, type_check
-        # Generate insert sql command
-        sql = _generate_insert_sql(pardic, keys, 'spec_calib')
-        print(sql, type_check)
-        # Attempt to insert record into db
-        try:
-            self.execute_sql(sql)
-        except exc.IntegrityError:
-            return -1, "ERROR: add_spec_calib sql command failed with an " \
-                       "IntegrityError!"
-        except exc.ProgrammingError:
-            return -1, "ERROR: add_spec_calib sql command failed with a " \
-                       "ProgrammingError!"
-        return spec_calib_id, "Spectrum calibration added"
+        # Test if spec_calib already has an entry on this utdate
+        spec_calib_id = self.get_from_spec_calib(['id'],
+                                                 {'utdate': pardic['utdate']})
+        # Already exists
+        if spec_calib_id:
+            # Verify spec_id
+            if spec_calib_id[0] == -1:
+                return spec_calib_id, "ERROR: something went wrong " \
+                                      "getting spec calib id!"
+            # Validate input keys
+            for key in reversed(keys):
+                if key not in param_types:
+                    return -1, "ERROR: %s is an invalid key!" % (key,)
+            # Check input parameter types
+            type_check = _data_type_check(keys, pardic, param_types)
+            if type_check:
+                return -1, type_check
+            # Update existing record with input values
+            pardic['id'] = spec_calib_id[0][0]
+            update_sql = _generate_update_sql(pardic, keys, 'spec_calib')
+            print(update_sql)
+            # Attempt to update record
+            try:
+                self.execute_sql(update_sql)
+            except exc.IntegrityError:
+                return -1, "ERROR: add_spec sql command failed with an " \
+                           "IntegrityError!"
+            except exc.ProgrammingError:
+                return -1, "ERROR: add_spec sql command failed with a " \
+                           "ProgrammingError!"
+            except psycopg2.IntegrityError:
+                return -1, "ERROR(psycopg2): updating spec_calib sql command " \
+                           "failed with an IntegrityError!"
+            return (spec_calib_id[0][0],
+                    "Spec calib updated for spec_calib_id %s, columns " %
+                    (pardic['id'],) + str(keys)[1:-1])
+        # New entry
+        else:
+            new_spec_calib_id = _id_from_time()
+            pardic['id'] = new_spec_calib_id
+            # Validate input keys
+            for key in reversed(keys):
+                if key not in param_types:
+                    return -1, "ERROR: %s is an invalid key!" % (key,)
+            # Check input parameter types
+            type_check = _data_type_check(keys, pardic, param_types)
+            if type_check:
+                return -1, type_check
+            # Generate SQL command
+            sql = _generate_insert_sql(pardic, keys, 'spec_calib')
+            print(sql)
+            # Attempt to insert record
+            try:
+                self.execute_sql(sql)
+            except exc.IntegrityError:
+                return -1, "ERROR: add_spec_calib sql command failed with an " \
+                           "IntegrityError!"
+            except exc.ProgrammingError:
+                return -1, "ERROR: add_spec_calib sql command failed with a " \
+                           "ProgrammingError!"
+            except psycopg2.IntegrityError:
+                return -1, "ERROR(psycopg2): inserting spec_calib sql command " \
+                           "failed with an IntegrityError!"
+            return new_spec_calib_id, "Spectrum calibration added"
 
     def update_spec_calib(self, pardic):
         """
@@ -2855,6 +2895,9 @@ class SedmDB:
         except exc.ProgrammingError:
             return -1, "ERROR: update_spec_calib sql command failed with a " \
                        "ProgrammingError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): updating spec_calib sql command " \
+                       "failed with an IntegrityError!"
         return pardic['id'], "Spec_calib updated, columns " + str(keys)[1:-1]
 
     def get_from_spec_calib(self, values, where_dict={}, compare_dict={}):
