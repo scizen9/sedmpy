@@ -81,8 +81,8 @@ def cube_ready(caldir='./', cur_date_str=None):
     fg = os.path.exists(os.path.join(caldir, hgf))
     fw = os.path.exists(os.path.join(caldir, wsf))
     ff = os.path.exists(os.path.join(caldir, fff))
-    print("Cals ready?: trace: %d, trace/mask: %d, grid: %d, wave: %d, flat: %d" %
-          (ft, ftm, fg, fw, ff))
+    print("Cals ready?: trace: %d, trace/mask: %d, grid: %d, wave: %d, "
+          "flat: %d" % (ft, ftm, fg, fw, ff))
     if ft and ftm and fg and fw and ff:
         ret = True
 
@@ -366,7 +366,7 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
         if os.path.exists(hexagrid):
             spec_calib_dict['hexagrid'] = hexagrid
         else:
-            print("spec cal item not found: %s" & hexagrid)
+            print("spec cal item not found: %s" % hexagrid)
 
         tracematch = os.path.join(src, utdate + '_TraceMatch.pkl')
         if os.path.exists(tracematch):
@@ -1252,9 +1252,10 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     else:
         print("Calibrations already present in %s" % outdir)
 
-    # TODO: add call to calibration_update
+    # Update spec_calib table in sedmdb
     spec_calib_id = update_calibration(cur_date_str)
     print("SedmDb table spec_calib updated with id %d" % spec_calib_id)
+
     print("Calibration stage complete, ready for science!")
     # Link recent flux cal file
     find_recent_fluxcal(redd, 'fluxcal*.fits', outdir)
