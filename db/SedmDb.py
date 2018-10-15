@@ -2740,18 +2740,22 @@ class SedmDB:
         required_keys = ['flat', 'hexagrid', 'tracematch',
                          'tracematch_withmasks', 'wavesolution', 'utdate']
 
+        new_spec_calib_id = _id_from_time()
+        pardic['id'] = new_spec_calib_id
+
         keys = list(pardic.keys())
 
         # Test for required keys
-        for key in required_keys:
-            if key not in keys:
-                return -1, "ERROR: %s not provided!" % (key,)
+        for rkey in required_keys:
+            if rkey not in keys:
+                return -1, "ERROR: %s not provided!" % (rkey,)
+
         # Test if spec_calib already has an entry on this utdate
         spec_calib_id = self.get_from_spec_calib(['id'],
                                                  {'utdate': pardic['utdate']})
         # Already exists
         if spec_calib_id:
-            # Verify spec_id
+            # Verify spec_calib_id
             if spec_calib_id[0] == -1:
                 return spec_calib_id, "ERROR: something went wrong " \
                                       "getting spec calib id!"
@@ -2784,8 +2788,6 @@ class SedmDB:
                     (pardic['id'],) + str(keys)[1:-1])
         # New entry
         else:
-            new_spec_calib_id = _id_from_time()
-            pardic['id'] = new_spec_calib_id
             # Validate input keys
             for key in reversed(keys):
                 if key not in param_types:
