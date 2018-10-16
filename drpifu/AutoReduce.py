@@ -616,7 +616,10 @@ def dosci(destdir='./', datestr=None):
                 if retcode != 0:
                     print("Error generating cube for " + fn)
                 else:
-                    # TODO: update SedmDb cube table
+                    # Update SedmDb cube table
+                    cube_id = update_cube(f)
+                    print("SedmDb table spec_calib updated with id %d" %
+                          cube_id)
                     # Use auto psf aperture for standard stars
                     print("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
@@ -652,7 +655,10 @@ def dosci(destdir='./', datestr=None):
                 if retcode != 0:
                     print("Error generating cube for " + fn)
                 else:
-                    # TODO: update SedmDb cube table
+                    # Update SedmDb cube table
+                    cube_id = update_cube(f)
+                    print("SedmDb table spec_calib updated with id %d" %
+                          cube_id)
                     # Use forced psf for science targets
                     print("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -756,10 +762,13 @@ def update_cube(input_fitsfile):
     if spec_calib_id:
         cube_dict['spec_calib_id'] = spec_calib_id[0][0]
 
-    # Add into database
-    cube_id, status = sedmdb.add_cube(cube_dict)
-    print(status)
-    return cube_id
+        # Add into database
+        cube_id, status = sedmdb.add_cube(cube_dict)
+        print(status)
+        return cube_id
+    else:
+        print("ERROR: no spec_calib_id found for %s" % utdate)
+        return -1
     # END: update_cube
 
 
