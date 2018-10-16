@@ -300,14 +300,17 @@ def update_observation(input_fitsfile):
         'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
         'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
         'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
-        'filter': 'FILTER', 'parang': 'TEL_PA', 'time_elapsed': 'ELAPTIME'
+        'filter': 'FILTER', 'parang': 'TEL_PA', 'parang_end': 'END_PA',
+        'time_elapsed': 'ELAPTIME'
     }
     obs_dict = {
         'object_id': 0, 'request_id': 0, 'mjd': 0.,
         'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
-        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
-        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0., 'time_elapsed': 0.,
-        'imtype': ' ', 'camera': ' ', 'filter': ' ', 'parang': 0.,
+        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0.,
+        'tel_el': 0., 'tel_pa': 0., 'ra_off': 0.,
+        'dec_off': 0., 'imtype': ' ', 'camera': ' ',
+        'filter': ' ', 'parang': 0., 'parang_end': 0.,
+        'time_elapsed': 0.,
         'fitsfile': input_fitsfile.split('/')[-1]
     }
     ff = pf.open(input_fitsfile)
@@ -700,41 +703,49 @@ def update_cube(input_fitsfile):
     """ Update the SEDM database on pharos by adding a new cube entry. """
 
     header_dict = {
-        'object_id': 'OBJ_ID', 'request_id': 'REQ_ID', 'mjd': 'MJD_OBS',
-        'airmass': 'AIRMASS', 'airmass_end': 'ENDAIR', 'exptime': 'EXPTIME',
-        'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
-        'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
-        'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
-        'filter': 'FILTER', 'parang': 'TEL_PA', 'time_elapsed': 'ELAPTIME'
+        'ccd_x_flex_corr': 'IFLXCORR', 'ccd_x_flex_px': 'CCDIFLX',
+        'ccd_y_flex_corr': 'JFLXCORR', 'ccd_y_flex_px': 'CCDJFLX',
+        'atm_corr': 'ATMCORR', 'atm_source': 'ATMSRC',
+        'atm_mean_corr': 'ATMSCALE'
     }
-    obs_dict = {
-        'object_id': 0, 'request_id': 0, 'mjd': 0.,
-        'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
-        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
-        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0., 'time_elapsed': 0.,
-        'imtype': ' ', 'camera': ' ', 'filter': ' ', 'parang': 0.,
-        'fitsfile': input_fitsfile.split('/')[-1]
+    cube_dict = {
+        'observation_id': 0,
+        'ccd_x_flex_corr': False, 'ccd_x_flex_px': 0.,
+        'ccd_y_flex_corr': False, 'ccd_y_flex_px': 0.,
+        'atm_corr': False, 'atm_source': '',
+        'atm_mean_corr': 1.,
+        'spec_calib_id': 0
     }
-    ff = pf.open(input_fitsfile)
-
+    # Get cube file
+    root = input_fitsfile.split('/')[-1].split('.fits')[0]
+    indir = '/'.join(input_fitsfile.split('/')[:-1])
+    utdate = indir.split('/')[-1]
+    cube_list = glob.glob(os.path.join(indir, 'e3d_'+root+'_*.fits'))
+    # Check list
+    if len(cube_list) != 1:
+        print("ERROR: Ambiguous cube list")
+        return -1
+    # Read header
+    ff = pf.open(cube_list[0])
+    # Get header keyword values
     for key in header_dict.keys():
         hk = header_dict[key]
         if hk in ff[0].header:
-            if key is 'dec':
-                obs_dict[key] = Angle(ff[0].header[hk] + ' degrees').degree
-            elif key is 'ra':
-                obs_dict[key] = Angle(ff[0].header[hk] + ' hours').degree
-            else:
-                obs_dict[key] = ff[0].header[hk]
+            cube_dict[key] = ff[0].header[hk]
         else:
             print("Header keyword not found: %s" % hk)
     ff.close()
-
+    # Open database connection
     sedmdb = db.SedmDb.SedmDB()
-    observation_id, status = sedmdb.add_observation(obs_dict)
+    # Get spec_calib id for this utdate
+    spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})[0]
+    cube_dict['spec_calib_id'] = spec_calib_id[0]
+    # Add into database
+    cube_id, status = sedmdb.add_cube(cube_dict)
     print(status)
-    return observation_id
-    # END: update_observation
+    return cube_id
+    # END: update_cube
+
 
 def email_user(spec_file, utdate, object_name):
     """ Send e-mail to requestor indicating followup completed"""

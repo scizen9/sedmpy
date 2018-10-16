@@ -243,6 +243,8 @@ if __name__ == "__main__":
         rcdir = os.path.join(_rawpath, timestamp)
         reduxdir = '/'.join(imfile.split('/')[0:-1])
         objnam = fitsutils.get_par(imfile, "OBJECT").split()[0]
+        if 'STD' in objnam:
+            objnam = objnam.split('STD-')[-1]
     else:
         rcdir = args.rcdir
         reduxdir = args.reduxdir
