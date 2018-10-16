@@ -130,12 +130,20 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
     """
 
     nbias = 0
+    bias_done = False
     nbias2 = 0
+    bias2_done = False
     nxe = 0
+    xe_done = False
     nhg = 0
+    hg_done = False
     ncd = 0
+    cd_done = False
     ndome = 0
+    dome_done = False
     ret = False
+    bias_done_str = '10 of 10'
+    lamp_done_str = '5 of 5'
 
     if test_cal_ims:
         dof = glob.glob(os.path.join(caldir, 'dome.fits'))
@@ -172,20 +180,33 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
                         if 'bias' in obj:
                             if speed == 2.0:
                                 nbias2 += 1
+                                if bias_done_str in obj:
+                                    bias2_done = True
                             if speed == 0.1:
                                 nbias += 1
+                                if bias_done_str in obj:
+                                    bias_done = True
                         if 'Xe' in obj:
                             nxe += 1
+                            if lamp_done_str in obj:
+                                xe_done = True
                         if 'dome' in obj:
                             ndome += 1
+                            if lamp_done_str in obj:
+                                dome_done = True
                         if 'Hg' in obj:
                             nhg += 1
+                            if lamp_done_str in obj:
+                                hg_done = True
                         if 'Cd' in obj:
                             ncd += 1
+                            if lamp_done_str in obj:
+                                cd_done = True
 
             # Do we have the ideal number of calibration files?
-            if (nbias2 >= 10 and nbias >= 10 and nxe >= 5 and ndome >= 5 and
-                    nhg >= 5 and ncd >= 5):
+            if ((nbias2 >= 10 or bias2_done) and (nbias >= 10 or bias_done) and
+                    (nxe >= 5 or xe_done) and (ndome >= 5 or dome_done) and
+                    (nhg >= 5 or hg_done) and (ncd >= 5 or cd_done)):
                 ret = True
             # Do we have the minimum allowed number of calibration files?
             if mintest:
