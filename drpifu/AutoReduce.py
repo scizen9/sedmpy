@@ -224,7 +224,7 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
     # END: cal_proc_ready
 
 
-def docp(src, dest, onsky=True, verbose=False):
+def docp(src, dest, onsky=True, verbose=True):
     """Low level copy from raw directory to redux directory.
 
     Checks for raw ifu files, while avoiding any test and focus images.
@@ -1200,26 +1200,24 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 # Check to see if we are still before an hour after sunset
                 now = ephem.now()
                 if now < sunset + ephem.hour:
-                    print("UT  = %02d/%02d %02d:%02d < sunset "
-                          "(%02d/%02d %02d:%02d) + 1hr, "
-                          "so keep waiting" % (now.tuple()[1], now.tuple()[2],
-                                               now.tuple()[3], now.tuple()[4],
-                                               sunset.tuple()[1],
-                                               sunset.tuple()[2],
-                                               sunset.tuple()[3],
-                                               sunset.tuple()[4]),
+                    print("UT  = %d%02d%02d %02d_%02d_%02.0f < sunset "
+                          "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, so keep "
+                          "waiting" % (now.tuple()[0], now.tuple()[1],
+                                       now.tuple()[2], now.tuple()[3],
+                                       now.tuple()[4], now.tuple()[5],
+                                       sunset.tuple()[0], sunset.tuple()[1],
+                                       sunset.tuple()[2], sunset.tuple()[3],
+                                       sunset.tuple()[4], sunset.tuple()[5]),
                           flush=True)
                 else:
-                    print("UT = %02d/%02d %02d:%02d >= sunset "
-                          "(%02d/%02d %02d:%02d) + 1hr, "
-                          "time to get a cal set" % (now.tuple()[1],
-                                                     now.tuple()[2],
-                                                     now.tuple()[3],
-                                                     now.tuple()[4],
-                                                     sunset.tuple()[1],
-                                                     sunset.tuple()[2],
-                                                     sunset.tuple()[3],
-                                                     sunset.tuple()[4]),
+                    print("UT = %d%02d%02d %02d_%02d_%02.0f >= sunset "
+                          "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, time to get a "
+                          "cal set" % (now.tuple()[0], now.tuple()[1],
+                                       now.tuple()[2], now.tuple()[3],
+                                       now.tuple()[4], now.tuple()[5],
+                                       sunset.tuple()[0], sunset.tuple()[1],
+                                       sunset.tuple()[2], sunset.tuple()[3],
+                                       sunset.tuple()[4], sunset.tuple()[5]),
                           flush=True)
                     break
             else:
@@ -1372,26 +1370,28 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 if now >= sunrise:
                     # No new observations and sun is probably up!
                     print("No new images for %d minutes and UT = "
-                          "%02d/%02d %02d:%02d > "
-                          "%02d/%02d %02d:%02d so sun is up!" %
-                          (nnc, now.tuple()[1], now.tuple()[2],
-                           now.tuple()[3], now.tuple()[4],
-                           sunrise.tuple()[1], sunrise.tuple()[2],
-                           sunrise.tuple()[3], sunrise.tuple()[4]))
+                          "%d%02d%02d %02d_%02d_%02.0f > "
+                          "%d%02d%02d %02d_%02d_%02.0f so sun is up!" %
+                          (nnc, now.tuple()[0], now.tuple()[1], now.tuple()[2],
+                           now.tuple()[3], now.tuple()[4], now.tuple()[5],
+                           sunrise.tuple()[0], sunrise.tuple()[1],
+                           sunrise.tuple()[2], sunrise.tuple()[3],
+                           sunrise.tuple()[4], sunrise.tuple()[5]))
                     print("Time to wait until we have a new raw directory")
                     doit = False
                     # Normal termination
                     subprocess.call(("make", "report"))
                     ret = True
                 else:
-                    print("No new image for %d minutes but UT = %02d/%02d "
-                          "%02d:%02d <= "
-                          "%02d/%02d %02d:%02d, so sun is still down, "
+                    print("No new image for %d minutes but UT = "
+                          "%d%02d%02d %02d_%02d_%02.0f <= "
+                          "%d%02d%02d %02d_%02d_%02.0f, so sun is still down, "
                           "keep waiting" %
-                          (nnc, now.tuple()[1], now.tuple()[2],
-                           now.tuple()[3], now.tuple()[4],
-                           sunrise.tuple()[1], sunrise.tuple()[2],
-                           sunrise.tuple()[3], sunrise.tuple()[4]))
+                          (nnc, now.tuple()[0], now.tuple()[1], now.tuple()[2],
+                           now.tuple()[3], now.tuple()[4], now.tuple()[5],
+                           sunrise.tuple()[0], sunrise.tuple()[1],
+                           sunrise.tuple()[2], sunrise.tuple()[3],
+                           sunrise.tuple()[4], sunrise.tuple()[5]))
 
     # Handle a ctrl-C
     except KeyboardInterrupt:
