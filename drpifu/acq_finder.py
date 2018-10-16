@@ -258,7 +258,9 @@ if __name__ == "__main__":
             reduxdir = os.path.join(_reduxpath, timestamp)
 
     os.chdir(reduxdir)
+    print("Making finder for object: %s" % objnam)
     print("Changed to directory where the reduced data is: %s" % reduxdir)
+    print("Getting acquisition images from directory: %s" % rcdir)
 
     if not (os.path.isdir("finders")):
         os.makedirs("finders")
