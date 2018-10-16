@@ -716,17 +716,21 @@ def update_cube(input_fitsfile):
         'atm_mean_corr': 1.,
         'spec_calib_id': 0
     }
+
     # Get cube file
     root = input_fitsfile.split('/')[-1].split('.fits')[0]
     indir = '/'.join(input_fitsfile.split('/')[:-1])
     utdate = indir.split('/')[-1]
     cube_list = glob.glob(os.path.join(indir, 'e3d_'+root+'_*.fits'))
+
     # Check list
     if len(cube_list) != 1:
         print("ERROR: Ambiguous cube list")
         return -1
+
     # Read header
     ff = pf.open(cube_list[0])
+
     # Get header keyword values
     for key in header_dict.keys():
         hk = header_dict[key]
@@ -735,11 +739,23 @@ def update_cube(input_fitsfile):
         else:
             print("Header keyword not found: %s" % hk)
     ff.close()
+
     # Open database connection
     sedmdb = db.SedmDb.SedmDB()
+
+    # Get observation id
+    fitsfile = 'ifu'+input_fitsfile.split('ifu')[-1]
+    observation_id = sedmdb.get_from_observation(['id'],
+                                                 {'fitsfile': fitsfile},
+                                                 {'fitsfile': '~'})
+    if observation_id:
+        cube_dict['observation_id'] = observation_id[0][0]
+
     # Get spec_calib id for this utdate
-    spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})[0]
-    cube_dict['spec_calib_id'] = spec_calib_id[0]
+    spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})
+    if spec_calib_id:
+        cube_dict['spec_calib_id'] = spec_calib_id[0][0]
+
     # Add into database
     cube_id, status = sedmdb.add_cube(cube_dict)
     print(status)
