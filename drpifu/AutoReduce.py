@@ -617,8 +617,10 @@ def dosci(destdir='./', datestr=None):
                 else:
                     # Update SedmDb cube table
                     cube_id = update_cube(f)
-                    print("SedmDb table spec_calib updated with id %d" %
-                          cube_id)
+                    if cube_id > 0:
+                        print("SEDM db accepted cube at id %d" % cube_id)
+                    else:
+                        print("SEDM db rejected cube")
                     # Use auto psf aperture for standard stars
                     print("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
@@ -656,8 +658,10 @@ def dosci(destdir='./', datestr=None):
                 else:
                     # Update SedmDb cube table
                     cube_id = update_cube(f)
-                    print("SedmDb table spec_calib updated with id %d" %
-                          cube_id)
+                    if cube_id > 0:
+                        print("SEDM db accepted cube at id %d" % cube_id)
+                    else:
+                        print("SEDM db rejected cube")
                     # Use forced psf for science targets
                     print("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -1350,7 +1354,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
 
     # Update spec_calib table in sedmdb
     spec_calib_id = update_calibration(cur_date_str)
-    print("SedmDb table spec_calib updated with id %d" % spec_calib_id)
+    print("SEDM db accepted spec_calib at id %d" % spec_calib_id)
 
     print("Calibration stage complete, ready for science!")
     # Link recent flux cal file
