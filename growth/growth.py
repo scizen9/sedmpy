@@ -485,6 +485,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     # Did we get a marshal ID?
     if marshal_id is None:
         print("Unable to find marshal id for target %s" % objname)
+    elif marshal_id <= 0:
+        print("Not an object from the marshal")
     else:
         print("Updating target %s using id %d" % (objname, marshal_id))
 
@@ -541,9 +543,10 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
     if target_dir[-1] != '/':
         target_dir += '/'
 
-    files = glob.glob('%sZTF*.txt' % target_dir)
-    files += glob.glob('%sztf*.txt' % target_dir)
-    files += glob.glob('%sspec_*ZTF*.txt' % target_dir)
+    # files = glob.glob('%sZTF*.txt' % target_dir)
+    # files += glob.glob('%sztf*.txt' % target_dir)
+    # files += glob.glob('%sspec_*ZTF*.txt' % target_dir)
+    files = glob.glob('%sspec_*.txt' % target_dir)
 
     started = os.path.exists(os.path.join(target_dir, "report_ztf.txt"))
     out = open(target_dir + "report_ztf.txt", "a")
