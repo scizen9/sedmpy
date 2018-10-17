@@ -608,8 +608,12 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
             out.write("OK ")
         else:
             out.write("NO ")
-        print("URL: " + r)
-        out.write("%s\n" % r)
+        if r:
+            print("URL: " + r)
+            out.write("%s\n" % r)
+        else:
+            print("URL: None")
+            out.write("None\n")
 
     # Close log file
     out.close()
