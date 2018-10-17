@@ -1,7 +1,10 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import drpifu.pil as pil
+try:
+    import pil
+except ImportError:
+    import drpifu.pil as pil
 import datetime
 from astropy.io import fits
 import glob
@@ -95,10 +98,10 @@ def build_image_report(indir=None, fspec=None):
     t_obs = time_from_fspec(filespec=fspec)
     try:
         if is_std:
-            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" % \
+            fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name.split("STD-")[-1])
         else:
-            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" % \
+            fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
         # do we have more than one finder for this object name?
@@ -113,7 +116,7 @@ def build_image_report(indir=None, fspec=None):
 
         img_find = pil.Image.open(finder_file)
     except IndexError:
-        print("Cannot find /scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" %
+        print("Cannot find /scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" %
               (indir, object_name))
         img_find = pil.get_buffer([13, 7], "Finder image missing",
                                   **prop_missing)
@@ -136,6 +139,7 @@ def build_image_report(indir=None, fspec=None):
     # title
     title = "%s" % object_name
     title += " | exptime: %.1f s" % header["EXPTIME"]
+    title += " | qual: %d" % header["QUALITY"]
     title += " | file ID: %s " % spec_id
 
     # Auto

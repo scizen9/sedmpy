@@ -224,7 +224,7 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
     # END: cal_proc_ready
 
 
-def docp(src, dest, onsky=True, verbose=True):
+def docp(src, dest, onsky=True, verbose=False):
     """Low level copy from raw directory to redux directory.
 
     Checks for raw ifu files, while avoiding any test and focus images.
@@ -241,7 +241,12 @@ def docp(src, dest, onsky=True, verbose=True):
                     star images linked, number of sci objects linked
 
     """
-
+    # Record copies
+    ncp = 0
+    # Was a standard star observation copied?
+    nstd = 0
+    # Was a science object copied
+    nobj = 0
     # Read FITS header
     f = pf.open(src)
     hdr = f[0].header
@@ -249,12 +254,6 @@ def docp(src, dest, onsky=True, verbose=True):
     # Get OBJECT and DOMEST keywords
     obj = hdr['OBJECT']
     dome = hdr['DOMEST']
-    # Record copies
-    ncp = 0
-    # Was a standard star observation copied?
-    nstd = 0
-    # Was a science object copied
-    nobj = 0
     # Check if dome conditions are not right
     if onsky and ('CLOSED' in dome or 'closed' in dome):
         if verbose:
