@@ -99,10 +99,10 @@ def build_image_report(indir=None, fspec=None):
     try:
         if is_std:
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
-                    (indir, object_name.split("STD-")[-1])
+                    (indir, object_name.split("STD-")[-1].upper())
         else:
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
-                    (indir, object_name)
+                    (indir, object_name.upper())
         finder_file = glob.glob(fspec)
         # do we have more than one finder for this object name?
         if len(finder_file) > 1:
@@ -116,8 +116,7 @@ def build_image_report(indir=None, fspec=None):
 
         img_find = pil.Image.open(finder_file)
     except IndexError:
-        print("Cannot find /scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" %
-              (indir, object_name))
+        print("Cannot find %s" % fspec)
         img_find = pil.get_buffer([13, 7], "Finder image missing",
                                   **prop_missing)
 
