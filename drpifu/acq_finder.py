@@ -298,8 +298,7 @@ if __name__ == "__main__":
 
         # We generate only one finder for each object.
         name = f.split('/')[-1].split(".")[0]
-        finderplotf = 'finder_%s_%s_%s.png' % (name, objnam.replace(' ', '_'),
-                                               fitsutils.get_par(f, "FILTER"))
+        finderplotf = 'finder_%s_%s.png' % (name, objnam.replace(' ', '_'))
         finderpath = os.path.join(reduxdir, os.path.join("finders/",
                                                          finderplotf))
         # Check if it was already done
@@ -320,6 +319,8 @@ if __name__ == "__main__":
                     print("Astrometry failed for %s, skipping finder %s" %
                           (dest, finderpath))
                 continue
+            else:
+                print("Astrometry file already exists: %s" % astrof)
             # Check results
             if not os.path.isfile(astrof):
                 print("Astrometry results not found %s" % astrof)
