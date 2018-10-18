@@ -91,6 +91,7 @@ def build_image_report(indir=None, fspec=None):
     try:
         img_spec = pil.Image.open(used_spec_file)
     except FileNotFoundError:
+        print("Cannot find spectra plot")
         img_spec = pil.get_buffer([13, 7], "Spectra image missing",
                                   **prop_missing)
 
@@ -111,8 +112,12 @@ def build_image_report(indir=None, fspec=None):
                 if abs(t_obs - time_from_fspec(filespec=f, imtype="rc")) < 120:
                     finder_file = f
                     break
-        else:
-            finder_file = finder_file[0]
+
+        finder_file = finder_file[0]
+        # Check time offset
+        t_off = abs(t_obs - time_from_fspec(filespec=finder_file, imtype="rc"))
+        if t_off > 120:
+            print("Warning: time offset = %d > 120s" % t_off)
 
         img_find = pil.Image.open(finder_file)
     except IndexError:

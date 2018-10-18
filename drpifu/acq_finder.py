@@ -127,6 +127,7 @@ def finder(myfile, findername, searchrad=0.2/60.):
                  color="white", horizontalalignment="left")
     
     gc.save(findername)
+    print("Created %s" % findername)
     
 
 def simple_finder(myfile, findername):
