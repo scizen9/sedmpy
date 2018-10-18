@@ -105,14 +105,14 @@ def build_image_report(indir=None, fspec=None):
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
-        # do we have more than one finder for this object name?
+        # Do we have more than one finder for this object name?
         if len(finder_file) > 1:
             for f in finder_file:
                 # Use the one that is closest to the observation time
                 if abs(t_obs - time_from_fspec(filespec=f, imtype="rc")) < 120:
-                    finder_file = f
+                    finder_file = [f]
                     break
-
+        # Get first item in list
         finder_file = finder_file[0]
         # Check time offset
         t_off = abs(t_obs - time_from_fspec(filespec=finder_file, imtype="rc"))
