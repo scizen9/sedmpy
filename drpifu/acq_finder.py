@@ -312,13 +312,15 @@ if __name__ == "__main__":
                 os.symlink(f, dest)
             print("Solving astrometry", dest)
             # Solving for astrometry
-            returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom', dest])
-            if returncode != 0:
-                print("Astrometry failed for %s, skipping finder %s" %
-                      (dest, finderpath))
+            astrof = dest.replace(".fits", "_astrom.fits")
+            if not os.path.exists(astrof):
+                returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
+                                              dest])
+                if returncode != 0:
+                    print("Astrometry failed for %s, skipping finder %s" %
+                          (dest, finderpath))
                 continue
             # Check results
-            astrof = dest.replace(".fits", "_astrom.fits")
             if not os.path.isfile(astrof):
                 print("Astrometry results not found %s" % astrof)
                 continue
