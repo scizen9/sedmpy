@@ -64,7 +64,7 @@ def build_image_report(indir=None, fspec=None):
                                                               object_name)[0]
     
     # Missing plot format
-    prop_missing = dict(fontsize=30, textprop=dict(color="C1"))
+    prop_missing = dict(fontsize=26, textprop=dict(color="C1"))
 
     # Spaxels used:
     try:
@@ -99,10 +99,10 @@ def build_image_report(indir=None, fspec=None):
     try:
         if is_std:
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
-                    (indir, object_name.split("STD-")[-1].upper())
+                    (indir, object_name.split("STD-")[-1])
         else:
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
-                    (indir, object_name.upper())
+                    (indir, object_name)
         finder_file = glob.glob(fspec)
         # do we have more than one finder for this object name?
         if len(finder_file) > 1:

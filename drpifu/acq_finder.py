@@ -277,7 +277,7 @@ if __name__ == "__main__":
              "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
                 ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
             if objnam:
-                if objnam.upper() in fitsutils.get_par(f, "OBJECT").upper():
+                if objnam in fitsutils.get_par(f, "OBJECT"):
                     filesacq.append(f)
             else:
                 filesacq.append(f)
@@ -288,9 +288,9 @@ if __name__ == "__main__":
     n_find = 0
     for f in filesacq:
         n_find += 1
-        print("Testing finder %d of %d: %s" % (n_find, n_acq, f))
+        print("Trying finder %d of %d: %s" % (n_find, n_acq, f))
         try:
-            objnam = fitsutils.get_par(f, "OBJECT").upper()
+            objnam = fitsutils.get_par(f, "OBJECT")
         except:
             print('There is no object in this file %s. Skipping the finder'
                   ' and moving to the next file.' % f)
