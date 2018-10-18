@@ -51,7 +51,7 @@ def finder(myfile, findername, searchrad=0.2/60.):
     ra, dec = coordinates_conversor.hour2deg(fitsutils.get_par(myfile, "OBJRA"),
                                              fitsutils.get_par(myfile,
                                                                "OBJDEC"))
-
+    utc = fitsutils.get_par(myfile, "UTC")
     hdulist = pf.open(myfile)[0]
     img = hdulist.data * 1.            
     img = img.T
@@ -91,11 +91,6 @@ def finder(myfile, findername, searchrad=0.2/60.):
     gc.scalebar.set_color('white')
     gc.recenter(ra, dec, searchrad)
 
-    # gc.show_markers(ra,dec+searchrad/20.,edgecolor='red'
-    # facecolor='none',marker="|",s=250, lw=10)
-    # gc.show_markers(ra-(searchrad/20.)/np.cos(np.deg2rad(dec)),dec,
-    # edgecolor='red',facecolor='none',marker="_",s=250, lw=10)
-
     ras = np.array([ra, ra])
     decs = np.array([dec, dec])
     dxs = np.array([0, searchrad/10 / np.cos(np.deg2rad(dec))])
@@ -120,10 +115,12 @@ def finder(myfile, findername, searchrad=0.2/60.):
     img_filter = fitsutils.get_par(myfile, "FILTER")
     gc.add_label(0.05, 0.95, 'Object: %s' % img_name, relative=True,
                  color="white", horizontalalignment="left")
-    gc.add_label(0.05, 0.9, 'Coordinates: RA=%s DEC=%s' %
+    gc.add_label(0.05, 0.9, 'Filter: SDSS %s' % img_filter, relative=True,
+                 color="white", horizontalalignment="left")
+    gc.add_label(0.05, 0.85, 'Coordinates: RA=%s DEC=%s' %
                  (coordinates_conversor.deg2hour(ra, dec)), relative=True,
                  color="white", horizontalalignment="left")
-    gc.add_label(0.05, 0.84, 'Filter: SDSS %s' % img_filter, relative=True,
+    gc.add_label(0.05, 0.8, "UTC: %s" % utc, relative=True,
                  color="white", horizontalalignment="left")
     
     gc.save(findername)
