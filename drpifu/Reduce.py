@@ -22,6 +22,7 @@ import glob
 import sys
 import os
 import argparse
+import subprocess
 import astropy.io.fits as pf
 
 
@@ -290,7 +291,7 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                 # Don't solve WCS for standards (always brightest in IFU)
                 cmd = "ccd_to_cube.py %s --build %s --noguider" % (datestr, fn)
                 print(cmd)
-                retcode = os.system(cmd)
+                retcode = subprocess.call(cmd, shell=True)
                 # Check results
                 if retcode > 0:
                     print("Error generating cube for " + fn)
@@ -299,13 +300,13 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                     print("Extracting std star spectra for " + fn)
                     cmd = "extract_star.py %s --auto %s --std" % (datestr, fn)
                     print(cmd)
-                    retcode = os.system(cmd)
+                    retcode = subprocess.call(cmd, shell=True)
                     if retcode > 0:
                         print("Error extracting std star spectra for " + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
                         cmd = "touch %s" % badfn
-                        os.system(cmd)
+                        subprocess.call(cmd, shell=True)
                     else:
                         if slack:
                             cmd = "pysedm_report.py %s --contains %s --slack" %\
@@ -314,7 +315,7 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                             cmd = "pysedm_report.py %s --contains %s" % \
                                   (datestr, fn.split('.')[0])
                         print(cmd)
-                        retcode = os.system(cmd)
+                        retcode = subprocess.call(cmd, shell=True)
                         if retcode > 0:
                             print("Error running report for " +
                                   fn.split('.')[0])
@@ -324,7 +325,7 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                 # Solve WCS for science targets
                 cmd = "ccd_to_cube.py %s --build %s --solvewcs" % (datestr, fn)
                 print(cmd)
-                retcode = os.system(cmd)
+                retcode = subprocess.call(cmd, shell=True)
                 # Check results
                 if retcode > 0:
                     print("Error generating cube for " + fn)
@@ -334,18 +335,18 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                     cmd = "extract_star.py %s --auto %s --autobins 6" \
                           % (datestr, fn)
                     print(cmd)
-                    retcode = os.system(cmd)
+                    retcode = subprocess.call(cmd, shell=True)
                     if retcode > 0:
                         print("Error extracting object spectrum for " + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
                         cmd = "touch %s" % badfn
-                        os.system(cmd)
+                        subprocess.call(cmd, shell=True)
                     else:
                         print("Running SNID for " + fn)
                         cmd = "make classify"
                         print(cmd)
-                        retcode = os.system(cmd)
+                        retcode = subprocess.call(cmd, shell=True)
                         if retcode > 0:
                             print("Error running SNID")
                         if slack:
@@ -355,14 +356,14 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                             cmd = "pysedm_report.py %s --contains %s" % \
                                   (datestr, fn.split('.')[0])
                         print(cmd)
-                        retcode = os.system(cmd)
+                        retcode = subprocess.call(cmd, shell=True)
                         if retcode > 0:
                             print("Error running report for " +
                                   fn.split('.')[0])
                         # Upload spectrum to marshal
                         if ztfupld:
                             cmd = "make ztfupload"
-                            retcode = os.system(cmd)
+                            retcode = subprocess.call(cmd, shell=True)
                             if retcode > 0:
                                 print("Error uploading spectra to marshal")
     return ncp, copied
@@ -394,7 +395,8 @@ def red_loop(outdir=None, upld=False, slack=False):
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
         # Get new listing
-        retcode = os.system("~/spy what ifu*.fits > what.list")
+        retcode = subprocess.call("~/spy what ifu*.fits > what.list",
+                                  shell=True)
         if retcode > 0:
             print("what oops!")
 
@@ -404,53 +406,62 @@ def red_loop(outdir=None, upld=False, slack=False):
             start_time = time.time()
             if proc_bias_crrs(20):
                 procb_time = int(time.time() - start_time)
-                os.system("make calimgs")
+                subprocess.call("make calimgs", shell=True)
                 # Process calibration
                 start_time = time.time()
-                os.system("ccd_to_cube.py %s --tracematch --hexagrid"
-                          % cur_date_str)
+                cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
+                       "--hexagrid")
+                print(" ".join(cmd), flush=True)
+                subprocess.call(cmd)
                 procg_time = int(time.time() - start_time)
                 if os.path.exists(
-                   os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
+                        os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
                     # Process wavelengths
                     start_time = time.time()
                     # Spawn nsub sub-processes to solve wavelengths faster
                     nsub = 8
-                    os.system("derive_wavesolution.py %s --nsub %d"
-                              % (cur_date_str, nsub))
+                    cmd = ("derive_wavesolution.py", cur_date_str,
+                           "--nsub", "%d" % nsub)
+                    print(" ".join(cmd), flush=True)
+                    subprocess.Popen(cmd)
                     time.sleep(60)
                     # Get a list of solved spaxels
                     wslist = glob.glob(os.path.join(outdir, cur_date_str +
                                                     '_WaveSolution_range*.pkl'))
                     # Wait until they are all finished
-                    while len(wslist) < nsub:
+                    nfin = len(wslist)
+                    while nfin < nsub:
                         time.sleep(60)
                         wslist = glob.glob(
                             os.path.join(outdir, cur_date_str +
                                          '_WaveSolution_range*.pkl'))
-                        print("Finished %d out of %d parts"
-                              % (len(wslist), nsub))
+                        if len(wslist) != nfin:
+                            print("\nFinished %d out of %d parts"
+                                  % (len(wslist), nsub))
+                            nfin = len(wslist)
+                        else:
+                            print(".", end="", flush=True)
                     print("Finished all %d parts, merging..." % nsub)
                     # Merge the solutions
-                    os.system("derive_wavesolution.py %s --merge"
-                              % cur_date_str)
-                procw_time = int(time.time() - start_time)
-                if os.path.exists(
-                   os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
-                    # Process flat
-                    start_time = time.time()
-                    os.system("ccd_to_cube.py %s --flat" % cur_date_str)
-                    if not (os.path.exists(
-                            os.path.join(outdir, cur_date_str + '_Flat.fits'))):
-                        print("Making of %s_Flat.fits failed!" % cur_date_str)
-                else:
-                    print("Making of %s cube failed!" % cur_date_str)
-                procf_time = int(time.time() - start_time)
-                # Report times
-                print("Calibration processing took "
-                      "%d s (bias,crrs), %d s (grid),"
-                      " %d s (waves), and %d s (flat)" %
-                      (procb_time, procg_time, procw_time, procf_time))
+                    subprocess.call(("derive_wavesolution.py", cur_date_str,
+                                     "--merge"))
+                    procw_time = int(time.time() - start_time)
+                    if os.path.exists(
+                       os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
+                        # Process flat
+                        start_time = time.time()
+                        subprocess.call(("ccd_to_cube.py", cur_date_str, "--flat"))
+                        if not (os.path.exists(
+                                os.path.join(outdir, cur_date_str + '_Flat.fits'))):
+                            print("Making of %s_Flat.fits failed!" % cur_date_str)
+                    else:
+                        print("Making of %s cube failed!" % cur_date_str)
+                    procf_time = int(time.time() - start_time)
+                    # Report times
+                    print("Calibration processing took "
+                          "%d s (bias,crrs), %d s (grid),"
+                          " %d s (waves), and %d s (flat)" %
+                          (procb_time, procg_time, procw_time, procf_time))
 
         # Check status
         if not cube_ready(outdir, cur_date_str):

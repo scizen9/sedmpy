@@ -2976,61 +2976,138 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def add_flexure(self, pardic):
+    def add_cube(self, pardic):
         """
-        Creates a new object in the flexure table.
+        Creates a new object in the cube table.
 
         Args:
             pardic (dict):
                 required:
-                    'rms' (float),
-                    'spec_id_1' (int),
-                    'spec_id_2' (int),
-                    'timestamp1' ('year-month-day hour:minute:second'),
-                    'timestamp2' ('year-month-day hour:minute:second')
+                    'observation_id' (int)
+                    'ccd_x_flex_corr' (bool)
+                    'ccd_x_flex_px' (float)
+                    'ccd_y_flex_corr' (bool)
+                    'ccd_y_flex_px' (float)
+                    'atm_corr' (bool)
+                    'atm_source' (str)
+                    'atm_mean_corr' (float)
+                    'spec_calib_id' (int)
 
         Returns:
             (-1, "ERROR...") if there was an issue
 
-            (0, "Flexure added")
+            (0, "Cube added")
         """
-        param_types = {'id': int, 'rms': float, 'spec_id_1': int, 'spec_id_2': int,
-                       'timestamp1': 'datetime', 'timestamp2': 'datetime'}
-        # TODO: find out what the 'rms' is here
-        id = _id_from_time()
-        pardic['id'] = id
-        keys = list(pardic.keys())
-        for key in ['rms', 'spec_id_1', 'spec_id_2', 'timestamp1', 'timestamp2']:
-            if key not in keys:
-                return -1, "ERROR: %s not provided!" % (key,)
-        for key in reversed(keys):
-            if key not in ['id', 'rms', 'spec_id_1', 'spec_id_2', 'timestamp1', 'timestamp2']:
-                return -1, "ERROR: %s is an invalid key!" % (key,)
-        sp1_id = self.get_from_spec(['id'], {'id': pardic['spec_id_1']})
-        if not sp1_id:
-            return -1, "ERROR: no spectrum exists with the given spec_id_1!"
-        elif sp1_id[0] == -1:
-            return sp1_id
-        sp2_id = self.get_from_spec(['id'], {'id': pardic['spec_id_2']})
-        if not sp2_id:
-            return -1, "ERROR: no spectrum exists with the given spec_id_2!"
-        elif sp2_id[0] == -1:
-            return sp2_id
+        param_types = {
+            'id': int, 'observation_id': int,
+            'ccd_x_flex_corr': bool, 'ccd_x_flex_px': float,
+            'ccd_y_flex_corr': bool, 'ccd_y_flex_px': float,
+            'atm_corr': bool, 'atm_source': str, 'atm_mean_corr': float,
+            'spec_calib_id': int
+        }
+        required_keys = ['observation_id', 'spec_calib_id',
+                         'ccd_x_flex_corr', 'ccd_x_flex_px',
+                         'ccd_y_flex_corr', 'ccd_y_flex_px',
+                         'atm_corr', 'atm_source', 'atm_mean_corr',
+                         'spec_calib_id']
 
+        new_cube_id = _id_from_time()
+        pardic['id'] = new_cube_id
+
+        keys = list(pardic.keys())
+
+        # Test for required keys
+        for rkey in required_keys:
+            if rkey not in keys:
+                return -1, "ERROR: %s not provided!" % (rkey,)
+        # Validate input keys
+        for key in reversed(keys):
+            if key not in param_types:
+                return -1, "ERROR: %s is an invalid key!" % (key,)
+        # Check input parameter types
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
             return -1, type_check
 
-        sql = _generate_insert_sql(pardic, keys, 'flexure')
+        sql = _generate_insert_sql(pardic, keys, 'cube')
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_flexure sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_cube sql command failed with an " \
+                       "IntegrityError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): add_cube sql command failed with an " \
+                       "IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_flexure sql command failed with a ProgrammingError!"
-        return id, "Flexure added"
+            return -1, "ERROR: add_cube sql command failed with a " \
+                       "ProgrammingError!"
+        return new_cube_id, "Cube added"
 
-    def get_from_flexure(self, values, where_dict={}, compare_dict={}):
+    def update_cube(self, pardic):
+        """
+        Updates a cube entry.
+
+        Args:
+            pardic (dict):
+                required:
+                    'id' (int)
+                optional:
+                    'observation_id' (int)
+                    'ccd_x_flex_corr' (bool)
+                    'ccd_x_flex_px' (float)
+                    'ccd_y_flex_corr' (bool)
+                    'ccd_y_flex_px' (float)
+                    'atm_corr' (bool)
+                    'atm_source' (str)
+                    'atm_mean_corr' (float)
+                    'spec_calib_id' (int)
+
+        Returns:
+            (-1, "ERROR...") it failed to update
+
+            (id (long), "Cube updated, columns 'column_names'")
+                        if the entry is updated successfully
+        """
+        param_types = {
+            'id': int, 'observation_id': int,
+            'ccd_x_flex_corr': bool, 'ccd_x_flex_px': float,
+            'ccd_y_flex_corr': bool, 'ccd_y_flex_px': float,
+            'atm_corr': bool, 'atm_source': str, 'atm_mean_corr': float,
+            'spec_calib_id': int
+        }
+        keys = list(pardic.keys())
+        # Check if id included
+        if 'id' not in keys:
+            return -1, "ERROR: id not provided!"
+        # Test if id exists
+        elif pardic['id'] not in [x[0] for x in self.execute_sql(
+                'SELECT id FROM cube;')]:
+            return -1, "ERROR: no cube entry with the id!"
+        keys.remove('id')
+        # Check if input keys are valid
+        for key in reversed(keys):
+            if key not in param_types:
+                return -1, "ERROR: %s is an invalid key!" % (key,)
+        # Check input parameter types
+        type_check = _data_type_check(keys, pardic, param_types)
+        if type_check:
+            return -1, type_check
+        # Generate update sql command
+        sql = _generate_update_sql(pardic, keys, 'cube')
+        try:
+            self.execute_sql(sql)
+        except exc.IntegrityError:
+            return -1, "ERROR: add_cube sql command failed with an " \
+                       "IntegrityError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): add_cube sql command failed with an " \
+                       "IntegrityError!"
+        except exc.ProgrammingError:
+            return -1, "ERROR: add_cube sql command failed with a " \
+                       "ProgrammingError!"
+        return pardic['id'], "Cube updated, columns " + str(keys)[1:-1]
+
+    def get_from_cube(self, values, where_dict={}, compare_dict={}):
         """
         select values from `flexure`
 
@@ -3043,24 +3120,34 @@ class SedmDB:
                 'param': 'inequality' (i.e. '>', '<', '>=', '<=', '<>', '!='))
                 if no inequality is provided, '=' is assumed
             values/keys options:
-                'id' (int/long),
-                'rms' (float),
-                'spec_id_1' (int),
-                'spec_id_2' (int),
-                'timestamp1' ('year-month-day hour:minute:second'),
-                'timestamp2' ('year-month-day hour:minute:second')
+                'id' (int/long)
+                'observation_id' (int)
+                'ccd_x_flex_corr' (bool)
+                'ccd_x_flex_px' (float)
+                'ccd_y_flex_corr' (bool)
+                'ccd_y_flex_px' (float)
+                'atm_corr' (bool)
+                'atm_source' (str)
+                'atm_mean_corr' (float)
+                'spec_calib_id' (int)
 
         Returns:
-            list of tuples containing the values for flexure matching the criteria
+            list of tuples containing the values for cube matching the criteria
 
-            empty list if no flexure entries match the ``where_dict`` criteria
+            empty list if no cube entries match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'rms': float, 'spec_id_1': int, 'spec_id_2': int,
-                          'timestamp1': 'datetime', 'timestamp2': 'datetime'}
-
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'flexure')  # checks type and
+        allowed_params = {
+            'id': int, 'observation_id': int,
+            'ccd_x_flex_corr': bool, 'ccd_x_flex_px': float,
+            'ccd_y_flex_corr': bool, 'ccd_y_flex_px': float,
+            'atm_corr': bool, 'atm_source': str, 'atm_mean_corr': float,
+            'spec_calib_id': int
+        }
+        # checks types
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'cube')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 

@@ -224,7 +224,7 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
     # END: cal_proc_ready
 
 
-def docp(src, dest, onsky=True, verbose=False):
+def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
     """Low level copy from raw directory to redux directory.
 
     Checks for raw ifu files, while avoiding any test and focus images.
@@ -235,13 +235,19 @@ def docp(src, dest, onsky=True, verbose=False):
         dest (str): destination file
         onsky (bool): test for dome conditions or not
         verbose (bool): print messages?
+        skip_cals (bool): skip copying cal images?
 
     Returns:
         (int, int, int): number of images linked, number of standard
                     star images linked, number of sci objects linked
 
     """
-
+    # Record copies
+    ncp = 0
+    # Was a standard star observation copied?
+    nstd = 0
+    # Was a science object copied
+    nobj = 0
     # Read FITS header
     f = pf.open(src)
     hdr = f[0].header
@@ -249,12 +255,6 @@ def docp(src, dest, onsky=True, verbose=False):
     # Get OBJECT and DOMEST keywords
     obj = hdr['OBJECT']
     dome = hdr['DOMEST']
-    # Record copies
-    ncp = 0
-    # Was a standard star observation copied?
-    nstd = 0
-    # Was a science object copied
-    nobj = 0
     # Check if dome conditions are not right
     if onsky and ('CLOSED' in dome or 'closed' in dome):
         if verbose:
@@ -262,8 +262,15 @@ def docp(src, dest, onsky=True, verbose=False):
     # All other conditions are OK
     else:
         # Skip test and Focus images
-        if 'test' not in obj and 'Focus:' not in obj and 'STOW' not in obj and \
-                'Test' not in obj:
+        if skip_cals:
+            copy_this = ('test' not in obj and 'Focus:' not in obj and
+                         'STOW' not in obj and 'Test' not in obj and
+                         'Calib:' not in obj)
+        else:
+            copy_this = ('test' not in obj and 'Focus:' not in obj and
+                         'STOW' not in obj and 'Test' not in obj)
+
+        if copy_this:
             # Symlink to save disk space
             os.symlink(src, dest)
             if 'STD-' in obj:
@@ -281,10 +288,12 @@ def docp(src, dest, onsky=True, verbose=False):
                 print("SEDM db rejected observation")
         # Report skipping and type
         else:
-            if verbose and 'test' in hdr['OBJECT']:
+            if verbose and 'test' in obj:
                 print('test file %s not linked' % src)
-            if verbose and 'Focus:' in hdr['OBJECT']:
+            if verbose and 'Focus:' in obj:
                 print('Focus file %s not linked' % src)
+            if verbose and 'Calib:' in obj:
+                print('calib file %s not linked' % src)
 
     return ncp, nstd, nobj
     # END: docp
@@ -300,14 +309,17 @@ def update_observation(input_fitsfile):
         'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
         'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
         'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
-        'filter': 'FILTER', 'parang': 'TEL_PA', 'time_elapsed': 'ELAPTIME'
+        'filter': 'FILTER', 'parang': 'TEL_PA', 'parang_end': 'END_PA',
+        'time_elapsed': 'ELAPTIME'
     }
     obs_dict = {
         'object_id': 0, 'request_id': 0, 'mjd': 0.,
         'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
-        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
-        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0., 'time_elapsed': 0.,
-        'imtype': ' ', 'camera': ' ', 'filter': ' ', 'parang': 0.,
+        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0.,
+        'tel_el': 0., 'tel_pa': 0., 'ra_off': 0.,
+        'dec_off': 0., 'imtype': ' ', 'camera': ' ',
+        'filter': ' ', 'parang': 0., 'parang_end': 0.,
+        'time_elapsed': 0.,
         'fitsfile': input_fitsfile.split('/')[-1]
     }
     ff = pf.open(input_fitsfile)
@@ -527,7 +539,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
             # No? then copy the file
             if len(prev) == 0:
                 # Call copy
-                nc, ns, nob = docp(f, destdir + '/' + fn)
+                nc, ns, nob = docp(f, destdir + '/' + fn, skip_cals=True)
                 if nc >= 1:
                     copied.append(fn)
                 if ns >= 1:
@@ -613,7 +625,12 @@ def dosci(destdir='./', datestr=None):
                 if retcode != 0:
                     print("Error generating cube for " + fn)
                 else:
-                    # TODO: update SedmDb cube table
+                    # Update SedmDb cube table
+                    cube_id = update_cube(f)
+                    if cube_id > 0:
+                        print("SEDM db accepted cube at id %d" % cube_id)
+                    else:
+                        print("SEDM db rejected cube")
                     # Use auto psf aperture for standard stars
                     print("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
@@ -649,7 +666,12 @@ def dosci(destdir='./', datestr=None):
                 if retcode != 0:
                     print("Error generating cube for " + fn)
                 else:
-                    # TODO: update SedmDb cube table
+                    # Update SedmDb cube table
+                    cube_id = update_cube(f)
+                    if cube_id > 0:
+                        print("SEDM db accepted cube at id %d" % cube_id)
+                    else:
+                        print("SEDM db rejected cube")
                     # Use forced psf for science targets
                     print("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -700,41 +722,68 @@ def update_cube(input_fitsfile):
     """ Update the SEDM database on pharos by adding a new cube entry. """
 
     header_dict = {
-        'object_id': 'OBJ_ID', 'request_id': 'REQ_ID', 'mjd': 'MJD_OBS',
-        'airmass': 'AIRMASS', 'airmass_end': 'ENDAIR', 'exptime': 'EXPTIME',
-        'lst': 'LST', 'ra': 'RA', 'dec': 'DEC', 'tel_az': 'TEL_AZ',
-        'tel_el': 'TEL_EL', 'tel_pa': 'TEL_PA', 'ra_off': 'RA_OFF',
-        'dec_off': 'DEC_OFF', 'imtype': 'IMGTYPE', 'camera': 'CAM_NAME',
-        'filter': 'FILTER', 'parang': 'TEL_PA', 'time_elapsed': 'ELAPTIME'
+        'ccd_x_flex_corr': 'IFLXCORR', 'ccd_x_flex_px': 'CCDIFLX',
+        'ccd_y_flex_corr': 'JFLXCORR', 'ccd_y_flex_px': 'CCDJFLX',
+        'atm_corr': 'ATMCORR', 'atm_source': 'ATMSRC',
+        'atm_mean_corr': 'ATMSCALE'
     }
-    obs_dict = {
-        'object_id': 0, 'request_id': 0, 'mjd': 0.,
-        'airmass': 0., 'airmass_end': 0., 'exptime': 0.,
-        'lst': ' ', 'ra': 0., 'dec': 0., 'tel_az': 0., 'tel_el': 0.,
-        'tel_pa': 0., 'ra_off': 0., 'dec_off': 0., 'time_elapsed': 0.,
-        'imtype': ' ', 'camera': ' ', 'filter': ' ', 'parang': 0.,
-        'fitsfile': input_fitsfile.split('/')[-1]
+    cube_dict = {
+        'observation_id': 0,
+        'ccd_x_flex_corr': False, 'ccd_x_flex_px': 0.,
+        'ccd_y_flex_corr': False, 'ccd_y_flex_px': 0.,
+        'atm_corr': False, 'atm_source': '',
+        'atm_mean_corr': 1.,
+        'spec_calib_id': 0
     }
-    ff = pf.open(input_fitsfile)
 
+    # Get cube file
+    root = input_fitsfile.split('/')[-1].split('.fits')[0]
+    indir = '/'.join(input_fitsfile.split('/')[:-1])
+    utdate = indir.split('/')[-1]
+    cube_list = glob.glob(os.path.join(indir, 'e3d_'+root+'_*.fits'))
+
+    # Check list
+    if len(cube_list) != 1:
+        print("ERROR: Ambiguous cube list")
+        return -1
+
+    # Read header
+    ff = pf.open(cube_list[0])
+
+    # Get header keyword values
     for key in header_dict.keys():
         hk = header_dict[key]
         if hk in ff[0].header:
-            if key is 'dec':
-                obs_dict[key] = Angle(ff[0].header[hk] + ' degrees').degree
-            elif key is 'ra':
-                obs_dict[key] = Angle(ff[0].header[hk] + ' hours').degree
-            else:
-                obs_dict[key] = ff[0].header[hk]
+            cube_dict[key] = ff[0].header[hk]
         else:
             print("Header keyword not found: %s" % hk)
     ff.close()
 
+    # Open database connection
     sedmdb = db.SedmDb.SedmDB()
-    observation_id, status = sedmdb.add_observation(obs_dict)
-    print(status)
-    return observation_id
-    # END: update_observation
+
+    # Get observation id
+    fitsfile = 'ifu'+input_fitsfile.split('ifu')[-1]
+    observation_id = sedmdb.get_from_observation(['id'],
+                                                 {'fitsfile': fitsfile},
+                                                 {'fitsfile': '~'})
+    if observation_id:
+        cube_dict['observation_id'] = observation_id[0][0]
+
+    # Get spec_calib id for this utdate
+    spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})
+    if spec_calib_id:
+        cube_dict['spec_calib_id'] = spec_calib_id[0][0]
+
+        # Add into database
+        cube_id, status = sedmdb.add_cube(cube_dict)
+        print(status)
+        return cube_id
+    else:
+        print("ERROR: no spec_calib_id found for %s" % utdate)
+        return -1
+    # END: update_cube
+
 
 def email_user(spec_file, utdate, object_name):
     """ Send e-mail to requestor indicating followup completed"""
@@ -1189,26 +1238,24 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 # Check to see if we are still before an hour after sunset
                 now = ephem.now()
                 if now < sunset + ephem.hour:
-                    print("UT  = %02d/%02d %02d:%02d < sunset "
-                          "(%02d/%02d %02d:%02d) + 1hr, "
-                          "so keep waiting" % (now.tuple()[1], now.tuple()[2],
-                                               now.tuple()[3], now.tuple()[4],
-                                               sunset.tuple()[1],
-                                               sunset.tuple()[2],
-                                               sunset.tuple()[3],
-                                               sunset.tuple()[4]),
+                    print("UT  = %d%02d%02d %02d_%02d_%02.0f < sunset "
+                          "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, so keep "
+                          "waiting" % (now.tuple()[0], now.tuple()[1],
+                                       now.tuple()[2], now.tuple()[3],
+                                       now.tuple()[4], now.tuple()[5],
+                                       sunset.tuple()[0], sunset.tuple()[1],
+                                       sunset.tuple()[2], sunset.tuple()[3],
+                                       sunset.tuple()[4], sunset.tuple()[5]),
                           flush=True)
                 else:
-                    print("UT = %02d/%02d %02d:%02d >= sunset "
-                          "(%02d/%02d %02d:%02d) + 1hr, "
-                          "time to get a cal set" % (now.tuple()[1],
-                                                     now.tuple()[2],
-                                                     now.tuple()[3],
-                                                     now.tuple()[4],
-                                                     sunset.tuple()[1],
-                                                     sunset.tuple()[2],
-                                                     sunset.tuple()[3],
-                                                     sunset.tuple()[4]),
+                    print("UT = %d%02d%02d %02d_%02d_%02.0f >= sunset "
+                          "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, time to get a "
+                          "cal set" % (now.tuple()[0], now.tuple()[1],
+                                       now.tuple()[2], now.tuple()[3],
+                                       now.tuple()[4], now.tuple()[5],
+                                       sunset.tuple()[0], sunset.tuple()[1],
+                                       sunset.tuple()[2], sunset.tuple()[3],
+                                       sunset.tuple()[4], sunset.tuple()[5]),
                           flush=True)
                     break
             else:
@@ -1317,7 +1364,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
 
     # Update spec_calib table in sedmdb
     spec_calib_id = update_calibration(cur_date_str)
-    print("SedmDb table spec_calib updated with id %d" % spec_calib_id)
+    print("SEDM db accepted spec_calib at id %d" % spec_calib_id)
 
     print("Calibration stage complete, ready for science!")
     # Link recent flux cal file
@@ -1361,26 +1408,28 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 if now >= sunrise:
                     # No new observations and sun is probably up!
                     print("No new images for %d minutes and UT = "
-                          "%02d/%02d %02d:%02d > "
-                          "%02d/%02d %02d:%02d so sun is up!" %
-                          (nnc, now.tuple()[1], now.tuple()[2],
-                           now.tuple()[3], now.tuple()[4],
-                           sunrise.tuple()[1], sunrise.tuple()[2],
-                           sunrise.tuple()[3], sunrise.tuple()[4]))
+                          "%d%02d%02d %02d_%02d_%02.0f > "
+                          "%d%02d%02d %02d_%02d_%02.0f so sun is up!" %
+                          (nnc, now.tuple()[0], now.tuple()[1], now.tuple()[2],
+                           now.tuple()[3], now.tuple()[4], now.tuple()[5],
+                           sunrise.tuple()[0], sunrise.tuple()[1],
+                           sunrise.tuple()[2], sunrise.tuple()[3],
+                           sunrise.tuple()[4], sunrise.tuple()[5]))
                     print("Time to wait until we have a new raw directory")
                     doit = False
                     # Normal termination
                     subprocess.call(("make", "report"))
                     ret = True
                 else:
-                    print("No new image for %d minutes but UT = %02d/%02d "
-                          "%02d:%02d <= "
-                          "%02d/%02d %02d:%02d, so sun is still down, "
+                    print("No new image for %d minutes but UT = "
+                          "%d%02d%02d %02d_%02d_%02.0f <= "
+                          "%d%02d%02d %02d_%02d_%02.0f, so sun is still down, "
                           "keep waiting" %
-                          (nnc, now.tuple()[1], now.tuple()[2],
-                           now.tuple()[3], now.tuple()[4],
-                           sunrise.tuple()[1], sunrise.tuple()[2],
-                           sunrise.tuple()[3], sunrise.tuple()[4]))
+                          (nnc, now.tuple()[0], now.tuple()[1], now.tuple()[2],
+                           now.tuple()[3], now.tuple()[4], now.tuple()[5],
+                           sunrise.tuple()[0], sunrise.tuple()[1],
+                           sunrise.tuple()[2], sunrise.tuple()[3],
+                           sunrise.tuple()[4], sunrise.tuple()[5]))
 
     # Handle a ctrl-C
     except KeyboardInterrupt:

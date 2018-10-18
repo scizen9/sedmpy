@@ -1,7 +1,10 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import drpifu.pil as pil
+try:
+    import pil
+except ImportError:
+    import drpifu.pil as pil
 import datetime
 from astropy.io import fits
 import glob
@@ -61,7 +64,7 @@ def build_image_report(indir=None, fspec=None):
                                                               object_name)[0]
     
     # Missing plot format
-    prop_missing = dict(fontsize=30, textprop=dict(color="C1"))
+    prop_missing = dict(fontsize=26, textprop=dict(color="C1"))
 
     # Spaxels used:
     try:
@@ -88,33 +91,37 @@ def build_image_report(indir=None, fspec=None):
     try:
         img_spec = pil.Image.open(used_spec_file)
     except FileNotFoundError:
+        print("Cannot find spectra plot")
         img_spec = pil.get_buffer([13, 7], "Spectra image missing",
                                   **prop_missing)
 
     # Acquisition finder
-    t_obs = time_from_fspec(filespec=fspec)
+    t_obs = time_from_fspec(specfile)
     try:
         if is_std:
-            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" % \
+            fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name.split("STD-")[-1])
         else:
-            fspec = "/scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" % \
+            fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
-        # do we have more than one finder for this object name?
+        # Do we have more than one finder for this object name?
         if len(finder_file) > 1:
             for f in finder_file:
                 # Use the one that is closest to the observation time
                 if abs(t_obs - time_from_fspec(filespec=f, imtype="rc")) < 120:
-                    finder_file = f
+                    finder_file = [f]
                     break
-        else:
-            finder_file = finder_file[0]
+        # Get first item in list
+        finder_file = finder_file[0]
+        # Check time offset
+        t_off = abs(t_obs - time_from_fspec(filespec=finder_file, imtype="rc"))
+        if t_off > 120:
+            print("Warning: time offset = %d > 120s" % t_off)
 
         img_find = pil.Image.open(finder_file)
     except IndexError:
-        print("Cannot find /scr2/sedm/phot/%s/finders/finder_*ACQ-%s_*.png" %
-              (indir, object_name))
+        print("Cannot find %s" % fspec)
         img_find = pil.get_buffer([13, 7], "Finder image missing",
                                   **prop_missing)
 
@@ -136,6 +143,7 @@ def build_image_report(indir=None, fspec=None):
     # title
     title = "%s" % object_name
     title += " | exptime: %.1f s" % header["EXPTIME"]
+    title += " | qual: %d" % header["QUALITY"]
     title += " | file ID: %s " % spec_id
 
     # Auto
