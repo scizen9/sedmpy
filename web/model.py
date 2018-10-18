@@ -1177,11 +1177,11 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                                                   return_type='list')
 
         for sci_targ in science_list:
-
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
             if 'STD' not in targ_name:
                 # 1. Get the object id
+
                 object_ids = db.get_object_id_from_name(targ_name)
 
                 if len(object_ids) == 1:
@@ -1190,6 +1190,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     # TODO       what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
+                    print(object_ids)
                     object_id = object_ids[-1][0]
 
                 target_requests = db.get_from_request(values=['allocation_id'],
@@ -1226,6 +1227,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         count = 0
         div_str = ''
         for targ in show_list:
+            print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
@@ -1295,7 +1297,15 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     </div>
                   </div>""".format(2, impathlink, impath, 400, 400)
             if show_finder:
-                finder_path = os.path.join(phot_dir, obsdate, 'finders')
+
+                path1 = os.path.join(redux_dir, obsdate, 'finders')
+                path2 = os.path.join(phot_dir, obsdate, 'finders')
+
+                if os.path.exists(path1):
+                    finder_path = path1
+                else:
+                    finder_path = path2
+
                 if os.path.exists(finder_path):
                     finder_img = glob.glob(finder_path + '/*%s*.png' % obj)
                     if finder_img:
@@ -1328,6 +1338,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
     return sedm_dict
 
+
 ###############################################################################
 # THIS SECTION HANDLES THE ACTIVE_VISIBILITIES PAGE.                          #
 # KEYWORD:VISIBILITIES #???                                                   #
@@ -1353,6 +1364,7 @@ def get_active_visibility(userid):
 
     sedm_dict['script'], sedm_dict['div'] = plot_visibility(userid, sedm_dict)
     return sedm_dict
+
 
 def plot_visibility(userid, sedm_dict, obsdate=None):
     '''
@@ -1779,19 +1791,19 @@ def get_filter_exptime(obsfilter, mag):
         g_exptime = 180
         i_exptime = 180
         u_exptime = 300
-    elif 15 > mag < 18:
+    elif 15 < mag < 18:
         ifu_exptime = 2700
         r_exptime = 120
         g_exptime = 120
         i_exptime = 120
         u_exptime = 300
-    elif 0 < mag < 5:
+    elif 13 < mag < 15:
         ifu_exptime = 60
         r_exptime = 1
         g_exptime = 1
         i_exptime = 1
         u_exptime = 30
-    elif 5 < mag < 10:
+    elif 11 < mag < 13:
         ifu_exptime = 90
         r_exptime = 10
         g_exptime = 10
