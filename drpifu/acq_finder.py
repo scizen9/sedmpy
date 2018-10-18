@@ -244,7 +244,7 @@ if __name__ == "__main__":
         reduxdir = '/'.join(imfile.split('/')[0:-1])
         objnam = fitsutils.get_par(imfile, "OBJECT").split()[0]
         if 'STD' in objnam:
-            objnam = objnam.split('STD-')[-1]
+            objnam = objnam.split('STD-')[-1].split()[0]
     else:
         rcdir = args.rcdir
         reduxdir = args.reduxdir

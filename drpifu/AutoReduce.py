@@ -224,7 +224,7 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
     # END: cal_proc_ready
 
 
-def docp(src, dest, onsky=True, verbose=False):
+def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
     """Low level copy from raw directory to redux directory.
 
     Checks for raw ifu files, while avoiding any test and focus images.
@@ -235,6 +235,7 @@ def docp(src, dest, onsky=True, verbose=False):
         dest (str): destination file
         onsky (bool): test for dome conditions or not
         verbose (bool): print messages?
+        skip_cals (bool): skip copying cal images?
 
     Returns:
         (int, int, int): number of images linked, number of standard
@@ -261,8 +262,15 @@ def docp(src, dest, onsky=True, verbose=False):
     # All other conditions are OK
     else:
         # Skip test and Focus images
-        if 'test' not in obj and 'Focus:' not in obj and 'STOW' not in obj and \
-                'Test' not in obj:
+        if skip_cals:
+            copy_this = ('test' not in obj and 'Focus:' not in obj and
+                         'STOW' not in obj and 'Test' not in obj and
+                         'Calib:' not in obj)
+        else:
+            copy_this = ('test' not in obj and 'Focus:' not in obj and
+                         'STOW' not in obj and 'Test' not in obj)
+
+        if copy_this:
             # Symlink to save disk space
             os.symlink(src, dest)
             if 'STD-' in obj:
@@ -280,10 +288,12 @@ def docp(src, dest, onsky=True, verbose=False):
                 print("SEDM db rejected observation")
         # Report skipping and type
         else:
-            if verbose and 'test' in hdr['OBJECT']:
+            if verbose and 'test' in obj:
                 print('test file %s not linked' % src)
-            if verbose and 'Focus:' in hdr['OBJECT']:
+            if verbose and 'Focus:' in obj:
                 print('Focus file %s not linked' % src)
+            if verbose and 'Calib:' in obj:
+                print('calib file %s not linked' % src)
 
     return ncp, nstd, nobj
     # END: docp
@@ -529,7 +539,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
             # No? then copy the file
             if len(prev) == 0:
                 # Call copy
-                nc, ns, nob = docp(f, destdir + '/' + fn)
+                nc, ns, nob = docp(f, destdir + '/' + fn, skip_cals=True)
                 if nc >= 1:
                     copied.append(fn)
                 if ns >= 1:
