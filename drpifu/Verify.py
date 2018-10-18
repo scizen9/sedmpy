@@ -96,7 +96,7 @@ def build_image_report(indir=None, fspec=None):
                                   **prop_missing)
 
     # Acquisition finder
-    t_obs = time_from_fspec(filespec=fspec)
+    t_obs = time_from_fspec(specfile)
     try:
         if is_std:
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
