@@ -46,8 +46,9 @@ except ImportError:
     import drpifu.Version as Version
 
 drp_ver = Version.ifu_drp_version()
-logging.basicConfig(format='%(asctime)s %(name)s %(levelname)-8s %(message)s',
-                    datefmt='%Y%m%d %H:%m:%S', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
+    datefmt='%Y%m%d %H:%M:%S', level=logging.INFO)
 
 
 def cube_ready(caldir='./', cur_date_str=None):
