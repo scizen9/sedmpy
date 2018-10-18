@@ -338,3 +338,5 @@ if __name__ == "__main__":
                       "Probably montage is broken." % astrof)
                 print(sys.exc_info()[0])
                 simple_finder_astro(astrof, finderpath)
+        else:
+            print("%s already exists" % finderpath)
