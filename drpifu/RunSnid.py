@@ -9,6 +9,7 @@ import os
 import argparse
 import subprocess
 import re
+import astropy.io.fits as pf
 
 
 def find_line_match(lines, match_dict):
@@ -40,7 +41,7 @@ def parse_and_fill(spec, snidoutput):
     comments in the original file, so that these could be used in the marshal.
     """
     
-    pars = {"zmed": -1, "zmederr": -1, "agem": -1, "agemerr": -1,
+    pars = {"zmed": -1, "zmederr": -1, "agem": -1, "agemerr": -1, "templ": "",
             "Ia": 0, "Ib": 0, "Ic": 0, "II": 0, "NotSN": 0, "rlap": 0,
             "bestMatchType": "", "bestMatchSubtype": "", "bestMatchRedshift": 0}
 
@@ -70,6 +71,7 @@ def parse_and_fill(spec, snidoutput):
             pars["rlap"] = float(lines[best_match_line].split()[4])
             # Test type
             typstr = lines[best_match_line].split()[2]
+            templstr = lines[best_match_line].split()[1]
             sntype = ''.join(c for c in typstr if ord(c) >= 32)
             if len(sntype) > 0:
                 pars["bestMatchType"] = sntype.split("-")[0]
@@ -77,15 +79,20 @@ def parse_and_fill(spec, snidoutput):
                     pars["bestMatchSubtype"] = sntype.split("-")[1]
                 else:
                     pars["bestMatchSubtype"] = '-'
+                pars["templ"] = templstr
             else:
                 pars["bestMatchType"] = "None"
                 pars["bestMatchSubtype"] = '-'
+                pars["templ"] = '-'
             pars["bestMatchRedshift"] = float(lines[best_match_line].split()[5])
 
     print("SNID RESULTS: Type=%(bestMatchType)s, Rlap=%(rlap).2f, "
           "Age=%(agem).2f+-%(agemerr)s day, "
           "z=%(zmed).4f+-%(zmederr).4f" % pars)
 
+    # Update fits file
+    ff = pf.open(spec.replace('.txt', '.fits'), mode='update')
+    # Update ascii file
     with open(spec, "r") as specIn:
         spec_lines = specIn.readlines()
         
@@ -99,39 +106,58 @@ def parse_and_fill(spec, snidoutput):
         if os.path.exists(snidoutput):
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_NOTSN: " + str(pars["NotSN"]) + "\n")
+            ff[0].header['SNIDFNOT'] = (pars["NotSN"], 'SNID Fraction Not SN')
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_II: " + str(pars["II"]) + "\n")
+            ff[0].header['SNIDFII'] = (pars["II"], 'SNID Fraction SN II')
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_IC: " + str(pars["Ic"]) + "\n")
+            ff[0].header['SNIDFIC'] = (pars["Ic"], 'SNID Fraction SN IC')
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_IB: " + str(pars["Ib"]) + "\n")
+            ff[0].header['SNIDFIB'] = (pars["Ib"], 'SNID Fraction SN Ib')
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_IA: " + str(pars["Ia"]) + "\n")
+            ff[0].header['SNIDFIA'] = (pars["Ia"], 'SNID Fraction SN Ia')
             spec_lines.insert(comment_lines_count,
                               "# SNIDAGEMERR: " + str(pars["agemerr"]) + "\n")
+            ff[0].header['SNIDEAGE'] = (pars["agemerr"],
+                                        'SNID Age match err (days)')
             spec_lines.insert(comment_lines_count,
                               "# SNIDAGEM: " + str(pars["agem"]) + "\n")
+            ff[0].header['SNIDMAGE'] = (pars["agem"], 'SNID Age match (days)')
             spec_lines.insert(comment_lines_count,
                               "# SNIDZMEDERR: " + str(pars["zmederr"]) + "\n")
+            ff[0].header['SNIDZMER'] = (pars["zmederr"], 'SNID z med err')
             spec_lines.insert(comment_lines_count,
                               "# SNIDZMED: " + str(pars["zmed"]) + "\n")
+            ff[0].header['SNIDZMED'] = (pars["zmed"], 'SNID z med')
             spec_lines.insert(comment_lines_count,
                               "# SNIDMATCHREDSHIFT: " +
                               str(pars["bestMatchRedshift"]) + "\n")
+            ff[0].header['SNIDZMAT'] = (pars["bestMatchRedshift"],
+                                        'SNID match z')
             spec_lines.insert(comment_lines_count,
                               "# SNIDMATCHRLAP: " + str(pars["rlap"]) + "\n")
+            ff[0].header['SNIDRLAP'] = (pars["rlap"], 'SNID match rlap')
             spec_lines.insert(comment_lines_count,
                               "# SNIDMATCHSUBTYPE: " +
                               pars["bestMatchSubtype"] + "\n")
+            ff[0].header['SNIDSUBT'] = (pars["bestMatchSubtype"],
+                                        'SNID match subtype')
             spec_lines.insert(comment_lines_count,
                               "# SNIDMATCHTYPE: " +
                               pars["bestMatchType"] + "\n")
+            ff[0].header['SNIDTYPE'] = (pars["bestMatchType"],
+                                        'SNID mtach type')
         else:
             spec_lines.insert(comment_lines_count,
                               "# SNIDMATCHTYPE: NONE\n")
+            ff[0].header['SNIDTYPE'] = ("NONE", 'SNID match type')
 
     with open(spec, "w") as specOut:
         specOut.write("".join(spec_lines))
+    ff.close()
 
     return pars["bestMatchType"], pars
 

@@ -316,6 +316,10 @@ if __name__ == "__main__":
                 returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                               dest])
                 if returncode != 0:
+                    print("Astrometry failed, re-running")
+                    returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
+                                                  dest])
+                if returncode != 0:
                     print("Astrometry failed for %s, skipping finder %s" %
                           (dest, finderpath))
                 continue
