@@ -322,7 +322,7 @@ if __name__ == "__main__":
                 if returncode != 0:
                     print("Astrometry failed for %s, skipping finder %s" %
                           (dest, finderpath))
-                continue
+                    continue
             else:
                 print("Astrometry file already exists: %s" % astrof)
             # Check results
