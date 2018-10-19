@@ -62,7 +62,6 @@ def build_image_report(indir=None, fspec=None):
     # Spectrum ID
     spec_id = filesourcename.split("ifu"+indir+"_")[-1].split("_" +
                                                               object_name)[0]
-    
     # Missing plot format
     prop_missing = dict(fontsize=20, textprop=dict(color="C1"))
 
@@ -79,7 +78,6 @@ def build_image_report(indir=None, fspec=None):
     all_spectra_files = glob.glob("spec*"+fspec+"*.png")
     extention = "%s.png" % object_name
     pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)[0]
-    # Use header to get SNID results (add later)
     if not is_std:
         typed_spectra = [f for f in all_spectra_files
                          if not f.endswith(extention)]
