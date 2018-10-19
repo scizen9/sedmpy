@@ -41,7 +41,8 @@ def parse_and_fill(spec, snidoutput):
     comments in the original file, so that these could be used in the marshal.
     """
     
-    pars = {"zmed": -1, "zmederr": -1, "agem": -1, "agemerr": -1, "templ": "",
+    pars = {"zmed": -1, "zmederr": -1, "agemed": -1, "agemederr": -1,
+            "templ": "", "bestMatchAge": -1,
             "Ia": 0, "Ib": 0, "Ic": 0, "II": 0, "NotSN": 0, "rlap": 0,
             "bestMatchType": "", "bestMatchSubtype": "", "bestMatchRedshift": 0}
 
@@ -69,9 +70,10 @@ def parse_and_fill(spec, snidoutput):
             pars["II"] = float(lines[type_ii_line].split()[2])
             pars["NotSN"] = float(lines[type_not_sn_line].split()[2])
             pars["rlap"] = float(lines[best_match_line].split()[4])
+            pars["templ"] = lines[best_match_line].split()[1]
+            pars["bestMatchAge"] = float(lines[best_match_line].split()[7])
             # Test type
             typstr = lines[best_match_line].split()[2]
-            templstr = lines[best_match_line].split()[1]
             sntype = ''.join(c for c in typstr if ord(c) >= 32)
             if len(sntype) > 0:
                 pars["bestMatchType"] = sntype.split("-")[0]
@@ -79,7 +81,6 @@ def parse_and_fill(spec, snidoutput):
                     pars["bestMatchSubtype"] = sntype.split("-")[1]
                 else:
                     pars["bestMatchSubtype"] = '-'
-                pars["templ"] = templstr
             else:
                 pars["bestMatchType"] = "None"
                 pars["bestMatchSubtype"] = '-'
@@ -121,17 +122,25 @@ def parse_and_fill(spec, snidoutput):
             ff[0].header['SNIDFIA'] = (pars["Ia"], 'SNID Fraction SN Ia')
             spec_lines.insert(comment_lines_count,
                               "# SNIDAGEMERR: " + str(pars["agemerr"]) + "\n")
-            ff[0].header['SNIDEAGE'] = (pars["agemerr"],
-                                        'SNID Age match err (days)')
+            ff[0].header['SNIDAMER'] = (pars["agemerr"],
+                                        'SNID Age med err (days)')
             spec_lines.insert(comment_lines_count,
-                              "# SNIDAGEM: " + str(pars["agem"]) + "\n")
-            ff[0].header['SNIDMAGE'] = (pars["agem"], 'SNID Age match (days)')
+                              "# SNIDAMED: " + str(pars["agem"]) + "\n")
+            ff[0].header['SNIDMAGE'] = (pars["agem"], 'SNID Age med (days)')
             spec_lines.insert(comment_lines_count,
                               "# SNIDZMEDERR: " + str(pars["zmederr"]) + "\n")
             ff[0].header['SNIDZMER'] = (pars["zmederr"], 'SNID z med err')
             spec_lines.insert(comment_lines_count,
                               "# SNIDZMED: " + str(pars["zmed"]) + "\n")
             ff[0].header['SNIDZMED'] = (pars["zmed"], 'SNID z med')
+            spec_lines.insert(comment_lines_count,
+                              "# SNIDMATCHTEMPLATE: " + pars["templ"] + "\n")
+            ff[0].header['SNIDTEMP'] = (pars["templ"], 'SNID match template')
+            spec_lines.insert(comment_lines_count,
+                              "# SNIDMATCHAGE: " +
+                              str(pars["bestMatchAge"]) + "\n")
+            ff[0].header['SNIDAMAT'] = (pars["bestMatchAge"],
+                                        'SNID match age (days)')
             spec_lines.insert(comment_lines_count,
                               "# SNIDMATCHREDSHIFT: " +
                               str(pars["bestMatchRedshift"]) + "\n")
