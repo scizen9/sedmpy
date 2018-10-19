@@ -239,7 +239,7 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
         src (str): source file
         dest (str): destination file
         onsky (bool): test for dome conditions or not
-        verbose (bool): logging.info() messages?
+        verbose (bool): output messages?
         skip_cals (bool): skip copying cal images?
 
     Returns:
@@ -263,7 +263,7 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
     # Check if dome conditions are not right
     if onsky and ('CLOSED' in dome or 'closed' in dome):
         if verbose:
-            logging.info('On sky and dome is closed, skipping %s' % src)
+            logging.warning('On sky and dome is closed, skipping %s' % src)
     # All other conditions are OK
     else:
         # Skip test and Focus images
@@ -290,7 +290,7 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
             if obs_id > 0:
                 logging.info("SEDM db accepted observation at id %d" % obs_id)
             else:
-                logging.info("SEDM db rejected observation")
+                logging.warning("SEDM db rejected observation")
         # Report skipping and type
         else:
             if verbose and 'test' in obj:
@@ -339,7 +339,7 @@ def update_observation(input_fitsfile):
             else:
                 obs_dict[key] = ff[0].header[hk]
         else:
-            logging.info("Header keyword not found: %s" % hk)
+            logging.warning("Header keyword not found: %s" % hk)
     ff.close()
 
     sedmdb = db.SedmDb.SedmDB()
@@ -439,7 +439,7 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
             logging.info("spec cal item not found: %s" % flatmap)
 
     else:
-        logging.info("Source dir does not exist: %s" % src)
+        logging.warning("Source dir does not exist: %s" % src)
 
     spec_calib_dict['utdate'] = utdate
     spec_calib_dict['drpver'] = drp_ver
@@ -478,13 +478,13 @@ def proc_bias_crrs(ncp=1, piggyback=False):
                 # Make bias + bias subtraction
                 retcode = subprocess.call(("make", "-j", "16", "bias"))
                 if retcode != 0:
-                    logging.info("bias failed, try again")
+                    logging.warning("bias failed, try again")
                     retcode = subprocess.call(("make", "bias"))
                 if retcode == 0:
                     # Make CR rejection
                     retcode = subprocess.call(("make", "-j", "8", "crrs"))
                     if retcode != 0:
-                        logging.info("crrs failed, try again")
+                        logging.warning("crrs failed, try again")
                         retcode = subprocess.call(("make", "-j", "8", "crrs"))
                     # Success on all fronts!
                     if retcode == 0:
@@ -493,13 +493,13 @@ def proc_bias_crrs(ncp=1, piggyback=False):
                         ret = True
                     # Report failures
                     else:
-                        logging.info("could not make crrs")
+                        logging.error("could not make crrs")
                 else:
-                    logging.info("could not make bias")
+                    logging.error("could not make bias")
             else:
-                logging.info("could not make plan")
+                logging.error("could not make plan")
         else:
-            logging.info("could not make what.list")
+            logging.error("could not make what.list")
 
     return ret
     # END: proc_bias_crrs
@@ -562,9 +562,9 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
     # Do bias subtraction, CR rejection
     if ncp > 0:
         if not proc_bias_crrs(ncp):
-            logging.info("Error processing bias/crrs")
+            logging.error("Error processing bias/crrs")
         if datestr is None:
-            logging.info("Illegal datestr parameter")
+            logging.error("Illegal datestr parameter")
             return 0, None
 
     return ncp, copied
@@ -630,21 +630,21 @@ def dosci(destdir='./', datestr=None):
                 retcode = subprocess.call(cmd)
                 # Check results
                 if retcode != 0:
-                    logging.info("Error generating cube for " + fn)
+                    logging.error("Error generating cube for " + fn)
                 else:
                     # Update SedmDb cube table
                     cube_id = update_cube(f)
                     if cube_id > 0:
                         logging.info("SEDM db accepted cube at id %d" % cube_id)
                     else:
-                        logging.info("SEDM db rejected cube")
+                        logging.warning("SEDM db rejected cube")
                     # Use auto psf aperture for standard stars
                     logging.info("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
-                        logging.info("Error extracting std star spectra for "
+                        logging.error("Error extracting std star spectra for "
                                      + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
@@ -656,7 +656,7 @@ def dosci(destdir='./', datestr=None):
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.info("Error running report for " +
+                            logging.error("Error running report for " +
                                          fn.split('.')[0])
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
@@ -672,14 +672,14 @@ def dosci(destdir='./', datestr=None):
                 retcode = subprocess.call(cmd)
                 # Check results
                 if retcode != 0:
-                    logging.info("Error generating cube for " + fn)
+                    logging.error("Error generating cube for " + fn)
                 else:
                     # Update SedmDb cube table
                     cube_id = update_cube(f)
                     if cube_id > 0:
                         logging.info("SEDM db accepted cube at id %d" % cube_id)
                     else:
-                        logging.info("SEDM db rejected cube")
+                        logging.warning("SEDM db rejected cube")
                     # Use forced psf for science targets
                     logging.info("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -687,7 +687,7 @@ def dosci(destdir='./', datestr=None):
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
-                        logging.info("Error extracting object spectrum for "
+                        logging.error("Error extracting object spectrum for "
                                      + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
@@ -699,19 +699,19 @@ def dosci(destdir='./', datestr=None):
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.info("Error running SNID")
+                            logging.error("Error running SNID")
                         cmd = ("pysedm_report.py", datestr, "--contains",
                                fn.split('.')[0], "--slack")
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.info("Error running report for " +
+                            logging.error("Error running report for " +
                                          fn.split('.')[0])
                         # Upload spectrum to marshal
                         cmd = ("make", "ztfupload")
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.info("Error uploading spectra to marshal")
+                            logging.error("Error uploading spectra to marshal")
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
@@ -722,7 +722,7 @@ def dosci(destdir='./', datestr=None):
                             email_user(proced, datestr, obj)
                             # TODO: update spec table in SedmDb
                         else:
-                            logging.info("Not found: %s" % proced)
+                            logging.error("Not found: %s" % proced)
     return ncp, copied
     # END: dosci
 
@@ -753,7 +753,7 @@ def update_cube(input_fitsfile):
 
     # Check list
     if len(cube_list) != 1:
-        logging.info("ERROR: Ambiguous cube list")
+        logging.error("ERROR: Ambiguous cube list")
         return -1
 
     # Read header
@@ -765,7 +765,7 @@ def update_cube(input_fitsfile):
         if hk in ff[0].header:
             cube_dict[key] = ff[0].header[hk]
         else:
-            logging.info("Header keyword not found: %s" % hk)
+            logging.warning("Header keyword not found: %s" % hk)
     ff.close()
 
     # Open database connection
@@ -789,7 +789,7 @@ def update_cube(input_fitsfile):
         logging.info(status)
         return cube_id
     else:
-        logging.info("ERROR: no spec_calib_id found for %s" % utdate)
+        logging.error("ERROR: no spec_calib_id found for %s" % utdate)
         return -1
     # END: update_cube
 
@@ -848,7 +848,7 @@ def find_recent(redd, fname, destdir, dstr):
     # Make sure the file doesn't already exist in destdir
     local_file = glob.glob(os.path.join(destdir, dstr + fname))
     if len(local_file) == 1:
-        logging.info("%s already exists in %s" % (fname, destdir))
+        logging.warning("%s already exists in %s" % (fname, destdir))
         ret = True
     # Search in redd for file
     else:
@@ -866,7 +866,7 @@ def find_recent(redd, fname, destdir, dstr):
                              (fname, d, destdir))
                 break
     if not ret:
-        logging.info(dstr + fname + " not found")
+        logging.warning(dstr + fname + " not found")
 
     return ret
 
@@ -892,7 +892,7 @@ def find_recent_bias(redd, fname, destdir):
     # Make sure the file doesn't already exist in destdir
     local_file = glob.glob(os.path.join(destdir, fname))
     if len(local_file) == 1:
-        logging.info("%s already exists in %s" % (fname, destdir))
+        logging.warning("%s already exists in %s" % (fname, destdir))
         ret = True
     # Search in redd for file
     else:
@@ -910,7 +910,7 @@ def find_recent_bias(redd, fname, destdir):
                              (fname, d, os.path.join(destdir, fname)))
                 break
     if not ret:
-        logging.info("%s not found" % fname)
+        logging.warning("%s not found" % fname)
     return ret
 
 
@@ -935,7 +935,7 @@ def find_recent_fluxcal(redd, fname, destdir):
     # Make sure the file doesn't already exist in destdir
     local_file = glob.glob(os.path.join(destdir, fname))
     if len(local_file) >= 1:
-        logging.info("%s already exists in %s" % (fname, destdir))
+        logging.warning("%s already exists in %s" % (fname, destdir))
         ret = True
     # Search in redd for file
     else:
@@ -961,7 +961,7 @@ def find_recent_fluxcal(redd, fname, destdir):
                     newfile = os.path.join(destdir, s.split('/')[-1])
                     os.symlink(s, newfile)
                 except OSError:
-                    logging.info("File already exists: %s" % newfile)
+                    logging.warning("File already exists: %s" % newfile)
                 ret = True
                 logging.info("Found %s in directory %s, linking to %s" %
                              (fname, d, newfile))
@@ -969,7 +969,7 @@ def find_recent_fluxcal(redd, fname, destdir):
             if ret:
                 break
     if not ret:
-        logging.info("%s not found" % fname)
+        logging.warning("%s not found" % fname)
     return ret
 
 
@@ -1044,7 +1044,8 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
                                                        verbose=True)
                                     ncp += nc
                             else:
-                                logging.info("Bad dome - lamp not on: %s" % src)
+                                logging.warning("Bad dome - lamp not on: %s"
+                                                % src)
                     # Check for arcs
                     elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
                         if exptime > 25.:
@@ -1062,7 +1063,7 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
                                                    verbose=True)
                                 ncp += nc
             else:
-                logging.info("Truncated file: %s" % src)
+                logging.warning("Truncated file: %s" % src)
 
     return ncp
     # END: cpprecal
@@ -1135,7 +1136,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
                                                verbose=True)
                             ncp += nc
                         else:
-                            logging.info("Bad dome - lamp not on: %s" % src)
+                            logging.warning("Bad dome - lamp not on: %s" % src)
                 # Check for arcs
                 elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
                     if exptime > 25.:
@@ -1274,7 +1275,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 retcode = subprocess.call("~/spy what ifu*.fits > what.list",
                                           shell=True)
                 if retcode != 0:
-                    logging.info("what oops!")
+                    logging.error("what oops!")
 
         # Process calibrations if we are using them
         if cal_proc_ready(outdir, mintest=True, test_cal_ims=piggyback):
@@ -1336,7 +1337,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                         logging.info("Making of %s_Flat.fits failed!"
                                      % cur_date_str)
                 else:
-                    logging.info("Making of %s cube failed!" % cur_date_str)
+                    logging.error("Making of %s cube failed!" % cur_date_str)
                 procf_time = int(time.time() - start_time)
                 # Report times
                 logging.info("Calibration processing took "
@@ -1346,7 +1347,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
 
         # Check status
         if not cube_ready(outdir, cur_date_str):
-            logging.info("These calibrations failed!")
+            logging.error("These calibrations failed!")
             logging.info("Let's get our calibrations from a previous night")
             nct = find_recent(redd, '_TraceMatch.pkl', outdir,
                               cur_date_str)
