@@ -116,9 +116,9 @@ def parse_and_fill(spec, snidoutput):
                                         'SNID match age (days)')
             ff[0].header['SNIDTEMP'] = (pars["templ"], 'SNID match template')
             ff[0].header['SNIDZMED'] = (pars["zmed"], 'SNID z med')
-            ff[0].header['SNIDZMER'] = (pars["zmederr"], 'SNID z med err')
-            ff[0].header['SNIDMAGE'] = (pars["agem"], 'SNID Age med (days)')
-            ff[0].header['SNIDAMER'] = (pars["agemerr"],
+            ff[0].header['SNIDZERR'] = (pars["zmederr"], 'SNID z med err')
+            ff[0].header['SNIDAMED'] = (pars["agem"], 'SNID Age med (days)')
+            ff[0].header['SNIDAERR'] = (pars["agemerr"],
                                         'SNID Age med err (days)')
             ff[0].header['SNIDFIA'] = (pars["Ia"], 'SNID Fraction SN Ia')
             ff[0].header['SNIDFIB'] = (pars["Ib"], 'SNID Fraction SN Ib')
@@ -137,9 +137,9 @@ def parse_and_fill(spec, snidoutput):
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_IA: " + str(pars["Ia"]) + "\n")
             spec_lines.insert(comment_lines_count,
-                              "# SNIDAGEMERR: " + str(pars["agemerr"]) + "\n")
+                              "# SNIDAGEMEDERR: " + str(pars["agemerr"]) + "\n")
             spec_lines.insert(comment_lines_count,
-                              "# SNIDAMED: " + str(pars["agem"]) + "\n")
+                              "# SNIDAGEMED: " + str(pars["agem"]) + "\n")
             spec_lines.insert(comment_lines_count,
                               "# SNIDZMEDERR: " + str(pars["zmederr"]) + "\n")
             spec_lines.insert(comment_lines_count,
