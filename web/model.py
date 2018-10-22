@@ -1307,7 +1307,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     </div>
                   </div>""".format(2, impathlink, impath, 400, 400)
             if show_finder:
-
+                # Check if finders exists in redux directory and if not then
+                # log at the old phot directory location
                 path1 = os.path.join(redux_dir, obsdate, 'finders')
                 path2 = os.path.join(phot_dir, obsdate, 'finders')
 
