@@ -34,7 +34,7 @@ import codecs
 
 parser = SafeConfigParser()
 
-configfile = os.environ["SEDMCONFIG"]
+configfile = '/scr7/rsw/sedmpy/drprc/config/sedmconfig.cfg'
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:

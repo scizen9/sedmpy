@@ -20,12 +20,14 @@ from astropy.io import fits
 from matplotlib import pylab as plt
 import numpy as np
 
-from ConfigParser import SafeConfigParser
+
+from configparser import ConfigParser
+
 import codecs
 
-parser = SafeConfigParser()
+parser = ConfigParser()
 
-configfile = os.environ["SEDMCONFIG"]
+configfile = '/scr7/rsw/sedmpy/drprc/config/sedmconfig.cfg' #os.environ["SEDMCONFIG"]
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
@@ -47,7 +49,7 @@ logger = logging.getLogger('realtimered')
 def reduce_all_dir(photdir, overwrite=False):
     
     #Reduce the data that is already in the directory.
-    cmd = "python %s/rcred.py -d %s"%(os.environ["SEDMPH"], photdir)    
+    cmd = "/scr7/rsw/anaconda3/bin/python rcred.py -d %s" % photdir
     if (overwrite):
         cmd = cmd + " -o"
     subprocess.call(cmd, shell=True)
@@ -58,15 +60,15 @@ def reduce_all_dir(photdir, overwrite=False):
     reducedname = os.path.join(photdir, "reduced")
 
     #Reduce the data that is already in the directory.
-    cmd = "python %s/zeropoint.py  %s"%(os.environ["SEDMPH"], reducedname)    
+    cmd = "/scr7/rsw/anaconda3/bin/python zeropoint.py  %s"%(reducedname)
     subprocess.call(cmd, shell=True)
     logger.info("zeropoint for all dir: %s"%cmd)
     
     if (os.path.isdir(reducedname)):
-    	cmd = "rcp -r %s grbuser@transient.caltech.edu:/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s"%(reducedname, dayname)
-    	subprocess.call(cmd, shell=True)
+        cmd = "rcp -r %s grbuser@transient.caltech.edu:/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s"%(reducedname, dayname)
+        subprocess.call(cmd, shell=True)
     else:
-	os.makedirs(reducedname)
+        os.makedirs(reducedname)
 
 def plot_image(image):
     '''
@@ -88,10 +90,10 @@ def plot_image(image):
         os.makedirs(png_dir)
 
     try:
-    	f = fits.open(image)[0]
+        f = fits.open(image)[0]
     except:
-	logger.error("FATAL! Could not open image %s."%image)
-	return
+        logger.error("FATAL! Could not open image %s."%image)
+        return
     d = f.data
     h = f.header
     imtype = h.get('IMGTYPE', 0)
@@ -161,13 +163,10 @@ def reduce_on_the_fly(photdir):
     
          
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=\
-        '''
-
+    parser = argparse.ArgumentParser(description='''
         Runs astrometry.net on the image specified as a parameter and returns 
         the offset needed to be applied in order to center the object coordinates 
         in the reference pixel.
-            
         ''', formatter_class=argparse.RawTextHelpFormatter)
 
 
@@ -180,7 +179,8 @@ if __name__ == '__main__':
     photdir = args.photdir
     fullred = args.fullred
     overwrite = args.overwrite
-    
+    fullred = True
+    photdir = '/scr7/rsw/sedm/phot/20181018/'
     if (photdir is None):
         timestamp=datetime.datetime.isoformat(datetime.datetime.utcnow())
         timestamp = timestamp.split("T")[0].replace("-","")
