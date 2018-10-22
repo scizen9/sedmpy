@@ -1186,12 +1186,22 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
                 if len(object_ids) == 1:
                     object_id = object_ids[0][0]
-                else:
+                elif len(object_ids) > 1:
                     # TODO       what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
                     print(object_ids)
                     object_id = object_ids[-1][0]
+                elif not object_ids and ('at' in targ_name.lower() \
+                                      or 'sn' in targ_name.lower()):
+                    # sometimes it's at 2018abc not at2018abc in the db
+                    targ_name = targ_name[:2] + ' ' + targ_name[2:]
+                    object_ids = db.get_object_id_from_name(targ_name)
+                    try:
+                        object_id = object_ids[-1][0]
+                    except IndexError:
+                        print("There was an error. You can't see this")
+                    
 
                 target_requests = db.get_from_request(values=['allocation_id'],
                                                       where_dict={'object_id':

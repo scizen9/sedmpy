@@ -184,7 +184,7 @@ classify:
 	$(REPORT) | tee report.txt
 
 finalreport:
-	cat report*.txt | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,rsw@astro.caltech.edu,nblago@caltech.edu,fremling@caltech.edu,ah@astro.caltech.edu,yashuvatsas@gmail.com,tda@lists.astro.caltech.edu
+	cat report*.txt | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,rsw@astro.caltech.edu,nblago@caltech.edu,fremling@caltech.edu,ah@astro.caltech.edu,adugas@caltech.edu,tda@lists.astro.caltech.edu
 
 """
 

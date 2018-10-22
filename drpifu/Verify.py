@@ -62,9 +62,8 @@ def build_image_report(indir=None, fspec=None):
     # Spectrum ID
     spec_id = filesourcename.split("ifu"+indir+"_")[-1].split("_" +
                                                               object_name)[0]
-    
     # Missing plot format
-    prop_missing = dict(fontsize=26, textprop=dict(color="C1"))
+    prop_missing = dict(fontsize=20, textprop=dict(color="C1"))
 
     # Spaxels used:
     try:

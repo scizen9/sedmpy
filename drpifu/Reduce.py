@@ -24,6 +24,10 @@ import os
 import argparse
 import subprocess
 import astropy.io.fits as pf
+try:
+    import drpifu.AutoReduce as drp
+except ImportError:
+    import AutoReduce as drp
 
 
 def cube_ready(caldir='./', cur_date_str=None):
@@ -235,7 +239,8 @@ def proc_bias_crrs(ncp=1, piggyback=False):
     # END: proc_bias_crrs
 
 
-def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
+def dosci(destdir='./', datestr=None, ztfupld=False, slack=False,
+          dbupdate=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -248,6 +253,7 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
         datestr (str): YYYYMMDD date string
         ztfupld (bool): upload to ZTF marshal?
         slack (bool): upload to pysedm-report Slack channel?
+        dbupdate (bool): update SEDm database?
 
     Returns:
         int: Number of ifu images actually copied
@@ -272,7 +278,7 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
             hdr = ff[0].header
             ff.close()
             # Get OBJECT keyword
-            obj = hdr['OBJECT']
+            obj = hdr['OBJECT'].split()[0]
             # Get DOMEST keyword
             dome = hdr['DOMEST']
             # skip Cal files
@@ -289,94 +295,119 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False):
                 # Build cube for STD observation
                 print("Building STD cube for " + fn)
                 # Don't solve WCS for standards (always brightest in IFU)
-                cmd = "ccd_to_cube.py %s --build %s --noguider" % (datestr, fn)
-                print(cmd)
-                retcode = subprocess.call(cmd, shell=True)
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--noguider")
+                print(" ".join(cmd), flush=True)
+                retcode = subprocess.call(cmd)
                 # Check results
                 if retcode > 0:
                     print("Error generating cube for " + fn)
                 else:
+                    if dbupdate:
+                        # Update SedmDb cube table
+                        cube_id = drp.update_cube(f)
+                        if cube_id > 0:
+                            print("SEDM db accepted cube at id %d" % cube_id)
+                        else:
+                            print("SEDM db rejected cube")
                     # Use auto psf aperture for standard stars
                     print("Extracting std star spectra for " + fn)
-                    cmd = "extract_star.py %s --auto %s --std" % (datestr, fn)
-                    print(cmd)
-                    retcode = subprocess.call(cmd, shell=True)
-                    if retcode > 0:
+                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
+                    print(" ".join(cmd), flush=True)
+                    retcode = subprocess.call(cmd)
+                    if retcode != 0:
                         print("Error extracting std star spectra for " + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
-                        cmd = "touch %s" % badfn
-                        subprocess.call(cmd, shell=True)
+                        cmd = ("touch", badfn)
+                        subprocess.call(cmd)
                     else:
                         if slack:
-                            cmd = "pysedm_report.py %s --contains %s --slack" %\
-                                  (datestr, fn.split('.')[0])
+                            cmd = ("pysedm_report.py", datestr, "--contains",
+                                   fn.split('.')[0], "--slack")
                         else:
-                            cmd = "pysedm_report.py %s --contains %s" % \
-                                  (datestr, fn.split('.')[0])
-                        print(cmd)
-                        retcode = subprocess.call(cmd, shell=True)
-                        if retcode > 0:
+                            cmd = ("pysedm_report.py", datestr, "--contains",
+                                   fn.split('.')[0])
+                        print(" ".join(cmd), flush=True)
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
                             print("Error running report for " +
                                   fn.split('.')[0])
+                        # run Verify.py
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                              (datestr, fn.split('.')[0])
+                        subprocess.call(cmd, shell=True)
+                        # TODO: update SedmDb spec table
             else:
                 # Build cube for science observation
                 print("Building science cube for " + fn)
                 # Solve WCS for science targets
-                cmd = "ccd_to_cube.py %s --build %s --solvewcs" % (datestr, fn)
-                print(cmd)
-                retcode = subprocess.call(cmd, shell=True)
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
+                print(" ".join(cmd), flush=True)
+                retcode = subprocess.call(cmd)
                 # Check results
-                if retcode > 0:
+                if retcode != 0:
                     print("Error generating cube for " + fn)
                 else:
-                    # Use forced psf for faint targets
+                    if dbupdate:
+                        # Update SedmDb cube table
+                        cube_id = drp.update_cube(f)
+                        if cube_id > 0:
+                            print("SEDM db accepted cube at id %d" % cube_id)
+                        else:
+                            print("SEDM db rejected cube")
+                    # Use forced psf for science targets
                     print("Extracting object spectra for " + fn)
-                    cmd = "extract_star.py %s --auto %s --autobins 6" \
-                          % (datestr, fn)
-                    print(cmd)
-                    retcode = subprocess.call(cmd, shell=True)
-                    if retcode > 0:
+                    cmd = ("extract_star.py", datestr, "--auto", fn,
+                           "--autobins", "6")
+                    print(" ".join(cmd), flush=True)
+                    retcode = subprocess.call(cmd)
+                    if retcode != 0:
                         print("Error extracting object spectrum for " + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
-                        cmd = "touch %s" % badfn
-                        subprocess.call(cmd, shell=True)
+                        cmd = ("touch", badfn)
+                        subprocess.call(cmd)
                     else:
                         print("Running SNID for " + fn)
-                        cmd = "make classify"
-                        print(cmd)
-                        retcode = subprocess.call(cmd, shell=True)
+                        cmd = ("make", "classify")
+                        print(" ".join(cmd), flush=True)
+                        retcode = subprocess.call(cmd)
                         if retcode > 0:
                             print("Error running SNID")
                         if slack:
-                            cmd = "pysedm_report.py %s --contains %s --slack" %\
-                                  (datestr, fn.split('.')[0])
+                            cmd = ("pysedm_report.py", "--contains",
+                                   fn.split('.')[0], "--slack")
                         else:
-                            cmd = "pysedm_report.py %s --contains %s" % \
-                                  (datestr, fn.split('.')[0])
-                        print(cmd)
-                        retcode = subprocess.call(cmd, shell=True)
-                        if retcode > 0:
+                            cmd = ("pysedm_report.py", "--contains",
+                                   fn.split('.')[0])
+                        print(" ".join(cmd), flush=True)
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
                             print("Error running report for " +
                                   fn.split('.')[0])
                         # Upload spectrum to marshal
                         if ztfupld:
-                            cmd = "make ztfupload"
-                            retcode = subprocess.call(cmd, shell=True)
-                            if retcode > 0:
+                            cmd = ("make", "ztfupload")
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
                                 print("Error uploading spectra to marshal")
+                        # run Verify.py
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                              (datestr, fn.split('.')[0])
+                        subprocess.call(cmd, shell=True)
+                        # TODO: update SedmDb spec table
     return ncp, copied
     # END: dosci
 
 
-def red_loop(outdir=None, upld=False, slack=False):
+def red_loop(outdir=None, upld=False, slack=False, dbup=False):
     """One night observing loop: processes calibrations and science data
 
     Args:
         outdir (str): directory for single night processing
         upld (bool): upload to ZTF marshal?
         slack (bool): upload to pysedm-report Slack channel?
+        dbup (bool): update the SEDm database
 
     Returns:
         bool: True if night completed normally, False otherwise
@@ -406,7 +437,8 @@ def red_loop(outdir=None, upld=False, slack=False):
             start_time = time.time()
             if proc_bias_crrs(20):
                 procb_time = int(time.time() - start_time)
-                subprocess.call("make calimgs", shell=True)
+                # Make cal images
+                subprocess.call(("make", "calimgs"))
                 # Process calibration
                 start_time = time.time()
                 cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
@@ -415,7 +447,7 @@ def red_loop(outdir=None, upld=False, slack=False):
                 subprocess.call(cmd)
                 procg_time = int(time.time() - start_time)
                 if os.path.exists(
-                        os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
+                   os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
                     # Process wavelengths
                     start_time = time.time()
                     # Spawn nsub sub-processes to solve wavelengths faster
@@ -450,7 +482,9 @@ def red_loop(outdir=None, upld=False, slack=False):
                        os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
                         # Process flat
                         start_time = time.time()
-                        subprocess.call(("ccd_to_cube.py", cur_date_str, "--flat"))
+                        cmd = ("ccd_to_cube.py", cur_date_str, "--flat")
+                        print(" ".join(cmd), flush=True)
+                        subprocess.call(cmd)
                         if not (os.path.exists(
                                 os.path.join(outdir, cur_date_str + '_Flat.fits'))):
                             print("Making of %s_Flat.fits failed!" % cur_date_str)
@@ -469,11 +503,16 @@ def red_loop(outdir=None, upld=False, slack=False):
     else:
         print("Calibrations already present in %s" % outdir)
 
+    if dbup:
+        # Update spec_calib table in sedmdb
+        spec_calib_id = drp.update_calibration(cur_date_str)
+        print("SEDM db accepted spec_calib at id %d" % spec_calib_id)
+
     print("Calibration stage complete, ready for science!")
     # process files
     start_time = time.time()
     nsci, science = dosci(outdir, datestr=cur_date_str, ztfupld=upld,
-                          slack=slack)
+                          slack=slack, dbupdate=dbup)
     # We copied some new ones so report processing time
 
     proc_time = int(time.time() - start_time)
@@ -495,6 +534,9 @@ if __name__ == '__main__':
                         help='Upload to ZTF marshal')
     parser.add_argument('--toslack', action="store_true", default=False,
                         help='Upload to pysedm-report Slack channel')
+    parser.add_argument('--dbupdate', action="store_true", default=False,
+                        help='Update SEDm database')
+
     args = parser.parse_args()
 
     # Get current directory
@@ -508,4 +550,5 @@ if __name__ == '__main__':
         if reduxenv not in reduxdir:
             print("ERROR: setenv SEDMREDUXPATH correctly and try again")
         else:
-            red_loop(outdir=curdir, upld=args.upload, slack=args.toslack)
+            red_loop(outdir=curdir, upld=args.upload, slack=args.toslack,
+                     dbup=args.dbupdate)

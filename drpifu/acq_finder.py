@@ -297,8 +297,8 @@ if __name__ == "__main__":
         # We generate only one finder for each object.
         name = f.split('/')[-1].split(".")[0]
         objnam = objnam.split()[0]
-        filter = fitsutils.get_par(f, "FILTER")
-        finderplotf = 'finder_%s_%s_%s.png' % (name, objnam, filter)
+        filt = fitsutils.get_par(f, "FILTER")
+        finderplotf = 'finder_%s_%s_%s.png' % (name, objnam, filt)
         finderpath = os.path.join(reduxdir, os.path.join("finders/",
                                                          finderplotf))
         # Check if it was already done
@@ -306,7 +306,7 @@ if __name__ == "__main__":
             # link rc image into reduxdir
             dest = os.path.join(reduxdir, f.split('/')[-1])
             if os.path.isfile(dest):
-                print("%s already exists" % dest)
+                print("RC ACQ image already exists: %s" % dest)
             else:
                 os.symlink(f, dest)
             print("Solving astrometry", dest)
@@ -316,9 +316,13 @@ if __name__ == "__main__":
                 returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                               dest])
                 if returncode != 0:
+                    print("Astrometry failed, re-running")
+                    returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
+                                                  dest])
+                if returncode != 0:
                     print("Astrometry failed for %s, skipping finder %s" %
                           (dest, finderpath))
-                continue
+                    continue
             else:
                 print("Astrometry file already exists: %s" % astrof)
             # Check results
@@ -339,4 +343,4 @@ if __name__ == "__main__":
                 print(sys.exc_info()[0])
                 simple_finder_astro(astrof, finderpath)
         else:
-            print("%s already exists" % finderpath)
+            print("Finder already exists: %s" % finderpath)
