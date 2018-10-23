@@ -438,6 +438,26 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
         else:
             logging.info("spec cal item not found: %s" % flatmap)
 
+        stats = os.path.join(src, utdate + '_wavesolution_stats.txt')
+        if os.path.exists(stats):
+            with open(stats) as sf:
+                stat_line = sf.readline()
+                while stat_line:
+                    if 'NSpax' in stat_line:
+                        spec_calib_dict['nspaxels'] = int(stat_line.split()[-1])
+                    elif 'minRMS' in stat_line:
+                        spec_calib_dict['wave_rms_min'] = \
+                            float(stat_line.split()[-1])
+                    elif 'avgRMS' in stat_line:
+                        spec_calib_dict['wave_rms_avg'] = \
+                        float(stat_line.split()[-1])
+                    elif 'maxRMS' in stat_line:
+                        spec_calib_dict['wave_rms_max'] = \
+                        float(stat_line.split()[-1])
+                    stat_line = sf.readline()
+        else:
+            logging.info("spec cal item not found: %s" % stats)
+
     else:
         logging.warning("Source dir does not exist: %s" % src)
 
