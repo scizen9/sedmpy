@@ -139,9 +139,11 @@ def data_static(filename):
     :return:
     '''
     _p, _f = os.path.split(filename)
-
     if _f.startswith('finder') and 'ACQ' in _f:
-        return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
+        if 'redux' in _p:
+            return send_from_directory(os.path.join(config['path']['path_archive'], _p, 'finders'), _f)
+        else:
+            return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
     elif _f.startswith('rc') or _f.startswith('finder') or 'ACQ' in _f:
         return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
     else:
