@@ -1263,16 +1263,21 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                                                                 fits_file)))
 
             e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
+
+            spec_ascii_list = glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir,
+                                                                     fits_file))
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list,
                                       'spec_list': spec_list,
-                                      'e3d_list': e3d_list}
+                                      'e3d_list': e3d_list,
+                                      'spec_ascii_list': spec_ascii_list}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
                 science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
                                                              'spec_list': spec_list,
-                                                             'e3d_list': e3d_list}
+                                                             'e3d_list': e3d_list,
+                                                             'spec_ascii_list': spec_ascii_list}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
@@ -1300,7 +1305,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     div_str += ('<div class="col-md-{2}">'
                                 '<a href="%s">E3D File</a>'
                                 '</div>' % impath)
-
+                if obj_data['spec_ascii_list']:
+                    for j in obj_data['spec_ascii_list']:
+                        impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
+                        div_str += ('<div class="col-md-{2}">'
+                                    '<a href="%s">ASCII Spec File</a>'
+                                    '</div>' % impath)
             # ToDO: Grab data from somewhere to put in the meta data column
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
