@@ -1083,6 +1083,18 @@ def get_science_products(user_id="", obsdate="", camera_type=""):
         return {'message': "Need to add RC case"}
 
 
+def get_rc_products(obsdir, user_id, obsdate="", product_type='all'):
+    # Look first to make sure there is a data directory.
+    if not os.path.exists(obsdir):
+        return {'message': 'No data directory could be located for %s UT' %
+                           os.path.basename(os.path.normpath(obsdir)),
+                'obsdate': obsdate}
+
+    if not obsdate:
+        obsdate = os.path.basename(os.path.normpath(obsdir))
+    sedm_dict = {'obsdate': obsdate,
+                 'sci_data': ''}
+
 def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                      product_type='all'):
     """
@@ -1763,6 +1775,35 @@ def get_config_paths():
         'path_phot': phot_dir,
         'path_raw': raw_dir})
 
+
+def get_marshal_id(marshal='growth', request_id=None):
+    """
+    
+    :param marshal: 
+    :param request_id: 
+    :return: 
+    """
+
+    try:
+        request_id = int(request_id)
+    except Exception as e:
+        return {'error': str(e)}
+
+    ret = db.get_from_request(values=['marshal_id'],
+                               where_dict={'id': request_id})
+    if not ret:
+        return {'error': "No object found with that id number"}
+
+    if marshal == 'growth':
+        ret = make_dict_from_dbget(['marshal_id'], ret[0])
+        if isinstance(ret['marshal_id'], int) and ret['marshal_id'] <= 100:
+            return {'error': "Request is not a valid growth marshal request"}
+        elif isinstance(ret['marshal_id'], str):
+            return {'error': ret['marshal_id']}
+        elif not ret['marshal_id']:
+            return {'error': ret['marshal_id']}
+        else:
+            return ret
 
 def make_dict_from_dbget(headers, data, decimal_to_float=True):
     """

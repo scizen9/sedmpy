@@ -139,9 +139,11 @@ def data_static(filename):
     :return:
     '''
     _p, _f = os.path.split(filename)
-
     if _f.startswith('finder') and 'ACQ' in _f:
-        return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
+        if os.path.exists(os.path.join(config['path']['path_archive'], _p, 'finders', _f)):
+            return send_from_directory(os.path.join(config['path']['path_archive'], _p, 'finders'), _f)
+        else:
+            return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
     elif _f.startswith('rc') or _f.startswith('finder') or 'ACQ' in _f:
         return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
     else:
@@ -170,6 +172,22 @@ def weather_stats():
     out['css_resources'] = INLINE.render_css()
     return render_template('weather_stats.html', sedm_dict=out)
 
+@app.route('/get_marshal_id', methods=['GET', 'POST'])
+def get_marhsal_id():
+
+    # 1. If the request method is of type post then we expect this to be a
+    #    submission.
+
+    if request.is_json:
+        if isinstance(request.get_json(), dict):
+            content = request.get_json()
+        else:
+            content = json.loads(request.get_json())
+    else:
+        content = request.args.to_dict(flat=True)
+
+    out = model.get_marshal_id(**content)
+    return jsonify(out)
 
 @app.route('/objects', methods=['GET', 'POST'])
 def objects():
@@ -188,8 +206,6 @@ def project_stats():
     out['js_resources'] = INLINE.render_js()
     out['css_resources'] = INLINE.render_css()
     return render_template('project_stats.html', sedm_dict=out)
-
-
 
 @app.route('/scheduler', methods=['GET', 'POST'])
 def scheduler():
