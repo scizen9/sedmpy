@@ -194,6 +194,7 @@ def objects():
     #form = AddFixedRequest()
     return render_template('sedm_base.html')
 
+
 @app.route('/project_stats', methods=['GET', 'POST'])
 def project_stats():
     #form = AddFixedRequest()
