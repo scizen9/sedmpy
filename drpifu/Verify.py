@@ -104,19 +104,21 @@ def build_image_report(indir=None, fspec=None):
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
-        # Do we have more than one finder for this object name?
-        if len(finder_file) > 1:
-            for f in finder_file:
-                # Use the one that is closest to the observation time
-                if abs(t_obs - time_from_fspec(filespec=f, imtype="rc")) < 120:
-                    finder_file = [f]
-                    break
-        # Get first item in list
-        finder_file = finder_file[0]
+        # Get delta time = (t_obs - t_acq)
+        off_time_list = []
+        for f in finder_file:
+            off_time_list.append(abs(t_obs - time_from_fspec(filespec=f,
+                                                             imtype="rc")))
+        off_min = min(off_time_list)
+        # Use the one that is closest to the observation time
+        for f in finder_file:
+            t_off = abs(t_obs - time_from_fspec(filespec=f, imtype="rc"))
+            if t_off == off_min:
+                finder_file = f
+                break
         # Check time offset
-        t_off = abs(t_obs - time_from_fspec(filespec=finder_file, imtype="rc"))
-        if t_off > 120:
-            print("Warning: time offset = %d > 120s" % t_off)
+        if off_min > 120:
+            print("Warning: time offset = %d > 120s" % off_min)
 
         img_find = pil.Image.open(finder_file)
     except IndexError:
