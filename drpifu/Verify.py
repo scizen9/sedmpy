@@ -104,26 +104,31 @@ def build_image_report(indir=None, fspec=None):
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
-        # Get delta time = (t_obs - t_acq)
-        off_time_list = []
-        for f in finder_file:
-            off_time_list.append(abs(t_obs - time_from_fspec(filespec=f,
-                                                             imtype="rc")))
-        off_min = min(off_time_list)
-        # Use the one that is closest to the observation time
-        for f in finder_file:
-            t_off = abs(t_obs - time_from_fspec(filespec=f, imtype="rc"))
-            if t_off == off_min:
-                finder_file = f
-                break
-        # Check time offset
-        if off_min > 120:
-            print("Warning: time offset = %d > 120s" % off_min)
+        if finder_file:
+            # Get delta time = (t_obs - t_acq)
+            off_time_list = []
+            for f in finder_file:
+                off_time_list.append(abs(t_obs - time_from_fspec(filespec=f,
+                                                                 imtype="rc")))
+            off_min = min(off_time_list)
+            # Use the one that is closest to the observation time
+            for f in finder_file:
+                t_off = abs(t_obs - time_from_fspec(filespec=f, imtype="rc"))
+                if t_off == off_min:
+                    finder_file = f
+                    break
+            # Check time offset
+            if off_min > 120:
+                print("Warning: time offset = %d > 120s" % off_min)
 
-        img_find = pil.Image.open(finder_file)
+            img_find = pil.Image.open(finder_file)
+        else:
+            print("Cannot find %s" % fspec)
+            img_find = pil.get_buffer([10, 7], "Finder image missing",
+                                      **prop_missing)
     except IndexError:
         print("Cannot find %s" % fspec)
-        img_find = pil.get_buffer([13, 7], "Finder image missing",
+        img_find = pil.get_buffer([10, 7], "Finder image missing",
                                   **prop_missing)
 
     # ---------
@@ -135,7 +140,7 @@ def build_image_report(indir=None, fspec=None):
         img_psf = pil.Image.open(psf_file).crop((50, 0, 995, 500))
     except IndexError:
         print("Cannot find psfprofile image")
-        img_psf = pil.get_buffer([15, 4], "PSF Profile image missing",
+        img_psf = pil.get_buffer([10, 4], "PSF Profile image missing",
                                  **prop_missing)
 
     # ============== #
