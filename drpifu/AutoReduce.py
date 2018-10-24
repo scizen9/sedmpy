@@ -445,13 +445,13 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                 while stat_line:
                     if 'NSpax' in stat_line:
                         spec_calib_dict['nspaxels'] = int(stat_line.split()[-1])
-                    elif 'minRMS' in stat_line:
+                    elif 'MinRMS' in stat_line:
                         spec_calib_dict['wave_rms_min'] = \
                             float(stat_line.split()[-1])
-                    elif 'avgRMS' in stat_line:
+                    elif 'AvgRMS' in stat_line:
                         spec_calib_dict['wave_rms_avg'] = \
                         float(stat_line.split()[-1])
-                    elif 'maxRMS' in stat_line:
+                    elif 'MaxRMS' in stat_line:
                         spec_calib_dict['wave_rms_max'] = \
                         float(stat_line.split()[-1])
                     stat_line = sf.readline()
