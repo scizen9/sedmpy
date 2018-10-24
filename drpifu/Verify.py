@@ -124,11 +124,11 @@ def build_image_report(indir=None, fspec=None):
             img_find = pil.Image.open(finder_file)
         else:
             print("Cannot find %s" % fspec)
-            img_find = pil.get_buffer([10, 7], "Finder image missing",
+            img_find = pil.get_buffer([8, 7], "Finder image missing",
                                       **prop_missing)
     except IndexError:
         print("Cannot find %s" % fspec)
-        img_find = pil.get_buffer([10, 7], "Finder image missing",
+        img_find = pil.get_buffer([8, 7], "Finder image missing",
                                   **prop_missing)
 
     # ---------
@@ -140,7 +140,7 @@ def build_image_report(indir=None, fspec=None):
         img_psf = pil.Image.open(psf_file).crop((50, 0, 995, 500))
     except IndexError:
         print("Cannot find psfprofile image")
-        img_psf = pil.get_buffer([10, 4], "PSF Profile image missing",
+        img_psf = pil.get_buffer([8, 4], "PSF Profile image missing",
                                  **prop_missing)
 
     # ============== #
