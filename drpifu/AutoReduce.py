@@ -703,7 +703,7 @@ def dosci(destdir='./', datestr=None):
                     # Use forced psf for science targets
                     logging.info("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
-                           "--autobins", "6")
+                           "--autobins", "6", "--tag", "robot")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:

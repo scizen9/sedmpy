@@ -9,6 +9,7 @@ if __name__ == "__main__":
     import subprocess
     import argparse
     import logging
+    import datetime
 
     logging.basicConfig(
         format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -32,6 +33,9 @@ if __name__ == "__main__":
     if not args.obs_id:
         logging.info("Usage - redex <obs_id> [<x> <y>]")
     else:
+        # Get tag id
+        now = datetime.datetime.now()
+        tagstr = "redo%02d%02d%02.0f" % (now.hour, now.minute, now.second)
         # Check inputs and environment
         ob_id = args.obs_id
         dd = os.getcwd().split('/')[-1]
@@ -46,7 +50,7 @@ if __name__ == "__main__":
             xs = args.new_x
             ys = args.new_y
             pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins", "6",
-                    "--centroid", xs, ys]
+                    "--centroid", xs, ys, "--tag", tagstr]
             logging.info("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
@@ -54,7 +58,7 @@ if __name__ == "__main__":
                 sys.exit(1)
         else:
             pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins", "6",
-                    "--display"]
+                    "--display", "--tag", tagstr]
             logging.info("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
