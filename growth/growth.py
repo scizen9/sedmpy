@@ -213,7 +213,7 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
                                           shell=True, universal_newlines=True)
             if k.upper() == 'EXPTIME':
                 outstr = out.split(sep, 1)[-1]
-                return_dict[k] = int(outstr.split('.')[0])
+                return_dict[k] = float(outstr)
             elif v.upper() == 'OBSDATE':
                 date_str = out.split(sep, 1)[-1]
                 out = subprocess.check_output('grep OBSTIME %s' % inputfile,
