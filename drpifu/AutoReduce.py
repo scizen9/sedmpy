@@ -258,8 +258,16 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
     hdr = f[0].header
     f.close()
     # Get OBJECT and DOMEST keywords
-    obj = hdr['OBJECT']
-    dome = hdr['DOMEST']
+    try:
+        obj = hdr['OBJECT']
+    except KeyError:
+        logging.warning("Could not find OBJECT keyword, setting to Test")
+        obj = 'Test'
+    try:
+        dome = hdr['DOMEST']
+    except KeyError:
+        logging.warning("Could not find DOMEST keyword, setting to null")
+        dome = ''
     # Check if dome conditions are not right
     if onsky and ('CLOSED' in dome or 'closed' in dome):
         if verbose:
@@ -626,9 +634,19 @@ def dosci(destdir='./', datestr=None):
             hdr = ff[0].header
             ff.close()
             # Get OBJECT keyword
-            obj = hdr['OBJECT'].split()[0]
+            try:
+                obj = hdr['OBJECT'].split()[0]
+            except KeyError:
+                logging.warning(
+                    "Could not find OBJECT keyword, setting to Test")
+                obj = 'Test'
             # Get DOMEST keyword
-            dome = hdr['DOMEST']
+            try:
+                dome = hdr['DOMEST']
+            except KeyError:
+                logging.warning(
+                    "Could not find DOMEST keyword, settting to null")
+                dome = ''
             # skip Cal files
             if 'Calib:' in obj:
                 continue
