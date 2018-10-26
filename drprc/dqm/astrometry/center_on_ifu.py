@@ -8,7 +8,7 @@ import subprocess
 import time
 
 
-def solve_astrometry(img, radius=3.0, with_pix=True,
+def solve_astrometry(img, radius=2.5, with_pix=True,
                      first_call=False, tweak=3):
     """
     
@@ -41,7 +41,7 @@ def solve_astrometry(img, radius=3.0, with_pix=True,
                                                       astro, tweak, img))
 
     if with_pix:
-        cmd = cmd + " --scale-units arcsecperpix  --scale-low 0.375 --scale-high 0.425 --"
+        cmd = cmd + " --scale-units arcsecperpix  --scale-low 0.275 --scale-high 0.425 --"
 
     print(cmd)
 
@@ -183,7 +183,9 @@ def find_average_offsets(obsdate):
 
 
 def calculate_offset(raw_image, overwrite=True, use_brightest=True,
-                     use_closest=False, use_average=False):
+                     use_closest=False, use_average=False,
+                     parse_directory_from_file=True,
+                     base_dir="/data2/sedm/"):
     """
     
     :param raw_image: 
@@ -193,6 +195,10 @@ def calculate_offset(raw_image, overwrite=True, use_brightest=True,
     :param use_average: 
     :return: 
     """
+
+    if parse_directory_from_file:
+        raw_image = raw_image.split('/')[-2:]
+        raw_image = os.path.join(base_dir, raw_image[0], raw_image[1])
 
     # 1. Check if the solved output file exist for the raw file, we
     # expect the files to be in the same directory.

@@ -1,13 +1,22 @@
 import json
 from string import Template
 import datetime
-import psycopg2
-import psycopg2.extras
 import pandas as pd
 import astroplan
-import os
 from astropy.time import Time, TimeDelta
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
+import astropy.units as u
+import numpy as np
+import os
+
+computer = os.uname()[1] # a quick fix
+
+if computer == 'pele':
+    from db.SedmDb import SedmDB
+elif computer == 'pharos':
+    from db.SedmDb import SedmD
+elif computer == 'modon':
+    from db.SedmDb import SedmD
 
 SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 json_url = os.path.join(SITE_ROOT, 'config.json')
@@ -15,7 +24,6 @@ json_url = os.path.join(SITE_ROOT, 'config.json')
 
 class ScheduleNight:
     def __init__(self, obsdatetime=None, config_file=json_url):
-
         # 1. Load config file
         with open(config_file, 'r') as fp:
             params = json.load(fp)
@@ -34,9 +42,7 @@ class ScheduleNight:
         self.running_obs_time = None
         self.conn = None
         self.cursor = None
-        self.conn_str = ("dbname=%(db)s user=%(user)s host=%(host)s "
-                         "password=%(password)s port=%(port)s" % (params['database']))
-
+        self.ph_db = SedmDB(host='pharos.caltech.edu')
         self.target_frame = None
         self.req_query = Template("""SELECT r.id AS req_id, r.object_id AS obj_id, 
                                     r.user_id, r.marshal_id, r.exptime, r.maxairmass,
@@ -89,7 +95,6 @@ class ScheduleNight:
         """
 
         return astroplan.FixedTarget(name=row['objname'], coord=row['SkyCoords'])
-
 
     def _set_target_ha(self, row):
         """
@@ -161,7 +166,7 @@ class ScheduleNight:
         for i in range(len(seq)):
 
             flt = seq[i][-1]
-            flt_exptime =int(exptime[i])
+            flt_exptime = int(exptime[i])
             flt_repeat = int(seq[i][:-1])
             # 4a. After parsing the indivual elements we need to check that
             # they are
@@ -196,16 +201,11 @@ class ScheduleNight:
             'ifu_total': ifu_total,
             'rc': rc,
             'rc_obs_dict': obs_dict,
-            'rc_total': rc_total*target['seq_repeats'],
-            'total': ifu_total + (rc_total*target['seq_repeats'])
+            'rc_total': rc_total * target['seq_repeats'],
+            'total': ifu_total + (rc_total * target['seq_repeats'])
         }
 
         return obs_seq_dict
-
-    def db(self):
-        return psycopg2.connect(self.conn_str)
-
-
 
     def get_query(self, query, return_type=''):
         """
@@ -215,22 +215,16 @@ class ScheduleNight:
         :return: 
         """
 
-        if not self.conn:
-            self.conn = self.db()
-
         if return_type == 'df':
-            df = pd.read_sql_query(query, self.conn)
-            return df
+            return pd.read_sql_query(query, self.ph_db.get_conn_sedmDB())
         else:
-            self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            self.cursor.execute(query)
-            return self.cursor.fetchall()
+            return self.ph_db.execute_sql(return_type='dict')
 
     def load_targets(self, where_statement="", and_statement="",
                      group_statement="", order_statement="",
                      return_type=""):
         """
-        
+
         :param return_type: 
         :param where_statement: 
         :param and_statement: 
@@ -241,7 +235,7 @@ class ScheduleNight:
 
         if not where_statement:
             enddate = datetime.datetime.utcnow()
-            where_statement = "WHERE r.enddate > '%s' " % enddate
+            where_statement = "WHERE r.enddate > '%s' AND r.object_id > 100 " % enddate
 
         if not and_statement:
             and_statement = "AND r.status = 'PENDING'"
@@ -252,13 +246,13 @@ class ScheduleNight:
                                           order_statement=order_statement)
 
         results = self.get_query(query, return_type=return_type)
-
+        print(results)
         return results
 
-    def simulate_night(self, start_time='', end_time='', do_focus=True, do_standard=True,
-                       block_list='P,P,P,C', add_columns=True, save_as='', return_type=''):
+    def simulate_night(self, start_time='', end_time='', do_focus=True,
+                       do_standard=True):
         """
-        
+
         :param start_time: 
         :param end_time: 
         :param do_focus: 
@@ -281,21 +275,16 @@ class ScheduleNight:
         # 2. Get all targets
         targets = self.load_targets(return_type='df')
         targets = self._set_target_coordinates(targets)
+        targets['HA'] = targets.apply(self._set_target_ha, axis=1)
         targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
-        print(targets['allocation_id'])
-        targets = targets.sort_values(['priority', 'ra'], ascending=[False, True])
+
+        targets = targets.sort_values(['priority', 'HA'], ascending=[False, True])
 
         # 3. Go through all the targets until we fill up the night
         current_time = start_time
-        count = 0
-        obslist = []
 
-        block = 0
-        if isinstance(block_list, str):
-            block_list = block_list.split(",")
-
-        while current_time <= end_time and count < 1000:
-
+        while current_time <= end_time:
+            print(current_time.iso)
             # Include focus time?
             if do_focus:
                 current_time += TimeDelta(300, format='sec')
@@ -309,85 +298,76 @@ class ScheduleNight:
             if time_remaining.sec <= 0:
                 break
 
-            # Get the current observing block
-            if block > len(block_list):
-                block = 0
+            z = self.get_next_observable_target(targets, obs_time=current_time,
+                                                max_time=time_remaining)
 
-            observing_block = block_list[block]
-
-            idx, t = self.get_next_observable_target(targets, obs_time=current_time,
-                                                     max_time=time_remaining)
-
-            if idx:
-                targets = targets[targets.req_id != idx]
-                obslist.append({**t, **{'obs_time': current_time.datetime}})
-            elif time_remaining.sec >= 300:
-                obslist.append({'name': "STANDARD OBS", "ifu_total": 300,
-                                'priority': -1, "rc_total": 0,
-                                "obs_time": current_time.datetime})
-                t = {'total': 300}
+            print(z, 'z')
+            idx, t = z
+            if not idx:
+                current_time += TimeDelta(300, format='sec')
+                print("Standard")
             else:
-                break
-            targets = self._set_target_coordinates(targets)
-            current_time += TimeDelta(t['total'], format='sec')
+                targets = targets[targets.req_id != idx]
+                print(t)
+                current_time += TimeDelta(t['total'], format='sec')
 
-            count += 1
-
-        if return_type == 'table':
-            table_str = """<table class="table table-striped"><tr>
-            <th>Projected Time</th><th>Priority</th><th>Name</th>
-            <th>IFU Exptime</th><th>RC Exptime</th></tr>"""
-            for i in obslist:
-                table_str += ('<tr><td>%s</td><td>%s</td><td>%s</td>'
-                              '<td>%s</td><td>%s</td></tr>' %
-                              (i['obs_time'], i['priority'],
-                               i['name'], i['ifu_total'], i['rc_total']))
-            table_str += "</table>"
-
-        return table_str
-
-
-    def get_next_observable_target(self, target_list, obs_time, max_time=-1,
-                                   airmass=(1, 2.2),  moon_sep=(30, 180),
-                                   block_type=''):
+    def get_next_observable_target(self, target_list=None, obs_time=None,
+                                   max_time=-1, airmass=(1, 1.8),
+                                   moon_sep=(30, 180), ignore_target=None):
         """
-        
+
         :return: 
         """
+        print(obs_time)
 
         # If the target_list is empty then all we can do is return back no
         # target and do a standard for the time being
         next_target = False
 
-        if target_list.empty:
-            return next_target, ""
+        if not isinstance(target_list, pd.DataFrame) and not target_list:
+            targets = self.load_targets(return_type='df')
+            targets = self._set_target_coordinates(targets)
+            targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
+            target_list = targets.sort_values(['priority', 'ra'], ascending=[False, True])
+
+        if len(target_list) == 0:
+            return next_target, False
+
+        if not obs_time:
+            obs_time = Time(datetime.datetime.utcnow())
 
         for row in target_list.itertuples():
+            start = obs_time
+            finish = start + TimeDelta(row.obs_dict['total'],
+                                       format='sec')
 
-            constraint = astroplan.AirmassConstraint(min=airmass[0],
-                                                     max=airmass[1])
+            constraint = [astroplan.AirmassConstraint(min=airmass[0],
+                                                      max=airmass[1]),
+                          astroplan.AtNightConstraint.twilight_astronomical(),
+                          astroplan.MoonSeparationConstraint(min=moon_sep[0] * u.degree)
+                          ]
 
             if row.typedesig == 'f':
                 if astroplan.is_observable(constraint, self.obs_site,
                                            row.FixedObject,
-                                           times=[obs_time]):
+                                           times=[obs_time, finish]):
+                    print(row.objname, row.ra, row.dec)
+                    return row.req_id, row.obs_dict
 
-                    return_dict = {'name': row.objname,
-                                   'priority': row.priority}
+        # If we make it back out of the loop then there was no observable target
+        return next_target, False
 
-                    return row.req_id, {**row.obs_dict, **return_dict}
-
-        return False, False
-
-
-    def get_observing_times(self, obsdatetime=None):
+    def get_observing_times(self, obsdatetime=None, return_type=''):
         """
-        
+
+        :param return_type: 
         :param obsdatetime: 
         :return: 
         """
         if obsdatetime:
             self.obsdatetime = obsdatetime
+        else:
+            self.obsdatetime = datetime.datetime.utcnow()
 
         obstime = Time(self.obsdatetime)
         sun_set = self.obs_site.sun_set_time(obstime, which="nearest")
@@ -400,32 +380,239 @@ class ScheduleNight:
             print('Using nearest')
             which = 'nearest'
 
-        return {'sun_set':
-                     self.obs_site.sun_set_time(obstime,
-                                                which=which),
-                     'sun_rise':
-                         self.obs_site.sun_rise_time(obstime,
-                                                     which=which),
-                     'evening_civil':
-                         self.obs_site.twilight_evening_civil(obstime,
-                                                              which=which),
-                     'evening_nautical':
-                         self.obs_site.twilight_evening_nautical(obstime,
-                                                                 which=which),
-                     'evening_astronomical':
-                         self.obs_site.twilight_evening_astronomical(obstime,
-                                                                     which=which),
-                     'morning_civil':
-                         self.obs_site.twilight_morning_civil(obstime,
-                                                              which=which),
-                     'morning_nautical':
-                         self.obs_site.twilight_morning_nautical(obstime,
-                                                                 which=which),
-                     'morning_astronomical':
-                         self.obs_site.twilight_morning_astronomical(obstime,
-                                                                     which=which)}
+        ret = {'sun_set':
+                   self.obs_site.sun_set_time(obstime,
+                                              which=which),
+               'sun_rise':
+                   self.obs_site.sun_rise_time(obstime,
+                                               which=which),
+               'evening_civil':
+                   self.obs_site.twilight_evening_civil(obstime,
+                                                        which=which),
+               'evening_nautical':
+                   self.obs_site.twilight_evening_nautical(obstime,
+                                                           which=which),
+               'evening_astronomical':
+                   self.obs_site.twilight_evening_astronomical(obstime,
+                                                               which=which),
+               'morning_civil':
+                   self.obs_site.twilight_morning_civil(obstime,
+                                                        which=which),
+               'morning_nautical':
+                   self.obs_site.twilight_morning_nautical(obstime,
+                                                           which=which),
+               'morning_astronomical':
+                   self.obs_site.twilight_morning_astronomical(obstime,
+                                                               which=which)}
 
+        if return_type == 'json':
+            json_dict = {k: v.iso for k, v in ret.items()}
+            return json_dict
+        else:
+            return ret
 
+    def get_lst(self, obsdatetime=None):
+        if obsdatetime:
+            self.obsdatetime = obsdatetime
+
+        obstime = Time(self.obsdatetime)
+
+        return self.obs_site.local_sidereal_time(obstime)
+
+    def get_sun(self, obsdatetime=None):
+        if obsdatetime:
+            self.obsdatetime = obsdatetime
+
+        obstime = Time(self.obsdatetime)
+
+        return self.obs_site.sun_altaz(obstime)
+
+    def get_twilight_coords(self, obsdatetime=None, dec=33.33):
+        """
+
+        :param obsdatetime: 
+        :param dec: 
+        :return: 
+        """
+        if obsdatetime:
+            self.obsdatetime = obsdatetime
+
+        # Get sidereal time
+        lst = self.get_lst()
+
+        ra = lst.degree - 45
+
+        if ra < 0:
+            ra = 360 + ra
+
+        return {'ra': round(ra, 4),
+                'dec': dec}
+
+    def get_twilight_exptime(self, obsdatetime=None, camera='rc'):
+        """
+
+        :param obsdatetime: 
+        :param dec: 
+        :return: 
+        """
+        if obsdatetime:
+            self.obsdatetime = obsdatetime
+
+        # Get sun angle
+        sun_pos = self.get_sun()
+        sun_angle = sun_pos.alt.degree
+
+        if -10 >= sun_angle >= -12:
+            exptime = 120
+        elif -8 >= sun_angle >= -10:
+            exptime = 60
+        elif -6 >= sun_angle >= -8:
+            exptime = 30
+        elif -4 >= sun_angle >= -6:
+            exptime = 1
+        else:
+            exptime = 1
+
+        if camera == 'ifu':
+            exptime *= 1.5
+
+        return {'exptime': exptime}
+
+    def get_focus_coords(self, obsdatetime=None, dec=33.33):
+        """
+
+        :param obsdatetime: 
+        :param dec: 
+        :return: 
+        """
+        if obsdatetime:
+            self.obsdatetime = obsdatetime
+
+        # Get sidereal time
+        lst = self.get_lst()
+
+        ra = lst.degree
+
+        return {'ra': round(ra, 4),
+                'dec': dec}
+
+    def get_standard_request_id(self, name="", exptime=180):
+        """
+
+        :param name: 
+        :param exptime: 
+        :return: bool, id
+        """
+        object_id = self.ph_db.get_object_id_from_name(name)
+        for obj in object_id:
+            if obj[1].lower() == name.lower():
+                object_id = obj[0]
+                break
+
+        print(object_id)
+
+        start = datetime.datetime.utcnow()
+        end = datetime.timedelta(days=1) + start
+        request_dict = {'obs_seq': '{1ifu}',
+                        'exptime': '{%s}' % int(exptime),
+                        'object_id': object_id,
+                        'marshal_id': '-1',
+                        'user_id': 2,
+                        'allocation_id': '20180131224646741',
+                        'priority': '-1',
+                        'inidate': start.strftime("%Y-%m-%d"),
+                        'enddate': end.strftime("%Y-%m-%d"),
+                        'maxairmass': '2.5',
+                        'status': 'PENDING',
+                        'max_fwhm': '10',
+                        'min_moon_dist': '30',
+                        'max_moon_illum': '1',
+                        'max_cloud_cover': '1',
+                        'seq_repeats': '1',
+                        'seq_completed': '0'}
+
+        return {'object_id': object_id,
+                'request_id': self.ph_db.add_request(request_dict)[0]}
+
+    def filter_offsets(self, ra, dec, offset_filter=None):
+
+        """
+        Get a filter offset dictionary
+        :param ra:
+        :param dec:
+        :return:
+        """
+        try:
+            filter_dict = {
+                'r': {'ra': None, 'dec': None},
+                'g': {'ra': None, 'dec': None},
+                'i': {'ra': None, 'dec': None},
+                'u': {'ra': None, 'dec': None},
+                'ifu': {'ra': None, 'dec': None}
+            }
+
+            if not offset_filter:
+                offset_filter = {
+                    'r': {'ra': 130, 'dec': 110},
+                    'g': {'ra': -325, 'dec': -328},
+                    'i': {'ra': -320, 'dec': 93},
+                    'u': {'ra': 111, 'dec': -328},
+                    'ifu': {'ra': -97, 'dec': -98}
+                }
+
+            obj = SkyCoord(ra=ra, dec=dec, unit=(u.deg, u.deg))
+            for k, v in offset_filter.items():
+                offra = (Angle(offset_filter[k]['ra'], unit=u.arcsec) /
+                         np.cos(obj.dec.to('radian')))
+                offdec = Angle(offset_filter[k]['dec'], unit=u.arcsec)
+
+                new_pos = SkyCoord(obj.ra + offra, obj.dec + offdec, frame='icrs')
+                filter_dict[k]['ra'] = round(new_pos.ra.value, 6)
+                filter_dict[k]['dec'] = round(new_pos.dec.value, 6)
+
+            return True, filter_dict
+        except Exception as e:
+            print(str(e))
+            return False, str(e)
+
+    def get_calib_request_id(self, camera='ifu', N=1, object_id="", exptime=0):
+        """
+
+        :param camera: 
+        :param N: 
+        :param object_id: 
+        :param exptime: 
+        :return: 
+        """
+
+        if camera == 'ifu':
+            pass
+        elif camera == 'rc':
+            camera = 'r'
+        else:
+            return {'request_id': ''}
+
+        start = datetime.datetime.utcnow()
+        end = datetime.timedelta(days=1) + start
+        request_dict = {'obs_seq': '{%s%s}' % (N, camera),
+                        'exptime': '{%s}' % int(exptime),
+                        'object_id': object_id,
+                        'marshal_id': '-1',
+                        'user_id': 2,
+                        'allocation_id': '20180131224646741',
+                        'priority': '-1',
+                        'inidate': start.strftime("%Y-%m-%d"),
+                        'enddate': end.strftime("%Y-%m-%d"),
+                        'maxairmass': '2.5',
+                        'status': 'PENDING',
+                        'max_fwhm': '10',
+                        'min_moon_dist': '30',
+                        'max_moon_illum': '1',
+                        'max_cloud_cover': '1',
+                        'seq_repeats': '1',
+                        'seq_completed': '0'}
+
+        return {'request_id': self.ph_db.add_request(request_dict)[0]}
 
 
 if __name__ == "__main__":
@@ -433,6 +620,8 @@ if __name__ == "__main__":
 
     x = ScheduleNight()
     s = time.time()
-    print(x.obs_times)
-    print(x.simulate_night(return_type='table'))
-    print(time.time()-s)
+
+    print(x.get_observing_times(return_type='json'))
+    # print(x.get_standard_request_id(name='HZ44', exptime=90))
+    print(x.simulate_night())
+    print(time.time() - s)
