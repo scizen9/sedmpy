@@ -8,10 +8,10 @@ import datetime
 import sys
 try:
     from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
-    from marshal_commenter import sourcelist, auth
+    from marshal_commenter import auth
 except ImportError:
     from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
-    from growth.marshal_commenter import sourcelist, auth
+    from growth.marshal_commenter import auth
 
 
 # Path constants
@@ -499,8 +499,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 spec_stat = 'IFU: Failed'
             else:
                 spec_stat = 'IFU: Complete'
-                annots_posted = add_annots(spectra_file, auth, 
-                                           sourcelist=sourcelist)
+                annots_posted = add_annots(spectra_file, auth)
                 if annots_posted:
                     print("Annotations successfully posted")
                 else:

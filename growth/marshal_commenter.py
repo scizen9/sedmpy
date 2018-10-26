@@ -6,9 +6,7 @@ from pprint import pprint
 import json
 
 growth_base_url = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
-growth_source_summary_url = growth_base_url + 'source_summary.cgi?sourceid='
-growth_list_all_sources_url = growth_base_url + \
-                             'list_program_sources.cgi?programidx=-1'
+growth_source_summary_url = growth_base_url + 'source_summary.cgi?sourcename='
 
 try:
     user, pwd = open('/home/sedm/.growth_creds.txt', 'r').readlines()[0].split()
@@ -19,14 +17,8 @@ except FileNotFoundError:
     print("ERROR - could not find credentials file!")
     auth = None
 
-if auth:
-    sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
-                              data={'programidx': -1}, auth=auth).json()
-else:
-    sourcelist = None
 
-
-def get_missing_info(ztfname, obsdate, sourceid, sourcelist, specid):
+def get_missing_info(ztfname, obsdate, sourceid, specid):
     """
     #TODO this is currently being called 5 times per object, which may
         include a lot of downloading the same thing repeatedly.
@@ -35,20 +27,23 @@ def get_missing_info(ztfname, obsdate, sourceid, sourcelist, specid):
     """
 
     obsdate = obsdate.replace('-', '')  # YYYYMMDD or YYYY-MM-DD or Y-YY-YM-MDD
+
+    source_summary = None
+
     if not sourceid:
-        if not sourcelist:
-            sourcelist = requests.get(growth_list_all_sources_url,
-                                      auth=auth).json()
+        if not source_summary:
+            source_summary = requests.get(growth_source_summary_url
+                                          + ztfname, auth=auth).json()
         try:
-            sourceid = [source['id'] for source in sourcelist
-                        if source['name'] == ztfname][-1]
-        except IndexError:
-            print("you probably don't have permissions to view this source")
-            raise
+            sourceid = source_summary['id']
+        except IndexError as e:
+            print(e)
+            print("ERROR - count not get id from source summary")
 
     if not specid:
-        source_summary = requests.get(growth_source_summary_url
-                                      + str(sourceid), auth=auth).json()
+        if not source_summary:
+            source_summary = requests.get(growth_source_summary_url
+                                          + ztfname, auth=auth).json()
         try:
             specid = [spec['specid']
                       for spec in source_summary['uploaded_spectra']
@@ -61,32 +56,31 @@ def get_missing_info(ztfname, obsdate, sourceid, sourcelist, specid):
                     for spec in source_summary['uploaded_spectra']
                     if spec['instrumentid'] == 65])
             raise
-    return sourceid, sourcelist, specid
+    return sourceid, specid
 
 
-def add_spec_attachment(ztfname, comment, filename, auth, sourceid=None,
-                        specid=None, obsdate=None, sourcelist=None):
+def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
+                        specid=None, obsdate=None):
     """
     adds a comment (not autoannotation) with attachment to a particular SEDM
     spectrum on the view_spec page, which will also appear elsewhere.
 
     ztfname: 'ZTF18aaaaaa', for example
     comment: <str>
+    fname: <str> spec file name
+    cred: (<str>, <str>) credentials
     sourceid: <int> around ~4000
     specid: <int> around ~1700. faster if you provide it
     obsdate: 'YYYYMMDD', necessary for finding the correct spectrum. Assumes
             exactly 1 SEDM spectrum that night
-    sourcelist: list of sources in your program, from list_program_sources.cgi.
-            If you don't know sourceid it's faster if you provide it
 
     return: True if success, False if not
     """
 
-    sourceid, sourcelist, specid = get_missing_info(ztfname, obsdate, sourceid,
-                                                    sourcelist, specid)
+    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid)
 
-    with open(filename, 'rb') as att:
-        r = requests.post(growth_base_url + "add_spec.cgi", auth=auth,
+    with open(fname, 'rb') as att:
+        r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
                           data={'comment':   comment,
                                 'tablename': 'spec',
                                 'tableid':    specid,
@@ -98,7 +92,7 @@ def add_spec_attachment(ztfname, comment, filename, auth, sourceid=None,
                                 }, files={"attachment": att})
 
     if 'Updating Database' in r.text or 'copied file successfully' in r.text:
-        print('{} uploaded'.format(filename.split('/')[-1]))
+        print('{} uploaded'.format(fname.split('/')[-1]))
         return True
     else:
         print('error submitting comment')
@@ -107,9 +101,8 @@ def add_spec_attachment(ztfname, comment, filename, auth, sourceid=None,
         # return False
 
 
-def add_spec_autoannot(ztfname, value, annot_type, datatype, auth,
-                       sourceid=None, specid=None, obsdate=None,
-                       sourcelist=None):
+def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
+                       sourceid=None, specid=None, obsdate=None):
     """
     adds an autoannotation without attachment to a particular SEDM spectrum
     on the view_spec page, which will also appear elsewhere.
@@ -117,21 +110,18 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, auth,
     ztfname: 'ZTF18aaaaaa', for example
     comment: <str>
     datatype: 'STRING' or 'FLOAT' or 'BOOL'
-    auth: (growth username, growth password) as (<str>, <str>)
+    cred: (growth username, growth password) as (<str>, <str>)
     sourceid: <int> around ~4000
     specid: <int> around ~1700. faster if you provide it
     obsdate: 'YYYYMMDD' or 'YYYY-MM-DD', necessary for finding the correct
             spectrum if no specid. Assumes exactly 1 SEDM spectrum that night
-    sourcelist: list of sources in your program, from list_program_sources.cgi.
-            If you don't know sourceid it's faster if you provide it
 
     return: True if success, False if not
     """
 
-    sourceid, sourcelist, specid = get_missing_info(ztfname, obsdate, sourceid,
-                                                    sourcelist, specid)
+    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid)
 
-    r = requests.post(growth_base_url + "add_spec.cgi", auth=auth,
+    r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
                       data={'comment':    value,
                             'datatype':   datatype,
                             'tablename': 'spec',
@@ -154,71 +144,64 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, auth,
         return False
 
 
-def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
+def add_SNID_pysedm_autoannot(fname, cred):
     """
     if z < 0.3 and rlap > 5.0
         adds autoannotations with SNID rlap, z, type, etc
         adds a comment with the SNID plot attached
 
-    filename: '*ZTF18aaaaaaa.txt' that has a bunch of
+    fname: '*ZTF18aaaaaaa.txt' that has a bunch of
             "# SNIDMATCH[something]: [val]" in the header
-    auth: ('username', 'password')
-    sourcelist: dictionary of sources in your program, from
-            list_program_sources.cgi
+    cred: ('username', 'password')
 
     returns: True if all four comments/attachments works, False
             (and it'll exit early) otherwise
     """
     # TODO if we look at the _snid.output we can get more info, eg phase
-    file_ext = filename.split('.')[-1]
+    file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
-    with open(filename) as f:
+    with open(fname) as f:
         header = {line.split(':', 1)[0][1:].strip().lower():
                   line.split(':', 1)[-1].strip()
                   for line in f if line[0] == '#'}
 
     # get the specid by comparing all the header info
-    if not sourcelist:
-        sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
-                                  data={'programidx': -1}, auth=auth).json()
-    sourceid = [source['id'] for source in sourcelist
-                if source['name'] == header['name']][-1]
+    sourcename = header['name']
     source_summary = requests.get(growth_base_url +
                                   'source_summary.cgi?'
-                                  'sourceid={}'.format(sourceid),
-                                  auth=auth).json()
+                                  'sourcename=%s' % sourcename,
+                                  auth=cred).json()
 
     for spec in source_summary['uploaded_spectra']:
         f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
                          + spec['datapath'],
-                         auth=auth).text
+                         auth=cred).text
         fheader = {line.split(':', 1)[0][1:].strip().lower():
                    line.split(':', 1)[-1].strip()
                    for line in f.split('\n') if '#' in line}
         if header == fheader:
-            specid = spec['specid']
+            # specid = spec['specid']
             break
 
     # PYSEDM_REPORT
     # must be posted after the SNID plot or else it'll be overwritten
     try:
         # TODO use os.path.dir or something
-        pysedm_report = glob(filename.replace(
-            filename.split('/')[-1],
+        pysedm_report = glob(fname.replace(
+            fname.split('/')[-1],
             'pysedm_report_*_{name}*.png'.format(**header)))[-1]
 
         pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
-                                        pysedm_report, auth,
-                                        obsdate=header['obsdate'],
-                                        sourcelist=sourcelist)
+                                        pysedm_report, cred,
+                                        obsdate=header['obsdate'])
     except IndexError:
         print('no pysedm_report for {}?'.format(header['name']))
         pr_posted = False
 
     # SNID RESULTS
-    if not 'snidmatchtype' in header:
-        print(filename, "never run through snid?")
+    if 'snidmatchtype' not in header:
+        print(fname, "never run through snid?")
         return False
         
     if header['snidmatchtype'].lower() == 'none':
@@ -244,9 +227,8 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
     dtypes = {'match': 'STRING', 'rlap': 'FLOAT', 'redshift': 'FLOAT'}
     for key in dtypes:
         if not add_spec_autoannot(header['name'], header['snidmatch' + key],
-                                  'AUTO_SNID_' + key, dtypes[key], auth,
-                                  obsdate=header['obsdate'],
-                                  sourcelist=sourcelist):
+                                  'AUTO_SNID_' + key, dtypes[key], cred,
+                                  obsdate=header['obsdate']):
             return False
 
     if pr_posted:
@@ -254,25 +236,22 @@ def add_SNID_pysedm_autoannot(filename, auth, sourcelist=None):
 
     # SNID PLOT
     # NOTE: this makes a major assumption about the naming scheme of snid plots
-    image_filename = filename.replace('.txt',
+    image_filename = fname.replace('.txt',
                                       '_{}.png'.format(header['snidmatchtype']))
     if not glob(image_filename):
         return False
     add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
-                        auth,  obsdate=header['obsdate'],
-                        sourcelist=sourcelist)
+                        cred,  obsdate=header['obsdate'])
 
     return True
 
 
 if __name__ == "__main__":
     auth = (input('GROWTH marshal username:'), getpass())
-    sourcelist = requests.get(growth_base_url + "list_program_sources.cgi",
-                              data={'programidx': -1}, auth=auth).json()
 
     successes = []
     for filename in glob('*ZTF?????????.txt'):
-        if add_SNID_pysedm_autoannot(filename, auth, sourcelist=sourcelist):
+        if add_SNID_pysedm_autoannot(filename, auth):
             print('success!')
             successes.append(re.findall(r'ZTF\d{2}[a-z]{7}', filename)[-1])
             break
