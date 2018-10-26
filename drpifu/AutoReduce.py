@@ -699,7 +699,12 @@ def dosci(destdir='./', datestr=None):
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
+                        logging.info(cmd)
                         subprocess.call(cmd, shell=True)
+                        # run make report
+                        cmd = ("make", "report")
+                        logging.info(" ".join(cmd))
+                        subprocess.call(cmd)
                         # TODO: update SedmDb spec table
             else:
                 # Build cube for science observation
