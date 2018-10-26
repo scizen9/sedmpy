@@ -210,8 +210,7 @@ def project_stats():
 
 @app.route('/scheduler', methods=['GET', 'POST'])
 def scheduler():
-    table = model.get_schedule()
-    return render_template('scheduler.html', sedm_dict={'schedulerTable': table})
+    return render_template('scheduler.html')
 
 
 @app.route('/search/get_objects', methods=['GET', 'POST'])

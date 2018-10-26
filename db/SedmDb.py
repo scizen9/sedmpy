@@ -1577,7 +1577,7 @@ class SedmDB:
             return -1, "ERROR: request does not exist!"
         keys.remove('id')
         if 'status' in keys:
-            if pardic['status'] not in ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELED', 'EXPIRED']:
+            if pardic['status'] not in ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELED', 'OBSERVED', 'EXPIRED']:
                 return -1, "ERROR: %s is an invalid status value!" % (pardic['status'],)
         for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
             if key not in ['id', 'object_id', 'user_id', 'allocation_id', 'exptime', 'priority', 'status',

@@ -13,8 +13,10 @@ computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
     from db.SedmDb import SedmDB
+    scheduler_path = '/scr7/rsw/sedmpy/web/templates/scheduler_table.html'
 elif computer == 'pharos':
     from db.SedmDb import SedmD
+    scheduler_path = '/scr2/sedm/sedmpy/web/templates/scheduler_table.html'
 elif computer == 'modon':
     from db.SedmDb import SedmD
 
@@ -44,6 +46,19 @@ class ScheduleNight:
         self.cursor = None
         self.ph_db = SedmDB(host='pharos.caltech.edu')
         self.target_frame = None
+        self.tr_row = Template("""<tr id="${allocation}">
+                               <td>${obstime}</td>
+                               <td>${objname}</td>
+                               <td>${contact}</td>
+                               <td>${project}</td>
+                               <td>${ra}</td>
+                               <td>${dec}</td>
+                               <td>${ifu_exptime}</td>
+                               <td>Filters:${rc_seq}<br>Exptime:${rc_exptime}</td>
+                               <td>${total}</td>
+                               <td>Update</td>
+                               </tr>""")
+
         self.req_query = Template("""SELECT r.id AS req_id, r.object_id AS obj_id, 
                                     r.user_id, r.marshal_id, r.exptime, r.maxairmass,
                                     r.max_fwhm, r.min_moon_dist, r.max_moon_illum, 
@@ -55,7 +70,7 @@ class ScheduleNight:
                                     r.lastmodified, r.allocation_id, r.marshal_id, 
                                     o.id, o.name AS objname, o.iauname, o.ra, o."dec",
                                     o.typedesig, o.epoch, o.magnitude, o.creationdate, 
-                                    u.id, u.email, a.id, a.inidate, a.enddate, a.time_spent, 
+                                    u.id, u.email, a.id AS allocation_id, a.inidate, a.enddate, a.time_spent, 
                                     a.time_allocated, a.program_id, a.active, 
                                     p.designator, p.name, p.group_id, p.pi,
                                     p.time_allocated, r.priority, p.inidate,
@@ -250,7 +265,7 @@ class ScheduleNight:
         return results
 
     def simulate_night(self, start_time='', end_time='', do_focus=True,
-                       do_standard=True):
+                       do_standard=True, return_type='html'):
         """
 
         :param start_time: 
@@ -265,12 +280,28 @@ class ScheduleNight:
 
         # 1. Get start and end times
         if not start_time:
-            start_time = self.obs_times['evening_nautical']
-
+            start_time = self.obs_times['evening_astronomical']
+            if datetime.datetime.utcnow() > start_time:
+                start_time = datetime.datetime.utcnow()
         if not end_time:
-            end_time = self.obs_times['morning_nautical']
+            end_time = self.obs_times['morning_astronomical']
 
         self.running_obs_time = start_time
+
+        if return_type == 'html':
+            html_str = """<table class='table'><tr><th>Expected Obs Time</th>
+                              <th>Object Name</th>
+                              <th>Contact</th>
+                              <th>Project ID</th>
+                              <th>RA</th>
+                              <th>DEC</th>
+                              <th>IFU Exptime</th>
+                              <th>RC Exptime</th>
+                              <th>Total Exptime</th>
+                              <th>Update Request</th>
+                              </tr>"""
+        else:
+            html_str = ""
 
         # 2. Get all targets
         targets = self.load_targets(return_type='df')
@@ -279,6 +310,7 @@ class ScheduleNight:
         targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
 
         targets = targets.sort_values(['priority', 'HA'], ascending=[False, True])
+
 
         # 3. Go through all the targets until we fill up the night
         current_time = start_time
@@ -299,21 +331,42 @@ class ScheduleNight:
                 break
 
             z = self.get_next_observable_target(targets, obs_time=current_time,
-                                                max_time=time_remaining)
+                                                max_time=time_remaining,
+                                                return_type=return_type)
 
-            print(z, 'z')
             idx, t = z
+
             if not idx:
-                current_time += TimeDelta(300, format='sec')
-                print("Standard")
+                print(len(targets))
+                if return_type == 'html':
+                    html_str += self.tr_row.substitute({'allocation': '',
+                                                        'obstime': current_time.iso,
+                                            'objname': 'Standard [No other object available observation]',
+                                            'contact': 'SEDm-Calib',
+                                            'project': 'SEDm-Calib',
+                                            'ra': 'NA',
+                                            'dec': 'NA',
+                                            'ifu_exptime': 180,
+                                            'rc_seq': 'NA',
+                                            'rc_exptime': 'NA',
+                                            'total': 180})
+                current_time += TimeDelta(200, format='sec')
             else:
+                if return_type == 'html':
+                    html_str += t[1]
+                    t = t[0]
+
                 targets = targets[targets.req_id != idx]
-                print(t)
                 current_time += TimeDelta(t['total'], format='sec')
+
+        if return_type == 'html':
+            html_str += "</table><br>Last Updated:%s UT" % datetime.datetime.utcnow()
+            return html_str
 
     def get_next_observable_target(self, target_list=None, obs_time=None,
                                    max_time=-1, airmass=(1, 1.8),
-                                   moon_sep=(30, 180), ignore_target=None):
+                                   moon_sep=(30, 180), ignore_target=None,
+                                   return_type=''):
         """
 
         :return: 
@@ -325,6 +378,7 @@ class ScheduleNight:
         next_target = False
 
         if not isinstance(target_list, pd.DataFrame) and not target_list:
+            print("Making a new target list")
             targets = self.load_targets(return_type='df')
             targets = self._set_target_coordinates(targets)
             targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
@@ -352,7 +406,28 @@ class ScheduleNight:
                                            row.FixedObject,
                                            times=[obs_time, finish]):
                     print(row.objname, row.ra, row.dec)
-                    return row.req_id, row.obs_dict
+                    if return_type == 'html':
+                        if row.obs_dict['rc']:
+                            rc_seq = row.obs_dict['rc_obs_dict']['obs_order'],
+                            rc_exptime = row.obs_dict['rc_obs_dict']['obs_exptime'],
+                        else:
+                            rc_seq = 'NA'
+                            rc_exptime = 'NA'
+
+                        html = self.tr_row.substitute({'allocation': row.allocation_id,
+                                                'obstime': obs_time.iso,
+                                                'objname': row.objname,
+                                                'contact': row.email,
+                                                'project': row.designator,
+                                                'ra': row.ra,
+                                                'dec': row.dec,
+                                                'ifu_exptime': row.obs_dict['ifu_exptime'],
+                                                'rc_seq': rc_seq,
+                                                'rc_exptime': rc_exptime,
+                                                'total': row.obs_dict['total']})
+                        return row.req_id, (row.obs_dict, html)
+                    else:
+                        return row.req_id, row.obs_dict
 
         # If we make it back out of the loop then there was no observable target
         return next_target, False
@@ -621,7 +696,12 @@ if __name__ == "__main__":
     x = ScheduleNight()
     s = time.time()
 
-    print(x.get_observing_times(return_type='json'))
+    #print(x.get_observing_times(return_type='json'))
     # print(x.get_standard_request_id(name='HZ44', exptime=90))
-    print(x.simulate_night())
+    r = x.simulate_night()
+
+    data = open(scheduler_path, 'w')
+    data.write(r)
+    data.close()
+
     print(time.time() - s)
