@@ -1,4 +1,8 @@
 import json
+# Required import to bypass the fact there is already a
+# db module that gets imported from kpy
+import sys
+sys.path.append('/scr2/sedm/sedmpy/')
 from string import Template
 import datetime
 import pandas as pd
@@ -266,6 +270,31 @@ class ScheduleNight:
         print(results)
         return results
 
+    def remove_setting_targets(self, target_list, start_time="", end_time="",
+                               airmass=(1, 1.8), moon=(30,180)):
+        """
+        
+        :param targets: 
+        :param obs_time: 
+        :return: 
+        """
+        constraint = [astroplan.AirmassConstraint(min=airmass[0],
+                                                  max=airmass[1]),
+                      astroplan.AtNightConstraint.twilight_astronomical(),
+                      astroplan.MoonSeparationConstraint(min=moon[0] * u.degree)
+                      ]
+        for row in target_list.itertuples():
+            print(start_time.iso, end_time.iso)
+            x = astroplan.is_observable(constraint, self.obs_site,
+                                       row.FixedObject,
+                                       times=[start_time, end_time])
+            print(x)
+            if not x:
+                print(row.objname)
+                target_list = target_list[target_list.req_id != row.req_id]
+
+        return target_list
+
     def simulate_night(self, start_time='', end_time='', do_focus=True,
                        do_standard=True, return_type='html'):
         """
@@ -335,6 +364,9 @@ class ScheduleNight:
             z = self.get_next_observable_target(targets, obs_time=current_time,
                                                 max_time=time_remaining,
                                                 return_type=return_type)
+
+            targets = self.remove_setting_targets(targets, start_time=current_time,
+                                                  end_time=end_time)
 
             idx, t = z
 

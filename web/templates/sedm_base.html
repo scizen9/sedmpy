@@ -39,6 +39,9 @@
                         {% if current_user.name=='SEDM_admin' %}
                             <li><a href="/scheduler">Scheduler</a></li>
                         {% endif %}
+                        {% if current_user.name=='SEDmCzar' %}
+                            <li><a href="/scheduler">Scheduler</a></li>
+                        {% endif %}
                         <li><a href="/project_stats">Project Statistics</a></li>
 
                     <li class="dropdown">
