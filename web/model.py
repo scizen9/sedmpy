@@ -1259,13 +1259,14 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                           glob.glob('%simage_%s*.png' % (obsdir, name)))
 
             spec_list = (glob.glob('%s%s_SEDM.png' % (obsdir, name)) +
-                         glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,
-                                                                fits_file)))
+                         glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,fits_file)) +
+                         glob.glob('%sspec_auto*%s*.png' % (obsdir, fits_file)))
 
             e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
 
-            spec_ascii_list = glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir,
-                                                                     fits_file))
+            spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir, fits_file)) +
+                               glob.glob('%sspec_auto*%s*.txt' % (obsdir, fits_file)))
+
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list,
                                       'spec_list': spec_list,
