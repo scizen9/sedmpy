@@ -8,6 +8,7 @@ from datetime import timedelta
 from werkzeug.security import generate_password_hash
 import os
 import sys
+import psycopg2.extras
 
 import smtplib
 
@@ -65,18 +66,20 @@ class SedmDB:
         self.sso_objects = None
         # Email templates
 
-
     def __getattr__(self, name):
         return getattr(self.instance, name)
 
-    def execute_sql(self, sql):
+    def execute_sql(self, sql, return_type='list'):
         """
         Runs the SedmDB sql query in a safe way through the DBManager.
 
         Returns the object with the results.
         """
         conn = self.pool_sedmdb.connect()
-        cursor = conn.cursor()
+        if return_type == 'list':
+            cursor = conn.cursor()
+        else:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
         try:
             cursor.execute(sql)
@@ -84,6 +87,7 @@ class SedmDB:
             # an exception is raised, Connection is invalidated.
             if e.connection_invalidated:
                 print("Connection was invalidated!")
+
         if 'SELECT' in sql[:8]:
             obj = cursor.fetchall()
             return obj
@@ -1573,7 +1577,7 @@ class SedmDB:
             return -1, "ERROR: request does not exist!"
         keys.remove('id')
         if 'status' in keys:
-            if pardic['status'] not in ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELED', 'EXPIRED']:
+            if pardic['status'] not in ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELED', 'OBSERVED', 'EXPIRED']:
                 return -1, "ERROR: %s is an invalid status value!" % (pardic['status'],)
         for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
             if key not in ['id', 'object_id', 'user_id', 'allocation_id', 'exptime', 'priority', 'status',
