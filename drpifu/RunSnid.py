@@ -62,8 +62,8 @@ def parse_and_fill(spec, snidoutput):
 
             pars["zmed"] = float(lines[zmed_line].split()[1])
             pars["zmederr"] = float(lines[zmed_line].split()[2])
-            pars["agem"] = float(lines[agem_line].split()[1])
-            pars["agemerr"] = float(lines[agem_line].split()[2])
+            pars["agemed"] = float(lines[agem_line].split()[1])
+            pars["agemederr"] = float(lines[agem_line].split()[2])
             pars["Ia"] = float(lines[type_ia_line].split()[2])
             pars["Ib"] = float(lines[type_ib_line].split()[2])
             pars["Ic"] = float(lines[type_ic_line].split()[2])
@@ -88,7 +88,7 @@ def parse_and_fill(spec, snidoutput):
             pars["bestMatchRedshift"] = float(lines[best_match_line].split()[5])
 
     print("SNID RESULTS: Type=%(bestMatchType)s, Rlap=%(rlap).2f, "
-          "Age=%(agem).2f+-%(agemerr)s day, "
+          "Age=%(agemed).2f+-%(agemederr)s day, "
           "z=%(zmed).4f+-%(zmederr).4f" % pars)
 
     # Update fits file
@@ -117,8 +117,8 @@ def parse_and_fill(spec, snidoutput):
             ff[0].header['SNIDTEMP'] = (pars["templ"], 'SNID match template')
             ff[0].header['SNIDZMED'] = (pars["zmed"], 'SNID z med')
             ff[0].header['SNIDZERR'] = (pars["zmederr"], 'SNID z med err')
-            ff[0].header['SNIDAMED'] = (pars["agem"], 'SNID Age med (days)')
-            ff[0].header['SNIDAERR'] = (pars["agemerr"],
+            ff[0].header['SNIDAMED'] = (pars["agemed"], 'SNID Age med (days)')
+            ff[0].header['SNIDAERR'] = (pars["agemederr"],
                                         'SNID Age med err (days)')
             ff[0].header['SNIDFIA'] = (pars["Ia"], 'SNID Fraction SN Ia')
             ff[0].header['SNIDFIB'] = (pars["Ib"], 'SNID Fraction SN Ib')
@@ -137,9 +137,9 @@ def parse_and_fill(spec, snidoutput):
             spec_lines.insert(comment_lines_count,
                               "# SNIDFRAC_IA: " + str(pars["Ia"]) + "\n")
             spec_lines.insert(comment_lines_count,
-                              "# SNIDAGEMEDERR: " + str(pars["agemerr"]) + "\n")
+                              "# SNIDAGEMEDERR: " + str(pars["agemederr"]) + "\n")
             spec_lines.insert(comment_lines_count,
-                              "# SNIDAGEMED: " + str(pars["agem"]) + "\n")
+                              "# SNIDAGEMED: " + str(pars["agemed"]) + "\n")
             spec_lines.insert(comment_lines_count,
                               "# SNIDZMEDERR: " + str(pars["zmederr"]) + "\n")
             spec_lines.insert(comment_lines_count,
@@ -199,7 +199,8 @@ def run_snid(spec_file=None, overwrite=False):
 
             # check for previous classification
             clas = [li for li in l if "SNID" in li]
-            print("classification: ", clas)
+            if clas:
+                print("classification: ", clas)
 
         if q < 3 and (len(clas) <= 0 or overwrite):
             # If we are here, we run the classification with snid
@@ -237,7 +238,7 @@ def record_snid(spec_file=None):
                 cm = "convert -flatten -rotate 90 " + psoutput + " " + pngfile
                 subprocess.call(cm, shell=True)
             res = ("SNID RESULTS: Type=%(bestMatchType)s, Rlap=%(rlap).2f, "
-                   "Age=%(agem).2f+-%(agemerr)s day, "
+                   "Age=%(agemed).2f+-%(agemederr)s day, "
                    "z=%(zmed).4f+-%(zmederr).4f" % pars)
         except:
             print("Error recording snid")
