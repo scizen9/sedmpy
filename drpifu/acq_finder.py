@@ -332,6 +332,9 @@ if __name__ == "__main__":
 
             try:
                 finder(astrof, finderpath)
+            except ValueError:
+                print("Bad astrometry for this file: %s" % astrof)
+                continue
             except AttributeError:
                 print("Error when generating the finder for file %s" % f)
                 print(sys.exc_info()[0])

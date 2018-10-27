@@ -39,6 +39,7 @@ if __name__ == "__main__":
     print("Create median filtered image")
     medfilt = ndimage.median_filter(image, fsize, mode='constant')
     ff[0].data = image - medfilt
-    ff[0].scale('float32', 'minmax')
+    if ff[0].header['bitpix'] == 16:
+        ff[0].scale('float32', 'minmax')
     ff.close()
     print("Done.")
