@@ -1209,6 +1209,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                                                                   'status':
                                                                       'COMPLETED'})
 
+                if not target_requests:
+                    target_requests = db.get_from_request(values=['allocation_id'],
+                                                          where_dict={'object_id':
+                                                                          object_id,
+                                                                      'status':
+                                                                          'OBSERVED'})
                 # Right now I am only seeing if there exists a match between
                 # allocations of all request.  It's possible the request could
                 # have been made by another group as another follow-up and thus
@@ -1236,6 +1242,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         science_dict = {}
         count = 0
         div_str = ''
+
         for targ in show_list:
             print(targ)
             targ_params = targ[0].split()
@@ -1255,18 +1262,22 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir, fits_file)) +
                                glob.glob('%sspec_auto*%s*.txt' % (obsdir, fits_file)))
 
+            fluxcals = (glob.glob('%sfluxcal_*%s*.fits' % (obsdir, fits_file)))
+
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list,
                                       'spec_list': spec_list,
                                       'e3d_list': e3d_list,
-                                      'spec_ascii_list': spec_ascii_list}
+                                      'spec_ascii_list': spec_ascii_list,
+                                      'fluxcals': fluxcals}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
                 science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
                                                              'spec_list': spec_list,
                                                              'e3d_list': e3d_list,
-                                                             'spec_ascii_list': spec_ascii_list}
+                                                             'spec_ascii_list': spec_ascii_list,
+                                                             'fluxcals': fluxcals}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
@@ -1299,6 +1310,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
                         div_str += ('<div class="col-md-{2}">'
                                     '<a href="%s">ASCII Spec File</a>'
+                                    '</div>' % impath)
+                if obj_data['fluxcals']:
+                    for j in obj_data['fluxcals']:
+                        impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
+                        div_str += ('<div class="col-md-{2}">'
+                                    '<a href="%s">Flux calibration file</a>'
                                     '</div>' % impath)
             # ToDO: Grab data from somewhere to put in the meta data column
             if obj_data['image_list']:
