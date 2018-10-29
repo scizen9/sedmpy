@@ -457,11 +457,11 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                         spec_calib_dict['wave_rms_min'] = \
                             float(stat_line.split()[-1])
                     elif 'AvgRMS' in stat_line:
-                        spec_calib_dict['wave_rms_avg'] = \
-                        float(stat_line.split()[-1])
+                        spec_calib_dict['wave_rms_avg'] =\
+                            float(stat_line.split()[-1])
                     elif 'MaxRMS' in stat_line:
-                        spec_calib_dict['wave_rms_max'] = \
-                        float(stat_line.split()[-1])
+                        spec_calib_dict['wave_rms_max'] =\
+                            float(stat_line.split()[-1])
                     stat_line = sf.readline()
         else:
             logging.info("spec cal item not found: %s" % stats)
@@ -683,7 +683,7 @@ def dosci(destdir='./', datestr=None):
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
                         logging.error("Error extracting std star spectra for "
-                                     + fn)
+                                      + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
                         cmd = ("touch", badfn)
@@ -695,7 +695,7 @@ def dosci(destdir='./', datestr=None):
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running report for " +
-                                         fn.split('.')[0])
+                                          fn.split('.')[0])
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
@@ -731,7 +731,7 @@ def dosci(destdir='./', datestr=None):
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
                         logging.error("Error extracting object spectrum for "
-                                     + fn)
+                                      + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
                         cmd = ("touch", badfn)
@@ -749,7 +749,7 @@ def dosci(destdir='./', datestr=None):
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running report for " +
-                                         fn.split('.')[0])
+                                          fn.split('.')[0])
                         # Upload spectrum to marshal
                         cmd = ("make", "ztfupload")
                         retcode = subprocess.call(cmd)

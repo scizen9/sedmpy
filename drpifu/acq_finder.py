@@ -271,14 +271,22 @@ if __name__ == "__main__":
     filesacq = []
 
     for f in files:
-        if ((fitsutils.get_par(f, "IMGTYPE").upper() == "ACQUISITION" or
-             "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
-                ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
-            if objnam:
-                if objnam in fitsutils.get_par(f, "OBJECT"):
-                    filesacq.append(f)
-            else:
-                filesacq.append(f)
+        try:
+            ff = pf.open(f)
+        except OSError:
+            print("WARNING - corrupt fits file: %s" % f)
+            continue
+        if "IMGTYPE" in ff[0].header:
+            imgtype = ff[0].header["IMGTYPE"]
+            if ((imgtype.upper() == "ACQUISITION" or
+                 "ACQ" in imgtype.upper()) and ("TEST" not in imgtype.upper())):
+                if "OBJECT" in ff[0].header:
+                    obj = ff[0].header["OBJECT"]
+                    if objnam:
+                        if objnam in obj:
+                            filesacq.append(f)
+                    else:
+                        filesacq.append(f)
 
     n_acq = len(filesacq)
     print("Found %d files for finders:\n%s" % (n_acq, filesacq))
