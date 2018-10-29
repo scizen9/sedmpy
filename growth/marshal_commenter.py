@@ -173,16 +173,17 @@ def add_SNID_pysedm_autoannot(fname, cred):
                                   'sourcename=%s' % sourcename,
                                   auth=cred).json()
 
-    for spec in source_summary['uploaded_spectra']:
-        f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
-                         + spec['datapath'],
-                         auth=cred).text
-        fheader = {line.split(':', 1)[0][1:].strip().lower():
-                   line.split(':', 1)[-1].strip()
-                   for line in f.split('\n') if '#' in line}
-        if header == fheader:
-            # specid = spec['specid']
-            break
+    if 'uploaded_spectra' in source_summary:
+        for spec in source_summary['uploaded_spectra']:
+            f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
+                             + spec['datapath'],
+                             auth=cred).text
+            fheader = {line.split(':', 1)[0][1:].strip().lower():
+                       line.split(':', 1)[-1].strip()
+                       for line in f.split('\n') if '#' in line}
+            if header == fheader:
+                # specid = spec['specid']
+                break
 
     # PYSEDM_REPORT
     # must be posted after the SNID plot or else it'll be overwritten
