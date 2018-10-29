@@ -65,14 +65,23 @@ if computer == 'pele':
     phot_dir = '/scr7/rsw/sedm/phot/'
     redux_dir = '/scr7/rsw/sedm/redux/'
     host = 'pharos.caltech.edu'
+    port = 5432
 
 elif computer == 'pharos':
     raw_dir = '/scr2/sedm/raw/'
     phot_dir = '/scr2/sedm/phot/'
     redux_dir = '/scr2/sedmdrp/redux/'
     host = 'localhost'
+    port = 5432
 
-db = SedmDB(host=host, dbname='sedmdb')
+elif computer == 'ether':
+    raw_dir = '/home/rsw/sedm/raw/'
+    phot_dir = '/home/rsw/sedm/phot/'
+    redux_dir = '/home/rsw/sedm/redux/'
+    host = 'localhost'
+    port = 22222
+
+db = SedmDB(host=host, dbname='sedmdb', port=port)
 
 
 def get_db():

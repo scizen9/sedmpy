@@ -19,12 +19,20 @@ if computer == 'pele':
     from db.SedmDb import SedmDB
     scheduler_path = '/scr7/rsw/sedmpy/web/templates/scheduler_table.html'
     server = 'pharos.caltech.edu'
+    port = 5432
 elif computer == 'pharos':
     from db.SedmDb import SedmDB
     scheduler_path = '/scr2/sedm/sedmpy/web/templates/scheduler_table.html'
     server = 'localhost'
+    port = 5432
+elif computer == 'ether':
+    from db.SedmDb import SedmDB
+    scheduler_path = '/home/rsw/new/sedmpy/web/templates/scheduler_table.html'
+    server = 'localhost'
+    port = 22222
 elif computer == 'modon':
     from db.SedmDb import SedmDB
+    port = 5432
 
 SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 json_url = os.path.join(SITE_ROOT, 'config.json')
@@ -50,7 +58,7 @@ class ScheduleNight:
         self.running_obs_time = None
         self.conn = None
         self.cursor = None
-        self.ph_db = SedmDB(host=server)
+        self.ph_db = SedmDB(host=server, port=port)
         self.target_frame = None
         self.tr_row = Template("""<tr id="${allocation}">
                                <td>${obstime}</td>
