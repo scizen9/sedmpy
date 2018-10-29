@@ -352,6 +352,9 @@ def update_observation(input_fitsfile):
 
     sedmdb = db.SedmDb.SedmDB()
     observation_id, status = sedmdb.add_observation(obs_dict)
+    req_id, req_update_status = sedmdb.update_request(
+        {'id': obs_dict['request_id'], 'status': 'COMPLETED'})
+    logging.info("REQ_ID %d: %s" % (req_id, req_update_status))
     logging.info(status)
     return observation_id
     # END: update_observation
