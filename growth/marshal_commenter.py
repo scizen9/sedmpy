@@ -81,6 +81,10 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
 
     sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid)
 
+    if sourceid is None or specid is None:
+        print("ERROR - Unable to get info required to post comment")
+        return False
+
     with open(fname, 'rb') as att:
         r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
                           data={'comment':   comment,
