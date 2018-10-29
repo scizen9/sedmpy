@@ -159,8 +159,11 @@ def get_homepage(userid, username):
     requests = get_requests_for_user(userid, sedm_dict['inidate'], sedm_dict['enddate'])
 
     # organize requests into dataframes by whether they are completed or not
-    complete = requests[(requests['status'] == 'COMPLETED') | (requests['status'] == 'REDUCED')]
-    active = requests[(requests['status'] == 'PENDING') | (requests['status'] == 'ACTIVE')]
+    complete = requests[(requests['status'] == 'COMPLETED') |
+                        (requests['status'] == 'OBSERVED') |
+                        (requests['status'] == 'OBSERVED')]
+    active = requests[(requests['status'] == 'PENDING') |
+                      (requests['status'] == 'ACTIVE')]
     expired = requests[(requests['status'] == 'EXPIRED')]
 
     # retrieve information about the user's allocations
@@ -209,24 +212,10 @@ def get_schedule(start_time="", end_time="", return_type='table'):
     :return:
     """
 
-    current_time = datetime.datetime.utcnow()
+    with open('static/scheduler/scheduler.html', 'r') as myfile:
+        data = myfile.read().replace('\n', '')
 
-    if start_time:
-        start_time = Time(start_time)
-    else:
-        start_time = schedule.obs_times['evening_nautical']
-
-    if current_time > start_time.to_datetime():
-        start_time = Time(current_time)
-
-    if end_time:
-        end_time = Time(end_time)
-    else:
-        end_time = schedule.obs_times['morning_nautical']
-
-    out = schedule.simulate_night(start_time=start_time, end_time=end_time, return_type=return_type)
-
-    return out
+    return {'scheduler': data}
 
 
 ###############################################################################

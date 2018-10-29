@@ -3,5 +3,5 @@
     {{ super() }}
 {% endblock %}
 {% block content %}
-    {% include 'scheduler_table.html' %}
+    {{sedm_dict.scheduler | safe}}
 {% endblock %}
