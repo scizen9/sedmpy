@@ -52,6 +52,9 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
                       if spec['obsdate'].replace('-', '') == obsdate
                       and spec['instrumentid'] == 65
                       and spec['reducedby'].strip() == 'auto'][-1]
+        except KeyError:
+            print("ERROR - could not obtain source summary")
+            return None, None
         except IndexError as e:
             print(e)
             pprint([(spec['reducedby'], spec['obsdate'])
