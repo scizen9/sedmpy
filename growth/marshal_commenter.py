@@ -39,6 +39,8 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
         except IndexError as e:
             print(e)
             print("ERROR - count not get id from source summary")
+        except KeyError:
+            print("ERROR - could not obtain source summary")
 
     if not specid:
         if not source_summary:
