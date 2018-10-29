@@ -1,6 +1,6 @@
 Message from Auto-SEDm:
 
-Request for follow-up on {object_name} has been determine to not be possible due to the following:
+Request for follow-up on {object_name} has been determined to not be possible due to the following:
 {reject_reason}
 
 From Auto-SEDm

@@ -1,6 +1,6 @@
 Message from Auto-SEDm:
 
-Request for follow-up on {object_name} has exceeded it's end date and has expired.
+Request for follow-up on {object_name} has exceeded its end date and has expired.
 
 This is an auto-generated alert.
 
