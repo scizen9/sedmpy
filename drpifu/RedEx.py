@@ -90,15 +90,11 @@ if __name__ == "__main__":
         if args.noslack:
             logging.info("Be sure to update slack manually")
         else:
-            pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
+            pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
             logging.info("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
                 logging.error("pysedm_report.py failed!")
                 sys.exit(1)
         # Prepare for upload
-        upf = glob.glob("spec_*_%s_%s.upl" % (ob_id, obname))
-        for uf in upf:
-            logging.info("removing %s" % uf)
-            os.remove(uf)
         logging.info("be sure to run make ztfupload when you are done.")
