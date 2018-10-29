@@ -17,14 +17,22 @@ computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
     from db.SedmDb import SedmDB
-    scheduler_path = '/scr7/rsw/sedmpy/web/templates/scheduler_table.html'
+    scheduler_path = '/scr7/rsw/sedmpy/web/static/scheduler/scheduler.html'
     server = 'pharos.caltech.edu'
+    port = 5432
 elif computer == 'pharos':
     from db.SedmDb import SedmDB
     scheduler_path = '/scr2/sedm/sedmpy/web/templates/scheduler_table.html'
     server = 'localhost'
+    port = 5432
+elif computer == 'ether':
+    from db.SedmDb import SedmDB
+    scheduler_path = '/home/rsw/new/sedmpy/web/templates/scheduler_table.html'
+    server = 'localhost'
+    port = 22222
 elif computer == 'modon':
     from db.SedmDb import SedmDB
+    port = 5432
 
 SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 json_url = os.path.join(SITE_ROOT, 'config.json')
@@ -50,7 +58,7 @@ class ScheduleNight:
         self.running_obs_time = None
         self.conn = None
         self.cursor = None
-        self.ph_db = SedmDB(host=server)
+        self.ph_db = SedmDB(host=server, port=port)
         self.target_frame = None
         self.tr_row = Template("""<tr id="${allocation}">
                                <td>${obstime}</td>
@@ -62,7 +70,7 @@ class ScheduleNight:
                                <td>${ifu_exptime}</td>
                                <td>Filters:${rc_seq}<br>Exptime:${rc_exptime}</td>
                                <td>${total}</td>
-                               <td>Update</td>
+                               <td><a href='request?request_id=${request_id}'>+</a></td>
                                </tr>""")
 
         self.req_query = Template("""SELECT r.id AS req_id, r.object_id AS obj_id, 
@@ -141,7 +149,7 @@ class ScheduleNight:
         ifu_total = 0
 
         rc_filter_list = ['r', 'g', 'i', 'u']
-        ifu_exptime = 1800
+        ifu_exptime = 0
 
         # 1. First we extract the filter sequence
         seq = list(target['obs_seq'])
@@ -168,11 +176,11 @@ class ScheduleNight:
             obs_seq_dict = {
                 'ifu': ifu,
                 'ifu_exptime': ifu_exptime,
-                'ifu_total': ifu_total,
+                'ifu_total': ifu_total+47,
                 'rc': rc,
                 'rc_obs_dict': None,
                 'rc_total': 0,
-                'total': ifu_total + (rc_total * target['seq_repeats'])
+                'total': abs(ifu_total + (rc_total * target['seq_repeats']))
             }
             return obs_seq_dict
 
@@ -199,7 +207,7 @@ class ScheduleNight:
                         obs_order_list.append(flt)
                         obs_exptime_list.append(str(flt_exptime))
                         obs_repeat_list.append(str(flt_repeat))
-                        rc_total += (flt_exptime * flt_repeat)
+                        rc_total += ((flt_exptime+47) * flt_repeat)
             else:
                 continue
 
@@ -223,7 +231,7 @@ class ScheduleNight:
             'rc': rc,
             'rc_obs_dict': obs_dict,
             'rc_total': rc_total * target['seq_repeats'],
-            'total': ifu_total + (rc_total * target['seq_repeats'])
+            'total': abs(ifu_total + (rc_total * target['seq_repeats']))
         }
 
         return obs_seq_dict
@@ -280,7 +288,7 @@ class ScheduleNight:
         """
         constraint = [astroplan.AirmassConstraint(min=airmass[0],
                                                   max=airmass[1]),
-                      astroplan.AtNightConstraint.twilight_astronomical(),
+
                       astroplan.MoonSeparationConstraint(min=moon[0] * u.degree)
                       ]
         for row in target_list.itertuples():
@@ -288,7 +296,10 @@ class ScheduleNight:
             x = astroplan.is_observable(constraint, self.obs_site,
                                        row.FixedObject,
                                        times=[start_time, end_time])
-            print(x)
+            y = astroplan.is_event_observable(constraint, self.obs_site,
+                                       row.FixedObject,
+                                       times=[start_time, end_time])
+            print(x, y)
             if not x:
                 print(row.objname)
                 target_list = target_list[target_list.req_id != row.req_id]
@@ -311,9 +322,9 @@ class ScheduleNight:
 
         # 1. Get start and end times
         if not start_time:
-            start_time = self.obs_times['evening_astronomical']
+            start_time = self.obs_times['evening_nautical']
             if datetime.datetime.utcnow() > start_time:
-                start_time = datetime.datetime.utcnow()
+                start_time = Time(datetime.datetime.utcnow())
         if not end_time:
             end_time = self.obs_times['morning_astronomical']
 
@@ -322,7 +333,7 @@ class ScheduleNight:
         if return_type == 'html':
             html_str = """<table class='table'><tr><th>Expected Obs Time</th>
                               <th>Object Name</th>
-                              <th>Contact</th>
+                              <th>Priority</th>
                               <th>Project ID</th>
                               <th>RA</th>
                               <th>DEC</th>
@@ -337,10 +348,16 @@ class ScheduleNight:
         # 2. Get all targets
         targets = self.load_targets(return_type='df')
         targets = self._set_target_coordinates(targets)
-        targets['HA'] = targets.apply(self._set_target_ha, axis=1)
-        targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
 
-        targets = targets.sort_values(['priority', 'HA'], ascending=[False, True])
+        # Remove non-observable targets
+        print(len(targets), "before purge")
+        targets = self.remove_setting_targets(targets, start_time=start_time,
+                                              end_time=end_time)
+        print(len(targets), "after purge")
+
+        #targets['HA'] = targets.apply(self._set_target_ha, axis=1)
+        targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
+        targets = targets.sort_values(['priority'], ascending=[False])
 
 
         # 3. Go through all the targets until we fill up the night
@@ -365,8 +382,8 @@ class ScheduleNight:
                                                 max_time=time_remaining,
                                                 return_type=return_type)
 
-            targets = self.remove_setting_targets(targets, start_time=current_time,
-                                                  end_time=end_time)
+            #targets = self.remove_setting_targets(targets, start_time=current_time,
+            #                                      end_time=end_time)
 
             idx, t = z
 
@@ -375,15 +392,16 @@ class ScheduleNight:
                 if return_type == 'html':
                     html_str += self.tr_row.substitute({'allocation': '',
                                                         'obstime': current_time.iso,
-                                            'objname': 'Standard [No other object available observation]',
-                                            'contact': 'SEDm-Calib',
-                                            'project': 'SEDm-Calib',
-                                            'ra': 'NA',
-                                            'dec': 'NA',
-                                            'ifu_exptime': 180,
-                                            'rc_seq': 'NA',
-                                            'rc_exptime': 'NA',
-                                            'total': 180})
+                                                        'objname': 'Standard [No other object available observation]',
+                                                        'contact': 'SEDm-Calib',
+                                                        'project': 'SEDm-Calib',
+                                                        'ra': 'NA',
+                                                        'dec': 'NA',
+                                                        'ifu_exptime': 180,
+                                                        'rc_seq': 'NA',
+                                                        'rc_exptime': 'NA',
+                                                        'total': 180,
+                                                        'request_id': 'NA'})
                 current_time += TimeDelta(200, format='sec')
             else:
                 if return_type == 'html':
@@ -391,7 +409,7 @@ class ScheduleNight:
                     t = t[0]
 
                 targets = targets[targets.req_id != idx]
-                current_time += TimeDelta(t['total'], format='sec')
+                current_time += TimeDelta(t['total']+60, format='sec') #Adding overhead
 
         if return_type == 'html':
             html_str += "</table><br>Last Updated:%s UT" % datetime.datetime.utcnow()
@@ -416,7 +434,7 @@ class ScheduleNight:
             targets = self.load_targets(return_type='df')
             targets = self._set_target_coordinates(targets)
             targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
-            target_list = targets.sort_values(['priority', 'ra'], ascending=[False, True])
+            target_list = targets.sort_values(['priority'], ascending=[False])
 
         if len(target_list) == 0:
             return next_target, False
@@ -426,12 +444,15 @@ class ScheduleNight:
 
         for row in target_list.itertuples():
             start = obs_time
+            if start < self.obs_times['evening_astronomical']:
+                if row.obs_dict['ifu']:
+                    continue
+
             finish = start + TimeDelta(row.obs_dict['total'],
                                        format='sec')
 
             constraint = [astroplan.AirmassConstraint(min=airmass[0],
                                                       max=airmass[1]),
-                          astroplan.AtNightConstraint.twilight_astronomical(),
                           astroplan.MoonSeparationConstraint(min=moon_sep[0] * u.degree)
                           ]
 
@@ -451,14 +472,15 @@ class ScheduleNight:
                         html = self.tr_row.substitute({'allocation': row.allocation_id,
                                                 'obstime': obs_time.iso,
                                                 'objname': row.objname,
-                                                'contact': row.email,
+                                                'contact': row.priority,
                                                 'project': row.designator,
                                                 'ra': row.ra,
                                                 'dec': row.dec,
                                                 'ifu_exptime': row.obs_dict['ifu_exptime'],
                                                 'rc_seq': rc_seq,
                                                 'rc_exptime': rc_exptime,
-                                                'total': row.obs_dict['total']})
+                                                'total': row.obs_dict['total'],
+                                                'request_id': row.req_id})
                         return row.req_id, (row.obs_dict, html)
                     else:
                         return row.req_id, row.obs_dict

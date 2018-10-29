@@ -172,6 +172,7 @@ def weather_stats():
     out['css_resources'] = INLINE.render_css()
     return render_template('weather_stats.html', sedm_dict=out)
 
+
 @app.route('/get_marshal_id', methods=['GET', 'POST'])
 def get_marhsal_id():
 
@@ -210,7 +211,8 @@ def project_stats():
 
 @app.route('/scheduler', methods=['GET', 'POST'])
 def scheduler():
-    return render_template('scheduler.html')
+    out = model.get_schedule()
+    return render_template('scheduler.html', sedm_dict=out)
 
 
 @app.route('/search/get_objects', methods=['GET', 'POST'])
