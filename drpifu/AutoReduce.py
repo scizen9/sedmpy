@@ -449,9 +449,9 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
         else:
             logging.info("spec cal item not found: %s" % flatmap)
 
-        stats = os.path.join(src, utdate + '_wavesolution_stats.txt')
-        if os.path.exists(stats):
-            with open(stats) as sf:
+        wstats = os.path.join(src, utdate + '_wavesolution_stats.txt')
+        if os.path.exists(wstats):
+            with open(wstats) as sf:
                 stat_line = sf.readline()
                 while stat_line:
                     if 'NSpax' in stat_line:
@@ -467,7 +467,31 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                             float(stat_line.split()[-1])
                     stat_line = sf.readline()
         else:
-            logging.info("spec cal item not found: %s" % stats)
+            logging.info("spec cal item not found: %s" % wstats)
+
+        dstats = os.path.join(src, utdate + '_dome_stats.txt')
+        if os.path.exists(dstats):
+            with open(dstats) as sf:
+                stat_line = sf.readline()
+                while stat_line:
+                    if 'NSpax' in stat_line:
+                        nspax = int(stat_line.split()[-1])
+                        if spec_calib_dict['nspaxels'] == 0:
+                            spec_calib_dict['nspaxels'] = nspax
+                        elif spec_calib_dict['nspaxels'] != nspax:
+                            logging.warning("Wave and Dome NSpax values differ")
+                    elif 'MinWid' in stat_line:
+                        spec_calib_dict['width_rms_min'] = \
+                            float(stat_line.split()[-1])
+                    elif 'AvgWid' in stat_line:
+                        spec_calib_dict['width_rms_avg'] = \
+                            float(stat_line.split()[-1])
+                    elif 'MaxWid' in stat_line:
+                        spec_calib_dict['width_rms_max'] = \
+                            float(stat_line.split()[-1])
+                    stat_line = sf.readline()
+        else:
+            logging.info("spec cal item not found: %s" % dstats)
 
     else:
         logging.warning("Source dir does not exist: %s" % src)
