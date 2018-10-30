@@ -104,12 +104,16 @@ if __name__ == '__main__':
     if specdir is None:
         timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
         timestamp = timestamp.split("T")[0].replace("-", "")
-        specdir = os.path.join("/scr2/sedmdrp/redux/", timestamp)
+        try:
+            reddir = os.environ['SEDMREDUXPATH']
+        except KeyError:
+            reddir = "/scr2/sedmdrp/redux"
+        specdir = os.path.join(reddir, timestamp)
     else:
         specdir = os.path.abspath(specdir)
         timestamp = os.path.basename(specdir)
-        os.chdir(specdir)
 
+    os.chdir(specdir)
     print(os.getcwd())
 
     # Run snid on extracted spectra

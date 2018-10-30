@@ -712,8 +712,14 @@ def dosci(destdir='./', datestr=None):
             else:
                 # Build cube for science observation
                 logging.info("Building science cube for " + fn)
-                # Solve WCS for science targets
-                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
+
+                # Check for moving target: no guider image for those
+                if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
+                    cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+                # Solve WCS for static science targets
+                else:
+                    cmd = ("ccd_to_cube.py", datestr, "--build", fn,
+                           "--solvewcs")
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 # Check results
