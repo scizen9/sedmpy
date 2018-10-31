@@ -16,7 +16,7 @@ def report():
           os.getcwd().split('/')[-1])
 
     print("UTStart  Object                    Exptime Air    Flxcal"
-          "                           method  Allocation                     "
+          "                           method  Allocation                    "
           "Type Subtype  z           Rlap")
     recs = []
     for f in flist:
