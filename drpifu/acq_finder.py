@@ -324,7 +324,15 @@ if __name__ == "__main__":
                 returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                               dest])
                 if returncode != 0:
-                    print("Astrometry failed, re-running")
+                    print("Astrometry failed, perform median subtraction")
+                    returncode = subprocess.call(
+                        ['/scr2/sedmdrp/spy',
+                         '/scr2/sedmdrp/sedmpy/drpifu/med_sub.py', '-i',
+                         f.split('/')[-1]])
+                    if returncode != 0:
+                        print("Astrometry failed for %s, skipping finder %s" %
+                              (dest, finderpath))
+                        continue
                     returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                                   dest])
                 if returncode != 0:
