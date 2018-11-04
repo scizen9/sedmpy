@@ -62,6 +62,12 @@ def finder(myfile, findername, searchrad=0.2/60.):
     corner_pix = wcs.wcs_world2pix([(np.array([ra, dec+searchrad], np.float_))],
                                    1)[0]
     dx = int(np.abs(np.ceil(corner_pix[1] - target_pix[1])))
+
+    # check bounds
+    if (target_pix[0] < 0 or target_pix[0] > img.shape[0] or
+       target_pix[1] < 0 or target_pix[1] > img.shape[1]):
+        print("ERROR - target outside finder image")
+        return
     
     # imgslice = img[int(target_pix[0])-2*dx:int(target_pix[0])+2*dx,
     #                int(target_pix[1])-2*dx:int(target_pix[1])+2*dx]
