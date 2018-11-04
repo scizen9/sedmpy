@@ -66,7 +66,8 @@ def finder(myfile, findername, searchrad=0.2/60.):
     # check bounds
     if (target_pix[0] < 0 or target_pix[0] > img.shape[0] or
        target_pix[1] < 0 or target_pix[1] > img.shape[1]):
-        print("ERROR - target outside finder image")
+        print("ERROR - target outside finder image: x,y = %.1f, %.1f",
+              target_pix)
         return
     
     # imgslice = img[int(target_pix[0])-2*dx:int(target_pix[0])+2*dx,
