@@ -37,7 +37,8 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
     # 3. Create the base solve-field command
     cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius "
            "%.4f -p --new-fits %s -W none -B none -P none -M none "
-           "-R none -S none -t %d --overwrite %s " % (ra, dec, radius,
+           "-R none -S none -t %d --overwrite %s "
+           "--sigma 12 " % (ra, dec, radius,
                                                       astro, tweak, img))
 
     if with_pix:
@@ -47,7 +48,7 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
 
     cmd = cmd + " > /tmp/astrometry_fail  2>/tmp/astrometry_fail"
     try:
-        subprocess.call(cmd, shell=True, timeout=60)
+        subprocess.call(cmd, shell=True, timeout=120)
     except Exception as e:
         print(str(e))
         print(time.time()-s)

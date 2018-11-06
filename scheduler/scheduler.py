@@ -180,7 +180,7 @@ class ScheduleNight:
                 'rc': rc,
                 'rc_obs_dict': None,
                 'rc_total': 0,
-                'total': abs(ifu_total + (rc_total * target['seq_repeats']))
+                'total': abs(ifu_total+47 + (rc_total * target['seq_repeats']))
             }
             return obs_seq_dict
 
@@ -351,8 +351,8 @@ class ScheduleNight:
 
         # Remove non-observable targets
         print(len(targets), "before purge")
-        targets = self.remove_setting_targets(targets, start_time=start_time,
-                                              end_time=end_time)
+        #targets = self.remove_setting_targets(targets, start_time=start_time,
+        #                                      end_time=end_time)
         print(len(targets), "after purge")
 
         #targets['HA'] = targets.apply(self._set_target_ha, axis=1)
