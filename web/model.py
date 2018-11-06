@@ -1631,7 +1631,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     active['allocation'].mask(~np.in1d(active['allocation'], allowed_allocs['allocation']), other='other', inplace=True)
 
     programs = {i['allocation']:i['program'] for _, i in allowed_allocs.iterrows()}
-    programs['other'] = ['other']
+    programs['other'] = 'other'
     active.sort_values('allocation') # this needs to be alphabetical for the legend to look correct
     
     p = figure(plot_width=700, plot_height=500, toolbar_location='above',
