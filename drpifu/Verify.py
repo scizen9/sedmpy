@@ -51,8 +51,9 @@ def build_image_report(indir=None, fspec=None):
         return None, None
 
     filesourcename = specfile.split("spec_")[-1].split(".fits")[0]
-        
-    object_name = header['OBJECT'].split()[0]  # remove the [A] in 'TARGET [A]'
+
+    # remove the [A] in 'TARGET [A]' and remove spaces
+    object_name = header['OBJECT'].replace(" [A]", "").replace(" ", "-")
     
     if "STD" in filesourcename:
         is_std = True

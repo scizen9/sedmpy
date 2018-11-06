@@ -310,7 +310,7 @@ if __name__ == "__main__":
 
         # We generate only one finder for each object.
         name = f.split('/')[-1].split(".")[0]
-        objnam = objnam.split()[0]
+        objnam = objnam.replace(" [A]", "").replace(" ", "-")
         filt = fitsutils.get_par(f, "FILTER")
         finderplotf = 'finder_%s_%s_%s.png' % (name, objnam, filt)
         finderpath = os.path.join(reduxdir, os.path.join("finders/",
