@@ -170,10 +170,11 @@ def fancy_request_table(df):
         '''
         attr = 'background-color: {}'.format(color)
         try:
-            if (row['RA'] < 280 and row['RA'] > 180): # TODO these should not need to be updated manually
-                return [attr if i in ('RA') else '' for i in row.index.values]
+            best_ra = ((Time.now().mjd - 58382.) * 360/365.)  # peak at solar midnight, approx
+            if 180 - abs(180 - (best_ra - float(row['RA'])) % 360) > 120:  # more than 8h from midnight 
+                return [attr if i == 'RA' else '' for i in row.index.values]
             if row['DEC'] < -20: # red ONLY if it'll never go above ~30deg
-                return [attr if i in ('DEC') else '' for i in row.index.values]
+                return [attr if i == 'DEC' else '' for i in row.index.values]
             else:
                 return ['' for i in row.index.values]
         except KeyError:
