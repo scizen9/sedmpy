@@ -150,6 +150,48 @@ def get_object_info(name=None, ra=None, dec=None, radius=5, out_type='html'):
     else:
         return obj_list
 
+def fancy_request_table(df):
+    '''
+    df: pandas dataframe
+        intended for tables of requests from get_requests_for_user, ie with columns:
+            ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority','status', 'lastmodified', 'UPDATE']
+        
+    returns: IPython HTML object
+        the html for df but with the following changes:
+            -if 'RA' and 'Dec' mean it won't rise tonight, both fields are red
+            -'name' column now has links to the growth marshal
+            -table width is 100%, which is important for the fancy tables to display right
+            -priority is an int, I don't know why it was ever a float
+    '''
+    
+    def highlight_set(row, color='#ff9999'):
+        '''makes 'RA' and 'DEC' fields highlighted if it won't get high when it's light out
+        meant for tables with both 'RA' and 'DEC' columns
+        '''
+        attr = 'background-color: {}'.format(color)
+        try:
+            if (row['RA'] < 280 and row['RA'] > 180): # TODO these should not need to be updated manually
+                return [attr if i in ('RA') else '' for i in row.index.values]
+            if row['DEC'] < 0: # TODO these are filler values
+                return [attr if i in ('DEC') else '' for i in row.index.values]
+            else:
+                return ['' for i in row.index.values]
+        except KeyError:
+            return ['' for i in row.index.values]
+    
+    styled = df.style\
+               .apply(highlight_set, axis=1)\
+               .format({'object': '<a href="http://skipper.caltech.edu:8080/cgi-bin/growth/view_source.cgi?name={0}">{0}</a>',
+                   'priority': '{:0f}', 'UPDATE': '<a href="{}">+</a>'})\
+               .set_table_styles([{'text-align': 'left'}])\
+               .set_table_attributes('style="width:100%" class="dataframe_fancy table table-striped nowrap"')\
+               .set_table_styles(
+                    [{'selector': '.row_heading',
+                         'props': [('display', 'none')]},
+                     {'selector': '.blank.level0',
+                         'props': [('display', 'none')]}])
+               
+    return styled.render() # unclear why this needs to go in a HTML() but I'm keeping it
 
 def get_homepage(userid, username):
     sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
@@ -170,19 +212,13 @@ def get_homepage(userid, username):
     ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': active.to_html(escape=False,
-                                                   classes='table',
-                                                   index=False),
+    sedm_dict['active'] = {'table': fancy_request_table(active),
                            'title': 'Active Requests for the last 7 days'}
 
-    sedm_dict['complete'] = {'table': complete.to_html(escape=False,
-                                                       classes='table',
-                                                       index=False),
+    sedm_dict['complete'] = {'table': fancy_request_table(complete),
                              'title': 'Completed Requests in the last 7 days'}
 
-    sedm_dict['expired'] = {'table': expired.to_html(escape=False,
-                                                     classes='table',
-                                                     index=False),
+    sedm_dict['expired'] = {'table': fancy_request_table(expired),
                             'title': 'Expired in the last 7 days'}
 
     sedm_dict['allocations'] = {'table': ac.to_html(escape=False,
