@@ -51,8 +51,9 @@ def build_image_report(indir=None, fspec=None):
         return None, None
 
     filesourcename = specfile.split("spec_")[-1].split(".fits")[0]
-        
-    object_name = header['OBJECT'].split()[0]  # remove the [A] in 'TARGET [A]'
+
+    # remove the [A] in 'TARGET [A]' and remove spaces
+    object_name = header['OBJECT'].replace(" [A]", "").replace(" ", "-")
     
     if "STD" in filesourcename:
         is_std = True
@@ -77,20 +78,26 @@ def build_image_report(indir=None, fspec=None):
     # Output Spectra
     all_spectra_files = glob.glob("spec*"+fspec+"*.png")
     extention = "%s.png" % object_name
-    pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)[0]
-    if not is_std:
-        typed_spectra = [f for f in all_spectra_files
-                         if not f.endswith(extention)]
-        used_spec_file = pysedm_spec_file if len(typed_spectra) == 0 \
-            else typed_spectra[0]
+    pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)
+    if pysedm_spec_file:
+        pysedm_spec_file = pysedm_spec_file[0]
+        if not is_std:
+            typed_spectra = [f for f in all_spectra_files
+                             if not f.endswith(extention)]
+            used_spec_file = pysedm_spec_file if len(typed_spectra) == 0 \
+                else typed_spectra[0]
+        else:
+            calib_spectra = glob.glob("calibcheck_spec_"+filesourcename + "*.png")
+            used_spec_file = pysedm_spec_file if len(calib_spectra) == 0 \
+                else calib_spectra[0]
+        try:
+            img_spec = pil.Image.open(used_spec_file)
+        except FileNotFoundError:
+            print("Cannot find spectra plot")
+            img_spec = pil.get_buffer([13, 7], "Spectra image missing",
+                                      **prop_missing)
     else:
-        calib_spectra = glob.glob("calibcheck_spec_"+filesourcename + "*.png")
-        used_spec_file = pysedm_spec_file if len(calib_spectra) == 0 \
-            else calib_spectra[0]
-    try:
-        img_spec = pil.Image.open(used_spec_file)
-    except FileNotFoundError:
-        print("Cannot find spectra plot")
+        print("No spectrum plot")
         img_spec = pil.get_buffer([13, 7], "Spectra image missing",
                                   **prop_missing)
 

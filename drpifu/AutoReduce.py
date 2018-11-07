@@ -352,6 +352,9 @@ def update_observation(input_fitsfile):
 
     sedmdb = db.SedmDb.SedmDB()
     observation_id, status = sedmdb.add_observation(obs_dict)
+    req_id, req_update_status = sedmdb.update_request(
+        {'id': obs_dict['request_id'], 'status': 'COMPLETED'})
+    logging.info("REQ_ID %d: %s" % (req_id, req_update_status))
     logging.info(status)
     return observation_id
     # END: update_observation
@@ -446,9 +449,9 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
         else:
             logging.info("spec cal item not found: %s" % flatmap)
 
-        stats = os.path.join(src, utdate + '_wavesolution_stats.txt')
-        if os.path.exists(stats):
-            with open(stats) as sf:
+        wstats = os.path.join(src, utdate + '_wavesolution_stats.txt')
+        if os.path.exists(wstats):
+            with open(wstats) as sf:
                 stat_line = sf.readline()
                 while stat_line:
                     if 'NSpax' in stat_line:
@@ -457,14 +460,38 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                         spec_calib_dict['wave_rms_min'] = \
                             float(stat_line.split()[-1])
                     elif 'AvgRMS' in stat_line:
-                        spec_calib_dict['wave_rms_avg'] = \
-                        float(stat_line.split()[-1])
+                        spec_calib_dict['wave_rms_avg'] =\
+                            float(stat_line.split()[-1])
                     elif 'MaxRMS' in stat_line:
-                        spec_calib_dict['wave_rms_max'] = \
-                        float(stat_line.split()[-1])
+                        spec_calib_dict['wave_rms_max'] =\
+                            float(stat_line.split()[-1])
                     stat_line = sf.readline()
         else:
-            logging.info("spec cal item not found: %s" % stats)
+            logging.info("spec cal item not found: %s" % wstats)
+
+        dstats = os.path.join(src, utdate + '_dome_stats.txt')
+        if os.path.exists(dstats):
+            with open(dstats) as sf:
+                stat_line = sf.readline()
+                while stat_line:
+                    if 'NSpax' in stat_line:
+                        nspax = int(stat_line.split()[-1])
+                        if spec_calib_dict['nspaxels'] == 0:
+                            spec_calib_dict['nspaxels'] = nspax
+                        elif spec_calib_dict['nspaxels'] != nspax:
+                            logging.warning("Wave and Dome NSpax values differ")
+                    elif 'MinWid' in stat_line:
+                        spec_calib_dict['width_rms_min'] = \
+                            float(stat_line.split()[-1])
+                    elif 'AvgWid' in stat_line:
+                        spec_calib_dict['width_rms_avg'] = \
+                            float(stat_line.split()[-1])
+                    elif 'MaxWid' in stat_line:
+                        spec_calib_dict['width_rms_max'] = \
+                            float(stat_line.split()[-1])
+                    stat_line = sf.readline()
+        else:
+            logging.info("spec cal item not found: %s" % dstats)
 
     else:
         logging.warning("Source dir does not exist: %s" % src)
@@ -635,7 +662,7 @@ def dosci(destdir='./', datestr=None):
             ff.close()
             # Get OBJECT keyword
             try:
-                obj = hdr['OBJECT'].split()[0]
+                obj = hdr['OBJECT'].replace(" [A]", "").replace(" ", "-")
             except KeyError:
                 logging.warning(
                     "Could not find OBJECT keyword, setting to Test")
@@ -683,7 +710,7 @@ def dosci(destdir='./', datestr=None):
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
                         logging.error("Error extracting std star spectra for "
-                                     + fn)
+                                      + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
                         cmd = ("touch", badfn)
@@ -695,7 +722,7 @@ def dosci(destdir='./', datestr=None):
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running report for " +
-                                         fn.split('.')[0])
+                                          fn.split('.')[0])
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
@@ -709,8 +736,14 @@ def dosci(destdir='./', datestr=None):
             else:
                 # Build cube for science observation
                 logging.info("Building science cube for " + fn)
-                # Solve WCS for science targets
-                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
+
+                # Check for moving target: no guider image for those
+                if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
+                    cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+                # Solve WCS for static science targets
+                else:
+                    cmd = ("ccd_to_cube.py", datestr, "--build", fn,
+                           "--solvewcs")
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 # Check results
@@ -731,7 +764,7 @@ def dosci(destdir='./', datestr=None):
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
                         logging.error("Error extracting object spectrum for "
-                                     + fn)
+                                      + fn)
                         badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
                                 "_failed.fits"
                         cmd = ("touch", badfn)
@@ -749,7 +782,7 @@ def dosci(destdir='./', datestr=None):
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running report for " +
-                                         fn.split('.')[0])
+                                          fn.split('.')[0])
                         # Upload spectrum to marshal
                         cmd = ("make", "ztfupload")
                         retcode = subprocess.call(cmd)

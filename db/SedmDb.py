@@ -56,12 +56,12 @@ class SedmDB:
 
     instance = None
 
-    def __init__(self, dbname='sedmdb', host='localhost'):
+    def __init__(self, dbname='sedmdb', host='localhost', port=5432):
         """
         Makes sure only one instance is created.
         """
         if not SedmDB.instance:
-            SedmDB.instance = SedmDB.__SedmDB(dbname, host)
+            SedmDB.instance = SedmDB.__SedmDB(dbname, host, port)
 
         self.sso_objects = None
         # Email templates

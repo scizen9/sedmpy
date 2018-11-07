@@ -62,6 +62,12 @@ def finder(myfile, findername, searchrad=0.2/60.):
     corner_pix = wcs.wcs_world2pix([(np.array([ra, dec+searchrad], np.float_))],
                                    1)[0]
     dx = int(np.abs(np.ceil(corner_pix[1] - target_pix[1])))
+
+    # check bounds
+    if (target_pix[0] < 0 or target_pix[0] > img.shape[0] or
+       target_pix[1] < 0 or target_pix[1] > img.shape[1]):
+        print("ERROR - target outside finder image: x,y = ", target_pix)
+        return
     
     # imgslice = img[int(target_pix[0])-2*dx:int(target_pix[0])+2*dx,
     #                int(target_pix[1])-2*dx:int(target_pix[1])+2*dx]
@@ -271,14 +277,22 @@ if __name__ == "__main__":
     filesacq = []
 
     for f in files:
-        if ((fitsutils.get_par(f, "IMGTYPE").upper() == "ACQUISITION" or
-             "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()) and
-                ("TEST" not in fitsutils.get_par(f, "IMGTYPE").upper())):
-            if objnam:
-                if objnam in fitsutils.get_par(f, "OBJECT"):
-                    filesacq.append(f)
-            else:
-                filesacq.append(f)
+        try:
+            ff = pf.open(f)
+        except OSError:
+            print("WARNING - corrupt fits file: %s" % f)
+            continue
+        if "IMGTYPE" in ff[0].header:
+            imgtype = ff[0].header["IMGTYPE"]
+            if ((imgtype.upper() == "ACQUISITION" or
+                 "ACQ" in imgtype.upper()) and ("TEST" not in imgtype.upper())):
+                if "OBJECT" in ff[0].header:
+                    obj = ff[0].header["OBJECT"]
+                    if objnam:
+                        if objnam in obj:
+                            filesacq.append(f)
+                    else:
+                        filesacq.append(f)
 
     n_acq = len(filesacq)
     print("Found %d files for finders:\n%s" % (n_acq, filesacq))
@@ -316,7 +330,15 @@ if __name__ == "__main__":
                 returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                               dest])
                 if returncode != 0:
-                    print("Astrometry failed, re-running")
+                    print("Astrometry failed, perform median subtraction")
+                    returncode = subprocess.call(
+                        ['/scr2/sedmdrp/spy',
+                         '/scr2/sedmdrp/sedmpy/drpifu/med_sub.py', '-i',
+                         f.split('/')[-1]])
+                    if returncode != 0:
+                        print("Astrometry failed for %s, skipping finder %s" %
+                              (dest, finderpath))
+                        continue
                     returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                                   dest])
                 if returncode != 0:

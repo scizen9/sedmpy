@@ -26,12 +26,12 @@ if __name__ == "__main__":
                         help='new x position (spaxels)')
     parser.add_argument('new_y', type=str, default=None, nargs='?',
                         help='new y position (spaxels)')
-    parser.add_argument('--noslack', action='store_true', default=False,
-                        help='do not update slack pysedm-report channel')
+    parser.add_argument('--slack', action='store_true', default=False,
+                        help='update slack pysedm-report channel')
     args = parser.parse_args()
 
     if not args.obs_id:
-        logging.info("Usage - redex <obs_id> [<x> <y>]")
+        logging.info("Usage - redex <obs_id> [<x> <y>] [--slack]")
     else:
         # Get tag id
         now = datetime.datetime.now()
@@ -76,29 +76,34 @@ if __name__ == "__main__":
         logging.info("make classify")
         res = subprocess.run(["make", "classify"])
         if res.returncode != 0:
-            logging.error("make classify failed!")
-            sys.exit(1)
+            home = os.environ['HOME']
+            cmd = [os.path.join(home, "spy"),
+                   os.path.join(home, "sedmpy/drpifu/Classify.py"), "-d",
+                   os.getcwd()]
+            logging.info(" ".join(cmd))
+            res = subprocess.run(cmd)
+            if res.returncode != 0:
+                logging.error("SNID classification failed!")
+                sys.exit(1)
         # Re-verify
-        cfile = glob.glob("crr_b_ifu%s_%s.fits" % (dd, ob_id))[0].split('.')[0]
-        pars = ["verify", dd, "--contains", cfile]
+        pars = ["verify", dd, "--contains", tagstr]
         logging.info("Running " + " ".join(pars))
         res = subprocess.run(pars)
         if res.returncode != 0:
             logging.error("Verify failed!")
             sys.exit(1)
         # Re-report
-        if args.noslack:
-            logging.info("Be sure to update slack manually")
+        if args.slack:
+            pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
         else:
-            pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
-            logging.info("Running " + " ".join(pars))
-            res = subprocess.run(pars)
-            if res.returncode != 0:
-                logging.error("pysedm_report.py failed!")
-                sys.exit(1)
+            logging.info("Be sure to update slack manually if extraction good")
+            logging.info("Use: pysedm_report.py %s --contains %s --justpush" %
+                         (dd, tagstr))
+            pars = ["pysedm_report.py", dd, "--contains", tagstr]
+        logging.info("Running " + " ".join(pars))
+        res = subprocess.run(pars)
+        if res.returncode != 0:
+            logging.error("pysedm_report.py failed!")
+            sys.exit(1)
         # Prepare for upload
-        upf = glob.glob("spec_*_%s_%s.upl" % (ob_id, obname))
-        for uf in upf:
-            logging.info("removing %s" % uf)
-            os.remove(uf)
         logging.info("be sure to run make ztfupload when you are done.")

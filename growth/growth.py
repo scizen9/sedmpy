@@ -592,7 +592,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
                                                       search_db=dbase,
                                                       pull_requests=pr)
         # Mark as uploaded
-        os.system("touch " + fi.split('.')[0] + ".upl")
+        os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # Only need to pull requests the first time
         pr = False
         # log upload
