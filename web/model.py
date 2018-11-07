@@ -172,7 +172,7 @@ def fancy_request_table(df):
         try:
             if (row['RA'] < 280 and row['RA'] > 180): # TODO these should not need to be updated manually
                 return [attr if i in ('RA') else '' for i in row.index.values]
-            if row['DEC'] < 0: # TODO these are filler values
+            if row['DEC'] < -20: # red ONLY if it'll never go above ~30deg
                 return [attr if i in ('DEC') else '' for i in row.index.values]
             else:
                 return ['' for i in row.index.values]
@@ -191,7 +191,7 @@ def fancy_request_table(df):
                      {'selector': '.blank.level0',
                          'props': [('display', 'none')]}])
                
-    return styled.render() # unclear why this needs to go in a HTML() but I'm keeping it
+    return styled.render()
 
 def get_homepage(userid, username):
     sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
@@ -1639,9 +1639,7 @@ def get_active_visibility(userid):
     ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': active.to_html(escape=False,
-                                                   classes='table',
-                                                   index=False),
+    sedm_dict['active'] = {'table': fancy_request_table(active),
                            'title': 'Active Requests for the last 7 days'}
 
     sedm_dict['script'], sedm_dict['div'] = plot_visibility(userid, sedm_dict)

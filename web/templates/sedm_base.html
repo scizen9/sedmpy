@@ -98,33 +98,33 @@
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 
         <!-- TODO this doesn't actually need to be in base, it is not needed on every page -->
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min.js"></script> <!-- make fancy tables happen -->
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.18/js/dataTables.bootstrap.min.js"></script>
-    {% if fail %}
-        <script>
-            $(document).ready(function(){
-                $("#login-failed").slideDown("slow");
+        <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min.js"></script> <!-- make fancy tables happen -->
+        <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.10.18/js/dataTables.bootstrap.min.js"></script>
+        {% if fail %}
+            <script>
+                $(document).ready(function(){
+                    $("#login-failed").slideDown("slow");
+                });
+            </script>
+        {% endif %}
+
+        <script class="init" type="text/javascript">        
+            $(document).ready( function () {
+                var tables = $( 'table.dataframe_fancy').DataTable( {
+                    "searching": true,
+                    "scrollX": true,
+                    "pageLength": 15,
+                    "lengthChange": false,
+                    "order": [],
+                    "dom": 'rt<"row"<"col-sm-5"i><"col-sm-7"p>>',
+                    "columnDefs": [
+                         {"targets": [3, 4, 5, 6, 7, 9], "searchable": false},
+                    ]
+                } );
+                var ynow = moment().format('YYYY');
+                $('#years').append('-'+ynow);
             });
         </script>
-    {% endif %}
-
-    <script class="init" type="text/javascript">        
-        $(document).ready( function () {
-            var tables = $( 'table.dataframe_fancy').DataTable( {
-                "searching": true,
-                "scrollX": true,
-                "pageLength": 15,
-                "lengthChange": false,
-                "order": [],
-                "dom": 'rt<"row"<"col-sm-5"i><"col-sm-7"p>>',
-                "columnDefs": [
-                     {"targets": [3, 4, 5, 6, 7, 9], "searchable": false},
-                ]
-            } );
-            var ynow = moment().format('YYYY');
-            $('#years').append('-'+ynow);
-        });
-    </script>
     {% endblock %}
 
 </body>
