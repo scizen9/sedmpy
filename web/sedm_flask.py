@@ -261,7 +261,23 @@ def login():
         else:
             return render_template('login.html', message=ret[1], form=form)
 
-    return render_template('login.html',  form=form)
+    return render_template('login.html', form=form)
+
+
+@app.route('/passchange', methods=['GET', 'POST'])
+def login_change():
+    form = PassChangeForm()
+
+    # 1. If the request method is of type post then we expect this to be a
+    #    submission.
+    if request.method == 'POST':
+        out = model.password_change(form, flask_login.current_user.id)
+        if out['message'] == 'Password Changed!':
+            return redirect(url_for('login'))
+        else:
+            return render_template('change_pass.html', sedm_dict=out, form=form)
+
+    return render_template('change_pass.html', sedm_dict={'message':''}, form=form)
 
 
 @app.route("/logout")

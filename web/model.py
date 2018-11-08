@@ -161,7 +161,8 @@ def fancy_request_table(df):
             -if 'RA' and 'Dec' mean it won't rise tonight, both fields are red
             -'name' column now has links to the growth marshal
             -table width is 100%, which is important for the fancy tables to display right
-            -priority is an int, I don't know why it was ever a float
+            -priority is an int, I don't know why it was ever a float  --> it is a float to allow finer 
+                                                                           tuning of the scheduler(rsw)
     '''
     
     def highlight_set(row, color='#ff9999'):
@@ -180,9 +181,9 @@ def fancy_request_table(df):
         except KeyError:
             return ['' for i in row.index.values]
     
-    styled = df.style\
-               .apply(highlight_set, axis=1)\
-               .format({'object': '<a href="http://skipper.caltech.edu:8080/cgi-bin/growth/view_source.cgi?name={0}">{0}</a>',
+    styled = df.style.apply(highlight_set, axis=1).format({'object':
+                                                           '<a href="http://skipper.caltech.edu:8080/'
+                                                           'cgi-bin/growth/view_source.cgi?name={0}">{0}</a>',
                    'priority': '{:0f}', 'UPDATE': '<a href="{}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
                .set_table_attributes('style="width:100%" class="dataframe_fancy table table-striped nowrap"')\
@@ -879,6 +880,35 @@ def check_login(username, password):
     else:
         return False, 'Incorrect username or password!!'
 
+
+def password_change(form, user_id):
+    """
+    :param form: 
+    :param user_id: 
+    :return: 
+    """
+    # check for correct password and change if true
+    password = form.password.data
+    new_password = form.pass_new.data
+    new_password_conf = form.pass_conf.data
+    user_pass = db.get_from_users(['username', 'password', 'id'],
+                                  {'id': user_id})
+
+    if not user_pass:
+        return {'message': "User not found"}
+
+    elif user_pass[0] == -1:
+        message = user_pass[1]
+        return {'message': message}
+
+    elif check_password_hash(user_pass[0][1], password):
+        if new_password == new_password_conf:
+            db.update_user({'id': user_pass[0][2],
+                            'password': new_password})
+            return {'message': 'Password Changed!'}
+    else:
+        message = "Incorrect username or password!"
+        return {'message': message}
 
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE STATS PAGE.                  #

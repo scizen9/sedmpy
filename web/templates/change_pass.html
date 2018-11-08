@@ -1,0 +1,44 @@
+{% extends "sedm_base.html" %}
+{%  block head %}
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/login.css')}}">
+{% endblock %}
+{% block content %}
+    {% if session['logged_in'] %}
+        <p>You're logged in already!</p>
+    {% else %}
+    <form class="form-signin" action="/passchange" method="post">
+        <div class="login">
+            <div class="login-screen">
+                <div class="app-title">
+                    <h1>Login</h1>
+                    <h2>{{ sedm_dict.message }}</h2>
+                </div>
+
+                <div class="login-form">
+                    {{ form.csrf_token }}
+
+                    <div class="control-group">
+                    {{ form.password.label }}
+                    {{ form.password }}
+                    <label class="login-field-icon fui-lock" for="login-pass"></label>
+                    </div>
+
+                    <div class="control-group">
+                    {{ form.pass_new.label }}
+                    {{ form.pass_new }}
+                    <label class="login-field-icon fui-lock" for="login-pass"></label>
+
+                    {{ form.pass_conf.label }}
+                    {{ form.pass_conf }}
+                    <label class="login-field-icon fui-lock" for="login-pass"></label>
+                    </div>
+
+                    <input type="submit" value="Change Password" class="btn btn-primary btn-large btn-block" >
+                    <br>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    {% endif %}
+{% endblock %}
