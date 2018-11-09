@@ -860,13 +860,16 @@ def update_spec(input_specfile, cube_id=None):
         spec_dict['cube_id'] = cube_id
 
     # Get observation id
-    origin = 'ifu' + '_'.join(input_specfile.split('ifu')[-1].split('_')[:4])
-    fitsfile = os.path.join(indir, origin + '.fits')
+    fitsfile = 'ifu' + '_'.join(
+        input_specfile.split('ifu')[-1].split('_')[:4]) + '.fits'
     observation_id = sedmdb.get_from_observation(['id'],
                                                  {'fitsfile': fitsfile},
                                                  {'fitsfile': '~'})
     if observation_id:
         spec_dict['observation_id'] = observation_id[0][0]
+    else:
+        logging.error("No observation_id for %s" % fitsfile)
+        return -1
 
     # Get spec_calib id for this utdate
     spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})
