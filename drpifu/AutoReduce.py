@@ -737,7 +737,9 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             # Update SedmDb table spec
-                            update_spec(proced, cube_id=cube_id)
+                            # update_spec(proced, cube_id=cube_id)
+                            logging.info("update of %s with cube_id %d",
+                                         (proced, cube_id))
                         else:
                             logging.error("Not found: %s" % proced)
             else:
@@ -804,7 +806,9 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
                             # Update SedmDb table spec
-                            update_spec(proced, cube_id=cube_id)
+                            # update_spec(proced, cube_id=cube_id)
+                            logging.info("update of %s with cube_id %d",
+                                         (proced, cube_id))
                         else:
                             logging.error("Not found: %s" % proced)
     return ncp, copied
