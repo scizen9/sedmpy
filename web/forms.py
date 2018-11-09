@@ -9,6 +9,17 @@ class LoginForm(FlaskForm):
     username = fields.StringField('username')
     password = fields.PasswordField('password')
 
+
+class PassChangeForm(FlaskForm):
+    password = fields.PasswordField('Old Password',
+                                    validators=[validators.input_required()])
+    pass_new = fields.PasswordField('New Password',
+                                    validators=[validators.input_required(),
+                                                validators.EqualTo('pass_conf',
+                                                                   message='Passwords must match')] )
+    pass_conf = fields.PasswordField('Confirm New Password',
+                                     validators=[validators.input_required()])
+
 class AddCSVRequest(FlaskForm):
     """
     Class to handle csv request
