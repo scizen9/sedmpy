@@ -803,6 +803,32 @@ def dosci(destdir='./', datestr=None):
     # END: dosci
 
 
+def update_spec(input_specfile):
+    """ Update the SEDM database on pharos by adding a new spec entry"""
+
+    header_dict = {
+        'imgset': 'IMGSET', 'quality': 'QUALITY', 'cubefile': 'SOURCE',
+        'standardfile': 'CALSRC', 'reducer': 'REDUCER', 'airmass': 'AIRMASS',
+        'atmcorr': 'ATMSCALE', 'pos_ok': 'POSOK', 'srcpos': 'SRCPOS',
+        'pos_x_spax': 'XPOS', 'pos_y_spax': 'YPOS', 'psf_model': 'PSFMODEL',
+        'psf_fwhm': 'PSFFWHM', 'psf_ell': 'PSFELL', 'psf_adr_pa': 'PSFADRPA',
+        'psf_adr_z': 'PSFADRZ', 'psf_adr_c2': 'PSFADRC2',
+        'fluxcal': 'FLUXCAL', 'fluxcalfile': 'CALSRC', 'extr_type': 'EXTRTYPE'
+    }
+    spec_dict = {
+        'spec_calib_id': 0, 'observation_id': 0, 'asciifile': '', 'npyfile': '',
+        'fitsfile': '', 'imgset': '', 'quality': 0, 'cubefile': '',
+        'standardfile': '', 'marshal_spec_id': 0, 'skysub': False,
+        'fwhm': 0., 'background': 0., 'line_fwhm': 0., 'extract_x': 0.,
+        'extract_y': 0., 'extract_pa': 0., 'extract_a': 0., 'extract_b': 0.,
+        'ad_red': 0., 'ad_blue': 0., 'prlltc': 0., 'reducer': '', 'airmass': 0.,
+        'atmcorr': 0., 'pos_ok': False, 'srcpos': '', 'pos_x_spax': 0.,
+        'pos_y_spax': 0., 'psf_model': '', 'psf_fwhm': 0., 'psf_ell': 0.,
+        'psf_adr_pa': 0., 'psf_adr_z': 0., 'psf_adr_c2': 0., 'fluxcal': False,
+        'fluxcalfile': '', 'extr_type': '', 'cube_id': 0
+    }
+
+
 def update_cube(input_fitsfile):
     """ Update the SEDM database on pharos by adding a new cube entry. """
 
