@@ -60,7 +60,7 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
             pprint([(spec['reducedby'], spec['obsdate'])
                     for spec in source_summary['uploaded_spectra']
                     if spec['instrumentid'] == 65])
-            raise
+            return None, None
     return sourceid, specid
 
 

@@ -45,6 +45,11 @@ try:
 except ImportError:
     import drpifu.Version as Version
 
+try:
+    import marshal_commenter as mc
+except ImportError:
+    import growth.marshal_commenter as mc
+
 drp_ver = Version.ifu_drp_version()
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -737,7 +742,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             # Update SedmDb table spec
-                            # update_spec(proced, cube_id=cube_id)
+                            update_spec(proced, cube_id=cube_id)
                             logging.info("update of %s with cube_id %d" %
                                          (proced, cube_id))
                         else:
@@ -806,7 +811,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
                             # Update SedmDb table spec
-                            # update_spec(proced, cube_id=cube_id)
+                            update_spec(proced, cube_id=cube_id)
                             logging.info("update of %s with cube_id %d" %
                                          (proced, cube_id))
                         else:
@@ -847,6 +852,9 @@ def update_spec(input_specfile, cube_id=None):
     # Read header
     ff = pf.open(input_specfile)
 
+    # Get object name
+    object = ff[0].header['OBJECT'].split()[0]
+
     # Get header keyword values
     for key in header_dict.keys():
         hk = header_dict[key]
@@ -856,9 +864,6 @@ def update_spec(input_specfile, cube_id=None):
             logging.warning("Header keyword not found: %s" % hk)
     ff.close()
 
-    # Open database connection
-    sedmdb = db.SedmDb.SedmDB()
-
     # Add fitsfile
     spec_dict['fitsfile'] = input_specfile
     # Add asciifile
@@ -867,6 +872,16 @@ def update_spec(input_specfile, cube_id=None):
     # Add cube_id
     if cube_id:
         spec_dict['cube_id'] = cube_id
+
+    # Get marshal spec id
+    srcid, specid = mc.get_missing_info(object, utdate)
+    if specid is None:
+        logging.info("Not found in marshal: %s" % object)
+    else:
+        spec_dict['marshal_spec_id'] = specid
+
+    # Open database connection
+    sedmdb = db.SedmDb.SedmDB()
 
     # Get observation id
     ifufile = 'ifu' + '_'.join(
