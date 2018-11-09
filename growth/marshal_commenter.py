@@ -177,10 +177,14 @@ def add_SNID_pysedm_autoannot(fname, cred):
 
     # get the specid by comparing all the header info
     sourcename = header['name']
-    source_summary = requests.get(growth_base_url +
+    try:
+        source_summary = requests.get(growth_base_url +
                                   'source_summary.cgi?'
                                   'sourcename=%s' % sourcename,
                                   auth=cred).json()
+    except json.decoder.JSONDecodeError:
+        print("ERROR: could not decode results")
+        return False
 
     if 'uploaded_spectra' in source_summary:
         if source_summary['uploaded_spectra']:
