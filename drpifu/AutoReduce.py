@@ -874,7 +874,9 @@ def update_spec(input_specfile, cube_id=None):
         spec_dict['cube_id'] = cube_id
 
     # Get marshal spec id
-    srcid, specid = mc.get_missing_info(object, utdate)
+    srcid = None
+    specid = None
+    srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
     if specid is None:
         logging.info("Not found in marshal: %s" % object)
     else:
