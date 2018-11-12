@@ -166,34 +166,69 @@ def fancy_request_table(df):
     '''
     
     def highlight_set(row, color='#ff9999'):
-        '''makes 'RA' and 'DEC' fields highlighted if it won't get high when it's light out
+        '''makes 'RA' and 'DEC' fields highlighted if it won't get high when it's dark out
         meant for tables with both 'RA' and 'DEC' columns
         '''
-        attr = 'background-color: {}'.format(color)
+        red = 'background-color: {}'.format(color)
         try:
-            best_ra = ((Time.now().mjd - 58382.) * 360/365.)  # peak at solar midnight, approx
+            best_ra = ((Time.now().mjd - 58382.) * 360/365.)  # peak at longitude-based midnight, approx
             if 180 - abs(180 - (best_ra - float(row['RA'])) % 360) > 120:  # more than 8h from midnight 
-                return [attr if i == 'RA' else '' for i in row.index.values]
-            if row['DEC'] < -20: # red ONLY if it'll never go above ~30deg
-                return [attr if i == 'DEC' else '' for i in row.index.values]
+                return [red if i == 'RA' else '' for i in row.index.values]
+            if row['DEC'] < -15.: # red if it'll never go above ~40deg
+                return [red if i == 'DEC' else '' for i in row.index.values]
             else:
                 return ['' for i in row.index.values]
         except KeyError:
             return ['' for i in row.index.values]
-    
-    styled = df.style.apply(highlight_set, axis=1).format({'object':
-                                                           '<a href="http://skipper.caltech.edu:8080/'
-                                                           'cgi-bin/growth/view_source.cgi?name={0}">{0}</a>',
-                   'priority': '{:0f}', 'UPDATE': '<a href="{}">+</a>'})\
+
+    def improve_obs_seq(li):
+        """
+        takes a list like ['1ifu'], [180, 180, 180], etc and makes it take up
+        less space and also be more human-readable
+        """
+        if type(li[0]) == str:
+            # ie it's an obs_seq
+            for i, val in enumerate(li):
+                if val[0] == '1':
+                    li[i] = val[1:]
+                else:
+                    li[i] = val[1:] + ' x' + val[0]
+        else:  # ie exptime
+            for i, val in enumerate(li):
+                if all([j == val for j in li[i:]]) and i < len(li) - 1:
+                    # all the rest match, of which there's >1
+                    li = li[:i] + ['{}ea'.format(val)]
+                    break
+                else:
+                    li[i] = str(val)
+        return ', '.join(li)
+
+    df['status'] = [i.lower() for i in df['status']]
+    df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '') for i in df['allocation']]
+    for col in ('obs_seq', 'exptime'):
+        df[col] = [improve_obs_seq(i) for i in df[col]]
+
+    styled = df.style\
+               .apply(highlight_set, axis=1)\
+               .format({'object': '<a href="http://skipper.caltech.edu:8080/cgi-bin/growth/'\
+                                  'view_source.cgi?name={0}">{0}</a>', 'RA': '{:.3f}',
+                        'DEC': '{:.3f}', 'priority': '{:.0f}', 'start date': '{:%b %d}',
+                        'end date': '{:%b %d}', 'lastmodified': '{:%b %d %H:%M}',
+                        'UPDATE': '<a href="{}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
-               .set_table_attributes('style="width:100%" class="dataframe_fancy table table-striped nowrap"')\
+               .set_table_attributes('style="width:100%" class="dataframe_fancy table '\
+                                     'table-striped nowrap"')\
                .set_table_styles(
                     [{'selector': '.row_heading',
                          'props': [('display', 'none')]},
                      {'selector': '.blank.level0',
                          'props': [('display', 'none')]}])
-               
-    return styled.render()
+    # this .replace() thing is super bad form but it's faster for now than finding the right way              
+    return styled.render()\
+                 .replace('RA</th>', '<a href="#" data-toggle="tooltip" '\
+                          'title="red if peaks >8h from midnight">RA</a></th>')\
+                 .replace('DEC</th>', '<a href="#" data-toggle="tooltip" '\
+                          'title="red if peaks below 40deg">dec</a></th>')
 
 def get_homepage(userid, username):
     sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
