@@ -54,13 +54,11 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
                       and spec['reducedby'].strip() == 'auto'][-1]
         except KeyError:
             print("ERROR - could not obtain source summary")
-            return None, None
         except IndexError as e:
             print(e)
             pprint([(spec['reducedby'], spec['obsdate'])
                     for spec in source_summary['uploaded_spectra']
                     if spec['instrumentid'] == 65])
-            return None, None
     return sourceid, specid
 
 

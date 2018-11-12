@@ -743,7 +743,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             # Update SedmDb table spec
-                            update_spec(proced, cube_id=cube_id)
+                            update_spec(proced)
                             logging.info("update of %s with cube_id %d" %
                                          (proced, cube_id))
                         else:
@@ -812,7 +812,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
                             # Update SedmDb table spec
-                            update_spec(proced, cube_id=cube_id)
+                            update_spec(proced)
                             logging.info("update of %s with cube_id %d" %
                                          (proced, cube_id))
                         else:
@@ -821,7 +821,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
     # END: dosci
 
 
-def update_spec(input_specfile, cube_id=None):
+def update_spec(input_specfile):
     """ Update the SEDM database on pharos by adding a new spec entry"""
 
     header_dict = {
@@ -870,14 +870,10 @@ def update_spec(input_specfile, cube_id=None):
     # Add asciifile
     spec_dict['asciifile'] = input_specfile.split('.fit')[0] + '.txt'
 
-    # Add cube_id
-    if cube_id:
-        spec_dict['cube_id'] = cube_id
-
     # Get marshal spec id
     srcid = None
     specid = None
-    # srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
+    srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
     if specid is None:
         logging.info("Not found in marshal: %s" % object)
     else:
@@ -885,6 +881,13 @@ def update_spec(input_specfile, cube_id=None):
 
     # Open database connection
     sedmdb = db.SedmDb.SedmDB()
+
+    # Check if we've already added this spectrum
+    spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': input_specfile},
+                                   {'fitsfile': '~'})
+    if spec_id:
+        logging.warning("Spectrum already in db: %s" % input_specfile)
+        return spec_id
 
     # Get observation id
     ifufile = 'ifu' + '_'.join(
@@ -897,6 +900,13 @@ def update_spec(input_specfile, cube_id=None):
     else:
         logging.error("No observation_id for %s" % ifufile)
         return -1
+
+    # Get cube id
+    cube_id = sedmdb.get_from_cube(['id'], {'observation_id': observation_id})
+    if cube_id:
+        spec_dict['cube_id'] = cube_id[0][0]
+    else:
+        logging.warning("No cube id for %s" % input_specfile)
 
     # Get spec_calib id for this utdate
     spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})
@@ -1643,6 +1653,23 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # END: obs_loop
 
 
+def update(red_dir='/scr2/sedmdrp/redux', ut_date=None):
+    """Update re-extracted spectra"""
+
+    # Check inputs
+    if not ut_date:
+        return
+    # First update ztf marshal
+    cmd = ("make", "ztfupload")
+    retcode = subprocess.call(cmd)
+    if not retcode:
+        logging.warning("Not all spectra uploaded to marshal")
+    # Now update sedmdb
+    flist = glob.glob(os.path.join(red_dir, ut_date, "spec*.fits"))
+    for file in flist:
+        update_spec(file)
+
+
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
        check_precal=True, indate=None, piggyback=False):
     """Outermost infinite loop that watches for a new raw directory.
@@ -1754,9 +1781,14 @@ if __name__ == '__main__':
                         help='Skip check of previous day for cal files?')
     parser.add_argument('--date', type=str, default=None,
                         help='Select date to process')
+    parser.add_argument('--update', type=str, default=None,
+                        help='UTDate directory to update')
 
     args = parser.parse_args()
 
-    go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
-       check_precal=(not args.skip_precal), indate=args.date,
-       piggyback=args.piggyback)
+    if args.update:
+        update(red_dir=args.reduxdir, ut_dir=args.update)
+    else:
+        go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
+           check_precal=(not args.skip_precal), indate=args.date,
+           piggyback=args.piggyback)
