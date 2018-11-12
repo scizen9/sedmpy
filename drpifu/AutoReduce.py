@@ -1653,11 +1653,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # END: obs_loop
 
 
-def update(red_dir='/scr2/sedmdrp/redux', ut_date=None):
+def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
     """Update re-extracted spectra"""
 
     # Check inputs
-    if not ut_date:
+    if not ut_dir:
         return
     # First update ztf marshal
     cmd = ("make", "ztfupload")
@@ -1665,7 +1665,7 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_date=None):
     if not retcode:
         logging.warning("Not all spectra uploaded to marshal")
     # Now update sedmdb
-    flist = glob.glob(os.path.join(red_dir, ut_date, "spec*.fits"))
+    flist = glob.glob(os.path.join(red_dir, ut_dir, "spec*.fits"))
     for file in flist:
         update_spec(file)
 
