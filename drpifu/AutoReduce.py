@@ -711,7 +711,8 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         logging.warning("SEDM db rejected cube")
                     # Use auto psf aperture for standard stars
                     logging.info("Extracting std star spectra for " + fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
+                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std",
+                           "--tag", "robot")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
