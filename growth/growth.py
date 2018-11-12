@@ -490,15 +490,20 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     else:
         print("Updating target %s using id %d" % (objname, marshal_id))
 
+        now = datetime.datetime.now()
+        ts_str = "%4d%02d%02d %02d_%02d_%02d" % (now.year, now.month,
+                                                 now.day, now.hour,
+                                                 now.minute,
+                                                 now.second)
         if add_spectra:
 
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=marshal_id,
                                       output_dir=out_dir)
             if not spec_ret:
-                spec_stat = 'IFU: Failed'
+                spec_stat = 'IFU: Failed ' + ts_str
             else:
-                spec_stat = 'IFU: Complete'
+                spec_stat = 'IFU: Complete ' + ts_str
                 annots_posted = add_annots(spectra_file, auth)
                 if annots_posted:
                     print("Annotations successfully posted")
@@ -508,9 +513,9 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         if add_phot:
             phot_ret = upload_phot(phot_file, request_id=marshal_id)
             if not phot_ret:
-                phot_stat = 'RC: Failed'
+                phot_stat = 'RC: Failed ' + ts_str
             else:
-                phot_stat = 'RC: Complete'
+                phot_stat = 'RC: Complete ' + ts_str
 
         if add_status:
             if add_spectra and add_phot:

@@ -60,7 +60,7 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
             pprint([(spec['reducedby'], spec['obsdate'])
                     for spec in source_summary['uploaded_spectra']
                     if spec['instrumentid'] == 65])
-            raise
+            return None, None
     return sourceid, specid
 
 
@@ -177,22 +177,30 @@ def add_SNID_pysedm_autoannot(fname, cred):
 
     # get the specid by comparing all the header info
     sourcename = header['name']
-    source_summary = requests.get(growth_base_url +
+    try:
+        source_summary = requests.get(growth_base_url +
                                   'source_summary.cgi?'
                                   'sourcename=%s' % sourcename,
                                   auth=cred).json()
+    except json.decoder.JSONDecodeError:
+        print("ERROR: could not decode results")
+        return False
 
     if 'uploaded_spectra' in source_summary:
-        for spec in source_summary['uploaded_spectra']:
-            f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
-                             + spec['datapath'],
-                             auth=cred).text
-            fheader = {line.split(':', 1)[0][1:].strip().lower():
-                       line.split(':', 1)[-1].strip()
-                       for line in f.split('\n') if '#' in line}
-            if header == fheader:
-                # specid = spec['specid']
-                break
+        if source_summary['uploaded_spectra']:
+            for spec in source_summary['uploaded_spectra']:
+                f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
+                                 + spec['datapath'],
+                                 auth=cred).text
+                fheader = {line.split(':', 1)[0][1:].strip().lower():
+                           line.split(':', 1)[-1].strip()
+                           for line in f.split('\n') if '#' in line}
+                if header == fheader:
+                    # specid = spec['specid']
+                    break
+        else:
+            print("ERROR: No uploaded spectra for %s" % sourcename)
+            return False
 
     # PYSEDM_REPORT
     # must be posted after the SNID plot or else it'll be overwritten

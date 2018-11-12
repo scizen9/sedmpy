@@ -45,6 +45,11 @@ try:
 except ImportError:
     import drpifu.Version as Version
 
+try:
+    import marshal_commenter as mc
+except ImportError:
+    import growth.marshal_commenter as mc
+
 drp_ver = Version.ifu_drp_version()
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -626,7 +631,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
     # END: cpsci
 
 
-def dosci(destdir='./', datestr=None):
+def dosci(destdir='./', datestr=None, scal_id=None):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -637,6 +642,7 @@ def dosci(destdir='./', datestr=None):
     Args:
         destdir (str): destination directory (typically in /scr2/sedm/redux)
         datestr (str): YYYYMMDD date string
+        scal_id (int): SedmDb spec_cal table entry id
 
     Returns:
         int: Number of ifu images actually copied
@@ -732,7 +738,15 @@ def dosci(destdir='./', datestr=None):
                         cmd = ("make", "report")
                         logging.info(" ".join(cmd))
                         subprocess.call(cmd)
-                        # TODO: update SedmDb spec table
+                        # check if extraction succeeded
+                        proced = glob.glob(os.path.join(destdir, procfn))[0]
+                        if os.path.exists(proced):
+                            # Update SedmDb table spec
+                            update_spec(proced, cube_id=cube_id)
+                            logging.info("update of %s with cube_id %d" %
+                                         (proced, cube_id))
+                        else:
+                            logging.error("Not found: %s" % proced)
             else:
                 # Build cube for science observation
                 logging.info("Building science cube for " + fn)
@@ -796,11 +810,106 @@ def dosci(destdir='./', datestr=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
-                            # TODO: update spec table in SedmDb
+                            # Update SedmDb table spec
+                            update_spec(proced, cube_id=cube_id)
+                            logging.info("update of %s with cube_id %d" %
+                                         (proced, cube_id))
                         else:
                             logging.error("Not found: %s" % proced)
     return ncp, copied
     # END: dosci
+
+
+def update_spec(input_specfile, cube_id=None):
+    """ Update the SEDM database on pharos by adding a new spec entry"""
+
+    header_dict = {
+        'imgset': 'IMGSET', 'quality': 'QUALITY', 'cubefile': 'SOURCE',
+        'reducer': 'REDUCER', 'airmass': 'AIRMASS',
+        'atmcorr': 'ATMSCALE', 'pos_ok': 'POSOK', 'srcpos': 'SRCPOS',
+        'pos_x_spax': 'XPOS', 'pos_y_spax': 'YPOS', 'psf_model': 'PSFMODEL',
+        'psf_fwhm': 'PSFFWHM', 'psf_ell': 'PSFELL', 'psf_adr_pa': 'PSFADRPA',
+        'psf_adr_z': 'PSFADRZ', 'psf_adr_c2': 'PSFADRC2',
+        'fluxcal': 'FLUXCAL', 'fluxcalfile': 'CALSRC', 'extr_type': 'EXTRTYPE'
+    }
+    spec_dict = {
+        'spec_calib_id': 0, 'observation_id': 0, 'asciifile': '', 'npyfile': '',
+        'fitsfile': '', 'imgset': '', 'quality': 0, 'cubefile': '',
+        'standardfile': '', 'marshal_spec_id': 0, 'skysub': False,
+        'fwhm': 0., 'background': 0., 'line_fwhm': 0., 'extract_x': 0.,
+        'extract_y': 0., 'extract_pa': 0., 'extract_a': 0., 'extract_b': 0.,
+        'ad_red': 0., 'ad_blue': 0., 'prlltc': 0., 'reducer': '', 'airmass': 0.,
+        'atmcorr': 0., 'pos_ok': False, 'srcpos': '', 'pos_x_spax': 0.,
+        'pos_y_spax': 0., 'psf_model': '', 'psf_fwhm': 0., 'psf_ell': 0.,
+        'psf_adr_pa': 0., 'psf_adr_z': 0., 'psf_adr_c2': 0., 'fluxcal': False,
+        'fluxcalfile': '', 'extr_type': '', 'cube_id': 0
+    }
+
+    # Get utdate
+    indir = '/'.join(input_specfile.split('/')[:-1])
+    utdate = indir.split('/')[-1]
+
+    # Read header
+    ff = pf.open(input_specfile)
+
+    # Get object name
+    object = ff[0].header['OBJECT'].split()[0]
+
+    # Get header keyword values
+    for key in header_dict.keys():
+        hk = header_dict[key]
+        if hk in ff[0].header:
+            spec_dict[key] = ff[0].header[hk]
+        else:
+            logging.warning("Header keyword not found: %s" % hk)
+    ff.close()
+
+    # Add fitsfile
+    spec_dict['fitsfile'] = input_specfile
+    # Add asciifile
+    spec_dict['asciifile'] = input_specfile.split('.fit')[0] + '.txt'
+
+    # Add cube_id
+    if cube_id:
+        spec_dict['cube_id'] = cube_id
+
+    # Get marshal spec id
+    srcid = None
+    specid = None
+    # srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
+    if specid is None:
+        logging.info("Not found in marshal: %s" % object)
+    else:
+        spec_dict['marshal_spec_id'] = specid
+
+    # Open database connection
+    sedmdb = db.SedmDb.SedmDB()
+
+    # Get observation id
+    ifufile = 'ifu' + '_'.join(
+        input_specfile.split('ifu')[-1].split('_')[:4]) + '.fits'
+    observation_id = sedmdb.get_from_observation(['id'],
+                                                 {'fitsfile': ifufile},
+                                                 {'fitsfile': '~'})
+    if observation_id:
+        spec_dict['observation_id'] = observation_id[0][0]
+    else:
+        logging.error("No observation_id for %s" % ifufile)
+        return -1
+
+    # Get spec_calib id for this utdate
+    spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})
+    if spec_calib_id:
+        spec_dict['spec_calib_id'] = spec_calib_id[0][0]
+
+        # Add into database
+        spec_id, status = sedmdb.add_spec(spec_dict)
+        logging.info(status)
+        return spec_id
+    else:
+        logging.error("ERROR: no spec_calib_id found for %s" % utdate)
+        return -1
+    # END: update_spec
 
 
 def update_cube(input_fitsfile):
@@ -1476,11 +1585,13 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             # Record starting time for new file processing
             start_time = time.time()
             if piggyback:
-                nsci, science = dosci(outdir, datestr=cur_date_str)
+                nsci, science = dosci(outdir, datestr=cur_date_str,
+                                      scal_id=spec_calib_id)
                 ncp = nsci
             else:
                 ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str)
-                nsci, science = dosci(outdir, datestr=cur_date_str)
+                nsci, science = dosci(outdir, datestr=cur_date_str,
+                                      scal_id=spec_calib_id)
             # We copied some new ones so report processing time
             if ncp > 0:
                 proc_time = int(time.time() - start_time)

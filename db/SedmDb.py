@@ -2275,16 +2275,16 @@ class SedmDB:
                        'skysub': bool, 'extract_x': float, 'extract_y': float,
                        'extract_pa': float, 'extract_a': float,
                        'extract_b': float, 'ad_red': float, 'ad_blue': float,
-                       'prlltc': float, 'flexure_x_corr_nm': float,
-                       'flexure_y_corr_pix': float, 'reducer': str,
+                       'prlltc': float, 'reducer': str, 'airmass': float,
+                       'atmcorr': float,
                        'fwhm': float, 'background': float, 'line_fwhm': float,
                        'pos_ok': bool, 'srcpos': str, 'pos_x_spax': float,
                        'pos_y_spax': float, 'psf_model': str, 'psf_fwhm': float,
                        'psf_ell': float, 'psf_adr_pa': float,
                        'psf_adr_z': float, 'psf_adr_c2': float, 'fluxcal': bool,
-                       'fluxcalfile': str, 'extr_type': str}
+                       'fluxcalfile': str, 'extr_type': str, 'cube_id': int}
 
-        required_keys = ('spec_calib_id', 'observation_id', 'asciifile',
+        required_keys = ('spec_calib_id', 'observation_id', 'fitsfile',
                          'quality')
 
         new_spec_id = _id_from_time()
