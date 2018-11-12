@@ -123,6 +123,7 @@
                 } );
                 var ynow = moment().format('YYYY');
                 $('#years').append('-'+ynow);
+                $('[data-toggle="tooltip"]').tooltip();
             });
         </script>
     {% endblock %}
