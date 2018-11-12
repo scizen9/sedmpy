@@ -883,10 +883,9 @@ def update_spec(input_specfile):
     sedmdb = db.SedmDb.SedmDB()
 
     # Check if we've already added this spectrum
-    spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': input_specfile},
-                                   {'fitsfile': '~'})
+    spec_id = sedmdb.get_from_spec(['id'], {'cubefile': spec_dict['cubefile']})
     if spec_id:
-        logging.warning("Spectrum already in db: %s" % input_specfile)
+        logging.info("Spectrum already in db: %s" % input_specfile)
         return spec_id
 
     # Get observation id
@@ -902,7 +901,8 @@ def update_spec(input_specfile):
         return -1
 
     # Get cube id
-    cube_id = sedmdb.get_from_cube(['id'], {'observation_id': observation_id})
+    cube_id = sedmdb.get_from_cube(['id'], {'observation_id':
+                                            spec_dict['observation_id']})
     if cube_id:
         spec_dict['cube_id'] = cube_id[0][0]
     else:
