@@ -2211,7 +2211,7 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def add_spec(self, pardic):
+    def add_spec(self, pardic, update=False):
         """
         Adds the reduced spectrum or, if the observation already has a spectrum,
             updates it
@@ -2257,6 +2257,7 @@ class SedmDB:
                     'fluxcal' (bool),
                     'fluxcalfile', (abspath str)
                     'extr_type' (str)
+            update (bool): set to true to update an existing entry
 
         Returns:
             (-1, "ERROR...") if there was an issue
@@ -2297,21 +2298,23 @@ class SedmDB:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
 
-        spec_id = self.get_from_spec(['id'], {'observation_id':
-                                              pardic['observation_id']})
-        # Test if observation already has a spectrum
-        if spec_id:
+        # Are we updating?
+        if update:
+            # Must have ID
+            if 'id' in pardic:
+                spec_id = pardic['id']
+            else:
+                return -1, "ERROR: must include id if updating record"
             # Verify spec_id
-            if spec_id[0] == -1:
+            if spec_id is None or spec_id <= 0:
                 return spec_id, "ERROR: something went wrong getting spec id!"
             # Validate input keys
             for key in reversed(keys):  # TODO: test the updating
                 if key not in param_types:
                     return -1, "ERROR: %s is an invalid key!" % (key,)
             # Update existing record with input values
-            pardic['id'] = spec_id[0][0]
             update_sql = _generate_update_sql(pardic, keys, 'spec')
-            print(update_sql)
+            # print(update_sql)
             try:
                 self.execute_sql(update_sql)
             except exc.IntegrityError:
@@ -2320,9 +2323,9 @@ class SedmDB:
             except exc.ProgrammingError:
                 return -1, "ERROR: add_spec sql command failed with a " \
                            "ProgrammingError!"
-            return (spec_id[0][0],
-                    "Spectrum updated for observation_id %s, columns " %
-                    (pardic['observation_id'],)
+            return (spec_id,
+                    "Spectrum updated for spec_id %s, columns " %
+                    (pardic['id'],)
                     + str(keys)[1:-1])
         # New entry in spec table
         else:

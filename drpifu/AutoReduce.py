@@ -871,19 +871,25 @@ def update_spec(input_specfile):
     spec_dict['asciifile'] = input_specfile.split('.fit')[0] + '.txt'
 
     # Get marshal spec id
-    srcid = None
-    specid = None
-    srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
-    if specid is None:
-        logging.info("Not found in marshal: %s" % object)
-    else:
-        spec_dict['marshal_spec_id'] = specid
+    if 'STD' not in object and spec_dict['quality'] <= 2:
+        srcid = None
+        specid = None
+        srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
+        if srcid is None:
+            logging.info("Not an object on the marshal: %s" % object)
+        else:
+            if specid is None:
+                logging.info("No spectrum found on the marshal: %s" % object)
+            else:
+                spec_dict['marshal_spec_id'] = specid
 
     # Open database connection
     sedmdb = db.SedmDb.SedmDB()
 
     # Check if we've already added this spectrum
-    spec_id = sedmdb.get_from_spec(['id'], {'cubefile': spec_dict['cubefile']})
+    search_fits = input_specfile.replace('+', '\+')
+    spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': search_fits},
+                                   {'fitsfile': '~'})
     if spec_id:
         logging.info("Spectrum already in db: %s" % input_specfile)
         return spec_id
