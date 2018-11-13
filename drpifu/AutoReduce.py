@@ -461,6 +461,8 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                 while stat_line:
                     if 'NSpax' in stat_line:
                         spec_calib_dict['nspaxels'] = int(stat_line.split()[-1])
+                        logging.info("Wave NSpax = %d" %
+                                     spec_calib_dict['nspaxels'])
                     elif 'MinRMS' in stat_line:
                         spec_calib_dict['wave_rms_min'] = \
                             float(stat_line.split()[-1])
@@ -481,10 +483,9 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                 while stat_line:
                     if 'NSpax' in stat_line:
                         nspax = int(stat_line.split()[-1])
+                        logging.info("Dome NSpax = %d" % nspax)
                         if spec_calib_dict['nspaxels'] == 0:
                             spec_calib_dict['nspaxels'] = nspax
-                        elif spec_calib_dict['nspaxels'] != nspax:
-                            logging.warning("Wave and Dome NSpax values differ")
                     elif 'MinWid' in stat_line:
                         spec_calib_dict['width_rms_min'] = \
                             float(stat_line.split()[-1])
@@ -1411,8 +1412,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # Go there
     os.chdir(outdir)
     # report
-    logging.info("Raw files from  : %s\nReduced files to: %s"
-                 % (srcdir, outdir))
+    logging.info("Raw files from  : %s" % srcdir)
+    logging.info("Reduced files to: %s" % outdir)
+
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
         # Wait for cal files until sunset
