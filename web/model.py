@@ -892,6 +892,28 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
 def convert_to_link(reqid):
     return """<a href='request?request_id=%s'>+</a>""" % reqid
 
+###############################################################################
+# THIS SECTION HANDLES ALL THINGS RELATED TO THE OBJECT PAGE.                 #
+# KEYWORD:OBJECT                                                              #
+###############################################################################
+def get_object(object_name, user_id):
+    """
+    
+    :param object_name: 
+    :param user_id: 
+    :return: 
+    """
+
+    # 1. Start by getting the requested object
+    objects = get_object_info(object_name, out_type='html')
+
+    # 2. Check if there were and objects if not then go on
+    if not objects:
+        return {'message': 'Could not find any targets with that name under '
+                           'your allocation'}
+
+    else:
+        return {'message': objects}
 
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE LOGIN PAGE.                  #
