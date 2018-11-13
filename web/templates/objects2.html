@@ -3,8 +3,15 @@
     <div class="container">
         <h2>Search for objects in database</h2>
     </div>
-
     <div class="row">
+        {{ sedm_dict.message | safe }}
+    </div>
+    <div class="form">
+        <div class="col-mid">
+            <form id='request_form' action="objects" method="post">
+                {{ form.object_name.label }}{{ form.object_name }}
 
+            </form>
+        </div>
     </div>
 {% endblock %}

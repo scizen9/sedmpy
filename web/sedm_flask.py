@@ -192,8 +192,16 @@ def get_marhsal_id():
 
 @app.route('/objects', methods=['GET', 'POST'])
 def objects():
-    #form = AddFixedRequest()
-    return render_template('sedm_base.html')
+
+    form = FindObject()
+
+    if request.method == 'POST':
+        object_name = form.object_name.data
+        user_id = flask_login.current_user.id
+        out = model.get_object(object_name, user_id)
+        return render_template('objects2.html', sedm_dict=out, form=form)
+
+    return render_template('objects2.html', sedm_dict={}, form=form)
 
 
 @app.route('/project_stats', methods=['GET', 'POST'])

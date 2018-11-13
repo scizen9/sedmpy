@@ -22,7 +22,7 @@ if computer == 'pele':
     port = 5432
 elif computer == 'pharos':
     from db.SedmDb import SedmDB
-    scheduler_path = '/scr2/sedm/sedmpy/web/templates/scheduler_table.html'
+    scheduler_path = '/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html'
     server = 'localhost'
     port = 5432
 elif computer == 'ether':
