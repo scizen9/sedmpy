@@ -65,8 +65,13 @@ if __name__ == "__main__":
                 logging.error("Extraction failed.")
                 sys.exit(1)
 
+        # Get spec file
+        specname = glob.glob("spec_*_%s_*.fits" % ob_id)
+        if not specname:
+            logging.error("No files found for observation id %s" % ob_id)
+            sys.exit(1)
         # Object name
-        obname = glob.glob("spec_*_%s*.fits" %
+        obname = glob.glob("spec_*_%s_*.fits" %
                            ob_id)[0].split('_')[-1].split('.')[0]
         # Re-classify
         flist = glob.glob("spec_*_%s_%s_*" % (ob_id, obname))
