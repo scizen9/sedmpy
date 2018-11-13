@@ -578,10 +578,18 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
             print("No REQ_ID found: %s" % fi)
             continue
         # Extract object name
+        fname = os.path.basename(fi)
         if "spec" in fi:
-            objname = os.path.basename(fi).split('_')[-1].split('.')[0]
+            objname = fname.split('_')[-1].split('.')[0]
         else:
-            objname = os.path.basename(fi).split('_')[0]
+            objname = fname.split('_')[0]
+        # Extract observation id
+        if 'ifu' in fname:
+            obs_id = ":".join(fname.split('ifu')[-1].split('_')[1:4])
+        elif 'rc' in fname:
+            obs_id = ":".join(fname.split('rc')[-1].split('_')[1:4])
+        else:
+            obs_id = "..:..:.."
         # Are we uploading only one file?
         if upfil is not None:
             # if this is not the file, skip
@@ -601,7 +609,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
         # Only need to pull requests the first time
         pr = False
         # log upload
-        out.write(" %s: " % objname)
+        out.write("%s %s: " % (obs_id, objname))
         # Was a spectrum uploaded?
         if spec:
             out.write("OK ")
