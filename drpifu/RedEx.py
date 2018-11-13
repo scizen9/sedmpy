@@ -71,30 +71,29 @@ if __name__ == "__main__":
             logging.error("No files found for observation id %s" % ob_id)
             sys.exit(1)
         # Object name
-        obname = glob.glob("spec_*_%s_*.fits" %
-                           ob_id)[0].split('_')[-1].split('.')[0]
+        obname = specname[0].split('_')[-1].split('.')[0]
         # Re-classify
         flist = glob.glob("spec_*_%s_%s_*" % (ob_id, obname))
         for f in flist:
             logging.info("removing %s" % f)
             os.remove(f)
         logging.info("make classify")
-        res = subprocess.run(["make", "classify"])
-        if res.returncode != 0:
+        ret = subprocess.call(["make", "classify"])
+        if ret:
             home = os.environ['HOME']
             cmd = [os.path.join(home, "spy"),
                    os.path.join(home, "sedmpy/drpifu/Classify.py"), "-d",
                    os.getcwd()]
             logging.info(" ".join(cmd))
-            res = subprocess.run(cmd)
-            if res.returncode != 0:
+            ret = subprocess.call(cmd)
+            if ret:
                 logging.error("SNID classification failed!")
                 sys.exit(1)
         # Re-verify
         pars = ["verify", dd, "--contains", tagstr]
         logging.info("Running " + " ".join(pars))
-        res = subprocess.run(pars)
-        if res.returncode != 0:
+        ret = subprocess.call(pars)
+        if ret:
             logging.error("Verify failed!")
             sys.exit(1)
         # Re-report
@@ -106,8 +105,8 @@ if __name__ == "__main__":
                          (dd, tagstr))
             pars = ["pysedm_report.py", dd, "--contains", tagstr]
         logging.info("Running " + " ".join(pars))
-        res = subprocess.run(pars)
-        if res.returncode != 0:
+        ret = subprocess.call(pars)
+        if ret:
             logging.error("pysedm_report.py failed!")
             sys.exit(1)
         # Prepare for upload
