@@ -3182,6 +3182,7 @@ class SedmDB:
                     'classifier' (str),
                     'score' (float)
                 optional:
+                    'auto' (bool)
                     'phase' (float),
                     'phase_err' (float)
                     'score_type' (str)
@@ -3193,7 +3194,7 @@ class SedmDB:
             (id (long), 'Classification added") if it was successful
         """
         param_types = {'id': int, 'spec_id': int, 'object_id': int,
-                       'classification': str, 'redshift': float,
+                       'classification': str, 'redshift': float, 'auto': bool,
                        'redshift_err': float, 'classifier': str, 'score': float,
                        'phase': float, 'phase_err': float, 'score_type': str,
                        'class_source': str, 'class_template': str}
@@ -3262,6 +3263,7 @@ class SedmDB:
                     'classification' (str),
                     'redshift' (float),
                     'redshift_err' (float),
+                    'auto' (bool),
                     'phase' (float),
                     'phase_err' (float),
                     'score' (float)
@@ -3282,7 +3284,7 @@ class SedmDB:
             successful
         """
         param_types = {'id': int, 'spec_id': int, 'object_id': int,
-                       'classification': str, 'redshift': float,
+                       'classification': str, 'redshift': float, 'auto': bool,
                        'redshift_err': float, 'classifier': str, 'score': float,
                        'phase': float, 'phase_err': float, 'score_type': str,
                        'class_source': str, 'class_template': str}
@@ -3376,6 +3378,7 @@ class SedmDB:
                 'classification' (str),
                 'redshift' (float),
                 'redshift_err' (float),
+                'auto' (bool),
                 'phase' (float),
                 'phase_err' (float),
                 'score' (float)
@@ -3392,12 +3395,14 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'spec_id': int, 'object_id': int,
-                          'classification': str, 'redshift': float,
-                          'redshift_err': float, 'classifier': str,
-                          'score': float, 'phase': float, 'phase_err': float,
-                          'score_type': str, 'class_source': str,
-                          'class_template': str}
+        allowed_params = {
+                'id': int, 'spec_id': int, 'object_id': int,
+                'classification': str, 'redshift': float, 'auto': bool,
+                'redshift_err': float, 'classifier': str,
+                'score': float, 'phase': float, 'phase_err': float,
+                'score_type': str, 'class_source': str,
+                'class_template': str
+        }
 
         sql = _generate_select_sql(values, where_dict, allowed_params,
                                    compare_dict, 'classification')

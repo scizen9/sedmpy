@@ -852,7 +852,7 @@ def update_spec(input_specfile):
         'phase_err': 'SNIDAERR', 'class_template': 'SNIDTEMP'
     }
     class_dict = {
-        'spec_id': 0, 'object_id': 0, 'classification': '',
+        'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
         'redshift': 0., 'redshift_err': 0., 'classifier': 'SNID', 'score': 0.,
         'phase': 0., 'phase_err': 0., 'score_type': 'RLAP',
         'class_source': '', 'class_template': ''
