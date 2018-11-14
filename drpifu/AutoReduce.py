@@ -878,10 +878,12 @@ def update_spec(input_specfile):
             logging.warning("Header keyword not found: %s" % hk)
 
     # Check for classification info
+    good_class = False
     if 'SNIDTYPE' in ff[0].header:
         if 'NONE' in ff[0].header['SNIDTYPE']:
             logging.info("SNID was unable to type %s" % input_specfile)
         else:
+            good_class = True
             for key in class_header_dict.keys():
                 hk = class_header_dict[key]
                 if hk in ff[0].header:
@@ -958,9 +960,12 @@ def update_spec(input_specfile):
         # update classification
         class_dict['spec_id'] = spec_id
         logging.info(status)
-        class_id, cstatus = sedmdb.add_classification(class_dict)
-        logging.info("Classification accepted with id %d, and status %s",
-                     (class_id, cstatus))
+        if good_class:
+            class_id, cstatus = sedmdb.add_classification(class_dict)
+            logging.info("Classification accepted with id %d, and status %s",
+                         (class_id, cstatus))
+        else:
+            logging.info("No classification associated with input spectrum")
         return spec_id
     else:
         logging.error("ERROR: no spec_calib_id found for %s" % utdate)
