@@ -3199,13 +3199,18 @@ class SedmDB:
                        'class_source': str, 'class_template': str}
         required_keys = ['spec_id', 'object_id', 'classification', 'redshift',
                          'redshift_err', 'classifier', 'score']
-        # TODO: clean up the required parameters, test
+        # Get id number
         class_id = _id_from_time()
         pardic['id'] = class_id
+
         keys = list(pardic.keys())
+
+        # Do we have all required keys?
         for key in required_keys:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
+
+        # Has this classification already been entered?
         classified = self.get_from_classification(
             ['classification', 'redshift', 'redshift_err', 'spec_id'],
             {'spec_id': pardic['spec_id'], 'classifier': pardic['classifier']})
@@ -3217,7 +3222,9 @@ class SedmDB:
                         "redshift_err %s. Use `update_classification` if "
                         "necessary."
                     % (classified[0][0], classified[0][1], classified[0][2]))
-        for key in reversed(keys):  # remove any invalid keys
+
+        # Make sure all keys are valid
+        for key in reversed(keys):
             if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
 
@@ -3279,7 +3286,10 @@ class SedmDB:
                        'redshift_err': float, 'classifier': str, 'score': float,
                        'phase': float, 'phase_err': float, 'score_type': str,
                        'class_source': str, 'class_template': str}
+
         keys = list(pardic.keys())
+
+        # Check id
         if 'id' in keys:
             class_id = pardic['id']
             id_classifier = self.get_from_classification(
@@ -3288,7 +3298,7 @@ class SedmDB:
                 return -1, "ERROR: no classification entry with the given id!"
             elif id_classifier[0] == -1:
                 return id_classifier
-
+            # Must match classifier and spec_id
             if 'classifier' in keys:
                 if not pardic['classifier'] == id_classifier[0][1]:
                     return -1, "ERROR: classifier provided does not match " \
@@ -3311,7 +3321,8 @@ class SedmDB:
         else:
             return -1, "ERROR: needs id or both spec_id and classifier"
 
-        for key in reversed(keys):  # check for any invalid keys
+        # Make sure all keys are valid
+        for key in reversed(keys):
             if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
 

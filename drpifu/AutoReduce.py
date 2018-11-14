@@ -846,6 +846,17 @@ def update_spec(input_specfile):
         'psf_adr_pa': 0., 'psf_adr_z': 0., 'psf_adr_c2': 0., 'fluxcal': False,
         'fluxcalfile': '', 'extr_type': '', 'cube_id': 0
     }
+    class_header_dict = {
+        'classification': 'SNIDTYPE', 'redshift': 'SNIDZMED',
+        'redshift_err': 'SNIDZERR', 'score': 'SNIDRLAP', 'phase': 'SNIDAMED',
+        'phase_err': 'SNIDAERR', 'class_template': 'SNIDTEMP'
+    }
+    class_dict = {
+        'spec_id': 0, 'object_id': 0, 'classification': '',
+        'redshift': 0., 'redshift_err': 0., 'classifier': 'SNID', 'score': 0.,
+        'phase': 0., 'phase_err': 0., 'score_type': 'RLAP',
+        'class_source': '', 'class_template': ''
+    }
 
     # Get utdate
     indir = '/'.join(input_specfile.split('/')[:-1])
@@ -856,6 +867,7 @@ def update_spec(input_specfile):
 
     # Get object name
     object = ff[0].header['OBJECT'].split()[0]
+    class_dict['class_source'] = object
 
     # Get header keyword values
     for key in header_dict.keys():
@@ -864,6 +876,26 @@ def update_spec(input_specfile):
             spec_dict[key] = ff[0].header[hk]
         else:
             logging.warning("Header keyword not found: %s" % hk)
+
+    # Check for classification info
+    if 'SNIDTYPE' in ff[0].header:
+        if 'NONE' in ff[0].header['SNIDTYPE']:
+            logging.info("SNID was unable to type %s" % input_specfile)
+        else:
+            for key in class_header_dict.keys():
+                hk = class_header_dict[key]
+                if hk in ff[0].header:
+                    class_dict[key] = ff[0].header[hk]
+                else:
+                    logging.warning("Header keyword not found: %s" % hk)
+            if 'SNIDSUBT' in ff[0].header:
+                if '-' not in ff[0].header['SNIDSUBT']:
+                    class_dict['classification'] = \
+                        class_dict['classification'] + ' ' + \
+                        ff[0].header['SNIDSUBT']
+    else:
+        logging.info("No SNID info in %s" % input_specfile)
+
     ff.close()
 
     # Add fitsfile
@@ -895,14 +927,15 @@ def update_spec(input_specfile):
         logging.info("Spectrum already in db: %s" % input_specfile)
         return spec_id
 
-    # Get observation id
+    # Get observation and object ids
     ifufile = 'ifu' + '_'.join(
         input_specfile.split('ifu')[-1].split('_')[:4]) + '.fits'
-    observation_id = sedmdb.get_from_observation(['id'],
+    observation_id = sedmdb.get_from_observation(['id', 'object_id'],
                                                  {'fitsfile': ifufile},
                                                  {'fitsfile': '~'})
     if observation_id:
         spec_dict['observation_id'] = observation_id[0][0]
+        class_dict['object_id'] = observation_id[0][1]
     else:
         logging.error("No observation_id for %s" % ifufile)
         return -1
@@ -922,7 +955,12 @@ def update_spec(input_specfile):
 
         # Add into database
         spec_id, status = sedmdb.add_spec(spec_dict)
+        # update classification
+        class_dict['spec_id'] = spec_id
         logging.info(status)
+        class_id, cstatus = sedmdb.add_classification(class_dict)
+        logging.info("Classification accepted with id %d, and status %s",
+                     (class_id, cstatus))
         return spec_id
     else:
         logging.error("ERROR: no spec_calib_id found for %s" % utdate)
