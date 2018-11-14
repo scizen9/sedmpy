@@ -962,7 +962,7 @@ def update_spec(input_specfile):
         logging.info(status)
         if good_class:
             class_id, cstatus = sedmdb.add_classification(class_dict)
-            logging.info("Classification accepted with id %d, and status %s",
+            logging.info("Classification accepted with id %d, and status %s" %
                          (class_id, cstatus))
         else:
             logging.info("No classification associated with input spectrum")
