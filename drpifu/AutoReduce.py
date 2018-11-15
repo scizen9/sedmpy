@@ -1051,7 +1051,7 @@ def email_user(spec_file, utdate, object_name):
     elif quality == 4:
         status = 'IFU auto-extraction failed: > 20% of flux is negative.'
     elif quality == 5:
-        status = 'IFU auto-extraction failed: guider astrometry failure; no' \
+        status = 'IFU auto-extraction failed: guider astrometry failure; no ' \
                  'guarantee that the target is in the IFU or well exposed.'
     else:
         status = 'IFU auto-extraction succeeded.'
