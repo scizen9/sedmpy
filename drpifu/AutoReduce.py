@@ -1713,7 +1713,7 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
     # First update ztf marshal
     cmd = ("make", "ztfupload")
     retcode = subprocess.call(cmd)
-    if not retcode:
+    if retcode:
         logging.warning("Not all spectra uploaded to marshal")
     # Now update sedmdb
     flist = glob.glob(os.path.join(red_dir, ut_dir, "spec*.fits"))
