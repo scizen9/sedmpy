@@ -1719,6 +1719,7 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
     flist = glob.glob(os.path.join(red_dir, ut_dir, "spec*.fits"))
     for file in flist:
         if 'failed' in file:
+            print("Skipping failed extraction: %s" % file)
             continue
         update_spec(file)
 
