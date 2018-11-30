@@ -1699,7 +1699,7 @@ class SedmDB:
                     # if the entry is greater than 1000 then it should have come from the GROWTH MARSHAL
 
                     if i[3] and i[3] > 1000:
-                        ret = growth.update_request(request_id=i[3], output_dir='/scr7/rsw/',
+                        ret = growth.update_request(request_id=i[3], output_dir='/scr/rsw/',
                                                     status='EXPIRED')
                         print(ret)
 
