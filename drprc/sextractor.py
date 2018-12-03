@@ -510,6 +510,7 @@ def analyse_image(sexfile, arcsecpix=0.394, is_rccam=True):
     nsources = len(s) 
     if (nsources == 0):
         return 0,0,0,0
+
     #Select round sources (ellipticity is 1-axis_ratio)
     s = s[s["ellipticity"]<0.3]
     ellipticity = np.nanmedian(s["ellipticity"])

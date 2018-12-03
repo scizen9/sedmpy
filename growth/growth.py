@@ -490,15 +490,20 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     else:
         print("Updating target %s using id %d" % (objname, marshal_id))
 
+        now = datetime.datetime.now()
+        ts_str = "%4d%02d%02d %02d_%02d_%02d" % (now.year, now.month,
+                                                 now.day, now.hour,
+                                                 now.minute,
+                                                 now.second)
         if add_spectra:
 
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=marshal_id,
                                       output_dir=out_dir)
             if not spec_ret:
-                spec_stat = 'IFU: Failed'
+                spec_stat = 'IFU: Failed ' + ts_str
             else:
-                spec_stat = 'IFU: Complete'
+                spec_stat = 'IFU: Complete ' + ts_str
                 annots_posted = add_annots(spectra_file, auth)
                 if annots_posted:
                     print("Annotations successfully posted")
@@ -508,9 +513,9 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         if add_phot:
             phot_ret = upload_phot(phot_file, request_id=marshal_id)
             if not phot_ret:
-                phot_stat = 'RC: Failed'
+                phot_stat = 'RC: Failed ' + ts_str
             else:
-                phot_stat = 'RC: Complete'
+                phot_stat = 'RC: Complete ' + ts_str
 
         if add_status:
             if add_spectra and add_phot:
@@ -573,10 +578,18 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
             print("No REQ_ID found: %s" % fi)
             continue
         # Extract object name
+        fname = os.path.basename(fi)
         if "spec" in fi:
-            objname = os.path.basename(fi).split('_')[-1].split('.')[0]
+            objname = fname.split('_')[-1].split('.')[0]
         else:
-            objname = os.path.basename(fi).split('_')[0]
+            objname = fname.split('_')[0]
+        # Extract observation id
+        if 'ifu' in fname:
+            obs_id = ":".join(fname.split('ifu')[-1].split('_')[1:4])
+        elif 'rc' in fname:
+            obs_id = ":".join(fname.split('rc')[-1].split('_')[1:4])
+        else:
+            obs_id = "..:..:.."
         # Are we uploading only one file?
         if upfil is not None:
             # if this is not the file, skip
@@ -596,7 +609,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
         # Only need to pull requests the first time
         pr = False
         # log upload
-        out.write(" %s: " % objname)
+        out.write("%s %s: " % (obs_id, objname))
         # Was a spectrum uploaded?
         if spec:
             out.write("OK ")

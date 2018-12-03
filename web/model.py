@@ -150,6 +150,85 @@ def get_object_info(name=None, ra=None, dec=None, radius=5, out_type='html'):
     else:
         return obj_list
 
+def fancy_request_table(df):
+    '''
+    df: pandas dataframe
+        intended for tables of requests from get_requests_for_user, ie with columns:
+            ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority','status', 'lastmodified', 'UPDATE']
+        
+    returns: IPython HTML object
+        the html for df but with the following changes:
+            -if 'RA' and 'Dec' mean it won't rise tonight, both fields are red
+            -'name' column now has links to the growth marshal
+            -table width is 100%, which is important for the fancy tables to display right
+            -priority is an int, I don't know why it was ever a float  --> it is a float to allow finer 
+                                                                           tuning of the scheduler(rsw)
+    '''
+    
+    def highlight_set(row, color='#ff9999'):
+        '''makes 'RA' and 'DEC' fields highlighted if it won't get high when it's dark out
+        meant for tables with both 'RA' and 'DEC' columns
+        '''
+        red = 'background-color: {}'.format(color)
+        try:
+            best_ra = ((Time.now().mjd - 58382.) * 360/365.)  # peak at longitude-based midnight, approx
+            if 180 - abs(180 - (best_ra - float(row['RA'])) % 360) > 120:  # more than 8h from midnight 
+                return [red if i == 'RA' else '' for i in row.index.values]
+            if row['DEC'] < -15.: # red if it'll never go above ~40deg
+                return [red if i == 'DEC' else '' for i in row.index.values]
+            else:
+                return ['' for i in row.index.values]
+        except KeyError:
+            return ['' for i in row.index.values]
+
+    def improve_obs_seq(li):
+        """
+        takes a list like ['1ifu'], [180, 180, 180], etc and makes it take up
+        less space and also be more human-readable
+        """
+        if type(li[0]) == str:
+            # ie it's an obs_seq
+            for i, val in enumerate(li):
+                if val[0] == '1':
+                    li[i] = val[1:]
+                else:
+                    li[i] = val[1:] + ' x' + val[0]
+        else:  # ie exptime
+            for i, val in enumerate(li):
+                if all([j == val for j in li[i:]]) and i < len(li) - 1:
+                    # all the rest match, of which there's >1
+                    li = li[:i] + ['{}ea'.format(val)]
+                    break
+                else:
+                    li[i] = str(val)
+        return ', '.join(li)
+
+    df['status'] = [i.lower() for i in df['status']]
+    df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '') for i in df['allocation']]
+    for col in ('obs_seq', 'exptime'):
+        df[col] = [improve_obs_seq(i) for i in df[col]]
+
+    styled = df.style\
+               .apply(highlight_set, axis=1)\
+               .format({'object': '<a href="http://skipper.caltech.edu:8080/cgi-bin/growth/'\
+                                  'view_source.cgi?name={0}">{0}</a>', 'RA': '{:.3f}',
+                        'DEC': '{:.3f}', 'priority': '{:.0f}', 'start date': '{:%b %d}',
+                        'end date': '{:%b %d}', 'lastmodified': '{:%b %d %H:%M}',
+                        'UPDATE': '<a href="{}">+</a>'})\
+               .set_table_styles([{'text-align': 'left'}])\
+               .set_table_attributes('style="width:100%" class="dataframe_fancy table '\
+                                     'table-striped nowrap"')\
+               .set_table_styles(
+                    [{'selector': '.row_heading',
+                         'props': [('display', 'none')]},
+                     {'selector': '.blank.level0',
+                         'props': [('display', 'none')]}])
+    # this .replace() thing is super bad form but it's faster for now than finding the right way              
+    return styled.render()\
+                 .replace('RA</th>', '<a href="#" data-toggle="tooltip" '\
+                          'title="red if peaks >8h from midnight">RA</a></th>')\
+                 .replace('DEC</th>', '<a href="#" data-toggle="tooltip" '\
+                          'title="red if peaks below 40deg">dec</a></th>')
 
 def get_homepage(userid, username):
     sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
@@ -170,19 +249,13 @@ def get_homepage(userid, username):
     ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': active.to_html(escape=False,
-                                                   classes='table',
-                                                   index=False),
+    sedm_dict['active'] = {'table': fancy_request_table(active),
                            'title': 'Active Requests for the last 7 days'}
 
-    sedm_dict['complete'] = {'table': complete.to_html(escape=False,
-                                                       classes='table',
-                                                       index=False),
+    sedm_dict['complete'] = {'table': fancy_request_table(complete),
                              'title': 'Completed Requests in the last 7 days'}
 
-    sedm_dict['expired'] = {'table': expired.to_html(escape=False,
-                                                     classes='table',
-                                                     index=False),
+    sedm_dict['expired'] = {'table': fancy_request_table(expired),
                             'title': 'Expired in the last 7 days'}
 
     sedm_dict['allocations'] = {'table': ac.to_html(escape=False,
@@ -819,6 +892,28 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
 def convert_to_link(reqid):
     return """<a href='request?request_id=%s'>+</a>""" % reqid
 
+###############################################################################
+# THIS SECTION HANDLES ALL THINGS RELATED TO THE OBJECT PAGE.                 #
+# KEYWORD:OBJECT                                                              #
+###############################################################################
+def get_object(object_name, user_id):
+    """
+    
+    :param object_name: 
+    :param user_id: 
+    :return: 
+    """
+
+    # 1. Start by getting the requested object
+    objects = get_object_info(object_name, out_type='html')
+
+    # 2. Check if there were and objects if not then go on
+    if not objects:
+        return {'message': 'Could not find any targets with that name under '
+                           'your allocation'}
+
+    else:
+        return {'message': objects}
 
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE LOGIN PAGE.                  #
@@ -842,6 +937,35 @@ def check_login(username, password):
     else:
         return False, 'Incorrect username or password!!'
 
+
+def password_change(form, user_id):
+    """
+    :param form: 
+    :param user_id: 
+    :return: 
+    """
+    # check for correct password and change if true
+    password = form.password.data
+    new_password = form.pass_new.data
+    new_password_conf = form.pass_conf.data
+    user_pass = db.get_from_users(['username', 'password', 'id'],
+                                  {'id': user_id})
+
+    if not user_pass:
+        return {'message': "User not found"}
+
+    elif user_pass[0] == -1:
+        message = user_pass[1]
+        return {'message': message}
+
+    elif check_password_hash(user_pass[0][1], password):
+        if new_password == new_password_conf:
+            db.update_user({'id': user_pass[0][2],
+                            'password': new_password})
+            return {'message': 'Password Changed!'}
+    else:
+        message = "Incorrect username or password!"
+        return {'message': message}
 
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE STATS PAGE.                  #
@@ -1603,9 +1727,7 @@ def get_active_visibility(userid):
     ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': active.to_html(escape=False,
-                                                   classes='table',
-                                                   index=False),
+    sedm_dict['active'] = {'table': fancy_request_table(active),
                            'title': 'Active Requests for the last 7 days'}
 
     sedm_dict['script'], sedm_dict['div'] = plot_visibility(userid, sedm_dict)

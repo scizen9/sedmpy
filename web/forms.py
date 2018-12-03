@@ -9,6 +9,17 @@ class LoginForm(FlaskForm):
     username = fields.StringField('username')
     password = fields.PasswordField('password')
 
+
+class PassChangeForm(FlaskForm):
+    password = fields.PasswordField('Old Password',
+                                    validators=[validators.input_required()])
+    pass_new = fields.PasswordField('New Password',
+                                    validators=[validators.input_required(),
+                                                validators.EqualTo('pass_conf',
+                                                                   message='Passwords must match')] )
+    pass_conf = fields.PasswordField('Confirm New Password',
+                                     validators=[validators.input_required()])
+
 class AddCSVRequest(FlaskForm):
     """
     Class to handle csv request
@@ -18,7 +29,7 @@ class AddCSVRequest(FlaskForm):
     textbox = fields.TextAreaField("Add CSV Request")
 
 class FindObject(FlaskForm):
-    pass
+    object_name = fields.StringField("Enter object name")
 
 class AddFixedRequest(FlaskForm):
     # object data
@@ -27,7 +38,11 @@ class AddFixedRequest(FlaskForm):
     marshal_id = fields.HiddenField('Hidden', default=-1)
     user_id = fields.HiddenField('Hidden')
     allocation_id = fields.HiddenField('Hidden')
-    obj_name = fields.StringField('Object Name', [validators.input_required()])
+    obj_name = fields.StringField('Object Name (Names should be limited to 26 '
+                                  'Characters and have no blank spaces are '
+                                  'special characters such as ["*_.] '
+                                  'dashes are acceptable)',
+                                  [validators.input_required()])
     status = fields.SelectField('Status',
                                 coerce=str,
                                 choices=[('DEFAULT', "--------"),

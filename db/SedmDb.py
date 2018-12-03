@@ -2211,7 +2211,7 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def add_spec(self, pardic):
+    def add_spec(self, pardic, update=False):
         """
         Adds the reduced spectrum or, if the observation already has a spectrum,
             updates it
@@ -2257,6 +2257,7 @@ class SedmDB:
                     'fluxcal' (bool),
                     'fluxcalfile', (abspath str)
                     'extr_type' (str)
+            update (bool): set to true to update an existing entry
 
         Returns:
             (-1, "ERROR...") if there was an issue
@@ -2275,16 +2276,16 @@ class SedmDB:
                        'skysub': bool, 'extract_x': float, 'extract_y': float,
                        'extract_pa': float, 'extract_a': float,
                        'extract_b': float, 'ad_red': float, 'ad_blue': float,
-                       'prlltc': float, 'flexure_x_corr_nm': float,
-                       'flexure_y_corr_pix': float, 'reducer': str,
+                       'prlltc': float, 'reducer': str, 'airmass': float,
+                       'atmcorr': float,
                        'fwhm': float, 'background': float, 'line_fwhm': float,
                        'pos_ok': bool, 'srcpos': str, 'pos_x_spax': float,
                        'pos_y_spax': float, 'psf_model': str, 'psf_fwhm': float,
                        'psf_ell': float, 'psf_adr_pa': float,
                        'psf_adr_z': float, 'psf_adr_c2': float, 'fluxcal': bool,
-                       'fluxcalfile': str, 'extr_type': str}
+                       'fluxcalfile': str, 'extr_type': str, 'cube_id': int}
 
-        required_keys = ('spec_calib_id', 'observation_id', 'asciifile',
+        required_keys = ('spec_calib_id', 'observation_id', 'fitsfile',
                          'quality')
 
         new_spec_id = _id_from_time()
@@ -2297,21 +2298,23 @@ class SedmDB:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
 
-        spec_id = self.get_from_spec(['id'], {'observation_id':
-                                              pardic['observation_id']})
-        # Test if observation already has a spectrum
-        if spec_id:
+        # Are we updating?
+        if update:
+            # Must have ID
+            if 'id' in pardic:
+                spec_id = pardic['id']
+            else:
+                return -1, "ERROR: must include id if updating record"
             # Verify spec_id
-            if spec_id[0] == -1:
+            if spec_id is None or spec_id <= 0:
                 return spec_id, "ERROR: something went wrong getting spec id!"
             # Validate input keys
             for key in reversed(keys):  # TODO: test the updating
                 if key not in param_types:
                     return -1, "ERROR: %s is an invalid key!" % (key,)
             # Update existing record with input values
-            pardic['id'] = spec_id[0][0]
             update_sql = _generate_update_sql(pardic, keys, 'spec')
-            print(update_sql)
+            # print(update_sql)
             try:
                 self.execute_sql(update_sql)
             except exc.IntegrityError:
@@ -2320,9 +2323,9 @@ class SedmDB:
             except exc.ProgrammingError:
                 return -1, "ERROR: add_spec sql command failed with a " \
                            "ProgrammingError!"
-            return (spec_id[0][0],
-                    "Spectrum updated for observation_id %s, columns " %
-                    (pardic['observation_id'],)
+            return (spec_id,
+                    "Spectrum updated for spec_id %s, columns " %
+                    (pardic['id'],)
                     + str(keys)[1:-1])
         # New entry in spec table
         else:
@@ -3179,34 +3182,51 @@ class SedmDB:
                     'classifier' (str),
                     'score' (float)
                 optional:
+                    'auto' (bool)
                     'phase' (float),
                     'phase_err' (float)
+                    'score_type' (str)
+                    'class_source (str)'
+                    'class_template (str)'
         Returns:
             (-1, "ERROR...") if there is an issue
 
             (id (long), 'Classification added") if it was successful
         """
-        param_types = {'id': int, 'spec_id': int, 'object_id': int, 'classification': str, 'redshift': float,
-                       'redshift_err': float, 'classifier': str, 'score': float, 'phase': float, 'phase_err': float}
-        # TODO: clean up the required parameters, test
-        id = _id_from_time()
-        pardic['id'] = id
+        param_types = {'id': int, 'spec_id': int, 'object_id': int,
+                       'classification': str, 'redshift': float, 'auto': bool,
+                       'redshift_err': float, 'classifier': str, 'score': float,
+                       'phase': float, 'phase_err': float, 'score_type': str,
+                       'class_source': str, 'class_template': str}
+        required_keys = ['spec_id', 'object_id', 'classification', 'redshift',
+                         'redshift_err', 'classifier', 'score']
+        # Get id number
+        class_id = _id_from_time()
+        pardic['id'] = class_id
+
         keys = list(pardic.keys())
-        for key in ['spec_id', 'object_id', 'classification', 'redshift', 'redshift_err', 'classifier', 'score']:
+
+        # Do we have all required keys?
+        for key in required_keys:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
-        classified = self.get_from_classification(['classification', 'redshift', 'redshift_err'],
-                                                  {'spec_id': pardic['spec_id'], 'classifier': pardic['classifier']})
+
+        # Has this classification already been entered?
+        classified = self.get_from_classification(
+            ['classification', 'redshift', 'redshift_err', 'spec_id'],
+            {'spec_id': pardic['spec_id'], 'classifier': pardic['classifier']})
         if classified:
             if classified[0] == -1:
                 return classified
-            return (-1, "ERROR: entry exists for that spectrum and classifier with classification %s, redshift %s, "
-                        "redshift_err %s. Use `update_classification` if necessary."
+            return (-1, "ERROR: entry exists for that spectrum and classifier"
+                        " with classification %s, redshift %s, "
+                        "redshift_err %s. Use `update_classification` if "
+                        "necessary."
                     % (classified[0][0], classified[0][1], classified[0][2]))
-        for key in reversed(keys):  # remove any invalid keys
-            if key not in ['id', 'spec_id', 'object_id', 'classification', 'redshift', 'redshift_err', 'classifier',
-                           'score',
-                           'phase', 'phase_err']:
+
+        # Make sure all keys are valid
+        for key in reversed(keys):
+            if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
 
         type_check = _data_type_check(keys, pardic, param_types)
@@ -3217,10 +3237,15 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_classification sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_classification sql command failed with an " \
+                       "IntegrityError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): add_classification sql command " \
+                       "failed with an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_classification sql command failed with a ProgrammingError!"
-        return id, "Classification added"
+            return -1, "ERROR: add_classification sql command failed with a " \
+                       "ProgrammingError!"
+        return class_id, "Classification added"
 
     def update_classification(self, pardic):
         """
@@ -3234,49 +3259,73 @@ class SedmDB:
                      'spec_id' (int/long),
                      'classifier' (str)
                 optional:
+                    'object_it' (int/long),
                     'classification' (str),
                     'redshift' (float),
                     'redshift_err' (float),
+                    'auto' (bool),
                     'phase' (float),
                     'phase_err' (float),
                     'score' (float)
-                Note: this function will not modify id, spec_id, classifier or object_id
+                    'redshift' (float),
+                    'redshift_err' (float),
+                    'classifier' (str),
+                    'score' (float)
+                    'score_type' (str)
+                    'class_source (str)'
+                    'class_template (str)'
+                Note: this function will not modify id, spec_id,
+                classifier or object_id
 
         Returns:
             (-1, "ERROR...") if there is an issue
 
-            (id, "Classification updated, columns 'column_names'") if it was successful
+            (id, "Classification updated, columns 'column_names'") if it was
+            successful
         """
-        param_types = {'id': int, 'spec_id': int, 'classifier': str, 'classification': str, 'redshift': float,
-                       'redshift_err': float, 'phase': float, 'phase_err': float, 'score': float}
+        param_types = {'id': int, 'spec_id': int, 'object_id': int,
+                       'classification': str, 'redshift': float, 'auto': bool,
+                       'redshift_err': float, 'classifier': str, 'score': float,
+                       'phase': float, 'phase_err': float, 'score_type': str,
+                       'class_source': str, 'class_template': str}
+
         keys = list(pardic.keys())
+
+        # Check id
         if 'id' in keys:
-            id_classifier = self.get_from_classification(['spec_id', 'classifier'], {'id': pardic['id']})
+            class_id = pardic['id']
+            id_classifier = self.get_from_classification(
+                ['spec_id', 'classifier'], {'id': pardic['id']})
             if not id_classifier:
                 return -1, "ERROR: no classification entry with the given id!"
             elif id_classifier[0] == -1:
                 return id_classifier
-
+            # Must match classifier and spec_id
             if 'classifier' in keys:
                 if not pardic['classifier'] == id_classifier[0][1]:
-                    return -1, "ERROR: classifier provided does not match classification id!"
+                    return -1, "ERROR: classifier provided does not match " \
+                               "classification id!"
             if 'spec_id' in keys:
                 if not pardic['spec_id'] == id_classifier[0][0]:
-                    return -1, "ERROR: spec_id provided does not match classification id!"
+                    return -1, "ERROR: spec_id provided does not match " \
+                               "classification id!"
             keys.remove('id')
         elif 'spec_id' in keys and 'classifier' in keys:
-            id = self.get_from_classification(['id'], {'spec_id': pardic['spec_id'],
-                                                       'classifier': pardic['classifier']})
-            if not id:
-                return -1, "ERROR: no classification entry with the given spec_id and classifier!"
-            elif id[0] == -1:
-                return id
-            pardic['id'] = id[0][0]
+            class_id = self.get_from_classification(
+                ['id'], {'spec_id': pardic['spec_id'],
+                         'classifier': pardic['classifier']})
+            if not class_id:
+                return -1, "ERROR: no classification entry with the given " \
+                           "spec_id and classifier!"
+            elif class_id[0] == -1:
+                return class_id
+            pardic['id'] = class_id[0][0]
         else:
             return -1, "ERROR: needs id or both spec_id and classifier"
 
-        for key in reversed(keys):  # remove 'object_id', 'classifier' and any invalid keys
-            if key not in ['id', 'classification', 'redshift', 'redshift_err', 'phase', 'phase_err', 'score']:
+        # Make sure all keys are valid
+        for key in reversed(keys):
+            if key not in param_types:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
 
         if len(keys) == 0:
@@ -3300,10 +3349,15 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_classification sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_classification sql command failed with " \
+                       "an IntegrityError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): add_classification sql command " \
+                       "failed with an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_classification sql command failed with a ProgrammingError!"
-        return pardic['id'], "Classification updated, columns " + str(keys)[1:-1]
+            return -1, "ERROR: update_classification sql command failed with " \
+                       "a ProgrammingError!"
+        return class_id, "Classification updated, columns " + str(keys)[1:-1]
 
     def get_from_classification(self, values, where_dict={}, compare_dict={}):
         """
@@ -3324,22 +3378,34 @@ class SedmDB:
                 'classification' (str),
                 'redshift' (float),
                 'redshift_err' (float),
+                'auto' (bool),
                 'phase' (float),
                 'phase_err' (float),
                 'score' (float)
+                'score_type' (str)
+                'class_source (str)'
+                'class_template (str)'
 
         Returns:
-            list of tuples containing the values for classifications matching the criteria
+            list of tuples containing the values for classifications
+            matching the criteria
 
-            empty list if no classification entries match the ``where_dict`` criteria
+            empty list if no classification entries match the
+            ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'spec_id': int, 'object_id': int, 'classification': str, 'redshift': float, 'id': int,
-                          'redshift_err': float, 'classifier': str, 'score': float, 'phase': float, 'phase_err': float}
+        allowed_params = {
+                'id': int, 'spec_id': int, 'object_id': int,
+                'classification': str, 'redshift': float, 'auto': bool,
+                'redshift_err': float, 'classifier': str,
+                'score': float, 'phase': float, 'phase_err': float,
+                'score_type': str, 'class_source': str,
+                'class_template': str
+        }
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict,
-                                   'classification')  # checks type and
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'classification')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -3347,6 +3413,9 @@ class SedmDB:
             results = self.execute_sql(sql)
         except exc.IntegrityError:
             return -1, "ERROR: sql command failed with an IntegrityError!"
+        except psycopg2.IntegrityError:
+            return -1, "ERROR(psycopg2): add_classification sql command " \
+                       "failed with an IntegrityError!"
         except exc.ProgrammingError:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results

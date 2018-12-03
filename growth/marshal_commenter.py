@@ -26,14 +26,14 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
         then call add_spec_attachment, etc methods to it. Another day '\_0_/'
     """
 
-    obsdate = obsdate.replace('-', '')  # YYYYMMDD or YYYY-MM-DD or Y-YY-YM-MDD
-
-    source_summary = None
+    try:
+        source_summary = requests.get(growth_source_summary_url
+                                      + ztfname, auth=auth).json()
+    except json.decoder.JSONDecodeError:
+        print("ERROR - json could not decode")
+        return None, None
 
     if not sourceid:
-        if not source_summary:
-            source_summary = requests.get(growth_source_summary_url
-                                          + ztfname, auth=auth).json()
         try:
             sourceid = source_summary['id']
         except IndexError as e:
@@ -43,9 +43,7 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
             print("ERROR - could not obtain source summary")
 
     if not specid:
-        if not source_summary:
-            source_summary = requests.get(growth_source_summary_url
-                                          + ztfname, auth=auth).json()
+        obsdate = obsdate.replace('-', '')  # YYYYMMDD, YYYY-MM-DD, Y-YY-YM-MDD
         try:
             specid = [spec['specid']
                       for spec in source_summary['uploaded_spectra']
@@ -54,13 +52,11 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
                       and spec['reducedby'].strip() == 'auto'][-1]
         except KeyError:
             print("ERROR - could not obtain source summary")
-            return None, None
         except IndexError as e:
             print(e)
             pprint([(spec['reducedby'], spec['obsdate'])
                     for spec in source_summary['uploaded_spectra']
                     if spec['instrumentid'] == 65])
-            raise
     return sourceid, specid
 
 
@@ -177,22 +173,30 @@ def add_SNID_pysedm_autoannot(fname, cred):
 
     # get the specid by comparing all the header info
     sourcename = header['name']
-    source_summary = requests.get(growth_base_url +
+    try:
+        source_summary = requests.get(growth_base_url +
                                   'source_summary.cgi?'
                                   'sourcename=%s' % sourcename,
                                   auth=cred).json()
+    except json.decoder.JSONDecodeError:
+        print("ERROR: could not decode results")
+        return False
 
     if 'uploaded_spectra' in source_summary:
-        for spec in source_summary['uploaded_spectra']:
-            f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
-                             + spec['datapath'],
-                             auth=cred).text
-            fheader = {line.split(':', 1)[0][1:].strip().lower():
-                       line.split(':', 1)[-1].strip()
-                       for line in f.split('\n') if '#' in line}
-            if header == fheader:
-                # specid = spec['specid']
-                break
+        if source_summary['uploaded_spectra']:
+            for spec in source_summary['uploaded_spectra']:
+                f = requests.get('http://skipper.caltech.edu:8080/growth-data/'
+                                 + spec['datapath'],
+                                 auth=cred).text
+                fheader = {line.split(':', 1)[0][1:].strip().lower():
+                           line.split(':', 1)[-1].strip()
+                           for line in f.split('\n') if '#' in line}
+                if header == fheader:
+                    # specid = spec['specid']
+                    break
+        else:
+            print("ERROR: No uploaded spectra for %s" % sourcename)
+            return False
 
     # PYSEDM_REPORT
     # must be posted after the SNID plot or else it'll be overwritten
