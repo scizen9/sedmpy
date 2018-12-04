@@ -1346,26 +1346,51 @@ class SedmDB:
             pardic:
                 required:
                     'object_id' (int/long)
-                    'mjd0' (float) (mjd of period 0)
                     'phasedays' (float) (period in days)
+                    one of:
+                        'mjd0' (float) (mjd of period 0)
+                        'phi' (float) (phase at jd=2,400,000 as in Sesar+2017)
 
         Returns:
             (-1: "ERROR...") if there is an issue
 
             (id (long), "Periodic information added") if it completes successfully
         """
-        param_types = {'id': int, 'object_id': int, 'mjd0': float, 'phasedays': float}
+        param_types = {'id': int, 'object_id': int, 'mjd0': float,
+                       'phi': float, 'phasedays': float}
         id = _id_from_time()
         pardic['id'] = id
         # TODO: which parameters are required? test
         keys = list(pardic.keys())
 
-        for key in ['object_id', 'mjd0', 'phasedays']:
+        # check we have all STRICTLY required keys
+        for key in ['object_id', 'phasedays']:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
 
-        for key in reversed(keys):
-            if key not in ['id', 'object_id', 'mjd0', 'phasedays']:
+        # check there's at least one of ('mjd0', 'phi')
+        if 'mjd0' in keys and 'phi' in keys:
+            # if there are both, check they don't conflict
+
+            # phi at jd=2,400,000 (ie mjd=-0.5) calculated using mjd0
+            phi_mjd0 = ((-0.5 - pardic['mjd0']) / pardic['phasedays']) % 1
+            # the 0.5 parts are to account for eg phi1=0.999, phi2=0.0001
+            phase_diff = (phi_mjd0 - pardic['phi'] + 0.5) % 1 - 0.5
+
+            if abs(phase_diff) > 0.03:
+                return -1, "ERROR: mjd0 {mjd0} and phi {phi} are " \
+                           "overdetermined and inconsistent".format(**pardic)
+            else:
+                print("mjd0 and phi differ by just %f periods" % phase_diff)
+                del pardic['phi'] # we really shouldn't overdetermine the db
+
+        elif 'mjd0' not in keys and 'phi' not in keys:
+            # we can't be missing both
+            return -1, "ERROR: mjd0 and phi both not provided!"
+            
+        # check we have no extraneous keys
+        for key in reversed(keys): # why are we reversing this? it's just a list
+            if key not in ['id', 'object_id', 'mjd0', 'phi', 'phasedays']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:

@@ -88,13 +88,15 @@ class ScheduleNight:
                                     a.time_allocated, a.program_id, a.active, 
                                     p.designator, p.name, p.group_id, p.pi,
                                     p.time_allocated, r.priority, p.inidate,
-                                    p.enddate 
+                                    p.enddate, pe.mjd0, pe.phasedays, pe.phi,
+                                    r.phasesamples, r.sampletolerance
                                     FROM "public".request r
-                                    INNER JOIN "public"."object" o ON ( r.object_id = o.id  )  
-                                    INNER JOIN "public".users u ON ( r.user_id = u.id  )  
-                                    INNER JOIN "public".allocation a ON ( r.allocation_id = a.id  )  
-                                    INNER JOIN "public".program p ON ( a.program_id = p.id  )
-                                    ${where_statement} 
+                                    INNER JOIN "public"."object" o ON (r.object_id = o.id)
+                                    INNER JOIN "public".users u ON (r.user_id = u.id)
+                                    INNER JOIN "public".allocation a ON (r.allocation_id = a.id)
+                                    INNER JOIN "public".program p ON (a.program_id = p.id)
+                                    LEFT JOIN "public".periodic pe on (pe.object_id=o.id)
+                                    ${where_statement}
                                     ${and_statement}
                                     ${group_statement}
                                     ${order_statement}
@@ -239,9 +241,9 @@ class ScheduleNight:
     def get_query(self, query, return_type=''):
         """
         Get a query return 
-        :param return_type: 
-        :param query: 
-        :return: 
+        :param return_type: str (will return pd.DataFrame if 'df')
+        :param query: str (sql query)
+        :return: dict or pd.DataFrame for results of query
         """
 
         if return_type == 'df':
@@ -249,17 +251,18 @@ class ScheduleNight:
         else:
             return self.ph_db.execute_sql(return_type='dict')
 
-    def load_targets(self, where_statement="", and_statement="",
+    def load_targets(self, where_statement="",
+                     and_statement="AND r.status = 'PENDING'",
                      group_statement="", order_statement="",
                      return_type=""):
         """
-
-        :param return_type: 
+        retrieves all targets in the database that march self.req_query
+        :param return_type: return_type kwarg of get_query()
         :param where_statement: 
         :param and_statement: 
         :param group_statement: 
         :param order_statement: 
-        :return: 
+        :return: pd.DataFrame if return_type is 'df', else dict
         """
 
         if not where_statement:
@@ -421,13 +424,20 @@ class ScheduleNight:
                                    return_type=''):
         """
 
-        :return: 
+        :return:
+            if no observable target:
+                False, False
+            elif return_type == 'html':
+                req_id: float
+                (obs_dict, html): tuple(dict, str)
+            else:
+                req_id: float
+                obs_dict: dict
         """
         print(obs_time)
 
         # If the target_list is empty then all we can do is return back no
         # target and do a standard for the time being
-        next_target = False
 
         if not isinstance(target_list, pd.DataFrame) and not target_list:
             print("Making a new target list")
@@ -437,7 +447,7 @@ class ScheduleNight:
             target_list = targets.sort_values(['priority'], ascending=[False])
 
         if len(target_list) == 0:
-            return next_target, False
+            return False, False
 
         if not obs_time:
             obs_time = Time(datetime.datetime.utcnow())
@@ -448,14 +458,27 @@ class ScheduleNight:
                 if row.obs_dict['ifu']:
                     continue
 
-            finish = start + TimeDelta(row.obs_dict['total'],
-                                       format='sec')
+            finish = start + TimeDelta(row.obs_dict['total'], format='sec')
 
             constraint = [astroplan.AirmassConstraint(min=airmass[0],
                                                       max=airmass[1]),
-                          astroplan.MoonSeparationConstraint(min=moon_sep[0] * u.degree)
-                          ]
-
+                          astroplan.MoonSeparationConstraint( \
+                                                    min=moon_sep[0] * u.degree)]
+                          
+            # we add an additional phase constraint if the object is periodic
+            if ~np.isnan(row['phasesamples']):
+                if ~np.isnan(row['mjd0']):
+                    epoch = Time(row['mjd0'], fmt='mjd')
+                else:
+                    # this is derived from a formula in Sesar et al 2017
+                    epoch = Time(2400000-row['phi']*row['phasedays'], fmt='jd')
+                    
+                periodic_event = astroplan.PeriodicEvent(epoch=epoch,
+                                        period=u.day * row['phasedays'])
+                constraint.append(astroplan.PhaseConstraint(periodic_event,
+                        min=(row['phasesamples'] - row['sampletolerance']) % 1,
+                        max=(row['phasesamples'] + row['sampletolerance']) % 1))
+                            
             if row.typedesig == 'f':
                 if astroplan.is_observable(constraint, self.obs_site,
                                            row.FixedObject,
@@ -469,24 +492,25 @@ class ScheduleNight:
                             rc_seq = 'NA'
                             rc_exptime = 'NA'
 
-                        html = self.tr_row.substitute({'allocation': row.allocation_id,
-                                                'obstime': obs_time.iso,
-                                                'objname': row.objname,
-                                                'contact': row.priority,
-                                                'project': row.designator,
-                                                'ra': row.ra,
-                                                'dec': row.dec,
-                                                'ifu_exptime': row.obs_dict['ifu_exptime'],
-                                                'rc_seq': rc_seq,
-                                                'rc_exptime': rc_exptime,
-                                                'total': row.obs_dict['total'],
-                                                'request_id': row.req_id})
+                        html = self.tr_row.substitute({ \
+                                    'allocation': row.allocation_id,
+                                    'obstime': obs_time.iso,
+                                    'objname': row.objname,
+                                    'contact': row.priority,
+                                    'project': row.designator,
+                                    'ra': row.ra,
+                                    'dec': row.dec,
+                                    'ifu_exptime': row.obs_dict['ifu_exptime'],
+                                    'rc_seq': rc_seq,
+                                    'rc_exptime': rc_exptime,
+                                    'total': row.obs_dict['total'],
+                                    'request_id': row.req_id})
                         return row.req_id, (row.obs_dict, html)
                     else:
                         return row.req_id, row.obs_dict
 
         # If we make it back out of the loop then there was no observable target
-        return next_target, False
+        return False, False
 
     def get_observing_times(self, obsdatetime=None, return_type=''):
         """
