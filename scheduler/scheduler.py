@@ -89,7 +89,7 @@ class ScheduleNight:
                                     p.designator, p.name, p.group_id, p.pi,
                                     p.time_allocated, r.priority, p.inidate,
                                     p.enddate, pe.mjd0, pe.phasedays, pe.phi,
-                                    r.phasesamples, r.sampletolerance
+                                    r.phase, r.sampletolerance
                                     FROM "public".request r
                                     INNER JOIN "public"."object" o ON (r.object_id = o.id)
                                     INNER JOIN "public".users u ON (r.user_id = u.id)
@@ -476,8 +476,8 @@ class ScheduleNight:
                 periodic_event = astroplan.PeriodicEvent(epoch=epoch,
                                         period=u.day * row['phasedays'])
                 constraint.append(astroplan.PhaseConstraint(periodic_event,
-                        min=(row['phasesamples'] - row['sampletolerance']) % 1,
-                        max=(row['phasesamples'] + row['sampletolerance']) % 1))
+                        min=(row['phase'] - row['sampletolerance']) % 1,
+                        max=(row['phase'] + row['sampletolerance']) % 1))
                             
             if row.typedesig == 'f':
                 if astroplan.is_observable(constraint, self.obs_site,
