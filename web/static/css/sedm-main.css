@@ -57,6 +57,10 @@ table.dataframe, .dataframe th, .dataframe td {
     font-size: 1.0em;
 }
 
+table.nowrap {
+    white-space: nowrap
+}
+
 .footer {
     position: absolute;
     bottom: 0;

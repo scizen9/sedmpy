@@ -26,14 +26,14 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
         then call add_spec_attachment, etc methods to it. Another day '\_0_/'
     """
 
-    obsdate = obsdate.replace('-', '')  # YYYYMMDD or YYYY-MM-DD or Y-YY-YM-MDD
-
-    source_summary = None
+    try:
+        source_summary = requests.get(growth_source_summary_url
+                                      + ztfname, auth=auth).json()
+    except json.decoder.JSONDecodeError:
+        print("ERROR - json could not decode")
+        return None, None
 
     if not sourceid:
-        if not source_summary:
-            source_summary = requests.get(growth_source_summary_url
-                                          + ztfname, auth=auth).json()
         try:
             sourceid = source_summary['id']
         except IndexError as e:
@@ -43,9 +43,7 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
             print("ERROR - could not obtain source summary")
 
     if not specid:
-        if not source_summary:
-            source_summary = requests.get(growth_source_summary_url
-                                          + ztfname, auth=auth).json()
+        obsdate = obsdate.replace('-', '')  # YYYYMMDD, YYYY-MM-DD, Y-YY-YM-MDD
         try:
             specid = [spec['specid']
                       for spec in source_summary['uploaded_spectra']
@@ -54,13 +52,11 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
                       and spec['reducedby'].strip() == 'auto'][-1]
         except KeyError:
             print("ERROR - could not obtain source summary")
-            return None, None
         except IndexError as e:
             print(e)
             pprint([(spec['reducedby'], spec['obsdate'])
                     for spec in source_summary['uploaded_spectra']
                     if spec['instrumentid'] == 65])
-            raise
     return sourceid, specid
 
 

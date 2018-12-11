@@ -45,6 +45,11 @@ try:
 except ImportError:
     import drpifu.Version as Version
 
+try:
+    import marshal_commenter as mc
+except ImportError:
+    import growth.marshal_commenter as mc
+
 drp_ver = Version.ifu_drp_version()
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -456,6 +461,8 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                 while stat_line:
                     if 'NSpax' in stat_line:
                         spec_calib_dict['nspaxels'] = int(stat_line.split()[-1])
+                        logging.info("Wave NSpax = %d" %
+                                     spec_calib_dict['nspaxels'])
                     elif 'MinRMS' in stat_line:
                         spec_calib_dict['wave_rms_min'] = \
                             float(stat_line.split()[-1])
@@ -476,10 +483,9 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
                 while stat_line:
                     if 'NSpax' in stat_line:
                         nspax = int(stat_line.split()[-1])
+                        logging.info("Dome NSpax = %d" % nspax)
                         if spec_calib_dict['nspaxels'] == 0:
                             spec_calib_dict['nspaxels'] = nspax
-                        elif spec_calib_dict['nspaxels'] != nspax:
-                            logging.warning("Wave and Dome NSpax values differ")
                     elif 'MinWid' in stat_line:
                         spec_calib_dict['width_rms_min'] = \
                             float(stat_line.split()[-1])
@@ -706,7 +712,8 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         logging.warning("SEDM db rejected cube")
                     # Use auto psf aperture for standard stars
                     logging.info("Extracting std star spectra for " + fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std")
+                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std",
+                           "--tag", "robot")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
@@ -737,7 +744,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             # Update SedmDb table spec
-                            # update_spec(proced, cube_id=cube_id)
+                            update_spec(proced)
                             logging.info("update of %s with cube_id %d" %
                                          (proced, cube_id))
                         else:
@@ -806,7 +813,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         if os.path.exists(proced):
                             email_user(proced, datestr, obj)
                             # Update SedmDb table spec
-                            # update_spec(proced, cube_id=cube_id)
+                            update_spec(proced)
                             logging.info("update of %s with cube_id %d" %
                                          (proced, cube_id))
                         else:
@@ -815,7 +822,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
     # END: dosci
 
 
-def update_spec(input_specfile, cube_id=None):
+def update_spec(input_specfile):
     """ Update the SEDM database on pharos by adding a new spec entry"""
 
     header_dict = {
@@ -839,6 +846,17 @@ def update_spec(input_specfile, cube_id=None):
         'psf_adr_pa': 0., 'psf_adr_z': 0., 'psf_adr_c2': 0., 'fluxcal': False,
         'fluxcalfile': '', 'extr_type': '', 'cube_id': 0
     }
+    class_header_dict = {
+        'classification': 'SNIDTYPE', 'redshift': 'SNIDZMED',
+        'redshift_err': 'SNIDZERR', 'score': 'SNIDRLAP', 'phase': 'SNIDAMED',
+        'phase_err': 'SNIDAERR', 'class_template': 'SNIDTEMP'
+    }
+    class_dict = {
+        'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
+        'redshift': 0., 'redshift_err': 0., 'classifier': 'SNID', 'score': 0.,
+        'phase': 0., 'phase_err': 0., 'score_type': 'RLAP',
+        'class_source': '', 'class_template': ''
+    }
 
     # Get utdate
     indir = '/'.join(input_specfile.split('/')[:-1])
@@ -847,6 +865,10 @@ def update_spec(input_specfile, cube_id=None):
     # Read header
     ff = pf.open(input_specfile)
 
+    # Get object name
+    object = ff[0].header['OBJECT'].split()[0]
+    class_dict['class_source'] = object
+
     # Get header keyword values
     for key in header_dict.keys():
         hk = header_dict[key]
@@ -854,31 +876,79 @@ def update_spec(input_specfile, cube_id=None):
             spec_dict[key] = ff[0].header[hk]
         else:
             logging.warning("Header keyword not found: %s" % hk)
-    ff.close()
 
-    # Open database connection
-    sedmdb = db.SedmDb.SedmDB()
+    # Check for classification info
+    good_class = False
+    if 'SNIDTYPE' in ff[0].header:
+        if 'NONE' in ff[0].header['SNIDTYPE']:
+            logging.info("SNID was unable to type %s" % input_specfile)
+        else:
+            good_class = True
+            for key in class_header_dict.keys():
+                hk = class_header_dict[key]
+                if hk in ff[0].header:
+                    class_dict[key] = ff[0].header[hk]
+                else:
+                    logging.warning("Header keyword not found: %s" % hk)
+            if 'SNIDSUBT' in ff[0].header:
+                if '-' not in ff[0].header['SNIDSUBT']:
+                    class_dict['classification'] = \
+                        class_dict['classification'] + ' ' + \
+                        ff[0].header['SNIDSUBT']
+    else:
+        logging.info("No SNID info in %s" % input_specfile)
+
+    ff.close()
 
     # Add fitsfile
     spec_dict['fitsfile'] = input_specfile
     # Add asciifile
     spec_dict['asciifile'] = input_specfile.split('.fit')[0] + '.txt'
 
-    # Add cube_id
-    if cube_id:
-        spec_dict['cube_id'] = cube_id
+    # Get marshal spec id
+    if 'STD' not in object and spec_dict['quality'] <= 2:
+        srcid = None
+        specid = None
+        srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
+        if srcid is None:
+            logging.info("Not an object on the marshal: %s" % object)
+        else:
+            if specid is None:
+                logging.info("No spectrum found on the marshal: %s" % object)
+            else:
+                spec_dict['marshal_spec_id'] = specid
 
-    # Get observation id
+    # Open database connection
+    sedmdb = db.SedmDb.SedmDB()
+
+    # Check if we've already added this spectrum
+    search_fits = input_specfile.replace('+', '\+')
+    spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': search_fits},
+                                   {'fitsfile': '~'})
+    if spec_id:
+        logging.info("Spectrum already in db: %s" % input_specfile)
+        return spec_id
+
+    # Get observation and object ids
     ifufile = 'ifu' + '_'.join(
         input_specfile.split('ifu')[-1].split('_')[:4]) + '.fits'
-    observation_id = sedmdb.get_from_observation(['id'],
+    observation_id = sedmdb.get_from_observation(['id', 'object_id'],
                                                  {'fitsfile': ifufile},
                                                  {'fitsfile': '~'})
     if observation_id:
         spec_dict['observation_id'] = observation_id[0][0]
+        class_dict['object_id'] = observation_id[0][1]
     else:
         logging.error("No observation_id for %s" % ifufile)
         return -1
+
+    # Get cube id
+    cube_id = sedmdb.get_from_cube(['id'], {'observation_id':
+                                            spec_dict['observation_id']})
+    if cube_id:
+        spec_dict['cube_id'] = cube_id[0][0]
+    else:
+        logging.warning("No cube id for %s" % input_specfile)
 
     # Get spec_calib id for this utdate
     spec_calib_id = sedmdb.get_from_spec_calib(['id'], {'utdate': utdate})
@@ -887,7 +957,15 @@ def update_spec(input_specfile, cube_id=None):
 
         # Add into database
         spec_id, status = sedmdb.add_spec(spec_dict)
+        # update classification
+        class_dict['spec_id'] = spec_id
         logging.info(status)
+        if good_class:
+            class_id, cstatus = sedmdb.add_classification(class_dict)
+            logging.info("Classification accepted with id %d, and status %s" %
+                         (class_id, cstatus))
+        else:
+            logging.info("No classification associated with input spectrum")
         return spec_id
     else:
         logging.error("ERROR: no spec_calib_id found for %s" % utdate)
@@ -973,8 +1051,8 @@ def email_user(spec_file, utdate, object_name):
     elif quality == 4:
         status = 'IFU auto-extraction failed: > 20% of flux is negative.'
     elif quality == 5:
-        status = 'IFU auto-extraction failed: guider astrometry failure - ' \
-                 'may be fixed by manual extraction.'
+        status = 'IFU auto-extraction failed: guider astrometry failure; no ' \
+                 'guarantee that the target is in the IFU or well exposed.'
     else:
         status = 'IFU auto-extraction succeeded.'
     link = 'http://pharos.caltech.edu/data_access/ifu?obsdate=%s' % utdate
@@ -1377,8 +1455,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # Go there
     os.chdir(outdir)
     # report
-    logging.info("Raw files from  : %s\nReduced files to: %s"
-                 % (srcdir, outdir))
+    logging.info("Raw files from  : %s" % srcdir)
+    logging.info("Reduced files to: %s" % outdir)
+
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
         # Wait for cal files until sunset
@@ -1625,6 +1704,26 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # END: obs_loop
 
 
+def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
+    """Update re-extracted spectra"""
+
+    # Check inputs
+    if not ut_dir:
+        return
+    # First update ztf marshal
+    cmd = ("make", "ztfupload")
+    retcode = subprocess.call(cmd)
+    if retcode:
+        logging.warning("Not all spectra uploaded to marshal")
+    # Now update sedmdb
+    flist = glob.glob(os.path.join(red_dir, ut_dir, "spec*.fits"))
+    for file in flist:
+        if 'failed' in file:
+            logging.info("Skipping failed extraction: %s" % file)
+            continue
+        update_spec(file)
+
+
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
        check_precal=True, indate=None, piggyback=False):
     """Outermost infinite loop that watches for a new raw directory.
@@ -1736,9 +1835,14 @@ if __name__ == '__main__':
                         help='Skip check of previous day for cal files?')
     parser.add_argument('--date', type=str, default=None,
                         help='Select date to process')
+    parser.add_argument('--update', type=str, default=None,
+                        help='UTDate directory to update')
 
     args = parser.parse_args()
 
-    go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
-       check_precal=(not args.skip_precal), indate=args.date,
-       piggyback=args.piggyback)
+    if args.update:
+        update(red_dir=args.reduxdir, ut_dir=args.update)
+    else:
+        go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
+           check_precal=(not args.skip_precal), indate=args.date,
+           piggyback=args.piggyback)
