@@ -22,7 +22,7 @@ if computer == 'pele':
     port = 5432
 elif computer == 'pharos':
     from db.SedmDb import SedmDB
-    scheduler_path = '/scr2/sedm/sedmpy/web/templates/scheduler_table.html'
+    scheduler_path = '/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html'
     server = 'localhost'
     port = 5432
 elif computer == 'ether':
@@ -114,7 +114,7 @@ class ScheduleNight:
                                                     unit="deg")
 
         target_df['FixedObject'] = target_df.apply(self._set_fixed_targets, axis=1)
-        target_df['HA'] = target_df.apply(self._set_target_ha, axis=1)
+        #target_df['HA'] = target_df.apply(self._set_target_ha, axis=1)
         return target_df
 
     def _set_fixed_targets(self, row):
@@ -417,7 +417,7 @@ class ScheduleNight:
 
     def get_next_observable_target(self, target_list=None, obs_time=None,
                                    max_time=-1, airmass=(1, 1.8),
-                                   moon_sep=(30, 180), ignore_target=None,
+                                   moon_sep=(20, 180), ignore_target=None,
                                    return_type=''):
         """
 
