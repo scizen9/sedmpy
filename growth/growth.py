@@ -319,7 +319,7 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     if not fill_by_file:
         submission_dict = {'exptime': exptime,
                            'obsdate': obsdate,
-                           'reducedby': reducedby}
+                           'reducedby': reducedby.strip()}
     else:
         keywords_dict = {'reducedby': 'REDUCER',
                          'obsdate': 'OBSDATE',
