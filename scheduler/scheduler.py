@@ -466,7 +466,7 @@ class ScheduleNight:
                                                     min=moon_sep[0] * u.degree)]
                           
             # we add an additional phase constraint if the object is periodic
-            if ~np.isnan(row['phasesamples']):
+            if row.typedesig == 'v'):
                 if ~np.isnan(row['mjd0']):
                     epoch = Time(row['mjd0'], fmt='mjd')
                 else:
@@ -479,7 +479,7 @@ class ScheduleNight:
                         min=(row['phase'] - row['sampletolerance']) % 1,
                         max=(row['phase'] + row['sampletolerance']) % 1))
                             
-            if row.typedesig == 'f':
+            if row.typedesig in 'vf':
                 if astroplan.is_observable(constraint, self.obs_site,
                                            row.FixedObject,
                                            times=[obs_time, finish]):
