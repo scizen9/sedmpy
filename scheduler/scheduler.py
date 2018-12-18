@@ -466,7 +466,7 @@ class ScheduleNight:
                                                     min=moon_sep[0] * u.degree)]
                           
             # we add an additional phase constraint if the object is periodic
-            if row.typedesig == 'v'):
+            if row.typedesig == 'v':
                 if ~np.isnan(row['mjd0']):
                     epoch = Time(row['mjd0'], fmt='mjd')
                 else:
