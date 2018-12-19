@@ -214,7 +214,7 @@ def fancy_request_table(df):
                                   'view_source.cgi?name={0}">{0}</a>', 'RA': '{:.3f}',
                         'DEC': '{:.3f}', 'priority': '{:.0f}', 'start date': '{:%b %d}',
                         'end date': '{:%b %d}', 'lastmodified': '{:%b %d %H:%M}',
-                        'UPDATE': '<a href="request?id={}">+</a>'})\
+                        'UPDATE': '<a href="request?request_id={}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
                .set_table_attributes('style="width:100%" class="dataframe_fancy table '\
                                      'table-striped nowrap"')\
