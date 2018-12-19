@@ -24,7 +24,7 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun, get_moon
 from scheduler.scheduler import ScheduleNight
 
-superuser_list = ['rsw', 'SEDm_admin', 189, 2, 20180523190352189]
+superuser_list = ['SEDm_admin', 2, 20180523190352189]
 
 pd.set_option('display.max_colwidth', -1)
 
@@ -882,9 +882,10 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
                                  'lastmodified', 'obs_seq', 'exptime', 'UPDATE'])
 
     if user_id in superuser_list:
-        data['UPDATE'] = data['UPDATE'].apply(convert_to_link)
+        pass
+        #data['UPDATE'] = data['UPDATE'].apply(convert_to_link)
     else:
-        data.drop(columns=['UPDATE', 'RA', 'DEC'])
+        data.drop(columns=['RA', 'DEC'])
 
     return data
 
