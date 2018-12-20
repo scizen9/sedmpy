@@ -24,7 +24,7 @@ import astropy.units as u
 from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun, get_moon
 from scheduler.scheduler import ScheduleNight
 
-superuser_list = ['rsw', 'SEDm_admin', 189, 2, 20180523190352189]
+superuser_list = ['SEDm_admin', 2, 20180523190352189]
 
 pd.set_option('display.max_colwidth', -1)
 
@@ -61,9 +61,9 @@ schedule = ScheduleNight()
 computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
-    raw_dir = '/scr7/rsw/sedm/raw/'
-    phot_dir = '/scr7/rsw/sedm/phot/'
-    redux_dir = '/scr7/rsw/sedm/redux/'
+    raw_dir = '/scr/rsw/sedm/raw/'
+    phot_dir = '/scr/rsw/sedm/phot/'
+    redux_dir = '/scr/rsw/sedm/redux/'
     host = 'pharos.caltech.edu'
     port = 5432
 
@@ -164,7 +164,7 @@ def fancy_request_table(df):
             -priority is an int, I don't know why it was ever a float  --> it is a float to allow finer 
                                                                            tuning of the scheduler(rsw)
     '''
-    
+
     def highlight_set(row, color='#ff9999'):
         '''makes 'RA' and 'DEC' fields highlighted if it won't get high when it's dark out
         meant for tables with both 'RA' and 'DEC' columns
@@ -214,7 +214,7 @@ def fancy_request_table(df):
                                   'view_source.cgi?name={0}">{0}</a>', 'RA': '{:.3f}',
                         'DEC': '{:.3f}', 'priority': '{:.0f}', 'start date': '{:%b %d}',
                         'end date': '{:%b %d}', 'lastmodified': '{:%b %d %H:%M}',
-                        'UPDATE': '<a href="{}">+</a>'})\
+                        'UPDATE': '<a href="request?request_id={}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
                .set_table_attributes('style="width:100%" class="dataframe_fancy table '\
                                      'table-striped nowrap"')\
@@ -882,15 +882,16 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
                                  'lastmodified', 'obs_seq', 'exptime', 'UPDATE'])
 
     if user_id in superuser_list:
-        data['UPDATE'] = data['UPDATE'].apply(convert_to_link)
+        pass
+        #data['UPDATE'] = data['UPDATE'].apply(convert_to_link)
     else:
-        data.drop(columns=['UPDATE', 'RA', 'DEC'])
+        data.drop(columns=['RA', 'DEC'])
 
     return data
 
 
 def convert_to_link(reqid):
-    return """<a href='request?request_id=%s'>+</a>""" % reqid
+    return """http://pharos.caltech.edu/request?request_id=%s""" % reqid
 
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE OBJECT PAGE.                 #
@@ -1325,7 +1326,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         object_id = object_ids[-1][0]
                     except IndexError:
                         print("There was an error. You can't see this")
-                    
+
 
                 target_requests = db.get_from_request(values=['allocation_id'],
                                                       where_dict={'object_id':
@@ -1748,23 +1749,23 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     requests = get_requests_for_user(2, sedm_dict['inidate'], sedm_dict['enddate']) #admin
     active = requests[(requests['status'] == 'PENDING') | (requests['status'] == 'ACTIVE')]
     # ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority', 'status', 'lastmodified', 'obs_seq', 'exptime', 'UPDATE']
-    
+
     allowed_allocs = get_allocations_user(userid)
     active['allocation'].mask(~np.in1d(active['allocation'], allowed_allocs['allocation']), other='other', inplace=True)
 
     programs = {i['allocation']:i['program'] for _, i in allowed_allocs.iterrows()}
     programs['other'] = 'other'
     active.sort_values('allocation') # this needs to be alphabetical for the legend to look correct
-    
+
     p = figure(plot_width=700, plot_height=500, toolbar_location='above',
                y_range=(0, 90), y_axis_location="right")
-    
+
     ### setup with axes, sun/moon, frames, background 
     # TODO Dima says to never ever use SkyCoord in production code
     palomar_mountain = EarthLocation(lon=243.1361*u.deg, lat=33.3558*u.deg, height=1712*u.m)
     utcoffset = -7 * u.hour  # Pacific Daylight Time
 
-    
+
     if obsdate is None: # plotting a single object, or the pending objects in future
         time = (Time.now() - utcoffset).datetime # date is based on local time
         time = Time(datetime.datetime(time.year, time.month, time.day))
@@ -1781,25 +1782,25 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     frame = AltAz(obstime=t, location=palomar_mountain)
     sun_alt  =  get_sun(t).transform_to(frame).alt
     moon_alt = get_moon(t).transform_to(frame).alt
-    
+
     # shading for nighttime and twilight
     dark_times    = delta_midnight[sun_alt < 0].value
     twilit_times  = delta_midnight[sun_alt < -18 * u.deg].value
     plotted_times = delta_midnight[sun_alt <   5 * u.deg].value
-    
-    twilight = BoxAnnotation(left=min(twilit_times), right=max(twilit_times), bottom=0, 
+
+    twilight = BoxAnnotation(left=min(twilit_times), right=max(twilit_times), bottom=0,
                              fill_alpha=0.15, fill_color='black', level='underlay')
-    night    = BoxAnnotation(left=min(dark_times),    right=max(dark_times),    bottom=0, 
+    night    = BoxAnnotation(left=min(dark_times),    right=max(dark_times),    bottom=0,
                              fill_alpha=0.25, fill_color='black', level='underlay')
     earth    = BoxAnnotation(top=0, fill_alpha=0.8, fill_color='sienna')
-    
+
     p.add_layout(night)
     p.add_layout(twilight)
     p.add_layout(earth)
-    
+
     # sun and moon
     sun  = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun", legend='Sun', line_dash='dashed')
-    moon = p.line(delta_midnight, moon_alt, line_color='yellow', line_dash='dashed', 
+    moon = p.line(delta_midnight, moon_alt, line_color='yellow', line_dash='dashed',
                                                    name="Moon", legend='Moon')
     # labels and axes
     p.title.text = "Visibility for %s UTC" %midnight
@@ -1807,22 +1808,22 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     p.x_range.start = min(plotted_times)
     p.x_range.end   = max(plotted_times)
     p.yaxis.axis_label = "Airmass"
-    
+
     # primary airmass label on right
     airmasses = (1.01, 1.1, 1.25, 1.5, 2., 3., 6.)
     ticker = [90 - np.arccos(1./i) * 180/np.pi for i in airmasses]
     p.yaxis.ticker = ticker
     p.yaxis.major_label_overrides = {tick: str(airmasses[i]) for i, tick in enumerate(ticker)}
-    
+
     # add supplementary alt label on left
     p.extra_y_ranges = {"altitude": Range1d(0, 90)}
     p.add_layout(LinearAxis(y_range_name="altitude", axis_label='Altitude [deg]'), 'left')
 
     ##########################################################################
     ### adding data from the actual objects
-    #objs = SkyCoord(np.array(ras,  dtype=np.float), 
+    #objs = SkyCoord(np.array(ras,  dtype=np.float),
     #                np.array(decs, dtype=np.float), unit="deg")
-    
+
     approx_midnight = int(Time.now().jd - .5) + .5 - utcoffset.value/24.
     palo_sin_lat = 0.549836545
     palo_cos_lat = 0.835272275
@@ -1832,11 +1833,11 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     for i, val in allowed_allocs.iterrows():
         alloc_color[val['allocation']] = allocpalette[i % len(allocpalette)]
     alloc_color['other'] = 'lightgray'
-        
+
     tooltipped = [] # things with tooltips
     tooltips = [('obj',        '@name'), # make it #name when we get to bokeh 0.13
-                ('time',       '@abstime'), 
-                ('altitude',   u"@alt\N{DEGREE SIGN}"), 
+                ('time',       '@abstime'),
+                ('altitude',   u"@alt\N{DEGREE SIGN}"),
                 ('airmass',    '@airmass')]
 
     for _, req in active.iterrows():
@@ -1848,7 +1849,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
               np.cos(np.pi/180 * (palo_long - req['ra'] + 15 * (18.697374558 + 24.06570982 * (delta_midnight.value/24. + approx_midnight - 2451545)))) * \
               np.cos(req['dec'] * np.pi/180) + palo_sin_lat * np.sin(req['dec'] * np.pi/180))
         airmass = 1./np.cos((90 - alt) * np.pi/180)
-        source = ColumnDataSource(    dict(times=delta_midnight, 
+        source = ColumnDataSource(    dict(times=delta_midnight,
                                              alt=alt,
                                          airmass=airmass,
                                          abstime=abstimes,
@@ -1861,7 +1862,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
         else:
             legend = '{}'.format(programs[req['allocation']])
             #tooltips += [('priority',   '@priority'), ('allocation', '@alloc')]
-            
+
             if req['status'] == 'COMPLETED': # plot that highlights observed part of the night
                 # full path of the night
                 dotted = p.line('times', 'alt', color=color, source=source, line_dash='2 2',
@@ -1874,22 +1875,22 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
                 mask = np.logical_and(delta_midnight + midnight + utcoffset > initime,
                                       delta_midnight + midnight + utcoffset < endtime)
                 source = ColumnDataSource(pd.DataFrame(source.data)[mask])
-                line_width = int(req['priority'] + 3) # all it changes is the line width      
+                line_width = int(req['priority'] + 3) # all it changes is the line width
             else:
                 line_width = int(req['priority'])
-        
+
         path = p.line('times', 'alt', color=color, source=source, name=''.format(req['object']),
                       line_width=line_width, legend=legend)
         if not req['allocation'] == 'other':
             tooltipped.append(path)
-        
+
     p.legend.click_policy = 'hide'
     p.legend.location = 'bottom_right'
     p.add_tools(HoverTool(renderers=tooltipped, tooltips=tooltips))
-    
+
     curdoc().add_root(p)
     curdoc().title = 'Visibility plot'
-    
+
     return components(p)
 
 ###############################################################################

@@ -2,14 +2,16 @@ import os
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
+from astropy.stats import sigma_clipped_stats
 from astropy import units as u
+import photutils
 import numpy as np
 import subprocess
 import time
 
 
 def solve_astrometry(img, radius=2.5, with_pix=True,
-                     first_call=False, tweak=3):
+                     first_call=False, tweak=3, make_plots=False):
     """
     
     :param img: 
@@ -35,14 +37,18 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
           ra, dec, "Image", img, "New image", astro)
 
     # 3. Create the base solve-field command
-    cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius "
+    if make_plots:
+        cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius "
+               "%.4f -t %d --overwrite %s "
+               "" % (ra, dec, radius, tweak, img))
+    else:
+        cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius "
            "%.4f -p --new-fits %s -W none -B none -M none "
            "-R none -S none -t %d --overwrite %s "
-           "--sigma 12 " % (ra, dec, radius,
-                                                      astro, tweak, img))
+           "" % (ra, dec, radius, astro, tweak, img))
 
     if with_pix:
-        cmd = cmd + " --scale-units arcsecperpix --scale-low 0.375 --scale-high 0.425 --"
+        cmd = cmd + " --scale-units arcsecperpix --scale-low 0.355 --scale-high 0.400 --"
 
     print(cmd)
 
@@ -55,12 +61,12 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
         print("astrometry failed")
 
     # Cleaning after astrometry.net
-    if os.path.isfile(img.replace(".fits", ".axy")):
+    """if os.path.isfile(img.replace(".fits", ".axy")):
         os.remove(img.replace(".fits", ".axy"))
     if os.path.isfile(img.replace(".fits", "-indx.xyls")):
         os.remove(img.replace(".fits", "-indx.xyls"))
     if os.path.isfile("none"):
-        os.remove("none")
+        os.remove("none")"""
 
     # This is legacy as it was decided that it is very unlikely that the
     # pointing will be so far out the we need to redo the search with an
@@ -78,6 +84,60 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
     # doesn't exist.
     print(time.time()-s)
     return astro
+
+def get_offset_to_brightest2(image):
+    """
+
+    :param image:
+    :return:
+    """
+
+    image_data = fits.getdata(image)
+    data = image_data[1293 - 500:1293 + 500, 1280 - 500:1280 + 500]
+    mean, median, std = sigma_clipped_stats(data, sigma=2.0, iters=5)
+    daofind = photutils.DAOStarFinder(fwhm=3.0, threshold=5. * std)
+    sources = daofind(data - median)
+    for i in sources:
+        print(i)
+    print(sources)
+
+
+def make_cutouts(image):
+    """
+
+    :param image:
+    :return:
+    """
+
+
+    image_data = fits.getdata(image)
+    image_header = fits.getheader(image)
+    wcs = WCS(image_header)
+
+    rdata_center = wcs.all_pix2world(1561.25, 1538.45, 0)
+    print(rdata_center)
+#    new_center = wcs.all_world2pix()
+#    ref_ra = rdata_center[0]
+#    ref_dec = rdata_center[1]
+
+    objCoords = SkyCoord(169.90527008, 61.920226159, unit=(u.deg, u.deg), frame='icrs')
+
+    refCoords = SkyCoord(170, 62, unit=(u.deg, u.deg), frame='icrs')
+
+    dra, ddec = objCoords.spherical_offsets_to(refCoords)
+
+    print(rdata_center)
+    print(dra.arcsec, ddec.arcsec)
+
+    rdata = image_data[1079:2048, 1030:2048]
+
+    hdu = fits.PrimaryHDU(rdata, uint=False)
+    hdu.scale('int16', bzero=32768)
+
+    hdu.writeto('rdata.fits', output_verify="fix", )
+
+
+
 
 
 def get_offset_to_brightest(image):
@@ -186,7 +246,7 @@ def find_average_offsets(obsdate):
 def calculate_offset(raw_image, overwrite=True, use_brightest=True,
                      use_closest=False, use_average=False,
                      parse_directory_from_file=True,
-                     base_dir="/data2/sedm/"):
+                     base_dir="/data2/sedm/", make_plots=False):
     """
     
     :param raw_image: 
@@ -207,7 +267,7 @@ def calculate_offset(raw_image, overwrite=True, use_brightest=True,
                          "a_" + os.path.basename(raw_image))
 
     if overwrite:
-        astro = solve_astrometry(raw_image)
+        astro = solve_astrometry(raw_image, make_plots=make_plots)
 
     # 2. Now check if the solved file exist and solve the offset
     if os.path.exists(astro):
@@ -225,10 +285,27 @@ def calculate_offset(raw_image, overwrite=True, use_brightest=True,
 
 
 if __name__ == "__main__":
-    image2 = "/scr7/rsw/sedm/phot/20180813/rc20180813_07_24_09.fits"
-    # image = "/data2/sedm/20180914/a_rc20180914_12_36_56.fits"
-    #ret = solve_astrometry(image2)
+    import glob
+    files = glob.glob('/data1/sedm/astrom/rc*.fits')
+    data = open('astrometry_solve.txt', 'w')
+    for i in files:
+        t = calculate_offset(i, parse_directory_from_file=False, make_plots=True)
+        print(t)
+        try:
+            st = ''
+            for k in t:
+                st += str(k)+','
+        except:
+            t = '-999,999,999'
+        head = fits.getheader(i)
+        airmass = head['AIRMASS']
+        az = head['TEL_AZ']
+        el = head['TEL_EL']
+        ha = head['TEL_HA']
+        dec = head['TEL_DEC']
+        data.write('%s,%s,%s,%s,%s,%s,%s\n' % (i, ha, dec, az, el, airmass, st))
+    data.close()
     #print(ret)
-    #print(get_offset_to_reference(ret))
-    print(calculate_offset(image2, False))
-    print(get_offset_to_brightest(image2))
+    #print(get_offset_to_reference('/scr/rsw/sedm/data/raw/20181204/rc20181204_09_59_04.new'))
+    #print(calculate_offset(image2, False))
+

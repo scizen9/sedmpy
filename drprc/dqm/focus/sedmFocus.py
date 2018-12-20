@@ -45,7 +45,7 @@ def run_focus_loop(image_list, keyword='FOCPOS', cat_keyword='FWHM_IMAGE'):
     stats_list = []
     best_focus_val = 100
     best_image = ''
-    base_dir = '/data2/sedm/20181106/'
+    base_dir = '/data2/sedm/20181127/'
     for i in image_list:
         cat = run_sextractor(base_dir+i)
         focus_val = get_catalog_stats(cat)[cat_keyword]
@@ -61,23 +61,22 @@ def run_focus_loop(image_list, keyword='FOCPOS', cat_keyword='FWHM_IMAGE'):
 if __name__ == "__main__":
 
 
-    flist = ['rc20181106_01_43_16.fits',
-    'rc20181106_01_43_34.fits',
-    'rc20181106_01_43_51.fits',
-    'rc20181106_01_44_09.fits',
-    'rc20181106_01_44_27.fits',
-    'rc20181106_01_44_45.fits',
-    'rc20181106_01_45_03.fits',
-    'rc20181106_01_45_21.fits',
-    'rc20181106_01_45_39.fits',
-    'rc20181106_01_45_56.fits',
-    'rc20181106_01_46_14.fits',
-    'rc20181106_01_46_32.fits',
-    'rc20181106_01_46_50.fits',
-    'rc20181106_01_47_08.fits',
-    'rc20181106_01_47_25.fits',
-    'rc20181106_01_47_43.fits',
-    'rc20181106_01_48_01.fits',
-    'rc20181106_01_48_19.fits',
-    'rc20181106_01_48_37.fits']
+    data = """rc20181127_01_33_45.fits
+rc20181127_01_34_03.fits
+rc20181127_01_34_20.fits
+rc20181127_01_34_38.fits
+rc20181127_01_34_56.fits
+rc20181127_01_35_13.fits
+rc20181127_01_35_31.fits
+rc20181127_01_35_49.fits
+rc20181127_01_36_06.fits
+rc20181127_01_36_24.fits
+rc20181127_01_36_41.fits
+rc20181127_01_36_59.fits
+rc20181127_01_37_17.fits
+rc20181127_01_37_34.fits
+rc20181127_01_37_52.fits
+rc20181127_01_38_10.fits"""
+
+    flist = data.split('\n')
     run_focus_loop(flist)
