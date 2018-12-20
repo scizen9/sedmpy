@@ -22,6 +22,7 @@ else
         redex) shift 1; python $SEDMPATH/drpifu/RedEx.py "$@";;
         report) python $SEDMPATH/drpifu/DrpReport.py;;
         update) shift 1; python $SEDMPATH/drpifu/AutoReduce.py --update "$@";;
+        finder) shift 1; python $SEDMPATH/drpifu/acq_finder.py --imfile "$@";;
         *) python -u "$@";;
     esac
 fi
