@@ -703,6 +703,11 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                 # Check results
                 if retcode != 0:
                     logging.error("Error generating cube for " + fn)
+                    # Do this to prevent constant re-try
+                    badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
+                            "_failed.fits"
+                    cmd = ("touch", badfn)
+                    subprocess.call(cmd)
                 else:
                     # Update SedmDb cube table
                     cube_id = update_cube(f)
@@ -765,6 +770,11 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                 # Check results
                 if retcode != 0:
                     logging.error("Error generating cube for " + fn)
+                    # Do this to prevent constant re-try
+                    badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
+                            "_failed.fits"
+                    cmd = ("touch", badfn)
+                    subprocess.call(cmd)
                 else:
                     # Update SedmDb cube table
                     cube_id = update_cube(f)

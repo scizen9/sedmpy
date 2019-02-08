@@ -202,12 +202,8 @@ def makefile_imcombine(objname, files, dependencies=""):
         second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s --files %s\n" % (
             objname, objname, reject, filelist)
     else:
-        second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s --files %s\n" % (
+        second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s --combtype median --files %s\n" % (
             objname, objname, reject, filelist)
-
-    if "bias" not in objname and "dome" not in objname:
-        second += "\n%s.npy : cube.npy %s.fits\n\t$(EXTSINGLE) cube.npy --A %s.fits --outname %s.npy --flat_correction flat-dome-700to900.npy --nosky\n" % (
-            objname, objname, objname, objname)
 
     return first + second + "\n"
 
