@@ -304,7 +304,7 @@ if __name__ == "__main__":
         try:
             objnam = fitsutils.get_par(f, "OBJECT")
         except:
-            print('There is no object in this file %s. Skipping the finder'
+            print('There is no object in this file %s. Skipping'
                   ' and moving to the next file.' % f)
             continue
 
@@ -317,40 +317,44 @@ if __name__ == "__main__":
                                                          finderplotf))
         # Check if it was already done
         if not os.path.isfile(finderpath):
-            # link rc image into reduxdir
-            dest = os.path.join(reduxdir, f.split('/')[-1])
-            if os.path.isfile(dest):
-                print("RC ACQ image already exists: %s" % dest)
-            else:
-                os.symlink(f, dest)
-            print("Solving astrometry", dest)
-            # Solving for astrometry
-            astrof = dest.replace(".fits", "_astrom.fits")
+            # Check for existing astrometry file
+            astrof = os.path.join(rcdir, "a_%s" % f)
             if not os.path.exists(astrof):
-                returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
-                                              dest])
-                if returncode != 0:
-                    print("Astrometry failed, perform median subtraction")
-                    returncode = subprocess.call(
-                        ['/scr2/sedmdrp/spy',
-                         '/scr2/sedmdrp/sedmpy/drpifu/med_sub.py', '-i',
-                         f.split('/')[-1]])
+                # link rc image into reduxdir
+                dest = os.path.join(reduxdir, f.split('/')[-1])
+                if os.path.isfile(dest):
+                    print("RC ACQ image already exists: %s" % dest)
+                else:
+                    os.symlink(f, dest)
+
+                print("Solving astrometry", dest)
+                # Solving for astrometry
+                astrof = dest.replace(".fits", "_astrom.fits")
+                if not os.path.exists(astrof):
+                    returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
+                                                  dest])
+                    if returncode != 0:
+                        print("Astrometry failed, perform median subtraction")
+                        returncode = subprocess.call(
+                            ['/scr2/sedmdrp/spy',
+                             '/scr2/sedmdrp/sedmpy/drpifu/med_sub.py', '-i',
+                             f.split('/')[-1]])
+                        if returncode != 0:
+                            print("Astrometry failed for %s, "
+                                  "skipping finder %s" % (dest, finderpath))
+                            continue
+                        returncode = subprocess.call(
+                            ['/scr2/sedmdrp/bin/do_astrom', dest])
                     if returncode != 0:
                         print("Astrometry failed for %s, skipping finder %s" %
                               (dest, finderpath))
                         continue
-                    returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
-                                                  dest])
-                if returncode != 0:
-                    print("Astrometry failed for %s, skipping finder %s" %
-                          (dest, finderpath))
+                else:
+                    print("Astrometry file already exists: %s" % astrof)
+                # Check results
+                if not os.path.isfile(astrof):
+                    print("Astrometry results not found %s" % astrof)
                     continue
-            else:
-                print("Astrometry file already exists: %s" % astrof)
-            # Check results
-            if not os.path.isfile(astrof):
-                print("Astrometry results not found %s" % astrof)
-                continue
 
             try:
                 finder(astrof, finderpath)
