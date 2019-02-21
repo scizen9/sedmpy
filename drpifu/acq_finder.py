@@ -356,6 +356,7 @@ if __name__ == "__main__":
                     print("Astrometry results not found %s" % astrof)
                     continue
 
+            print("Using astrometry in %s" % astrof)
             try:
                 finder(astrof, finderpath)
             except ValueError:
