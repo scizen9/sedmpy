@@ -318,7 +318,7 @@ if __name__ == "__main__":
         # Check if it was already done
         if not os.path.isfile(finderpath):
             # Check for existing astrometry file
-            astrof = os.path.join(rcdir, "a_%s" % f)
+            astrof = os.path.join(rcdir, "a_%s" % f.split('/')[-1])
             if not os.path.exists(astrof):
                 # link rc image into reduxdir
                 dest = os.path.join(reduxdir, f.split('/')[-1])
