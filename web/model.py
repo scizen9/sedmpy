@@ -2151,6 +2151,264 @@ def get_marshal_id(marshal='growth', request_id=None):
         else:
             return ret
 
+
+def get_user_observations(username, password, obsdate):
+    """
+
+    :param marshal:
+    :param request_id:
+    :return:
+    """
+
+    ret = check_login(username, password)
+    if not ret[0]:
+        return {'message': "User name and password do not match"}
+
+    user_id = ret[1]
+
+    obsdir = os.path.join(redux_dir, obsdate)
+
+
+    # Look first to make sure there is a data directory.
+    if not obsdate:
+        return {'message': 'No obsdate given in json request'}
+
+    if not os.path.exists(obsdir):
+        return {'message': 'No data directory could be located for %s UT' %
+                           os.path.basename(os.path.normpath(obsdir)),
+                'obsdate': obsdate}
+
+    sedm_dict = {'obsdate': obsdate,
+                 'sci_data': ''}
+
+    # Now lets get the non-science products (i.e. calibrations)
+    calib_dict = {'flat3d': os.path.join(obsdir, '%s_flat3d.png' % obsdate),
+                  'wavesolution': os.path.join(obsdir,
+                                               '%s_wavesolution'
+                                               '_dispersionmap.png' % obsdate),
+                  'cube_lambdarms': os.path.join(obsdir, 'cube_lambdarms.png'),
+                  'cube_trace_sigma': os.path.join(obsdir,
+                                                   'cube_trace_sigma.png')}
+
+    # If a calibration frame doesn't exist then pop it out to avoid bad links
+    # on the page
+    remove_list = []
+    data_list = []
+
+    for k, v in calib_dict.items():
+        if not os.path.exists(v):
+            remove_list.append(k)
+
+    if remove_list:
+        for i in remove_list:
+            calib_dict.pop(i)
+    print(calib_dict, 'calib products')
+
+    for k, v in calib_dict.items():
+        impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
+        impathlink = "/data/%s/%s" % (obsdate,
+                                      os.path.basename(v.replace('.png', '.pdf')))
+        if not os.path.exists(impathlink):
+            impathlink = impath
+
+        data_list.append(impathlink)
+
+    # To get ifu products we first look to see if a what.list file has been
+    # created. This way we will know which files to add to our dict and
+    # whether the user has permissions to see the file
+    if not os.path.exists(os.path.join(obsdir, 'what.list')):
+        return {'message': 'Could not find summary file (what.list) for %s UT' %
+                           os.path.basename(os.path.normpath(obsdir))}
+
+    # Go throught the what list and return all non-calibration entries
+    with open(os.path.join(obsdir, 'what.list')) as f:
+        what_list = f.read().splitlines()
+
+    science_list = []
+    standard_list = []
+    for targ in what_list:
+        if 'Calib' in targ:
+            pass
+        elif '[A]' in targ or '[B]' in targ or 'STD' in targ:
+            science_list.append(targ)
+        elif 'STD' in targ:
+            standard_list.append(targ)
+        else:
+            # There shouldn't be anything here but should put something in
+            # later to verify this is the case
+            pass
+
+    # Now we go through and make sure the user is allowed to see this target
+    show_list = []
+    if len(science_list) >= 1:
+        allocation_id_list = get_allocations_user(user_id=user_id,
+                                                  return_type='list')
+
+        for sci_targ in science_list:
+            # Start by pulling up all request that match the science target
+            targ_name = sci_targ.split(':')[1].split()[0]
+            if 'STD' not in targ_name:
+                # 1. Get the object id
+
+                object_ids = db.get_object_id_from_name(targ_name)
+
+                if len(object_ids) == 1:
+                    object_id = object_ids[0][0]
+
+                elif len(object_ids) > 1:
+                    # TODO       what really needs to happen here is that we need to
+                    # TODO cont: find the id that is closest to the obsdate.
+                    # TODO cont: For now I am just going to use last added
+                    print(object_ids)
+                    object_id = object_ids[-1][0]
+                elif not object_ids and ('at' in targ_name.lower() \
+                                      or 'sn' in targ_name.lower()):
+                    # sometimes it's at 2018abc not at2018abc in the db
+                    targ_name = targ_name[:2] + ' ' + targ_name[2:]
+                    object_ids = db.get_object_id_from_name(targ_name)
+                    try:
+                        object_id = object_ids[-1][0]
+                    except IndexError:
+                        print("There was an error. You can't see this")
+
+
+                target_requests = db.get_from_request(values=['allocation_id'],
+                                                      where_dict={'object_id':
+                                                                      object_id,
+                                                                  'status':
+                                                                      'COMPLETED'})
+
+                if not target_requests:
+                    target_requests = db.get_from_request(values=['allocation_id'],
+                                                          where_dict={'object_id':
+                                                                          object_id,
+                                                                      'status':
+                                                                          'OBSERVED'})
+                # Right now I am only seeing if there exists a match between
+                # allocations of all request.  It's possible the request could
+                # have been made by another group as another follow-up and thus
+                # the user shouldn't be able to see it.  This should be able to
+                # be fixed once all request are listed in the headers of the
+                # science images.
+                for req in target_requests:
+                    if req[0] in allocation_id_list:
+                        show_list.append((sci_targ, targ_name))
+                    else:
+                        print("You can't see this")
+            else:
+                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
+                show_list.append((sci_targ, targ_name))
+
+    if len(standard_list) >= 1:
+        for std_targ in standard_list:
+            targ_name = std_targ.split(':')[1].split()[0].replace('STD-', '')
+            show_list.append((std_targ, targ_name))
+
+    # We have our list of targets that we can be shown, now lets actually find
+    # the files that we will show on the web page.  To make this backwards
+    # compatible I have to look for two types of files
+    if len(show_list) >= 1:
+        science_dict = {}
+        count = 0
+        div_str = ''
+
+        for targ in show_list:
+            print(targ)
+            targ_params = targ[0].split()
+            fits_file = targ_params[0].replace('.fits', '')
+            name = targ[1]
+
+            image_list = (glob.glob('%sifu_spaxels_*%s*.png' % (obsdir,
+                                                                fits_file)) +
+                          glob.glob('%simage_%s*.png' % (obsdir, name)))
+
+            spec_list = (glob.glob('%s%s_SEDM.png' % (obsdir, name)) +
+                         glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,fits_file)) +
+                         glob.glob('%sspec_auto*%s*.png' % (obsdir, fits_file)))
+
+            e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
+
+            spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir, fits_file)) +
+                               glob.glob('%sspec_auto*%s*.txt' % (obsdir, fits_file)))
+
+            fluxcals = (glob.glob('%sfluxcal_*%s*.fits' % (obsdir, fits_file)))
+
+            if name not in science_dict:
+                science_dict[name] = {'image_list': image_list,
+                                      'spec_list': spec_list,
+                                      'e3d_list': e3d_list,
+                                      'spec_ascii_list': spec_ascii_list,
+                                      'fluxcals': fluxcals}
+            else:
+                # We do this to handle cases where there are two or more of
+                # the same object name
+                science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
+                                                             'spec_list': spec_list,
+                                                             'e3d_list': e3d_list,
+                                                             'spec_ascii_list': spec_ascii_list,
+                                                             'fluxcals': fluxcals}
+            count += 1
+        # Alright now we build the table that will show the spectra, image file
+        # and classification.
+
+        count = 0
+
+        for obj, obj_data in science_dict.items():
+            if '_xRx_' in obj:
+                obj = obj.split('_xRx_')[0]
+
+            if obj_data['e3d_list']:
+
+                for j in obj_data['e3d_list']:
+                    data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+
+                if obj_data['spec_ascii_list']:
+                    for j in obj_data['spec_ascii_list']:
+                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+
+                if obj_data['fluxcals']:
+                    for j in obj_data['fluxcals']:
+                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+
+            # ToDO: Grab data from somewhere to put in the meta data column
+            if obj_data['image_list']:
+                for i in obj_data['image_list']:
+
+                    impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
+                    impathlink = "/data/%s/%s" % (obsdate,
+                                                  os.path.basename(i.replace('.png', '.pdf')))
+                    if not os.path.exists(impathlink):
+                        impathlink = impath
+                    data_list.append(impathlink)
+
+
+            # Check if finders exists in redux directory and if not then
+            # log at the old phot directory location
+            path1 = os.path.join(redux_dir, obsdate, 'finders')
+            path2 = os.path.join(phot_dir, obsdate, 'finders')
+
+            if os.path.exists(path1):
+                finder_path = path1
+            else:
+                finder_path = path2
+
+            if os.path.exists(finder_path):
+                finder_img = glob.glob(finder_path + '/*%s*.png' % obj)
+                if finder_img:
+                    data_list.append("/data/%s/%s" % (obsdate, os.path.basename(finder_img[-1])))
+
+            if obj_data['spec_list']:
+                for i in obj_data['spec_list']:
+                    impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
+                    impathlink = "/data/%s/%s" % (obsdate,
+                                                  os.path.basename(i.replace('.png', '.pdf')))
+                    if not os.path.exists(impathlink):
+                        impathlink = impath
+
+                    data_list.append(impathlink)
+    return_dict = {'data': data_list}
+    return return_dict
+
 def make_dict_from_dbget(headers, data, decimal_to_float=True):
     """
     This function takes data from the returns of get_from_* returns and puts
@@ -2285,5 +2543,6 @@ def get_p18obsdata(obsdate):
 
 
 if __name__ == "__main__":
-    x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
+    x = get_user_observations('rsw', 'rsw189', '20190226')
+    #x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
     print(x)

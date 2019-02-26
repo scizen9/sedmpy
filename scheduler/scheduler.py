@@ -53,8 +53,8 @@ class ScheduleNight:
         self.long = params['site']['longitude']
         self.lat = params['site']['latitude']
         self.elev = params['site']['elevation']
-        self.obs_site = astroplan.Observer.at_site(site_name=self.site)
-        self.obs_times = self.get_observing_times()
+#        self.obs_site = astroplan.Observer.at_site(site_name=self.site)
+        #self.obs_times = self.get_observing_times()
         self.running_obs_time = None
         self.conn = None
         self.cursor = None
@@ -249,7 +249,7 @@ class ScheduleNight:
         if return_type == 'df':
             return pd.read_sql_query(query, self.ph_db.get_conn_sedmDB())
         else:
-            return self.ph_db.execute_sql(return_type='dict')
+            return self.ph_db.execute_sql(query, return_type='dict')
 
     def load_targets(self, where_statement="",
                      and_statement="AND r.status = 'PENDING'",
@@ -769,6 +769,24 @@ class ScheduleNight:
 
         return {'request_id': self.ph_db.add_request(request_dict)[0]}
 
+    def reset_targets(self, start_date=None, end_date=None,
+                      start_status='ACTIVE', end_status='PENDING'):
+        """
+
+        :param start_date:
+        :param end_date:
+        :return:
+        """
+
+        if not start_date:
+            start_date = datetime.datetime.utcnow() - datetime.timedelta(days=7)
+
+        query = """UPDATE request SET status = 'PENDING' WHERE 
+                   status = 'ACTIVE' AND inidate > '%s'""" % start_date
+
+        ret = self.get_query(query, return_type='')
+        print(ret)
+
 
 if __name__ == "__main__":
     import time
@@ -778,10 +796,10 @@ if __name__ == "__main__":
 
     #print(x.get_observing_times(return_type='json'))
     # print(x.get_standard_request_id(name='HZ44', exptime=90))
-    r = x.simulate_night()
+    r = x.reset_targets()
 
-    data = open(scheduler_path, 'w')
-    data.write(r)
-    data.close()
+    #data = open(scheduler_path, 'w')
+    #data.write(r)
+    #data.close()
 
     print(time.time() - s)

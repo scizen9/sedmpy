@@ -190,6 +190,24 @@ def get_marhsal_id():
     out = model.get_marshal_id(**content)
     return jsonify(out)
 
+@app.route('/get_user_observations', methods=['GET', 'POST'])
+def get_user_observations():
+
+    # 1. If the request method is of type post then we expect this to be a
+    #    submission.
+
+    if request.is_json:
+        if isinstance(request.get_json(), dict):
+            content = request.get_json()
+        else:
+            content = json.loads(request.get_json())
+    else:
+        content = request.args.to_dict(flat=True)
+
+
+    out = model.get_user_observations(**content)
+    return jsonify(out)
+
 @app.route('/objects', methods=['GET', 'POST'])
 def objects():
 

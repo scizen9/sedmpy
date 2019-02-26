@@ -3724,5 +3724,5 @@ if __name__ == "__main__":
     import datetime
     x = SedmDB(host="pharos.caltech.edu")
 
-    x.expire_requests(send_alerts=True)
+    x.expire_requests(send_alerts=False)
 
