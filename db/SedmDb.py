@@ -90,6 +90,7 @@ class SedmDB:
 
         if 'SELECT' in sql[:8]:
             obj = cursor.fetchall()
+            print(obj)
             return obj
         else:
             cursor.execute("commit;")
@@ -259,6 +260,7 @@ class SedmDB:
         """
         allowed_params = {'id': int, 'username': str, 'name': str, 'email': str, 'password': str}
         sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'users')
+        print(sql)
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
         try:
