@@ -53,8 +53,8 @@ class ScheduleNight:
         self.long = params['site']['longitude']
         self.lat = params['site']['latitude']
         self.elev = params['site']['elevation']
-#        self.obs_site = astroplan.Observer.at_site(site_name=self.site)
-        #self.obs_times = self.get_observing_times()
+        self.obs_site = astroplan.Observer.at_site(site_name=self.site)
+        self.obs_times = self.get_observing_times()
         self.running_obs_time = None
         self.conn = None
         self.cursor = None
@@ -796,10 +796,11 @@ if __name__ == "__main__":
 
     #print(x.get_observing_times(return_type='json'))
     # print(x.get_standard_request_id(name='HZ44', exptime=90))
-    r = x.reset_targets()
+    r = x.simulate_night()
+    x.reset_targets()
 
-    #data = open(scheduler_path, 'w')
-    #data.write(r)
-    #data.close()
+    data = open(scheduler_path, 'w')
+    data.write(r)
+    data.close()
 
     print(time.time() - s)
