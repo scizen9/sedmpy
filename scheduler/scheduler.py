@@ -561,7 +561,8 @@ class ScheduleNight:
                                                                which=which)}
 
         if return_type == 'json':
-            json_dict = {k: v.iso for k, v in ret.items()}
+            json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
+            json_dict['obsdate'] = ret['evening_astronomical'].iso.split()[0]
             return json_dict
         else:
             return ret

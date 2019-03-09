@@ -3,6 +3,7 @@ from db.SedmDb import SedmDB
 from db.SedmDb_tools import DbTools
 import datetime
 import os
+import json
 import re
 import pandas as pd
 import numpy as np
@@ -2451,6 +2452,23 @@ def get_user_observations(username, password, obsdate):
                     data_list.append(impathlink)
     return_dict = {'data': data_list}
     return return_dict
+
+def get_status():
+    """
+
+    :return:
+    """
+
+    with open('/scr2/sedm/raw/telstatus/telstatus.json') as json_file:
+        data = json.load(json_file)
+
+    return data
+
+def get_obstimes():
+    times = schedule.get_observing_times(return_type='json')
+    times['sciTime'] = '#'
+    return times
+
 
 def make_dict_from_dbget(headers, data, decimal_to_float=True):
     """
