@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="viewport" content = "width=device-width, initial-scale=.8">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/static/css/boot4/bootstrap.css" type="text/css">
+    <!-- Bokeh includes-->
+
+    <style>
+        th{font-size: .8em;}
+    </style>
+    <title>SEDm Monitoring Page</title>
+</head>
+
+<body>
+    <div class="container">
+    <div class="header-bar">
+        <h3 class="header">Night Statistics</h3>
+    </div>
+    <table class="table">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">UT-OBS Date</th>
+                <th scope="col">LST</th>
+                <th scope="col">Sunset</th>
+                <th scope="col">Evening Civil Twilight</th>
+                <th scope="col">Evening Nautical Twilight</th>
+                <th scope="col">Evening Astronomical Twilight</th>
+                <th scope="col">Morning Astronomical Twilight</th>
+                <th scope="col">Morning Nautical Twilight</th>
+                <th scope="col">Morning Civil Twilight</th>
+                <th scope="col">Sunrise</th>
+                <th scope="col">Science Time(hrs)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+
+                <td id="utdate">{{sedm_dict.obsdate}}</td>
+                <td id="lst">00:00:00</td>
+                <td id="sunset">{{sedm_dict.sun_set}}</td>
+                <td id="ecTwilight">{{sedm_dict.evening_civil}}</td>
+                <td id="enTwilight">{{sedm_dict.evening_nautical}}</td>
+                <td id="eaTwilight">{{sedm_dict.evening_astronomical}}</td>
+                <td id="maTwilight">{{sedm_dict.morning_astronomical}}</td>
+                <td id="mnTwilight">{{sedm_dict.morning_nautical}}</td>
+                <td id="mcTwilight">{{sedm_dict.morning_civil}}</td>
+                <td id="sunrise">{{sedm_dict.sun_rise}}</td>
+                <td id="sciTime">{{sedm_dict.sciTime}}</td>
+            </tr>
+        </tbody>
+    </table>
+  <div class="header-bar">
+    <h3 class="header">Observatory Status Panel</h3>
+  </div>
+  <div class="row"></div>
+        <table class="table table-sm">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">Telemetry Time(UT)</th>
+                <th scope="col">Control Status</th>
+                <th scope="col">Telescope Status</th>
+                <th scope="col">Power Status</th>
+                <th scope="col">Oil Status</th>
+                <th scope="col">Motion Status</th>
+                <th scope="col">HA Limit Status(soft/hard)</th>
+                <th scope="col">DEC Limit Status(soft/hard)</th>
+                <th scope="col">Focus Limit Status(soft/hard)</th>
+                <th scope="col">Horizon Limit Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="utc2">00:00:00</td>
+                <td id="telescope_control_status">00:00:00</td>
+                <td id="telescope_ready_status">00:00:00</td>
+                <td id="telescope_power_status">00:00:00</td>
+                <td id="oil_pad_status">00:00:00</td>
+                <td id="telescope_motion_status">00:00:00</td>
+                <td id="ha_limit_status">00:00:00</td>
+                <td id="dec_limit_status">00:00:00</td>
+                <td id="focus_hard_limit_status">00:00:00</td>
+                <td id="horizon_soft_limit_status">00:00:00</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="row"></div>
+    <table class="table table-sm">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">Faults</th>
+                <th scope="col">Dome Shutter</th>
+                <th scope="col">Dome Mode</th>
+                <th scope="col">Remote Close Status</th>
+                <th scope="col">Sunlight Status</th>
+                <th scope="col">Weather Status</th>
+                <th scope="col">Focus Mode</th>
+                <th scope="col">Lamp Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="d-sm-table-row">
+                <td id="faults">00:00:00</td>
+                <td id="dome_shutter_status">00:00:00</td>
+                <td id="dome_motion_mode">00:00:00</td>
+                <td id="remote_close_status">00:00:00</td>
+                <td id="sunlight_status">00:00:00</td>
+                <td id="weather_status">00:00:00</td>
+                <td id="focus_motion_status">00:00:00</td>
+                <td id="lamp_status">00:00:00</td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm">
+        <thead class="thead-light">
+            <tr>
+                <th scope="col">Inside Air Temperature</th>
+                <th scope="col">Outside Air Temperature</th>
+                <th scope="col">Inside Humidity</th>
+                <th scope="col">Outside Humidity</th>
+                <th scope="col">Inside Dewpoint</th>
+                <th scope="col">Outside Dewpoint</th>
+                <th scope="col">Windspeed Average</th>
+                <th scope="col">Windspeed Gust</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="d-sm-table-row">
+                <td id="inside_air_temp">00:00:00</td>
+                <td id="outside_air_temp">00:00:00</td>
+                <td id="inside_rel_hum">00:00:00</td>
+                <td id="outside_rel_hum">00:00:00</td>
+                <td id="inside_dewpt">00:00:00</td>
+                <td id="outside_dewpt">00:00:00</td>
+                <td id="windspeed_average">00:00:00</td>
+                <td id="windspeed_current">00:00:00</td>
+            </tr>
+        </tbody>
+    </table>
+  <div class="row">
+
+  </div>
+
+  <div class="card-group">
+      <div class="card" style="width: 18rem;">
+          <div class="card-header">
+              <h6 class="card-title">Telescope</h6>
+          </div>
+          <div class="card-body">
+                <ul class="list-group">
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    RA
+                    <span id="telescope_ra" class="badge badge-light ">2</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    DEC
+                    <span id="telescope_dec" class="badge badge-light ">1</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Airmass
+                    <span id="telescope_airmass" class="badge badge-light ">1</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Dome Azimuth
+                    <span id="dome_azimuth" class="badge badge-light ">1</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Secondary Focus Position(mm)
+                    <span id="focus_position" class="badge badge-light ">1</span>
+                  </li>
+                </ul>
+          </div>
+      </div>
+      <div class="card" style="width: 18rem;">
+          <div class="card-header">
+              <h6 class="card-title">Camera</h6>
+          </div>
+          <div class="card-body">
+              Place Holder
+          </div>
+      </div>
+      <div class="card" style="width: 18rem;">
+          <div class="card-header">
+              <h6 class="card-title">Chiller</h6>
+          </div>
+          <div class="card-body">
+            Place Holder
+          </div>
+      </div>
+
+  </div>
+</div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="/static/js/bootstrap.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="/static/js/update.js"></script>
+</body>
+</html>
