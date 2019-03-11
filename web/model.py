@@ -65,6 +65,7 @@ if computer == 'pele':
     raw_dir = '/scr/rsw/sedm/raw/'
     phot_dir = '/scr/rsw/sedm/phot/'
     redux_dir = '/scr/rsw/sedm/redux/'
+    status_dir = '/scr/rsw/'
     host = 'pharos.caltech.edu'
     port = 5432
 
@@ -72,6 +73,7 @@ elif computer == 'pharos':
     raw_dir = '/scr2/sedm/raw/'
     phot_dir = '/scr2/sedm/phot/'
     redux_dir = '/scr2/sedmdrp/redux/'
+    status_dir = '/scr2/sedm/raw/telstatus/'
     host = 'localhost'
     port = 5432
 
@@ -2459,7 +2461,7 @@ def get_status():
     :return:
     """
 
-    with open('/scr2/sedm/raw/telstatus/telstatus.json') as json_file:
+    with open(status_dir+'telstatus.json') as json_file:
         data = json.load(json_file)
 
     return data
