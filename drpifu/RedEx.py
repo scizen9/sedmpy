@@ -28,11 +28,20 @@ if __name__ == "__main__":
                         help='new y position (spaxels)')
     parser.add_argument('--slack', action='store_true', default=False,
                         help='update slack pysedm-report channel')
+    parser.add_argument('--recover', action='store_true', default=False,
+                        help='recover Quality 5 extraction')
     args = parser.parse_args()
 
     if not args.obs_id:
         logging.info("Usage - redex <obs_id> [<x> <y>] [--slack]")
     else:
+        if args.recover:
+            pass
+            # set tagstr
+            # read in old spectrum
+            # change quality from 5 to 1
+            # send email to requestor
+            #
         # Get tag id
         now = datetime.datetime.now()
         tagstr = "redo%02d%02d%02.0f" % (now.hour, now.minute, now.second)
@@ -96,6 +105,9 @@ if __name__ == "__main__":
         if ret:
             logging.error("Verify failed!")
             sys.exit(1)
+        else:
+            pass
+            # display verification and prompt user for quality
         # Re-report
         if args.slack:
             pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]

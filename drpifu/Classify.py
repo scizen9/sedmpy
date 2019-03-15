@@ -58,14 +58,14 @@ def classify(spec_dir='./', overwrite=False):
                     q = 5
 
             # If quality is good, check for previous classification
-            if q < 3:
+            if q < 3 or q == 5:
                 clas = [li for li in lines if "SNID" in li]
                 # If the file has been classified, move to the next
                 if len(clas) > 0 and not overwrite:
                     print("already classified")
                     continue
             else:
-                print("low quality")
+                print("bad quality")
                 continue
             
         # If we are here, we run the classification with snid

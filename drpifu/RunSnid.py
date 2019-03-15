@@ -202,7 +202,7 @@ def run_snid(spec_file=None, overwrite=False):
             if clas:
                 print("classification: ", clas)
 
-        if q < 3 and (len(clas) <= 0 or overwrite):
+        if (q < 3 or q == 5) and (len(clas) <= 0 or overwrite):
             # If we are here, we run the classification with snid
             cm = "snid wmin=4000 wmax=9500 skyclip=1 medlen=20 aband=1" \
                  " rlapmin=4 inter=0 plot=2 %s" % fl
