@@ -268,6 +268,21 @@ def get_object_values():
 
     return jsonify(out)
 
+@app.route('/status/get_update', methods=['GET', 'POST'])
+def update():
+
+    out = model.get_status()
+
+    return jsonify(out)
+
+
+@app.route('/monitor', methods=['GET', 'POST'])
+def monitor():
+
+    out = model.get_obstimes()
+    return render_template('monitor.html', sedm_dict=out)
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()

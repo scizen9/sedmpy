@@ -3,6 +3,7 @@ from db.SedmDb import SedmDB
 from db.SedmDb_tools import DbTools
 import datetime
 import os
+import json
 import re
 import pandas as pd
 import numpy as np
@@ -930,6 +931,7 @@ def check_login(username, password):
 
     user_pass = db.get_from_users(['username', 'password', 'id'], {'username': username})
 
+    print(user_pass)
     if not user_pass:
         return False, 'Incorrect username or password!'
 
@@ -2159,15 +2161,33 @@ def get_user_observations(username, password, obsdate):
     :param request_id:
     :return:
     """
+    print(username, type(username))
 
     ret = check_login(username, password)
+
+    print(ret)
     if not ret[0]:
         return {'message': "User name and password do not match"}
 
     user_id = ret[1]
 
     obsdir = os.path.join(redux_dir, obsdate)
+    obsdir += '/'
 
+    calib_files = ['Xe.fits', 'Hg.fits', 'Cd.fits', 'dome.fits', 'bkgd_dome.fits',
+                   'e3d_dome.fits', '%s_Flat.fits' % obsdate]
+
+    pkl_list = (glob.glob('%s*.pkl' % (obsdir)))
+
+    master_calib_list = []
+
+    for file in calib_files:
+        if os.path.exists(os.path.join(obsdir, file)):
+            master_calib_list.append(os.path.join(obsdir, file))
+
+    master_calib_list += pkl_list
+
+    print(master_calib_list, 'master')
 
     # Look first to make sure there is a data directory.
     if not obsdate:
@@ -2203,6 +2223,11 @@ def get_user_observations(username, password, obsdate):
         for i in remove_list:
             calib_dict.pop(i)
     print(calib_dict, 'calib products')
+
+    for v in master_calib_list:
+        impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
+        data_list.append(impath)
+
 
     for k, v in calib_dict.items():
         impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
@@ -2307,6 +2332,7 @@ def get_user_observations(username, password, obsdate):
     # We have our list of targets that we can be shown, now lets actually find
     # the files that we will show on the web page.  To make this backwards
     # compatible I have to look for two types of files
+    print(show_list, "Show list")
     if len(show_list) >= 1:
         science_dict = {}
         count = 0
@@ -2317,6 +2343,10 @@ def get_user_observations(username, password, obsdate):
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
+            print(obsdir, fits_file)
+            print('%s%s_SEDM.png' % (obsdir, name))
+            print('%sspec_forcepsf*%s*.png' % (obsdir,fits_file))
+            print('%sspec_auto*%s*.png' % (obsdir, fits_file))
 
             image_list = (glob.glob('%sifu_spaxels_*%s*.png' % (obsdir,
                                                                 fits_file)) +
@@ -2326,6 +2356,8 @@ def get_user_observations(username, password, obsdate):
                          glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,fits_file)) +
                          glob.glob('%sspec_auto*%s*.png' % (obsdir, fits_file)))
 
+            spec_all_list = glob.glob("%sspec*%s*" % (obsdir, name))
+
             e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
 
             spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir, fits_file)) +
@@ -2333,12 +2365,17 @@ def get_user_observations(username, password, obsdate):
 
             fluxcals = (glob.glob('%sfluxcal_*%s*.fits' % (obsdir, fits_file)))
 
+            background = (glob.glob('%sbkgd_crr_b_%s.fits' % (obsdir, fits_file)))
+
             if name not in science_dict:
+
                 science_dict[name] = {'image_list': image_list,
                                       'spec_list': spec_list,
                                       'e3d_list': e3d_list,
                                       'spec_ascii_list': spec_ascii_list,
-                                      'fluxcals': fluxcals}
+                                      'fluxcals': fluxcals,
+                                      'specall': spec_all_list,
+                                      'background': background}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
@@ -2346,19 +2383,23 @@ def get_user_observations(username, password, obsdate):
                                                              'spec_list': spec_list,
                                                              'e3d_list': e3d_list,
                                                              'spec_ascii_list': spec_ascii_list,
-                                                             'fluxcals': fluxcals}
+                                                             'fluxcals': fluxcals,
+                                                             'specall': spec_all_list,
+                                                             'background': background}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
 
         count = 0
-
+        print(science_dict)
         for obj, obj_data in science_dict.items():
             if '_xRx_' in obj:
                 obj = obj.split('_xRx_')[0]
 
             if obj_data['e3d_list']:
-
+                for j in obj_data['specall']:
+                    if j.split('.')[-1] in ['fits', 'png', 'txt', 'pdf']:
+                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
                 for j in obj_data['e3d_list']:
                     data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
 
@@ -2368,6 +2409,9 @@ def get_user_observations(username, password, obsdate):
 
                 if obj_data['fluxcals']:
                     for j in obj_data['fluxcals']:
+                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                if obj_data['background']:
+                    for j in obj_data['background']:
                         data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
 
             # ToDO: Grab data from somewhere to put in the meta data column
@@ -2408,6 +2452,23 @@ def get_user_observations(username, password, obsdate):
                     data_list.append(impathlink)
     return_dict = {'data': data_list}
     return return_dict
+
+def get_status():
+    """
+
+    :return:
+    """
+
+    with open('/scr2/sedm/raw/telstatus/telstatus.json') as json_file:
+        data = json.load(json_file)
+
+    return data
+
+def get_obstimes():
+    times = schedule.get_observing_times(return_type='json')
+    times['sciTime'] = '#'
+    return times
+
 
 def make_dict_from_dbget(headers, data, decimal_to_float=True):
     """
@@ -2543,6 +2604,6 @@ def get_p18obsdata(obsdate):
 
 
 if __name__ == "__main__":
-    x = get_user_observations('rsw', 'rsw189', '20190226')
+    x = get_user_observations('SEDm_admin', 'db@dm!n', '20190226')
     #x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
     print(x)
