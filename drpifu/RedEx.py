@@ -152,6 +152,8 @@ if __name__ == "__main__":
                 pars = ["display", verify_file]
                 ret = subprocess.call(pars)
                 good = input("Re-extraction good? (N/y): ")
+                if not good:
+                    good = 'N'
                 if good[0].capitalize() != "Y":
                     logging.error("Try re-extraction again.")
                     logging.info("Removing *_%s_*" % tagstr)
