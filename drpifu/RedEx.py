@@ -66,7 +66,7 @@ if __name__ == "__main__":
             ff.flush()
             ff.close()
             # Update database entry
-            ar.update(fits_file, update=True)
+            ar.update_spec(fits_file, update=True)
             # Update quality in text file
             text_file = glob.glob(os.path.join(rd, dd,
                                   "spec_auto_robot_lstep1__*_%s_*.txt" %
@@ -150,7 +150,7 @@ if __name__ == "__main__":
                 verify_file = glob.glob("verify_auto_%s_*.png" % tagstr)[0]
                 pars = ["display", verify_file]
                 ret = subprocess.call(pars)
-                good = input("Redo? (y/n): ")
+                good = input("Re-extraction good? (N/y): ")
                 if good[0].capitalize() != "Y":
                     logging.error("Try re-extraction again.")
                     logging.info("Removing *_%s_*" % tagstr)
