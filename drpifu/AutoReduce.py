@@ -832,7 +832,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
     # END: dosci
 
 
-def update_spec(input_specfile):
+def update_spec(input_specfile, update=False):
     """ Update the SEDM database on pharos by adding a new spec entry"""
 
     header_dict = {
@@ -935,7 +935,7 @@ def update_spec(input_specfile):
     search_fits = input_specfile.replace('+', '\+')
     spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': search_fits},
                                    {'fitsfile': '~'})
-    if spec_id:
+    if spec_id and not update:
         logging.info("Spectrum already in db: %s" % input_specfile)
         return spec_id
 
