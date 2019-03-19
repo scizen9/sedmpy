@@ -940,9 +940,9 @@ def update_spec(input_specfile, update=False):
         logging.info("Spectrum already in db: %s" % input_specfile)
         if update:
             logging.info("Updating from %s" % input_specfile)
-            spec_dict['id'] = spec_id
-            spec_id, status = sedmdb.add_spec(spec_dict, update=True)
-        return spec_id
+            spec_dict['id'] = spec_id[0][0]
+        else:
+            return spec_id[0][0]
 
     # Get observation and object ids
     ifufile = 'ifu' + '_'.join(
@@ -971,7 +971,7 @@ def update_spec(input_specfile, update=False):
         spec_dict['spec_calib_id'] = spec_calib_id[0][0]
 
         # Add into database
-        spec_id, status = sedmdb.add_spec(spec_dict)
+        spec_id, status = sedmdb.add_spec(spec_dict, update=update)
         # update classification
         class_dict['spec_id'] = spec_id
         logging.info(status)
