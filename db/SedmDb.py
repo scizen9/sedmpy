@@ -2315,15 +2315,7 @@ class SedmDB:
         required_keys = ('spec_calib_id', 'observation_id', 'fitsfile',
                          'quality')
 
-        new_spec_id = _id_from_time()
-        pardic['id'] = new_spec_id
-
         keys = list(pardic.keys())
-
-        # Test for required keys
-        for key in required_keys:
-            if key not in keys:
-                return -1, "ERROR: %s not provided!" % (key,)
 
         # Are we updating?
         if update:
@@ -2356,6 +2348,14 @@ class SedmDB:
                     + str(keys)[1:-1])
         # New entry in spec table
         else:
+            new_spec_id = _id_from_time()
+            pardic['id'] = new_spec_id
+
+            # Test for required keys
+            for key in required_keys:
+                if key not in keys:
+                    return -1, "ERROR: %s not provided!" % (key,)
+
             # Test if observation id is valid
             obs_id = self.get_from_observation(['id'],
                                                {'id': pardic['observation_id']})

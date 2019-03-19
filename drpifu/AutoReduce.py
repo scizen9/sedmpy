@@ -924,7 +924,8 @@ def update_spec(input_specfile, update=False):
             logging.info("Not an object on the marshal: %s" % object)
         else:
             if specid is None:
-                logging.info("No spectrum found on the marshal: %s" % object)
+                logging.info("No spectrum found on the marshal: %s, %s"
+                             % (utdate, object))
             else:
                 spec_dict['marshal_spec_id'] = specid
 
@@ -935,8 +936,12 @@ def update_spec(input_specfile, update=False):
     search_fits = input_specfile.replace('+', '\+')
     spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': search_fits},
                                    {'fitsfile': '~'})
-    if spec_id and not update:
+    if spec_id:
         logging.info("Spectrum already in db: %s" % input_specfile)
+        if update:
+            logging.info("Updating from %s" % input_specfile)
+            spec_dict['id'] = spec_id
+            spec_id, status = sedmdb.add_spec(spec_dict, update=True)
         return spec_id
 
     # Get observation and object ids
