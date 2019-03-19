@@ -75,7 +75,7 @@ if __name__ == "__main__":
                 spec_lines = textIn.readlines()
                 index = [i for i, s in enumerate(spec_lines) if 'QUALITY' in s]
                 if len(index) > 0:
-                    spec_lines[index[0]] = "# QUALITY 1\n"
+                    spec_lines[index[0]] = "# QUALITY: 1\n"
                 else:
                     comment_lines_count = 0
                     for line in spec_lines:
@@ -83,14 +83,15 @@ if __name__ == "__main__":
                             comment_lines_count += 1
                         else:
                             break
-                    spec_lines.insert(comment_lines_count, "# QUALITY 1\n")
+                    spec_lines.insert(comment_lines_count, "# QUALITY: 1\n")
             with open(text_file, "w") as textOut:
                 textOut.write("".join(spec_lines))
             # remove *.upl
             upl_file = glob.glob(os.path.join(rd, dd,
                                  "spec_auto_robot_lstep1__*_%s_*.upl" %
-                                              ob_id))[0]
-            os.remove(upl_file)
+                                              ob_id))
+            if upl_file:
+                os.remove(upl_file[0])
             # now ready to re-upload to marshal
         # Re-extract a recoverable observation
         else:
