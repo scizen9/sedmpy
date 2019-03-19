@@ -147,7 +147,7 @@ if __name__ == "__main__":
                 sys.exit(1)
             else:
                 # Display verify image and then prompt for quality
-                verify_file = glob.glob("verify_auto_%s_*.png" % tagstr)
+                verify_file = glob.glob("verify_auto_%s_*.png" % tagstr)[0]
                 pars = ["display", verify_file]
                 ret = subprocess.call(pars)
                 good = input("Redo? (y/n): ")
