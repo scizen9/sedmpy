@@ -15,7 +15,7 @@ def report():
     print("See http://pharos.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
 
-    print("UTStart  Object                    Exptime Air    Flxcal Q "
+    print("UTStart  Object                    Exptime Air    Flxcal Q"
           "                           method  Allocation                     "
           "Type Subtype  z           Rlap")
     recs = []
