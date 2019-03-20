@@ -15,7 +15,7 @@ def report():
     print("See http://pharos.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
 
-    print("UTStart  Object                    Exptime Air    Flxcal"
+    print("UTStart  Object                    Exptime Air    Flxcal Q "
           "                           method  Allocation                     "
           "Type Subtype  z           Rlap")
     recs = []
@@ -81,19 +81,22 @@ def report():
                 prid = prid[0].split()[-1]
             else:
                 prid = "-"
+            # get Quality
+            quality = [li for li in lines if "QUALITY" in li]
+            if len(quality) > 0:
+                quality = int(quality[0].split()[-1])
+            else:
+                quality = 9
             sfl.close()
         if ctype == "":
             if "STD" in f:
                 ctype = " STD"
             else:
-                qstr = subprocess.check_output(('grep', 'QUALITY', f),
-                                               universal_newlines=True)
-                quality = int(qstr.split(':', 1)[-1])
                 ctype = " QUALITY_%d" % quality
 
-        recs.append("%8s %-25s %7s %5s  %6s %32s  %-21s  %12s  %6s %-9s  %6s" %
-                    (tstr, objname, expt, air, flxcal, meth, prid, ctype, stype,
-                     zmch, rlap))
+        recs.append("%8s %-25s %7s %5s  %6s %d %32s  %-21s  %12s  %6s %-9s  %6s" %
+                    (tstr, objname, expt, air, flxcal, quality, meth, prid,
+                     ctype, stype, zmch, rlap))
     recs.sort()
     for r in recs:
         print(r)
