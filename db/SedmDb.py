@@ -90,7 +90,7 @@ class SedmDB:
 
         if 'SELECT' in sql[:8]:
             obj = cursor.fetchall()
-            print(obj)
+            # print(obj)
             return obj
         else:
             cursor.execute("commit;")
