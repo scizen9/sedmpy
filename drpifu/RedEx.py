@@ -162,13 +162,7 @@ if __name__ == "__main__":
                         os.remove(f)
                     sys.exit(1)
             # Re-report
-            if args.slack:
-                pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
-            else:
-                logging.info("Be sure to update slack manually if extraction good")
-                logging.info("Use: pysedm_report.py %s --contains %s --justpush" %
-                             (dd, tagstr))
-                pars = ["pysedm_report.py", dd, "--contains", tagstr]
+            pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
             logging.info("Running " + " ".join(pars))
             ret = subprocess.call(pars)
             if ret:
