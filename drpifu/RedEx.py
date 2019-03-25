@@ -63,6 +63,13 @@ if __name__ == "__main__":
                 logging.error("not a quality 5 observation!")
                 sys.exit(1)
             ff[0].header['QUALITY'] = 1
+            try:
+                obj = ff[0].header['OBJECT'].replace(" [A]", "").replace(" ",
+                                                                         "-")
+            except KeyError:
+                logging.warning(
+                    "Could not find OBJECT keyword, setting to Test")
+                obj = 'Test'
             ff.flush()
             ff.close()
             # Update database entry
@@ -90,9 +97,11 @@ if __name__ == "__main__":
             upl_file = glob.glob(os.path.join(rd, dd,
                                  "spec_auto_robot_lstep1__*_%s_*.upl" %
                                               ob_id))
+            # make ready to re-upload to marshal
             if upl_file:
                 os.remove(upl_file[0])
-            # now ready to re-upload to marshal
+            # e-mail user that recovery was made
+            ar.email_user(fits_file, dd, obj)
         # Re-extract a recoverable observation
         else:
             logging.info("Re-extracting observation %s in %s" % (ob_id, dd))

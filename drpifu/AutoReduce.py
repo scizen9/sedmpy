@@ -1064,7 +1064,10 @@ def email_user(spec_file, utdate, object_name):
     ff = pf.open(spec_file)
     request = int(ff[0].header['REQ_ID'])
     quality = int(ff[0].header['QUALITY'])
-    if quality == 3:
+    if quality == 1:
+        status = 'IFU auto-extraction has been manually recovered.\n' \
+                 'Spectrum will be uploaded to marshal shortly.'
+    elif quality == 3:
         status = 'IFU auto-extraction failed: target outside IFU.'
     elif quality == 4:
         status = 'IFU auto-extraction failed: > 20% of flux is negative.'
