@@ -2315,8 +2315,6 @@ class SedmDB:
         required_keys = ('spec_calib_id', 'observation_id', 'fitsfile',
                          'quality')
 
-        keys = list(pardic.keys())
-
         # Are we updating?
         if update:
             # Must have ID
@@ -2328,6 +2326,7 @@ class SedmDB:
             if spec_id is None or spec_id <= 0:
                 return spec_id, "ERROR: something went wrong getting spec id!"
             # Validate input keys
+            keys = list(pardic.keys())
             for key in reversed(keys):  # TODO: test the updating
                 if key not in param_types:
                     return -1, "ERROR: %s is an invalid key!" % (key,)
@@ -2352,6 +2351,7 @@ class SedmDB:
             pardic['id'] = new_spec_id
 
             # Test for required keys
+            keys = list(pardic.keys())
             for key in required_keys:
                 if key not in keys:
                     return -1, "ERROR: %s not provided!" % (key,)
