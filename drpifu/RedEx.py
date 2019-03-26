@@ -10,6 +10,8 @@ if __name__ == "__main__":
     import argparse
     import logging
     import datetime
+    import AutoReduce as ar
+    import astropy.io.fits as pf
 
     logging.basicConfig(
         format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -51,8 +53,6 @@ if __name__ == "__main__":
         if args.recover:
             logging.info("Recovering a quality 5 spectrum %s in %s" % (ob_id,
                                                                        dd))
-            import AutoReduce as ar
-            import astropy.io.fits as pf
             # Update quality in fits file
             fits_file = glob.glob(os.path.join(rd, dd,
                                   "spec_auto_robot_lstep1__*_%s_*.fits" %
@@ -93,15 +93,26 @@ if __name__ == "__main__":
                     spec_lines.insert(comment_lines_count, "# QUALITY: 1\n")
             with open(text_file, "w") as textOut:
                 textOut.write("".join(spec_lines))
-            # remove *.upl
-            upl_file = glob.glob(os.path.join(rd, dd,
-                                 "spec_auto_robot_lstep1__*_%s_*.upl" %
-                                              ob_id))
             # make ready to re-upload to marshal
+            upl_file = glob.glob(
+                os.path.join(rd, dd, "spec_auto_robot_lstep1__*_%s_*.upl" %
+                             ob_id))
             if upl_file:
                 os.remove(upl_file[0])
-            # e-mail user that recovery was made
-            ar.email_user(fits_file, dd, obj)
+            # Upload spectrum to marshal
+            cmd = ("make", "ztfupload")
+            retcode = subprocess.call(cmd)
+            if retcode != 0:
+                logging.error("Error uploading spectra to marshal")
+            else:
+                # e-mail user that recovery was made
+                ar.email_user(fits_file, dd, obj)
+            # Re-report
+            pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
+            logging.info("Running " + " ".join(pars))
+            ret = subprocess.call(pars)
+            if ret:
+                logging.error("pysedm_report.py failed!")
         # Re-extract a recoverable observation
         else:
             logging.info("Re-extracting observation %s in %s" % (ob_id, dd))
@@ -177,5 +188,20 @@ if __name__ == "__main__":
             if ret:
                 logging.error("pysedm_report.py failed!")
                 sys.exit(1)
-        # Prepare for upload
-        logging.info("be sure to run make ztfupload when you are done.")
+            # Upload spectrum to marshal
+            cmd = ("make", "ztfupload")
+            retcode = subprocess.call(cmd)
+            if retcode != 0:
+                logging.error("Error uploading spectra to marshal")
+            else:
+                # Get the resulting fits file
+                fits_file = glob.glob(
+                    os.path.join(rd, dd, "spec_auto_%s_*_%s.fits" %
+                                 (tagstr, obname)))
+                if len(fits_file) == 1:
+                    # Update database entry
+                    ar.update_spec(fits_file[0])
+                    # e-mail user that recovery was made
+                    ar.email_user(fits_file[0], dd, obname)
+                else:
+                    logging.error("Error finding fits file")

@@ -1063,10 +1063,12 @@ def email_user(spec_file, utdate, object_name):
     # get request id
     ff = pf.open(spec_file)
     request = int(ff[0].header['REQ_ID'])
-    quality = int(ff[0].header['QUALITY'])
+    if 'redo' in spec_file:
+        quality = 1
+    else:
+        quality = int(ff[0].header['QUALITY'])
     if quality == 1:
-        status = 'IFU auto-extraction has been manually recovered.\n' \
-                 'Spectrum will be uploaded to marshal shortly.'
+        status = 'IFU auto-extraction has been manually recovered.'
     elif quality == 3:
         status = 'IFU auto-extraction failed: target outside IFU.'
     elif quality == 4:
@@ -1076,7 +1078,7 @@ def email_user(spec_file, utdate, object_name):
                  'guarantee that the target is in the IFU or well exposed.\n' \
                  'Manual recovery may be possible.'
     else:
-        status = 'IFU auto-extraction succeeded.'
+        status = 'IFU extraction succeeded.'
     link = 'http://pharos.caltech.edu/data_access/ifu?obsdate=%s' % utdate
     subj = 'SEDM followup status report for %s on %s' % (object_name, utdate)
 
