@@ -2348,13 +2348,14 @@ class SedmDB:
         # New entry in spec table
         else:
             new_spec_id = _id_from_time()
+            if not new_spec_id:
+                new_spec_id = _id_from_time()
+            if not new_spec_id:
+                return -1, "ERROR: bad id from time"
             pardic['id'] = new_spec_id
 
-            # Test for required keys
+            # get pardic keys
             keys = list(pardic.keys())
-            for key in required_keys:
-                if key not in keys:
-                    return -1, "ERROR: %s not provided!" % (key,)
 
             # Test if observation id is valid
             obs_id = self.get_from_observation(['id'],
