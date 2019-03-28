@@ -93,6 +93,9 @@ def report():
                 ctype = " STD"
             else:
                 ctype = " QUALITY_%d" % quality
+                stype = ""
+                zmch = ""
+                rlap = ""
 
         recs.append("%8s %-25s %7s %5s     %d %32s  %-21s  %12s  "
                     "%6s %-9s  %6s" %
