@@ -94,7 +94,8 @@ def report():
             else:
                 ctype = " QUALITY_%d" % quality
 
-        recs.append("%8s %-25s %7s %5s   %d %32s  %-21s  %12s  %6s %-9s  %6s" %
+        recs.append("%8s %-25s %7s %5s     %d %32s  %-21s  %12s  "
+                    "%6s %-9s  %6s" %
                     (tstr, objname, expt, air, quality, meth, prid, ctype,
                      stype, zmch, rlap))
     recs.sort()
