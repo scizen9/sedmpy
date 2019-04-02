@@ -205,3 +205,4 @@ if __name__ == "__main__":
                     ar.email_user(fits_file[0], dd, obname)
                 else:
                     logging.error("Error finding fits file")
+        ret = subprocess.call(["make", "report"])
