@@ -1,0 +1,38 @@
+#!/bin/csh
+#
+# do_astrom - solve SEDM RCAM images with astrometry.net
+
+echo $1
+#
+# set PATH
+setenv PATH /usr/local/anaconda2/bin:/scr2/sedmdrp/bin:/usr/local/optical/astrometry/bin:/usr/local/bin:/bin:/usr/bin
+#
+# set variables
+set ra = `fold $1 | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+@ nt = 0
+while ($ra == '')
+	echo "Null RA, try again"
+	set ra = `fold $1 | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+	@ nt = $nt + 1
+	if ($nt > 5) break
+end
+set dec = `fold $1 | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+@ nt = 0
+while ($dec == '')
+	echo "Null Dec, try again"
+	set dec = `fold $1 | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+	@ nt = $nt + 1
+	if ($nt > 5) break
+end
+if ($ra == '') then
+	echo "Null RA, do_astrom failed."
+	exit
+endif
+echo $ra
+if ($dec == '') then
+	echo "Null Dec, do_astrom failed."
+	exit
+endif
+echo $dec
+# call solve-field
+time solve-field  -p --ra $ra --dec $dec --radius 0.2 --new-fits $1:r"_astrom.fits" -W none -B none -M none -R none -S none -t 2 --scale-units arcminwidth  --scale-low 12.0 --scale-high 14.0 --parity neg --crpix-center --pixel-error 2.5 --overwrite $1
