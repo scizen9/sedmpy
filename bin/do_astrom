@@ -35,4 +35,4 @@ if ($dec == '') then
 endif
 echo $dec
 # call solve-field
-time solve-field  -p --ra $ra --dec $dec --radius 0.2 --new-fits $1:r"_astrom.fits" -W none -B none -M none -R none -S none -t 2 --scale-units arcminwidth  --scale-low 12.0 --scale-high 14.0 --parity neg --crpix-center --pixel-error 2.5 --overwrite $1
+time solve-field  -p --ra $ra --dec $dec --radius 0.2 --new-fits $1:r"_astrom.fits" -W none -B none -M none -R none -S none -t 2 --scale-units arcminwidth  --scale-low 12.0 --scale-high 14.0 --parity neg --crpix-center --pixel-error 2.5 --overwrite --cpulimit 5 $1
