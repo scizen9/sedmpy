@@ -48,9 +48,8 @@ _reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 def finder(myfile, findername, searchrad=0.2/60.):
     
-    ra, dec = coordinates_conversor.hour2deg(fitsutils.get_par(myfile, "OBJRA"),
-                                             fitsutils.get_par(myfile,
-                                                               "OBJDEC"))
+    ora, odec = coordinates_conversor.hour2deg(
+        fitsutils.get_par(myfile, "OBJRA"), fitsutils.get_par(myfile, "OBJDEC"))
     utc = fitsutils.get_par(myfile, "UTC")
     hdulist = pf.open(myfile)[0]
     img = hdulist.data * 1.            
@@ -58,17 +57,25 @@ def finder(myfile, findername, searchrad=0.2/60.):
 
     wcs = WCS(hdulist.header)
 
-    target_pix = wcs.wcs_world2pix([(np.array([ra, dec], np.float_))], 1)[0]
-    corner_pix = wcs.wcs_world2pix([(np.array([ra, dec+searchrad], np.float_))],
-                                   1)[0]
-    dx = int(np.abs(np.ceil(corner_pix[1] - target_pix[1])))
+    target_pix = wcs.wcs_world2pix([(np.array([ora, odec], np.float_))], 1)[0]
 
     # check bounds
+    good_coords = False
     if (target_pix[0] < 0 or target_pix[0] > img.shape[0] or
        target_pix[1] < 0 or target_pix[1] > img.shape[1]):
-        print("ERROR - target outside finder image: x,y = ", target_pix)
-        return
-    
+        print("ERROR - target outside acquisition image: x,y = ", target_pix)
+        target_pix = np.array([[1293., 1280]], dtype=np.float)
+        ra, dec = wcs.wcs_pix2world(target_pix, 1)[0]
+        target_pix = target_pix[0]
+        # return
+    else:
+        ra, dec = ora, odec
+        good_coords = True
+
+    corner_pix = wcs.wcs_world2pix([(np.array([ra, dec + searchrad],
+                                              np.float_))], 1)[0]
+    dx = int(np.abs(np.ceil(corner_pix[1] - target_pix[1])))
+
     # imgslice = img[int(target_pix[0])-2*dx:int(target_pix[0])+2*dx,
     #                int(target_pix[1])-2*dx:int(target_pix[1])+2*dx]
     imgslice_target = img[int(target_pix[0])-dx:int(target_pix[0])+dx,
@@ -102,8 +109,9 @@ def finder(myfile, findername, searchrad=0.2/60.):
     dxs = np.array([0, searchrad/10 / np.cos(np.deg2rad(dec))])
     dys = np.array([searchrad/10, 0])
 
-    gc.show_arrows(ras, decs, dxs, dys, edgecolor="red", facecolor="red",
-                   head_width=0)
+    if good_coords:
+        gc.show_arrows(ras, decs, dxs, dys, edgecolor="red", facecolor="red",
+                       head_width=0)
 
     ras = np.array([ra+searchrad*0.7 / np.cos(np.deg2rad(dec)),
                     ra+searchrad*0.7 / np.cos(np.deg2rad(dec))])
@@ -124,10 +132,14 @@ def finder(myfile, findername, searchrad=0.2/60.):
     gc.add_label(0.05, 0.9, 'Filter: SDSS %s' % img_filter, relative=True,
                  color="white", horizontalalignment="left")
     gc.add_label(0.05, 0.85, 'Coordinates: RA=%s DEC=%s' %
-                 (coordinates_conversor.deg2hour(ra, dec)), relative=True,
+                 (coordinates_conversor.deg2hour(ora, odec)), relative=True,
                  color="white", horizontalalignment="left")
     gc.add_label(0.05, 0.8, "UTC: %s" % utc, relative=True,
                  color="white", horizontalalignment="left")
+    if not good_coords:
+        gc.add_label(0.05, 0.75, 'Acquired coords: RA=%s DEC=%s' %
+                     (coordinates_conversor.deg2hour(ra, dec)), relative=True,
+                     color="red", horizontalalignment="left")
     
     gc.save(findername)
     print("Created %s" % findername)
