@@ -25,7 +25,14 @@ if __name__ == "__main__":
     # setup arguments
     parser.add_argument('obs_id', type=str, default=None,
                         help='observation timestamp as HH_MM_SS')
+    parser.add_argument('--area', type=float, default=18000.,
+                        help='telescope area in cm (def: 18,000.)')
+    parser.add_argument('--refl', type=float, default=0.82,
+                        help='total reflectance (def: 0.82)')
     args = parser.parse_args()
+
+    area = args.area
+    refl = args.refl
 
     if not args.obs_id:
         logging.info("Usage - eff <obs_id>")
@@ -51,6 +58,7 @@ if __name__ == "__main__":
 
             # Get spec file
             specname = glob.glob("spec_aperture*_%s_*.fits" % ob_id)
+            plotname = specname[0].replace(".fits", "_earea.png")
             if not specname:
                 logging.error("No files found for observation id %s" % ob_id)
                 sys.exit(1)
@@ -67,10 +75,12 @@ if __name__ == "__main__":
             rspec = refspec.reshape(lbda)
             ratio = spec / rspec.data
             rspho = 5.03411250e7 * rspec.data * lbda * dlam
-            earea = (spec * dlam) / rspho
-            eff = earea/18000.
+            earea = spec / rspho
+            eff = earea/(area * refl)
             pl.plot(lbda, eff)
             pl.show()
+            pl.ioff()
+            pl.savefig(plotname)
             # Re-verify
             pars = ["verify", dd, "--contains",
                     "aperture_notfluxcal__crr_b_ifu%s_%s" % (dd, ob_id)]
