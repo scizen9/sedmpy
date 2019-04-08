@@ -64,13 +64,12 @@ def finder(myfile, findername, searchrad=0.2/60.):
     if (target_pix[0] < 0 or target_pix[0] > img.shape[0] or
        target_pix[1] < 0 or target_pix[1] > img.shape[1]):
         print("ERROR - target outside acquisition image: x,y = ", target_pix)
-        target_pix = np.array([[1293., 1280]], dtype=np.float)
+        target_pix = np.array([[1280., 1293.]], dtype=np.float)
         ra, dec = wcs.wcs_pix2world(target_pix, 1)[0]
         target_pix = target_pix[0]
-        # return
     else:
-        ra, dec = ora, odec
         good_coords = True
+        ra, dec = ora, odec
 
     corner_pix = wcs.wcs_world2pix([(np.array([ra, dec + searchrad],
                                               np.float_))], 1)[0]
