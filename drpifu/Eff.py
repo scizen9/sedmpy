@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     # setup arguments parser
     parser = argparse.ArgumentParser(
-        description="""Re-do an extraction.""",
+        description="""Do an aperture extraction of a standard star.""",
         formatter_class=argparse.RawTextHelpFormatter)
     # setup arguments
     parser.add_argument('obs_id', type=str, default=None,
