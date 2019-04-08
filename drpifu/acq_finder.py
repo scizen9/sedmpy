@@ -67,6 +67,7 @@ def finder(myfile, findername, searchrad=0.2/60.):
         target_pix = np.array([[1280., 1293.]], dtype=np.float)
         ra, dec = wcs.wcs_pix2world(target_pix, 1)[0]
         target_pix = target_pix[0]
+        findername = findername.replace(".png", "_failed.png")
     else:
         good_coords = True
         ra, dec = ora, odec
