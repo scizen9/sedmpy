@@ -140,6 +140,8 @@ def finder(myfile, findername, searchrad=0.2/60.):
         gc.add_label(0.05, 0.75, 'Acquired coords: RA=%s DEC=%s' %
                      (coordinates_conversor.deg2hour(ra, dec)), relative=True,
                      color="red", horizontalalignment="left")
+        gc.add_label(0.05, 0.70, 'FAILED ACQUISITION', relative=True,
+                     color="red", horizontalalignment="left")
     
     gc.save(findername)
     print("Created %s" % findername)
