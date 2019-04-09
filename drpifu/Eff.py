@@ -76,12 +76,13 @@ if __name__ == "__main__":
             ratio = spec / rspec.data
             rspho = 5.03411250e7 * rspec.data * lbda * dlam
             earea = spec / rspho
-            eff = earea/(area * refl)
+            eff = 100. * earea/(area * refl)
             pl.figure(1)
             pl.plot(lbda, eff)
             pl.xlabel('Wave(A)')
-            pl.ylabel('Eff')
-            pl.title(obname)
+            pl.ylabel('Eff(%)')
+            pl.title("%s, Area = %.0f cm^2, Refl = %.0f %%" % (obname, area,
+                                                               refl))
             pl.ioff()
             pl.savefig(plotname)
             # Re-verify
