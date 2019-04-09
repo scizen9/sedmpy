@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
             # Get spec file
             specname = glob.glob("spec_aperture*_%s_*.fits" % ob_id)
-            plotname = specname[0].replace(".fits", "_earea.png")
+            plotname = specname[0].replace(".fits", "_eff.png")
             if not specname:
                 logging.error("No files found for observation id %s" % ob_id)
                 sys.exit(1)
@@ -77,8 +77,11 @@ if __name__ == "__main__":
             rspho = 5.03411250e7 * rspec.data * lbda * dlam
             earea = spec / rspho
             eff = earea/(area * refl)
+            pl.figure(1)
             pl.plot(lbda, eff)
-            pl.show()
+            pl.xlabel('Wave(A)')
+            pl.ylabel('Eff')
+            pl.title(obname)
             pl.ioff()
             pl.savefig(plotname)
             # Re-verify
