@@ -82,7 +82,7 @@ if __name__ == "__main__":
             pl.xlabel('Wave(A)')
             pl.ylabel('Eff(%)')
             pl.title("%s, Area = %.0f cm^2, Refl = %.0f %%" % (obname, area,
-                                                               refl))
+                                                               refl*100.))
             pl.ioff()
             pl.savefig(plotname)
             # Re-verify
