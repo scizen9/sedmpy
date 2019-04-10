@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # setup arguments
     parser.add_argument('indate', type=str, default=None,
                         help='UT date as YYYYMMDD')
-    parser.add_argument('--contains', type=str, default="*",
+    parser.add_argument('--contains', type=str, default=None,
                         help='unique observation identifier')
     parser.add_argument('--area', type=float, default=18000.,
                         help='telescope area in cm (def: 18,000.)')
