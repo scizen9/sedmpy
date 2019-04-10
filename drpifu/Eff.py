@@ -23,30 +23,32 @@ if __name__ == "__main__":
         description="""Do an aperture extraction of a standard star.""",
         formatter_class=argparse.RawTextHelpFormatter)
     # setup arguments
-    parser.add_argument('obs_id', type=str, default=None,
-                        help='observation timestamp as HH_MM_SS')
+    parser.add_argument('indate', type=str, default=None,
+                        help='UT date as YYYYMMDD')
+    parser.add_argument('--contains', type=str, default="*",
+                        help='unique observation identifier')
     parser.add_argument('--area', type=float, default=18000.,
                         help='telescope area in cm (def: 18,000.)')
     parser.add_argument('--refl', type=float, default=0.82,
                         help='total reflectance (def: 0.82)')
     args = parser.parse_args()
 
+    dd = args.indate
     area = args.area
     refl = args.refl
+    ob_id = args.contains
 
-    if not args.obs_id:
-        logging.info("Usage - eff <obs_id>")
+    if not ob_id:
+        logging.info("Usage - eff YYYYMMDD --contains <filespec>")
     else:
         # Check inputs and environment
-        ob_id = args.obs_id
-        dd = os.getcwd().split('/')[-1]
         rd = '/'.join(os.getcwd().split('/')[:-1])
         reddir = os.environ['SEDMREDUXPATH']
         if rd not in reddir:
             logging.error("check SEDMREDUXPATH env var")
             sys.exit(1)
-        # Recover a quality 5 observation that is already good
         else:
+            # Calculate observed instrumental spectrum (uncalibrated)
             logging.info("Aperture extracting observation %s in %s" % (ob_id, dd))
             pars = ["extract_star.py", dd, "--aperture", ob_id, "--buffer",
                     "10", "--nofluxcal"]
@@ -58,32 +60,40 @@ if __name__ == "__main__":
 
             # Get spec file
             specname = glob.glob("spec_aperture*_%s_*.fits" % ob_id)
-            areaname = specname[0].replace(".fits", "_ea.fits")
-            plotname = specname[0].replace(".fits", "_eff.png")
             if not specname:
                 logging.error("No files found for observation id %s" % ob_id)
                 sys.exit(1)
             # Read in spectrum
             ff = pf.open(specname[0])
+            # Observed spectrum in e-/s/Angstrom
             spec = ff[0].data
-            lam0 = ff[0].header['CRVAL1']
-            dlam = ff[0].header['CDELT1']
+            # Original header
+            ohdr = ff[0].header
+            # Close spectrum
+            ff.close()
+            # Calculate wavelengths
+            lam0 = ohdr['CRVAL1']
+            dlam = ohdr['CDELT1']
             lbda = (1 + np.arange(len(spec))) * dlam + lam0
             # Object name
             obname = specname[0].split('_')[-1].split('.')[0].split('-')[-1]
             # Get reference spectrum
             refspec = pycalspec.std_spectrum(obname)
+            # Resample to our wavelengths
             rspec = refspec.reshape(lbda)
-            ratio = spec / rspec.data
+            # Convert to photons/s/cm^2/Angstrom
             rspho = 5.03411250e7 * rspec.data * lbda * dlam
+            # Effective area (cm^2)
             earea = spec / rspho
-            ohdr = ff[0].header
+            # Write out effective area spectrum
+            areaname = specname[0].replace(".fits", "_ea.fits")
             ohdr['BUNIT'] = ('cm^2', 'Brightness units')
             hdu = pf.PrimaryHDU(earea, header=ohdr)
             fo = pf.HDUList([hdu])
             fo.writeto(areaname)
-            ff.close()
+            # Calculate efficiency spectrum
             eff = 100. * earea/(area * refl)
+            # Plot efficiency spectrum
             pl.figure(1)
             pl.plot(lbda, eff)
             pl.xlabel('Wave(A)')
@@ -92,12 +102,7 @@ if __name__ == "__main__":
                                                                refl*100.))
             pl.grid(True)
             pl.ioff()
+            # Save efficiency plot to file
+            plotname = specname[0].replace(".fits", "_eff.png")
             pl.savefig(plotname)
-            # Re-verify
-            pars = ["verify", dd, "--contains",
-                    "aperture_notfluxcal__crr_b_ifu%s_%s" % (dd, ob_id)]
-            # logging.info("Running " + " ".join(pars))
-            # ret = subprocess.call(pars)
-            # if ret:
-            #    logging.error("Verify failed!")
-            #    sys.exit(1)
+

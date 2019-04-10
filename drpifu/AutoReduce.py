@@ -754,6 +754,11 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                                          (proced, cube_id))
                         else:
                             logging.error("Not found: %s" % proced)
+                        # Generate effective area and efficiency plots
+                        cmd = "~/sedmpy/drp/Eff.py %s --contains %s" % \
+                              (datestr, fn.split('.')[0])
+                        logging.info(cmd)
+                        subprocess.call(cmd, shell=True)
             else:
                 # Build cube for science observation
                 logging.info("Building science cube for " + fn)
