@@ -58,6 +58,7 @@ if __name__ == "__main__":
 
             # Get spec file
             specname = glob.glob("spec_aperture*_%s_*.fits" % ob_id)
+            areaname = specname[0].replace(".fits", "_ea.fits")
             plotname = specname[0].replace(".fits", "_eff.png")
             if not specname:
                 logging.error("No files found for observation id %s" % ob_id)
@@ -76,6 +77,12 @@ if __name__ == "__main__":
             ratio = spec / rspec.data
             rspho = 5.03411250e7 * rspec.data * lbda * dlam
             earea = spec / rspho
+            ohdr = ff[0].header
+            ohdr['BUNIT'] = ('cm^2', 'Brightness units')
+            hdu = pf.PrimaryHDU(earea, header=ohdr)
+            fo = pf.HDUList([hdu])
+            fo.writeto(areaname)
+            ff.close()
             eff = 100. * earea/(area * refl)
             pl.figure(1)
             pl.plot(lbda, eff)
@@ -83,6 +90,7 @@ if __name__ == "__main__":
             pl.ylabel('Eff(%)')
             pl.title("%s, Area = %.0f cm^2, Refl = %.0f %%" % (obname, area,
                                                                refl*100.))
+            pl.grid(True)
             pl.ioff()
             pl.savefig(plotname)
             # Re-verify
