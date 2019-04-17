@@ -755,7 +755,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         else:
                             logging.error("Not found: %s" % proced)
                         # Generate effective area and efficiency plots
-                        cmd = "~/sedmpy/drp/Eff.py %s --contains %s" % \
+                        cmd = "~/sedmpy/drpifu/Eff.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
                         logging.info(cmd)
                         subprocess.call(cmd, shell=True)
