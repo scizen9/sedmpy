@@ -1067,11 +1067,21 @@ def email_user(spec_file, utdate, object_name):
     """ Send e-mail to requestor indicating followup completed"""
     # get request id
     ff = pf.open(spec_file)
-    request = int(ff[0].header['REQ_ID'])
+    if 'REQ_ID' in ff[0].header:
+        request = int(ff[0].header['REQ_ID'])
+    else:
+        logging.error("No keyword REQ_ID found in %s\nNo email sent"
+                      % spec_file)
+        return
     if 'redo' in spec_file:
         quality = 1
     else:
-        quality = int(ff[0].header['QUALITY'])
+        if 'QUALITY' in ff[0].header:
+            quality = int(ff[0].header['QUALITY'])
+        else:
+            logging.error("No keyword QUALITY found in %s\nNo email sent"
+                          % spec_file)
+            return
     if quality == 1:
         status = 'IFU auto-extraction has been manually recovered.'
     elif quality == 3:
