@@ -37,8 +37,15 @@ for d in dlist:
         ff = pf.open(s)
         hdr = ff[0].header
         ea = ff[0].data
+        # Avoid bad quality
         if hdr['QUALITY'] != 0:
             print("Bad quality: %s" % s)
+            continue
+        # Avoid edge objects
+        xx = ff[0].header['XPOS']
+        yy = ff[0].header['YPOS']
+        if abs(xx) > 5 or abs(yy) > 5:
+            print("Close to the edge: %s" % s)
             continue
 
         # Calculate efficiency
