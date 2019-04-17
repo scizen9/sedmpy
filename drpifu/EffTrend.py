@@ -38,6 +38,7 @@ for d in dlist:
         hdr = ff[0].header
         ea = ff[0].data
         if hdr['QUALITY'] != 0:
+            print("Bad quality: %s" % s)
             continue
 
         # Calculate efficiency
