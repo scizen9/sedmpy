@@ -87,7 +87,7 @@ for d in dlist:
         if len(vec) < 1:
             continue
         e4 = np.nanmean(vec)
-        if e4 > 100 or e4 < 0:
+        if e4 > 17 or e4 < 0:
             continue
 
         # 800 - 900 nm
@@ -119,7 +119,7 @@ pl.ylabel('Efficiency(%)')
 pl.title('Efficiency Trend')
 pl.legend(loc=1)
 pl.grid(True)
-pl.ylim(-1, 55)
+pl.ylim(-1, 35)
 ofil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.pdf')
 tfil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.txt')
 pl.savefig(ofil)
