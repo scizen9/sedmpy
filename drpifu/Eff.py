@@ -65,12 +65,16 @@ if __name__ == "__main__":
                 sys.exit(1)
             # Read in spectrum
             ff = pf.open(specname[0])
-            # Observed spectrum in e-/s/Angstrom
+            # Observed spectrum in e-/Angstrom
             spec = ff[0].data
+            # Aperture weight
+            apwgt = ff[2].data
             # Original header
             ohdr = ff[0].header
             # Close spectrum
             ff.close()
+            # Scale spectrum
+            spec = spec * apwgt / ohdr['EXPTIME']
             # Calculate wavelengths
             lam0 = ohdr['CRVAL1']
             dlam = ohdr['CDELT1']
