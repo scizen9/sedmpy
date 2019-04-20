@@ -87,7 +87,7 @@ for d in dlist:
         if len(vec) < 1:
             continue
         e4 = np.nanmean(vec)
-        if e4 > 17 or e4 < 0:
+        if e4 > 100 or e4 < 0:
             continue
 
         # 800 - 900 nm
