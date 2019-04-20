@@ -130,6 +130,6 @@ tfil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.txt')
 pl.savefig(ofil)
 with open(tfil, 'w') as dfil:
     dat_writer = csv.writer(dfil, delimiter=" ", quoting=csv.QUOTE_MINIMAL)
-    dat_writer.writerows(zip(jd, ef1, ef2, ef3, ef4, ef5, efs))
+    dat_writer.writerows(zip(da, ef1, ef2, ef3, ef4, ef5, efs))
 
 
