@@ -44,7 +44,7 @@ for d in dlist:
         # Avoid edge objects
         xx = ff[0].header['XPOS']
         yy = ff[0].header['YPOS']
-        if abs(xx) > 5 or abs(yy) > 5:
+        if abs(xx) > 10 or abs(yy) > 10:
             print("Close to the edge: %s" % s)
             continue
 
