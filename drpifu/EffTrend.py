@@ -119,7 +119,7 @@ pl.plot_date(t.plot_date, ef4, 'D', linestyle='None', markersize=2.0,
 pl.plot_date(t.plot_date, ef5, 'o', linestyle='None', markersize=2.0,
              label='800-900 nm')
 pl.gcf().autofmt_xdate()
-pl.xlabel('Date')
+pl.xlabel('Date (UTC)')
 pl.ylabel('Efficiency(%)')
 pl.title('Efficiency Trend')
 pl.legend(loc=2)
