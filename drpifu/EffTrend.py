@@ -17,7 +17,6 @@ dlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])[1:]
 area = 18000.0  # P60 area in cm^2
 refl = 0.82     # P60 reflectance fraction
 da = []
-pjd = []
 ef1 = []
 ef2 = []
 ef3 = []
@@ -120,7 +119,7 @@ pl.plot_date(t.plot_date, ef5, 'o', linestyle='None', markersize=2.0,
              label='800-900 nm')
 pl.gcf().autofmt_xdate()
 pl.xlabel('Date (UTC)')
-pl.ylabel('Efficiency(%)')
+pl.ylabel('Efficiency (%)')
 pl.title('Efficiency Trend')
 pl.legend(loc=2)
 pl.grid(True)
