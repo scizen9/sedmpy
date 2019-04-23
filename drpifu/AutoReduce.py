@@ -298,12 +298,16 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
                 nobj = 1
                 logging.info('Target %s linked to %s' % (obj, dest))
             ncp = 1
-            # Record in database
-            obs_id = update_observation(src)
-            if obs_id > 0:
-                logging.info("SEDM db accepted observation at id %d" % obs_id)
+            if 'REQ_ID' in hdr and 'OBJ_ID' in hdr:
+                # Record in database
+                obs_id = update_observation(src)
+                if obs_id > 0:
+                    logging.info("SEDM db accepted observation at id %d" % obs_id)
+                else:
+                    logging.warning("SEDM db rejected observation")
             else:
-                logging.warning("SEDM db rejected observation")
+                logging.warning("Missing request and/or object ids,"
+                                " no db update")
         # Report skipping and type
         else:
             if verbose and 'test' in obj:
@@ -632,7 +636,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
     # END: cpsci
 
 
-def dosci(destdir='./', datestr=None, scal_id=None):
+def dosci(destdir='./', datestr=None, local=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -643,7 +647,7 @@ def dosci(destdir='./', datestr=None, scal_id=None):
     Args:
         destdir (str): destination directory (typically in /scr2/sedm/redux)
         datestr (str): YYYYMMDD date string
-        scal_id (int): SedmDb spec_cal table entry id
+        local (bool): set to skip pushing to marshal and slack
 
     Returns:
         int: Number of ifu images actually copied
@@ -749,9 +753,13 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             # Update SedmDb table spec
-                            update_spec(proced)
-                            logging.info("update of %s with cube_id %d" %
-                                         (proced, cube_id))
+                            spec_id = update_spec(proced)
+                            if spec_id > 0:
+                                logging.info("update of %s with cube_id %d" %
+                                             (proced, cube_id))
+                            else:
+                                logging.warning("failed to update spec %s" %
+                                                proced)
                         else:
                             logging.error("Not found: %s" % proced)
                         # Generate effective area and efficiency plots
@@ -807,18 +815,26 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running SNID")
-                        cmd = ("pysedm_report.py", datestr, "--contains",
-                               fn.split('.')[0], "--slack")
+                        if local:
+                            cmd = ("pysedm_report.py", datestr, "--contains",
+                                   fn.split('.')[0])
+                        else:
+                            cmd = ("pysedm_report.py", datestr, "--contains",
+                                   fn.split('.')[0], "--slack")
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running report for " +
                                           fn.split('.')[0])
                         # Upload spectrum to marshal
-                        cmd = ("make", "ztfupload")
-                        retcode = subprocess.call(cmd)
-                        if retcode != 0:
-                            logging.error("Error uploading spectra to marshal")
+                        if local:
+                            logging.info("local: skipping ztfupload")
+                        else:
+                            cmd = ("make", "ztfupload")
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
+                                logging.error("Error uploading spectra to"
+                                              " marshal")
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
@@ -826,11 +842,14 @@ def dosci(destdir='./', datestr=None, scal_id=None):
                         # notify user that followup successfully completed
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
-                            email_user(proced, datestr, obj)
-                            # Update SedmDb table spec
-                            update_spec(proced)
-                            logging.info("update of %s with cube_id %d" %
-                                         (proced, cube_id))
+                            if local:
+                                logging.info("local: skipping email, db update")
+                            else:
+                                email_user(proced, datestr, obj)
+                                # Update SedmDb table spec
+                                update_spec(proced)
+                                logging.info("update of %s with cube_id %d" %
+                                             (proced, cube_id))
                         else:
                             logging.error("Not found: %s" % proced)
     return ncp, copied
@@ -1442,7 +1461,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
 
 
 def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
-             piggyback=False):
+             piggyback=False, local=False):
     """One night observing loop: processes calibrations and science data
 
     Copy raw cal files until we are ready to process the night's
@@ -1461,6 +1480,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         check_precal (bool): should we check for images from previous night?
         indir (str): input directory for single night processing
         piggyback (bool): basic processing done by StartObs.py
+        local (bool): True if no marshal/slack update required
 
     Returns:
         bool: True if night completed normally, False otherwise
@@ -1686,13 +1706,12 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             # Record starting time for new file processing
             start_time = time.time()
             if piggyback:
-                nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      scal_id=spec_calib_id)
+                nsci, science = dosci(outdir, datestr=cur_date_str, local=local)
                 ncp = nsci
             else:
                 ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str)
                 nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      scal_id=spec_calib_id)
+                                      local=local)
             # We copied some new ones so report processing time
             if ncp > 0:
                 proc_time = int(time.time() - start_time)
@@ -1764,7 +1783,7 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
 
 
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
-       check_precal=True, indate=None, piggyback=False):
+       check_precal=True, indate=None, piggyback=False, local=False):
     """Outermost infinite loop that watches for a new raw directory.
 
     Keep a list of raw directories in `redd` and fire off
@@ -1778,6 +1797,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         check_precal (bool): should we check previous night for cals?
         indate (str): input date to process: YYYYMMDD (e.g. 20180626)
         piggyback (bool): True if using other script to copy data
+        local (bool): True if no marshal/slack update required
 
     Returns:
         None
@@ -1803,7 +1823,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
 
         if not wait:
             stat = obs_loop(rawlist, redd, check_precal=check_precal,
-                            piggyback=piggyback)
+                            piggyback=piggyback, local=local)
             its += 1
             logging.info("Finished SEDM observing iteration %d in raw dir %s" %
                          (its, rawlist[-1]))
@@ -1849,7 +1869,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         indir = os.path.join(rawd, indate)
         logging.info("Processing raw data from %s" % indir)
         stat = obs_loop(rawlist, redd, check_precal=check_precal, indir=indir,
-                        piggyback=piggyback)
+                        piggyback=piggyback, local=local)
         its += 1
         logging.info("Finished SEDM processing in raw dir %s with status %d" %
                      (indir, stat))
@@ -1876,6 +1896,9 @@ if __name__ == '__main__':
                         help='Select date to process')
     parser.add_argument('--update', type=str, default=None,
                         help='UTDate directory to update')
+    parser.add_argument('--local', action="store_true", default=False,
+                        help='Process data locally only (no push to marshal or '
+                             'slack')
 
     args = parser.parse_args()
 
@@ -1884,4 +1907,4 @@ if __name__ == '__main__':
     else:
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
-           piggyback=args.piggyback)
+           piggyback=args.piggyback, local=args.local)
