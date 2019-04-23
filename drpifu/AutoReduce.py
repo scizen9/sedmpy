@@ -733,8 +733,12 @@ def dosci(destdir='./', datestr=None, local=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
-                        cmd = ("pysedm_report.py", datestr, "--contains",
-                               fn.split('.')[0], "--slack")
+                        if local:
+                            cmd = ("pysedm_report.py", datestr, "--contains",
+                                   fn.split('.')[0])
+                        else:
+                            cmd = ("pysedm_report.py", datestr, "--contains",
+                                   fn.split('.')[0], "--slack")
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
