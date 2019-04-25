@@ -8,19 +8,19 @@ echo $1
 setenv PATH /usr/local/anaconda2/bin:/scr2/sedmdrp/bin:/usr/local/optical/astrometry/bin:/usr/local/bin:/bin:/usr/bin
 #
 # set variables
-set ra = `fold $1 | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+set ra = `zcat -f $1 | fold | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
 @ nt = 0
 while ($ra == '')
 	echo "Null RA, try again"
-	set ra = `fold $1 | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+	set ra = `zcat -f $1 | fold | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
 	@ nt = $nt + 1
 	if ($nt > 5) break
 end
-set dec = `fold $1 | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+set dec = `zcat -f $1 | fold | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
 @ nt = 0
 while ($dec == '')
 	echo "Null Dec, try again"
-	set dec = `fold $1 | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+	set dec = `zcat -f $1 | fold | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
 	@ nt = $nt + 1
 	if ($nt > 5) break
 end
@@ -35,4 +35,4 @@ if ($dec == '') then
 endif
 echo $dec
 # call solve-field
-time solve-field  -p --ra $ra --dec $dec --radius 0.2 --new-fits $1:r"_astrom.fits" -W none -B none -M none -R none -S none -t 3 --nsigma 12 --overwrite --scale-units arcsecperpix  --scale-low 0.35 --scale-high 0.41 --crpix-center --cpulimit 5 --parity neg $1
+time solve-field  -p --ra $ra --dec $dec --radius 0.2 --new-fits $1:r:r "_astrom.fits" -W none -B none -M none -R none -S none -t 3 --nsigma 12 --overwrite --scale-units arcsecperpix  --scale-low 0.35 --scale-high 0.41 --crpix-center --cpulimit 5 --parity neg $1
