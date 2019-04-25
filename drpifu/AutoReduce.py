@@ -1757,6 +1757,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                                   sunrise.tuple()[0], sunrise.tuple()[1],
                                   sunrise.tuple()[2], sunrise.tuple()[3],
                                   sunrise.tuple()[4], sunrise.tuple()[5]))
+                if local:
+                    logging.info("Done with images in local mode")
+                    doit = False
+                    subprocess.call(("make", "report"))
+                    ret = True
 
     # Handle a ctrl-C
     except KeyboardInterrupt:
