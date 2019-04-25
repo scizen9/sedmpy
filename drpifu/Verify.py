@@ -111,6 +111,14 @@ def build_image_report(indir=None, fspec=None):
             fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
                     (indir, object_name)
         finder_file = glob.glob(fspec)
+        if not finder_file:
+            if is_std:
+                fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*_%s_*.png" % \
+                        (indir, object_name.split("STD-")[-1])
+            else:
+                fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*_%s_*.png" % \
+                        (indir, object_name)
+            finder_file = glob.glob(fspec)
         if finder_file:
             # Get delta time = (t_obs - t_acq)
             off_time_list = []
