@@ -286,7 +286,7 @@ if __name__ == "__main__":
         os.makedirs("finders")
 
     # We gather all RC images to locate the Acquisition ones.
-    files = glob.glob(os.path.join(rcdir, "rc*fits"))
+    files = glob.glob(os.path.join(rcdir, "rc*fit*"))
     files.sort()
     filesacq = []
 
@@ -343,7 +343,8 @@ if __name__ == "__main__":
 
                 print("Solving astrometry", dest)
                 # Solving for astrometry
-                astrof = dest.replace(".fits", "_astrom.fits")
+                astrof = dest.replace(".fits", "_astrom.fits").replace(".gz",
+                                                                       "")
                 if not os.path.exists(astrof):
                     returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
                                                   dest])
