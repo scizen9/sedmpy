@@ -3527,11 +3527,17 @@ class SedmDB:
         if to:
             msg['To'] = to
         else:
-            userid = self.get_from_request(values=['user_id'],
-                                        where_dict={'id': requestid})[0][0]
+            try:
+                userid = self.get_from_request(values=['user_id'],
+                                            where_dict={'id': requestid})[0][0]
+            except IndexError:
+                return "Unable to retrieve userid from database"
 
-            user_email = self.get_from_users(values=['email'],
-                                             where_dict={'id': userid})
+            try:
+                user_email = self.get_from_users(values=['email'],
+                                                 where_dict={'id': userid})
+            except IndexError:
+                return "Unable to retrieve user_email from database"
 
             msg['To'] = user_email[0]
 

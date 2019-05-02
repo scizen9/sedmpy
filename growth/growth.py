@@ -398,23 +398,42 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     object_name = None
     username = None
     email = None
+    # Return values
+    spec_ret = None
+    phot_ret = None
+    status_ret = None
+    return_link = None
+    spec_stat = ''
+    phot_stat = ''
     # Look in the SEDM Db
     if search_db:
         if request_id:
             print("Searching SedmDB")
 
             # 1a. Search for target in the database
-            res = search_db.get_from_request(["marshal_id",
-                                              "object_id",
-                                              "user_id"],
-                                             {"id": request_id})[0]
+            try:
+                res = search_db.get_from_request(["marshal_id",
+                                                  "object_id",
+                                                  "user_id"],
+                                                 {"id": request_id})[0]
+            except IndexError:
+                print("Unable to retrieve ids from database")
+                return return_link, spec_ret, phot_ret, status_ret
             marshal_id = res[0]
             object_id = res[1]
             user_id = res[2]
-            res = search_db.get_from_object(["name"], {"id": object_id})[0]
+            try:
+                res = search_db.get_from_object(["name"], {"id": object_id})[0]
+            except IndexError:
+                print("Unable to retrieve object_name from database")
+                return return_link, spec_ret, phot_ret, status_ret
             object_name = res[0]
-            res = search_db.get_from_users(["name", "email"],
-                                           {"id": user_id})[0]
+            try:
+                res = search_db.get_from_users(["name", "email"],
+                                               {"id": user_id})[0]
+            except IndexError:
+                print("Unable to retrieve username, email from database")
+                return return_link, spec_ret, phot_ret, status_ret
             username = res[0]
             email = res[1]
             out_dir = ''
@@ -475,13 +494,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             username = target['username']
             out_dir = 'targets/'
 
-    # Return values
-    spec_ret = None
-    phot_ret = None
-    status_ret = None
-    return_link = None
-    spec_stat = ''
-    phot_stat = ''
+
     # Did we get a marshal ID?
     if marshal_id is None:
         print("Unable to find marshal id for target %s" % objname)
