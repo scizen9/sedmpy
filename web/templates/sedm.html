@@ -17,5 +17,9 @@
             <h4>{{sedm_dict.expired.title}}</h4>
             {{ sedm_dict.expired.table | safe }}
         </div>
+        <div class="expired-requests">
+            <h4>{{sedm_dict.failed.title}}</h4>
+            {{ sedm_dict.failed.table | safe }}
+        </div>
     </div>
 {% endblock %}

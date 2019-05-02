@@ -247,6 +247,7 @@ def get_homepage(userid, username):
     active = requests[(requests['status'] == 'PENDING') |
                       (requests['status'] == 'ACTIVE')]
     expired = requests[(requests['status'] == 'EXPIRED')]
+    failed = requests[(requests['status'] == 'FAILED')]
 
     # retrieve information about the user's allocations
     ac = get_allocations_user(userid)
@@ -260,6 +261,10 @@ def get_homepage(userid, username):
 
     sedm_dict['expired'] = {'table': fancy_request_table(expired),
                             'title': 'Expired in the last 7 days'}
+
+    sedm_dict['failed'] = {'table': fancy_request_table(failed),
+                            'title': 'Failed Exposures in the last 7 days'}
+
 
     sedm_dict['allocations'] = {'table': ac.to_html(escape=False,
                                                     classes='table table-striped',
@@ -1306,6 +1311,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                                                   return_type='list')
 
         for sci_targ in science_list:
+            object_id = False
+            target_requests = False
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
             if 'STD' not in targ_name:
@@ -1329,10 +1336,11 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     try:
                         object_id = object_ids[-1][0]
                     except IndexError:
+                        object_id = False
                         print("There was an error. You can't see this")
 
-
-                target_requests = db.get_from_request(values=['allocation_id'],
+                if object_id:
+                    target_requests = db.get_from_request(values=['allocation_id'],
                                                       where_dict={'object_id':
                                                                       object_id,
                                                                   'status':
