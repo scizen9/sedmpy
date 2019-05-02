@@ -119,6 +119,17 @@ class ScheduleNight:
         #target_df['HA'] = target_df.apply(self._set_target_ha, axis=1)
         return target_df
 
+
+    def _set_non_sidereal_target_coordinates(self, target_df):
+        """
+
+        :param target_df:
+        :return:
+        """
+        mask = target_df[target_df['objname'].str.contains("NONSID")]
+
+        mask = (target_df['typedesig'] == 'f')
+
     def _set_fixed_targets(self, row):
         """
         Add a column of SkyCoords to pandas dataframe
@@ -126,6 +137,7 @@ class ScheduleNight:
         """
 
         return astroplan.FixedTarget(name=row['objname'], coord=row['SkyCoords'])
+
 
     def _set_target_ha(self, row):
         """
@@ -419,7 +431,7 @@ class ScheduleNight:
             return html_str
 
     def get_next_observable_target(self, target_list=None, obs_time=None,
-                                   max_time=-1, airmass=(1, 1.8),
+                                   max_time=-1, airmass=(1, 2.5),
                                    moon_sep=(20, 180), ignore_target=None,
                                    return_type=''):
         """
@@ -462,8 +474,7 @@ class ScheduleNight:
 
             constraint = [astroplan.AirmassConstraint(min=airmass[0],
                                                       max=airmass[1]),
-                          astroplan.MoonSeparationConstraint( \
-                                                    min=moon_sep[0] * u.degree)]
+                          astroplan.MoonSeparationConstraint(min=moon_sep[0] * u.degree)]
                           
             # we add an additional phase constraint if the object is periodic
             if row.typedesig == 'v':
