@@ -44,7 +44,7 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
     else:
         cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius "
            "%.4f -p --new-fits %s -W none -B none -M none "
-           "-R none -S none -t %d --overwrite %s "
+           "-R none -S none -t %d --overwrite %s --parity neg "
            "" % (ra, dec, radius, astro, tweak, img))
 
     if with_pix:
@@ -285,7 +285,10 @@ def calculate_offset(raw_image, overwrite=True, use_brightest=True,
 
 
 if __name__ == "__main__":
-    import glob
+
+    t = calculate_offset('/data2/sedm/20190427/rc20190427_05_48_48.fits', parse_directory_from_file=False, make_plots=True)
+
+    """import glob
     files = glob.glob('/data1/sedm/astrom/rc*.fits')
     data = open('astrometry_solve.txt', 'w')
     for i in files:
@@ -307,5 +310,5 @@ if __name__ == "__main__":
     data.close()
     #print(ret)
     #print(get_offset_to_reference('/scr/rsw/sedm/data/raw/20181204/rc20181204_09_59_04.new'))
-    #print(calculate_offset(image2, False))
+    #print(calculate_offset(image2, False))"""
 
