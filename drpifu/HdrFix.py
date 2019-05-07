@@ -52,6 +52,20 @@ if __name__ == "__main__":
                         ff[0].header['IMGTYPE'] = 'lamp'
                 else:
                     ff[0].header['IMGTYPE'] = 'Science'
+            # RA rate
+            if 'RARATE' in ff[0].header:
+                ra_rate = float(ff[0].header['RARATE'])
+                ff[0].header['RA_RATE'] = ra_rate
+            else:
+                logging.warning("No RARATE keyword")
+                ff[0].header['RA_RATE'] = 0.
+            # DEC rate
+            if 'DECRATE' in ff[0].header:
+                dec_rate = float(ff[0].header['DECRATE'])
+                ff[0].header['DEC_RATE'] = dec_rate
+            else:
+                logging.warning("No DECRATE keyword")
+                ff[0].header['DEC_RATE'] = 0.
             # Humidity
             if 'Inside_Rel_Hum' in ff[0].header:
                 rel_hum = ff[0].header['Inside_Rel_Hum']
