@@ -38,6 +38,20 @@ if __name__ == "__main__":
         for fl in flist:
             logging.info(fl)
             ff = pf.open(fl, 'update')
+            # image type
+            if 'OBJECT' in ff[0].header:
+                obj = ff[0].header['OBJECT']
+                if 'STD-' in obj:
+                    ff[0].header['IMGTYPE'] = 'Standard'
+                elif 'Calib' in obj:
+                    if 'dome' in obj:
+                        ff[0].header['IMGTYPE'] = 'dome'
+                    elif 'bias' in obj:
+                        ff[0].header['IMGTYPE'] = 'bias'
+                    else:
+                        ff[0].header['IMGTYPE'] = 'lamp'
+                else:
+                    ff[0].header['IMGTYPE'] = 'Science'
             # Humidity
             if 'Inside_Rel_Hum' in ff[0].header:
                 rel_hum = ff[0].header['Inside_Rel_Hum']
@@ -59,5 +73,8 @@ if __name__ == "__main__":
             else:
                 logging.warning("No telescope PA")
                 ff[0].header['TEL_PA'] = -1.
+            # Equinox
+            ff[0].header['EQUINOX'] = 2000
+            ff[0].header['DOMEST'] = 'Open'
             # Close
             ff.close()
