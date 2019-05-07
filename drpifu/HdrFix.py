@@ -37,23 +37,27 @@ if __name__ == "__main__":
         # loop over files
         for fl in flist:
             logging.info(fl)
-            ff = pf.open(fl, 'update')[0]
-            if 'Inside_Rel_Hum' in ff.header:
-                rel_hum = ff.header['Inside_Rel_Hum']
-                ff.header['IN_HUM'] = rel_hum
+            ff = pf.open(fl, 'update')
+            # Humidity
+            if 'Inside_Rel_Hum' in ff[0].header:
+                rel_hum = ff[0].header['Inside_Rel_Hum']
+                ff[0].header['IN_HUM'] = rel_hum
             else:
-                ff.header['IN_HUM'] = -1.
+                ff[0].header['IN_HUM'] = -1.
                 logging.warning("No relative humidity")
-            if 'Inside_Air_Temp' in ff.header:
-                in_temp = ff.header['Inside_Air_Temp']
-                ff.header['IN_AIR'] = in_temp
+            # Temperature
+            if 'Inside_Air_Temp' in ff[0].header:
+                in_temp = ff[0].header['Inside_Air_Temp']
+                ff[0].header['IN_AIR'] = in_temp
             else:
-                ff.header['IN_AIR'] = -1.
+                ff[0].header['IN_AIR'] = -1.
                 logging.warning("No inside temperature")
-            if 'PRLLTC' in ff.header:
-                tel_pa = ff.header['PRLLTC']
-                ff.header['TEL_PA'] = tel_pa
+            # Parallactic Angle
+            if 'PRLLTC' in ff[0].header:
+                tel_pa = ff[0].header['PRLLTC']
+                ff[0].header['TEL_PA'] = tel_pa
             else:
                 logging.warning("No telescope PA")
-                ff.header['TEL_PA'] = -1.
+                ff[0].header['TEL_PA'] = -1.
+            # Close
             ff.close()
