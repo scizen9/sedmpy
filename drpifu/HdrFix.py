@@ -37,7 +37,17 @@ if __name__ == "__main__":
         # loop over files
         for fl in flist:
             logging.info(fl)
+            fname = fl.split('/')[-1]
             ff = pf.open(fl, 'update')
+            # set NAME keyword if needed
+            if 'dome' in fname:
+                ff[0].header['NAME'] = 'Calib: dome lamp'
+            if 'Cd' in fname:
+                ff[0].header['NAME'] = 'Calib: Cd lamp'
+            if 'Hg' in fname:
+                ff[0].header['NAME'] = 'Calib: Hg lamp'
+            if 'Xe' in fname:
+                ff[0].header['NAME'] = 'Calib: Xe lamp'
             # image type
             if 'OBJECT' in ff[0].header:
                 obj = ff[0].header['OBJECT']
