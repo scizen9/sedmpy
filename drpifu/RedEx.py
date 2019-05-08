@@ -32,10 +32,14 @@ if __name__ == "__main__":
                         help='update slack pysedm-report channel')
     parser.add_argument('--recover', action='store_true', default=False,
                         help='recover Quality 5 extraction')
+    parser.add_argument('--local', action='store_true', default=False,
+                        help='Process data locally only (no push to marshal or '
+                             'slack')
     args = parser.parse_args()
 
     if not args.obs_id:
-        logging.info("Usage - redex <obs_id> [<x> <y>] [--slack] [--recover]")
+        logging.info("Usage - redex <obs_id> [<x> <y>] [--slack] [--recover] "
+                     "[--local]")
     else:
 
         # Get tag id
@@ -99,16 +103,19 @@ if __name__ == "__main__":
                              ob_id))
             if upl_file:
                 os.remove(upl_file[0])
-            # Upload spectrum to marshal
-            cmd = ("make", "ztfupload")
-            retcode = subprocess.call(cmd)
-            if retcode != 0:
-                logging.error("Error uploading spectra to marshal")
+            if args.local:
+                pars = ["pysedm_report.py", dd, "--contains", ob_id]
             else:
-                # e-mail user that recovery was made
-                ar.email_user(fits_file, dd, obj)
-            # Re-report
-            pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
+                # Upload spectrum to marshal
+                cmd = ("make", "ztfupload")
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    logging.error("Error uploading spectra to marshal")
+                else:
+                    # e-mail user that recovery was made
+                    ar.email_user(fits_file, dd, obj)
+                # Re-report
+                pars = ["pysedm_report.py", dd, "--contains", ob_id, "--slack"]
             logging.info("Running " + " ".join(pars))
             ret = subprocess.call(pars)
             if ret:
@@ -182,27 +189,31 @@ if __name__ == "__main__":
                         os.remove(f)
                     sys.exit(1)
             # Re-report
-            pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
+            if pars.local:
+                pars = ["pysedm_report.py", dd, "--contains", tagstr]
+            else:
+                pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
             logging.info("Running " + " ".join(pars))
             ret = subprocess.call(pars)
             if ret:
                 logging.error("pysedm_report.py failed!")
                 sys.exit(1)
             # Upload spectrum to marshal
-            cmd = ("make", "ztfupload")
-            retcode = subprocess.call(cmd)
-            if retcode != 0:
-                logging.error("Error uploading spectra to marshal")
-            else:
-                # Get the resulting fits file
-                fits_file = glob.glob(
-                    os.path.join(rd, dd, "spec_auto_%s_*_%s.fits" %
-                                 (tagstr, obname)))
-                if len(fits_file) == 1:
-                    # Update database entry
-                    ar.update_spec(fits_file[0])
+            if not pars.local:
+                cmd = ("make", "ztfupload")
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    logging.error("Error uploading spectra to marshal")
+            # Get the resulting fits file
+            fits_file = glob.glob(
+                os.path.join(rd, dd, "spec_auto_%s_*_%s.fits" %
+                             (tagstr, obname)))
+            if len(fits_file) == 1:
+                # Update database entry
+                ar.update_spec(fits_file[0])
+                if not pars.local:
                     # e-mail user that recovery was made
                     ar.email_user(fits_file[0], dd, obname)
-                else:
-                    logging.error("Error finding fits file")
+            else:
+                logging.error("Error finding fits file")
         ret = subprocess.call(["make", "report"])
