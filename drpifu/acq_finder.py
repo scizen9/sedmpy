@@ -312,9 +312,10 @@ if __name__ == "__main__":
                     else:
                         filesacq.append(f)
         else:
-            if 'finding' in ff[0].header['OBJECT'] and \
-                    objnam in ff[0].header['OBJECT']:
-                filesacq.append(f)
+            if 'OBJECT' in ff[0].header:
+                if 'finding' in ff[0].header['OBJECT'] and \
+                        objnam in ff[0].header['OBJECT']:
+                    filesacq.append(f)
 
     n_acq = len(filesacq)
     print("Found %d files for finders:\n%s" % (n_acq, filesacq))
