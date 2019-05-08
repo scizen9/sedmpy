@@ -47,9 +47,13 @@ _reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 
 def finder(myfile, findername, searchrad=0.2/60.):
-    
-    ora, odec = coordinates_conversor.hour2deg(
-        fitsutils.get_par(myfile, "OBJRA"), fitsutils.get_par(myfile, "OBJDEC"))
+
+    kra = fitsutils.get_par(myfile, "OBJRA")
+    kdec = fitsutils.get_par(myfile, "OBJDEC")
+    if not kra or not kdec:
+        kra = fitsutils.get_par(myfile, "OBRA")
+        kdec = fitsutils.get_par(myfile, "OBDEC")
+    ora, odec = coordinates_conversor.hour2deg(kra, kdec)
     utc = fitsutils.get_par(myfile, "UTC")
     hdulist = pf.open(myfile)[0]
     img = hdulist.data * 1.            
