@@ -189,7 +189,7 @@ if __name__ == "__main__":
                         os.remove(f)
                     sys.exit(1)
             # Re-report
-            if pars.local:
+            if args.local:
                 pars = ["pysedm_report.py", dd, "--contains", tagstr]
             else:
                 pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
@@ -199,7 +199,7 @@ if __name__ == "__main__":
                 logging.error("pysedm_report.py failed!")
                 sys.exit(1)
             # Upload spectrum to marshal
-            if not pars.local:
+            if not args.local:
                 cmd = ("make", "ztfupload")
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
@@ -211,7 +211,7 @@ if __name__ == "__main__":
             if len(fits_file) == 1:
                 # Update database entry
                 ar.update_spec(fits_file[0])
-                if not pars.local:
+                if not args.local:
                     # e-mail user that recovery was made
                     ar.email_user(fits_file[0], dd, obname)
             else:
