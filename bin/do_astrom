@@ -8,19 +8,23 @@ echo $1
 setenv PATH /usr/local/anaconda2/bin:/scr2/sedmdrp/bin:/usr/local/optical/astrometry/bin:/usr/local/bin:/bin:/usr/bin
 #
 # set variables
-set ra = `zcat -f $1 | fold | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+# set ra = `zcat -f $1 | fold | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+set ra = `fitsheader -k RA  $1 | grep RA | awk '{print $3}' | awk -F\' '{print $2}'`
 @ nt = 0
 while ($ra == '')
 	echo "Null RA, try again"
-	set ra = `zcat -f $1 | fold | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+	# set ra = `zcat -f $1 | fold | grep -m 1 TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
+	set ra = `fitsheader -k RA  $1 | grep RA | awk '{print $3}' | awk -F\' '{print $2}'`
 	@ nt = $nt + 1
 	if ($nt > 5) break
 end
-set dec = `zcat -f $1 | fold | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+# set dec = `zcat -f $1 | fold | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+set dec = `fitsheader -k DEC $1 | grep DEC | awk '{print $3}' | awk -F\' '{print $2}'`
 @ nt = 0
 while ($dec == '')
 	echo "Null Dec, try again"
-	set dec = `zcat -f $1 | fold | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+	# set dec = `zcat -f $1 | fold | grep -m 1 TEL_DEC | awk '{print $3}' | awk -F\' '{print $2}'`
+	set dec = `fitsheader -k DEC $1 | grep DEC | awk '{print $3}' | awk -F\' '{print $2}'`
 	@ nt = $nt + 1
 	if ($nt > 5) break
 end
