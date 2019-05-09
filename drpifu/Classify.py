@@ -42,7 +42,7 @@ def classify(spec_dir='./', overwrite=False):
         if "notfluxcal" in fl:
             print("uncalibrated")
             continue
-        # retrieve the quality of the spectra.
+        # retrieve the quality and tracking rate of the spectra.
         with open(fl, "r") as sfl:
             lines = sfl.readlines()
 
@@ -57,6 +57,20 @@ def classify(spec_dir='./', overwrite=False):
                 else:
                     q = 5
 
+            t = [li for li in lines if "RA_RATE" in li]
+
+            if len(t) > 0:
+                ra_rate = float(t[0].split()[2])
+            else:
+                ra_rate = 0.
+
+            t = [li for li in lines if "DEC_RATE" in li]
+
+            if len(t) > 0:
+                dec_rate = float(t[0].split()[-1])
+            else:
+                dec_rate = 0.
+
             # If quality is good, check for previous classification
             if q < 3 or q == 5:
                 clas = [li for li in lines if "SNID" in li]
@@ -66,6 +80,11 @@ def classify(spec_dir='./', overwrite=False):
                     continue
             else:
                 print("bad quality")
+                continue
+
+            # non-sidereal, then skip
+            if ra_rate != 0. or dec_rate != 0.:
+                print("non-sidereal")
                 continue
             
         # If we are here, we run the classification with snid
