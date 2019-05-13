@@ -774,36 +774,44 @@ def dosci(destdir='./', datestr=None, local=False):
             else:
                 # Build cube for science observation
                 logging.info("Building science cube for " + fn)
-
-                # Check for moving target: no guider image for those
-                if 'RA_RATE' in hdr and 'DEC_RATE' in hdr:
-                    if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
-                        logging.info("Non-sidereal object")
-                        cmd = ("ccd_to_cube.py", datestr, "--build", fn)
-                    # Solve WCS for static science targets
+                good_cube = True
+                # does cube already exist?
+                flist = glob.glob(os.path.join(destdir,
+                                               "e3d_%s_%s.fits" % (fn.split('.')[0], obj)))
+                # build cube
+                if not flist:
+                    # Check for moving target: no guider image for those
+                    if 'RA_RATE' in hdr and 'DEC_RATE' in hdr:
+                        if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
+                            logging.info("Non-sidereal object")
+                            cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+                        # Solve WCS for static science targets
+                        else:
+                            cmd = ("ccd_to_cube.py", datestr, "--build", fn,
+                                   "--solvewcs")
                     else:
                         cmd = ("ccd_to_cube.py", datestr, "--build", fn,
                                "--solvewcs")
-                else:
-                    cmd = ("ccd_to_cube.py", datestr, "--build", fn,
-                           "--solvewcs")
-                logging.info(" ".join(cmd))
-                retcode = subprocess.call(cmd)
-                # Check results
-                if retcode != 0:
-                    logging.error("Error generating cube for " + fn)
-                    # Do this to prevent constant re-try
-                    badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
-                            "_failed.fits"
-                    cmd = ("touch", badfn)
-                    subprocess.call(cmd)
-                else:
-                    # Update SedmDb cube table
-                    cube_id = update_cube(f)
-                    if cube_id > 0:
-                        logging.info("SEDM db accepted cube at id %d" % cube_id)
+
+                    logging.info(" ".join(cmd))
+                    retcode = subprocess.call(cmd)
+                    # Check results
+                    if retcode != 0:
+                        good_cube = False
+                        logging.error("Error generating cube for " + fn)
+                        # Do this to prevent constant re-try
+                        badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
+                                "_failed.fits"
+                        cmd = ("touch", badfn)
+                        subprocess.call(cmd)
                     else:
-                        logging.warning("SEDM db rejected cube")
+                        # Update SedmDb cube table
+                        cube_id = update_cube(f)
+                        if cube_id > 0:
+                            logging.info("SEDM db accepted cube at id %d" % cube_id)
+                        else:
+                            logging.warning("SEDM db rejected cube")
+                if good_cube:
                     # Use forced psf for science targets
                     logging.info("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
