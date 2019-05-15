@@ -776,12 +776,18 @@ def dosci(destdir='./', datestr=None, local=False):
                 logging.info("Building science cube for " + fn)
 
                 # Check for moving target: no guider image for those
-                if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
-                    cmd = ("ccd_to_cube.py", datestr, "--build", fn)
-                # Solve WCS for static science targets
+                if 'RA_RATE' in hdr and 'DEC_RATE' in hdr:
+                    if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
+                        logging.info("Non-sidereal object")
+                        cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+                    # Solve WCS for static science targets
+                    else:
+                        cmd = ("ccd_to_cube.py", datestr, "--build", fn,
+                               "--solvewcs")
                 else:
                     cmd = ("ccd_to_cube.py", datestr, "--build", fn,
                            "--solvewcs")
+
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 # Check results

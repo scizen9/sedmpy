@@ -47,9 +47,13 @@ _reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 
 def finder(myfile, findername, searchrad=0.2/60.):
-    
-    ora, odec = coordinates_conversor.hour2deg(
-        fitsutils.get_par(myfile, "OBJRA"), fitsutils.get_par(myfile, "OBJDEC"))
+
+    kra = fitsutils.get_par(myfile, "OBJRA")
+    kdec = fitsutils.get_par(myfile, "OBJDEC")
+    if not kra or not kdec:
+        kra = fitsutils.get_par(myfile, "OBRA")
+        kdec = fitsutils.get_par(myfile, "OBDEC")
+    ora, odec = coordinates_conversor.hour2deg(kra, kdec)
     utc = fitsutils.get_par(myfile, "UTC")
     hdulist = pf.open(myfile)[0]
     img = hdulist.data * 1.            
@@ -307,6 +311,11 @@ if __name__ == "__main__":
                             filesacq.append(f)
                     else:
                         filesacq.append(f)
+        else:
+            if 'OBJECT' in ff[0].header:
+                if 'finding' in ff[0].header['OBJECT'] and \
+                        objnam in ff[0].header['OBJECT']:
+                    filesacq.append(f)
 
     n_acq = len(filesacq)
     print("Found %d files for finders:\n%s" % (n_acq, filesacq))
@@ -324,8 +333,12 @@ if __name__ == "__main__":
 
         # We generate only one finder for each object.
         name = f.split('/')[-1].split(".")[0]
-        objnam = objnam.split()[0]
-        filt = fitsutils.get_par(f, "FILTER")
+        if 'finding' in objnam:
+            filt = objnam.split()[1].split('[')[-1].split(']')[0]
+            objnam = objnam.split()[0].split('STD-')[-1]
+        else:
+            objnam = objnam.split()[0]
+            filt = fitsutils.get_par(f, "FILTER")
         finderplotf = 'finder_%s_%s_%s.png' % (name, objnam, filt)
         finderpath = os.path.join(reduxdir, os.path.join("finders/",
                                                          finderplotf))
