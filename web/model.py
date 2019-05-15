@@ -604,7 +604,7 @@ def process_request_form(content, form, userid):
     process_dict = {'message': ''}
     obs_seq_dict = {}
 
-    alloc = get_allocations_user(userid)
+    alloc = get_allocations_user(int(userid))
 
     if alloc is None or len(alloc) == 0:
         choices = [(0, "You have none active!")]
@@ -617,7 +617,7 @@ def process_request_form(content, form, userid):
     # 1. Let's start by making sure we have all the information needed for the
     #    object id
 
-    if content['object_id']:
+    if 'object_id' in content and content['object_id']:
         objid = content['object_id']
     else:
         message, objid = add_object_to_db(content)
@@ -657,8 +657,8 @@ def process_request_form(content, form, userid):
             else:
                 request_dict[key] = content[key]
         except Exception as e:
-            print(str(e), key)
-
+            print(str(e), key, 't')
+    print("I made it here")
     # 3. Now we need to create the obs_seq and exptime entries
     #    We need to also make sure and add the object magnitude
     #    to calculate exposure times
@@ -676,7 +676,7 @@ def process_request_form(content, form, userid):
 
         request_dict = {**filter_dict, **request_dict}
 
-        if content['request_id']:
+        if 'request_id' in content and content['request_id']:
 
             request_dict['id'] = int(content['request_id'])
             request_dict.pop('request_id')
@@ -685,11 +685,13 @@ def process_request_form(content, form, userid):
                     request_dict[k] = -1
             ret = db.update_request(request_dict)
         else:
-
-            request_dict.pop('request_id')
+            print("I AN HERE NOW")
+            if 'request_id' in request_dict:
+                request_dict.pop('request_id')
+            request_dict['user_id'] = int(request_dict['user_id'])
             print(request_dict)
             ret = db.add_request(request_dict)
-
+            print(ret)
     return process_dict, form
 
 
@@ -727,7 +729,19 @@ def make_obs_seq(obs_seq_dict):
     exptime_list = []
     ret_dict = {"proc_message": ""}
 
-    if obs_seq_dict['ifu']:
+    if isinstance(obs_seq_dict['ifu'], bool):
+        if obs_seq_dict['ifu']:
+            obs_seq_dict['ifu'] = 'y'
+        else:
+            obs_seq_dict['ifu'] = 'n'
+
+    if isinstance(obs_seq_dict['rc'], bool):
+        if obs_seq_dict['rc']:
+            obs_seq_dict['rc'] = 'y'
+        else:
+            obs_seq_dict['rc'] = 'n'
+
+    if obs_seq_dict['ifu'].lower() in ['y', 'yes', 'true']:
         # There may be case in the future where people want more than one IFU
         # at a time.  In which case this code will need to be changed.
         if obs_seq_dict['ifu_use_mag']:
@@ -791,7 +805,8 @@ def make_obs_seq(obs_seq_dict):
             filters_list.append("1ifu")
             exptime_list.append(str(ifu_exptime))
 
-    if obs_seq_dict['rc']:
+    print(obs_seq_dict)
+    if obs_seq_dict['rc'].lower() in ['y', 'yes', 'true']:
         for flt in rc_filter_list:
             if obs_seq_dict['do_%s' % flt]:
                 repeats = obs_seq_dict['%s_repeats' % flt]
