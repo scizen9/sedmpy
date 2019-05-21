@@ -225,13 +225,13 @@
 
                     if (document.getElementById(k) !== null) {
                         var element = document.getElementById(k)
-                        if ((v.includes('not') || v.includes('stopped') || v.includes('closed')) && element.tagName == 'TD') {
+                        if ((v.includes('NOT') || v.includes('not') || v.includes('stopped') || v.includes('closed')) && element.tagName == 'TD') {
                             element.innerHTML = v;
                             element.style.background = '#ff6666'
                         }
                         else if (element.tagName == 'TD') {
                             element.innerHTML = v;
-                            element.style.background = 'green'
+                            element.style.background = '#66ff66'
                         }
                         else {
                             element.innerHTML = v;
