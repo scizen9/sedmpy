@@ -766,11 +766,19 @@ def dosci(destdir='./', datestr=None, local=False):
                                                 proced)
                         else:
                             logging.error("Not found: %s" % proced)
-                        # Generate effective area and efficiency plots
-                        cmd = "~/sedmpy/drpifu/Eff.py %s --contains %s" % \
-                              (datestr, fn.split('.')[0])
-                        logging.info(cmd)
-                        subprocess.call(cmd, shell=True)
+                        # Did we generate a flux calibration?
+                        flxcal = glob.glob(
+                            os.path.join(destdir,
+                                         "fluxcal_auto_robot_lstep1__%s_*.fits"
+                                         % fn.split('.')[0]))
+                        if flxcal:
+                            # Generate effective area and efficiency plots
+                            cmd = "~/sedmpy/drpifu/Eff.py %s --contains %s" % \
+                                  (datestr, fn.split('.')[0])
+                            logging.info(cmd)
+                            subprocess.call(cmd, shell=True)
+                        else:
+                            logging.info("No flux calibration generated")
             else:
                 # Build cube for science observation
                 logging.info("Building science cube for " + fn)
