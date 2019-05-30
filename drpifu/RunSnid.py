@@ -205,7 +205,7 @@ def run_snid(spec_file=None, overwrite=False):
         if (q < 3 or q == 5) and (len(clas) <= 0 or overwrite):
             # If we are here, we run the classification with snid
             cm = "snid wmin=4000 wmax=9500 skyclip=1 medlen=20 aband=1" \
-                 " rlapmin=4 inter=0 plot=2 %s" % fl
+                 " rlapmin=4 inter=0 plot=2 %s" % fl.replace(" ", "\\ ")
             print(cm)
             try:
                 subprocess.call(cm, shell=True)
@@ -234,6 +234,9 @@ def record_snid(spec_file=None):
             snid_type, pars = parse_and_fill(fl, snidoutput)
             psoutput = fl.replace(".txt", "_comp0001_snidflux.ps")
             if os.path.exists(psoutput):
+                # handle spaces, if they exist
+                fl = fl.replace(" ", "\\ ")
+                psoutput = psoutput.replace(" ", "\\ ")
                 pngfile = fl.replace(".txt", "_" + snid_type + ".png")
                 cm = "convert -flatten -rotate 90 " + psoutput + " " + pngfile
                 subprocess.call(cm, shell=True)
