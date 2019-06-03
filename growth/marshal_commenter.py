@@ -202,10 +202,9 @@ def add_SNID_pysedm_autoannot(fname, cred):
     # must be posted after the SNID plot or else it'll be overwritten
     try:
         # TODO use os.path.dir or something
-        pysedm_report = glob(fname.replace(
-            fname.split('/')[-1],
-            'pysedm_report_*_{name}*.png'.format(**header)))[-1]
-
+        pysedm_report = glob(fname.replace('spec',
+                                           'pysedm_report').replace('.txt',
+                                                                    '.png'))[0]
         pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
                                         pysedm_report, cred,
                                         obsdate=header['obsdate'])
