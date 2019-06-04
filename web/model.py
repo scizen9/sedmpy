@@ -2528,19 +2528,19 @@ def get_filter_exptime(obsfilter, mag):
 
     mag = float(mag)
     if mag > 18:
-        ifu_exptime = 3600
+        ifu_exptime = 2250
         r_exptime = 180
         g_exptime = 180
         i_exptime = 180
         u_exptime = 300
     elif 15 < mag < 18:
-        ifu_exptime = 2700
+        ifu_exptime = 1800
         r_exptime = 120
         g_exptime = 120
         i_exptime = 120
         u_exptime = 300
     elif 13 < mag < 15:
-        ifu_exptime = 60
+        ifu_exptime = 1200
         r_exptime = 1
         g_exptime = 1
         i_exptime = 1
@@ -2629,6 +2629,6 @@ def get_p18obsdata(obsdate):
 
 
 if __name__ == "__main__":
-    x = get_user_observations('SEDm_admin', 'db@dm!n', '20190226')
-    #x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
+
+    x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
     print(x)
