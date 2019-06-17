@@ -376,7 +376,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                             add_status=False, status='Completed',
                             pull_requests=False, request_id=None,
                             add_phot=False, phot_file='', search_db=None,
-                            target_dir='requests/', target_base_name='request'):
+                            target_dir='requests/', target_base_name='request',
+                            reducedby=None):
     """
     Go through the request and find the one that matches the objname
     :param objname:
@@ -391,6 +392,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     :param search_db:
     :param target_dir:
     :param target_base_name:
+    :param reducedby:
     :return: 
     """
 
@@ -517,7 +519,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 spec_stat = 'IFU: Failed ' + ts_str
             else:
                 spec_stat = 'IFU: Complete ' + ts_str
-                annots_posted = add_annots(spectra_file, auth)
+                annots_posted = add_annots(spectra_file, auth,
+                                           reducedby=reducedby)
                 if annots_posted:
                     print("Annotations successfully posted")
                 else:
@@ -548,13 +551,14 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     return return_link, spec_ret, phot_ret, status_ret
 
           
-def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
+def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
     """Given a target directory get all files that have ztf or ZTF as base 
        name
 
        :param target_dir:
        :param upfil:
        :param dbase:
+       :param reducedby:
        """
 
     if target_dir[-1] != '/':
@@ -616,7 +620,8 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None):
                                                       spectra_file=fi,
                                                       request_id=req_id,
                                                       search_db=dbase,
-                                                      pull_requests=pr)
+                                                      pull_requests=pr,
+                                                      reducedby=reducedby)
         # Mark as uploaded
         os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # Only need to pull requests the first time
@@ -658,6 +663,8 @@ Uploads results to the growth marshal.
                         help='Data file to upload.')
     parser.add_argument('--no_usedb', action="store_true", default=False,
                         help='Do not use SEDM database')
+    parser.add_argument('--reducedby', type=str, default=None,
+                        help='reducer (defaults to auto)')
     args = parser.parse_args()
 
     # Check environment
@@ -689,8 +696,10 @@ Uploads results to the growth marshal.
                 os.mkdir(reqdir)
             if not os.path.exists(trgdir):
                 os.mkdir(trgdir)
-            parse_ztf_by_dir(srcdir, upfil=args.data_file)
+            parse_ztf_by_dir(srcdir, upfil=args.data_file,
+                             reducedby=args.reducedby)
         else:
             import db.SedmDb
             sedmdb = db.SedmDb.SedmDB()
-            parse_ztf_by_dir(srcdir, upfil=args.data_file, dbase=sedmdb)
+            parse_ztf_by_dir(srcdir, upfil=args.data_file, dbase=sedmdb,
+                             reducedby=args.reducedby)

@@ -123,11 +123,19 @@ if __name__ == "__main__":
         # Re-extract a recoverable observation
         else:
             logging.info("Re-extracting observation %s in %s" % (ob_id, dd))
+            # get reducer
+            def_reducer = os.getenv("SEDM_USER", default='manual')
+            reducer = input("Your name (<cr> - %s): " % def_reducer)
+            if not reducer:
+                reducer = def_reducer
+            reducer = reducer.replace(" ", "_")
+
             if args.new_x and args.new_y:
                 xs = args.new_x
                 ys = args.new_y
                 pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--centroid", xs, ys, "--tag", tagstr]
+                        "6", "--centroid", xs, ys, "--tag", tagstr,
+                        "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
@@ -135,7 +143,7 @@ if __name__ == "__main__":
                     sys.exit(1)
             else:
                 pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--display", "--tag", tagstr]
+                        "6", "--display", "--tag", tagstr, "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
@@ -200,7 +208,11 @@ if __name__ == "__main__":
                 sys.exit(1)
             # Upload spectrum to marshal
             if not args.local:
-                cmd = ("make", "ztfupload")
+                home = os.environ['HOME']
+                cmd = [os.path.join(home, "spy"),
+                       os.path.join(home, "sedmpy/growth/growth.py"), dd,
+                       "--reducedby", reducer]
+                logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
                     logging.error("Error uploading spectra to marshal")
@@ -212,7 +224,7 @@ if __name__ == "__main__":
                 # Update database entry
                 ar.update_spec(fits_file[0])
                 if not args.local:
-                    # e-mail user that recovery was made
+                    # e-mail user that re-extraction was made
                     ar.email_user(fits_file[0], dd, obname)
             else:
                 logging.error("Error finding fits file")
