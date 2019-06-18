@@ -701,7 +701,7 @@ def dosci(destdir='./', datestr=None, local=False):
                 # Build cube for STD observation
                 logging.info("Building STD cube for " + fn)
                 # Don't solve WCS for standards (always brightest in IFU)
-                cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 # Check results
