@@ -58,9 +58,14 @@ if __name__ == "__main__":
             logging.info("Recovering a quality 5 spectrum %s in %s" % (ob_id,
                                                                        dd))
             # Update quality in fits file
-            fits_file = glob.glob(os.path.join(rd, dd,
+            flist = glob.glob(os.path.join(rd, dd,
                                   "spec_auto_robot_lstep1__*_%s_*.fits" %
-                                               ob_id))[0]
+                                               ob_id))
+            if not flist:
+                logging.error("No spec file with id %s" % ob_id)
+                sys.exit(1)
+            else:
+                fits_file = flist[0]
             ff = pf.open(fits_file, mode='update')
             # Make sure we are a quality 5 observation
             if ff[0].header['QUALITY'] != 5:
