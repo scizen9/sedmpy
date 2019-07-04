@@ -135,7 +135,7 @@ def data_access(instrument):
 
 
 @app.route('/data/<path:filename>')
-@flask_login.login_required
+#@flask_login.login_required
 def data_static(filename):
     '''
      Get files from the archive

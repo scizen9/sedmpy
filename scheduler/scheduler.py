@@ -17,7 +17,7 @@ computer = os.uname()[1] # a quick fix
 
 if computer == 'pele':
     from db.SedmDb import SedmDB
-    scheduler_path = '/scr7/rsw/sedmpy/web/static/scheduler/scheduler.html'
+    scheduler_path = '/scr/rsw/sedm/projects/sedmpy/web/static/scheduler/scheduler.html'
     server = 'pharos.caltech.edu'
     port = 5432
 elif computer == 'pharos':
@@ -63,6 +63,8 @@ class ScheduleNight:
         self.tr_row = Template("""<tr id="${allocation}">
                                <td>${obstime}</td>
                                <td>${objname}</td>
+                               <td>${startdate}</td>
+                               <td>${enddate}</td>
                                <td>${contact}</td>
                                <td>${project}</td>
                                <td>${ra}</td>
@@ -278,8 +280,11 @@ class ScheduleNight:
         """
 
         if not where_statement:
-            enddate = datetime.datetime.utcnow()
-            where_statement = "WHERE r.enddate > '%s' AND r.object_id > 100 " % enddate
+            enddate = (datetime.datetime.utcnow() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+            startdate = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+
+            where_statement = "WHERE r.enddate > '%s' AND r.object_id > 100 AND r.inidate <= '%s'" % (enddate, startdate)
+            #where_statement = "WHERE r.enddate > '%s' AND r.object_id > 100 " % (enddate)
 
         if not and_statement:
             and_statement = "AND r.status = 'PENDING'"
@@ -288,9 +293,9 @@ class ScheduleNight:
                                           and_statement=and_statement,
                                           group_statement=group_statement,
                                           order_statement=order_statement)
-
+        print(query)
         results = self.get_query(query, return_type=return_type)
-        print(results)
+        print(results.name)
         return results
 
     def remove_setting_targets(self, target_list, start_time="", end_time="",
@@ -348,6 +353,8 @@ class ScheduleNight:
         if return_type == 'html':
             html_str = """<table class='table'><tr><th>Expected Obs Time</th>
                               <th>Object Name</th>
+                              <th>Start Date</th>
+                              <th>End Date</th>
                               <th>Priority</th>
                               <th>Project ID</th>
                               <th>RA</th>
@@ -431,7 +438,7 @@ class ScheduleNight:
             return html_str
 
     def get_next_observable_target(self, target_list=None, obs_time=None,
-                                   max_time=-1, airmass=(1, 2.5),
+                                   max_time=-1, airmass=(1, 3.0),
                                    moon_sep=(20, 180), ignore_target=None,
                                    return_type=''):
         """
@@ -515,6 +522,8 @@ class ScheduleNight:
                                     'rc_seq': rc_seq,
                                     'rc_exptime': rc_exptime,
                                     'total': row.obs_dict['total'],
+                                    'startdate': row.inidate,
+                                    'enddate': row.enddate,
                                     'request_id': row.req_id})
                         return row.req_id, (row.obs_dict, html)
                     else:

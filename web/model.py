@@ -1367,6 +1367,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                                                                           object_id,
                                                                       'status':
                                                                           'OBSERVED'})
+
+                print("Object id", object_id)
                 # Right now I am only seeing if there exists a match between
                 # allocations of all request.  It's possible the request could
                 # have been made by another group as another follow-up and thus
@@ -1374,10 +1376,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                 # be fixed once all request are listed in the headers of the
                 # science images.
                 for req in target_requests:
+                    print(sci_targ, targ_name)
+                    print(allocation_id_list, "List of allocations this person can see")
                     if req[0] in allocation_id_list:
                         show_list.append((sci_targ, targ_name))
                     else:
-                        print("You can't see this")
+                        print("You can't see this at allocation id list")
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
@@ -1651,7 +1655,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
                     if req[0] in allocation_id_list:
                         show_list.append((sci_targ, targ_name))
                     else:
-                        print("You can't see this")
+                        print("You can't see this at target request 2")
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
@@ -2344,7 +2348,7 @@ def get_user_observations(username, password, obsdate):
                     if req[0] in allocation_id_list:
                         show_list.append((sci_targ, targ_name))
                     else:
-                        print("You can't see this")
+                        print("You can't see this at target request")
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
