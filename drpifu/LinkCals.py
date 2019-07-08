@@ -168,6 +168,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    curdir = os.path.curdir()
+    curdir = os.getcwd()
 
     link_cals(redd=args.reduxdir, outdir=curdir)
