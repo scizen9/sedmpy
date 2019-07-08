@@ -133,7 +133,7 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None):
     # Get current date string
     cur_date_str = str(outdir.split('/')[-1])
     # Check status
-    logging.error("Bad calibrations from this night!")
+    logging.warning("Bad calibrations from this night!")
     logging.info("Let's get our calibrations from a previous night")
     nct = find_recent(redd, '_TraceMatch.pkl', outdir,
                       cur_date_str)
@@ -157,7 +157,7 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None):
               "stopping" % (nct, nctm, ncg, ncw, ncf, ncb, nc2)
         sys.exit(msg)
     # If we get here, we are done
-    logging.info("Using previous night calibration files")
+    logging.info("Using earlier night calibration files")
 
 
 if __name__ == '__main__':
