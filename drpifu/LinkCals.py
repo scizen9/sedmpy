@@ -70,6 +70,9 @@ def find_recent(redd, fname, destdir, dstr):
                           if os.path.isdir(d)])[0:-1]
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
+            # Skip dirs newer than current dir (if any)
+            if int(d.split('/')[-1]) >= int(dstr):
+                continue
             src = glob.glob(os.path.join(d, '20??????' + fname))
             if len(src) == 1:
                 os.symlink(src[0], os.path.join(destdir, dstr + fname))
