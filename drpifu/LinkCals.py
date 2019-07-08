@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 """Link calibrations from a previous night into the current directory
 """
 import glob
