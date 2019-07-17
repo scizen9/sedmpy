@@ -60,6 +60,10 @@ def build_image_report(indir=None, fspec=None):
     else:
         is_std = False
 
+    # check for quality
+    if 'QUALITY' not in header:
+        header['QUALITY'] = -1
+
     # Spectrum ID
     spec_id = filesourcename.split("ifu"+indir+"_")[-1].split("_" +
                                                               object_name)[0]

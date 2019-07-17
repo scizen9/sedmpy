@@ -701,7 +701,7 @@ def dosci(destdir='./', datestr=None, local=False):
                 # Build cube for STD observation
                 logging.info("Building STD cube for " + fn)
                 # Don't solve WCS for standards (always brightest in IFU)
-                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--noguider")
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 # Check results
@@ -719,10 +719,10 @@ def dosci(destdir='./', datestr=None, local=False):
                         logging.info("SEDM db accepted cube at id %d" % cube_id)
                     else:
                         logging.warning("SEDM db rejected cube")
-                    # Use auto psf aperture for standard stars
+                    # Use auto psf extraction for standard stars
                     logging.info("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std",
-                           "--tag", "robot")
+                           "--tag", "robot", "--maxpos")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:

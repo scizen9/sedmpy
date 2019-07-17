@@ -18,7 +18,7 @@ except FileNotFoundError:
     auth = None
 
 
-def get_missing_info(ztfname, obsdate, sourceid, specid):
+def get_missing_info(ztfname, obsdate, sourceid, specid, reducedby=None):
     """
     #TODO this is currently being called 5 times per object, which may
         include a lot of downloading the same thing repeatedly.
@@ -43,13 +43,15 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
             print("ERROR - could not obtain source summary")
 
     if not specid:
+        if not reducedby:
+            reducedby = 'auto'
         obsdate = obsdate.replace('-', '')  # YYYYMMDD, YYYY-MM-DD, Y-YY-YM-MDD
         try:
             specid = [spec['specid']
                       for spec in source_summary['uploaded_spectra']
                       if spec['obsdate'].replace('-', '') == obsdate
                       and spec['instrumentid'] == 65
-                      and spec['reducedby'].strip() == 'auto'][-1]
+                      and spec['reducedby'].strip() == reducedby][-1]
         except KeyError:
             print("ERROR - could not obtain source summary")
         except IndexError as e:
@@ -61,7 +63,7 @@ def get_missing_info(ztfname, obsdate, sourceid, specid):
 
 
 def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
-                        specid=None, obsdate=None):
+                        specid=None, obsdate=None, reducedby=None):
     """
     adds a comment (not autoannotation) with attachment to a particular SEDM
     spectrum on the view_spec page, which will also appear elsewhere.
@@ -74,11 +76,13 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
     specid: <int> around ~1700. faster if you provide it
     obsdate: 'YYYYMMDD', necessary for finding the correct spectrum. Assumes
             exactly 1 SEDM spectrum that night
+    reducedby: <str> who did the reduction, defaults to 'auto'
 
     return: True if success, False if not
     """
 
-    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid)
+    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid,
+                                        reducedby=reducedby)
 
     if sourceid is None or specid is None:
         print("ERROR - Unable to get info required to post comment")
@@ -107,7 +111,8 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
 
 
 def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
-                       sourceid=None, specid=None, obsdate=None):
+                       sourceid=None, specid=None, obsdate=None,
+                       reducedby=None):
     """
     adds an autoannotation without attachment to a particular SEDM spectrum
     on the view_spec page, which will also appear elsewhere.
@@ -124,7 +129,8 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
     return: True if success, False if not
     """
 
-    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid)
+    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid,
+                                        reducedby=reducedby)
 
     r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
                       data={'comment':    value,
@@ -149,7 +155,7 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
         return False
 
 
-def add_SNID_pysedm_autoannot(fname, cred):
+def add_SNID_pysedm_autoannot(fname, cred, reducedby=None):
     """
     if z < 0.3 and rlap > 5.0
         adds autoannotations with SNID rlap, z, type, etc
@@ -207,7 +213,8 @@ def add_SNID_pysedm_autoannot(fname, cred):
                                                                     '.png'))[0]
         pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
                                         pysedm_report, cred,
-                                        obsdate=header['obsdate'])
+                                        obsdate=header['obsdate'],
+                                        reducedby=reducedby)
     except IndexError:
         print('no pysedm_report for {}?'.format(header['name']))
         pr_posted = False
@@ -241,7 +248,8 @@ def add_SNID_pysedm_autoannot(fname, cred):
     for key in dtypes:
         if not add_spec_autoannot(header['name'], header['snidmatch' + key],
                                   'AUTO_SNID_' + key, dtypes[key], cred,
-                                  obsdate=header['obsdate']):
+                                  obsdate=header['obsdate'],
+                                  reducedby=reducedby):
             return False
 
     if pr_posted:
@@ -254,7 +262,8 @@ def add_SNID_pysedm_autoannot(fname, cred):
     if not glob(image_filename):
         return False
     add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
-                        cred,  obsdate=header['obsdate'])
+                        cred,  obsdate=header['obsdate'],
+                        reducedby=reducedby)
 
     return True
 
