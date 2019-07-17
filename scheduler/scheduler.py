@@ -377,8 +377,9 @@ class ScheduleNight:
         #                                      end_time=end_time)
         print(len(targets), "after purge")
 
-        #targets['HA'] = targets.apply(self._set_target_ha, axis=1)
+        targets['HA'] = targets.apply(self._set_target_ha, axis=1)
         targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
+        print(targets['HA'])
         targets = targets.sort_values(['priority'], ascending=[False])
 
 
