@@ -144,7 +144,7 @@ class ingestNight:
                         raw_files.pop(f)
 
         # 3. Now check the database for all matches
-        needs_to_added_list = []
+        needs_to_be_removed_list = []
         print(len(raw_files), raw_files)
         if check_by == 'night':
             query = "SELECT fitsfile,id FROM observation WHERE fitsfile LIKE '%%%s%%'" % night
@@ -157,10 +157,12 @@ class ingestNight:
                     #print(sublist, base_file)
                     if base_file in sublist[0]:
                         print("Found it!", sublist, base_file)
-                        raw_files.pop(idx)
-                        ret.pop(idx2)
+                        needs_to_be_removed_list.append(idx)
                         break
 
+            print(needs_to_be_removed_list)
+            for index in sorted(needs_to_be_removed_list, reverse=True):
+                del raw_files[index]
         # 4. At this point we should only have files that have not been added to the database
         print(len(raw_files), raw_files)
 
@@ -227,6 +229,7 @@ class ingestNight:
                         header_dict[h] = hdu[h]
 
             else:
+                print("IN MISSING HEADER SECTION")
                 all_fields_accounted_for = False
                 for k in self.required_obs_header:
                     if k not in hdu:
@@ -288,7 +291,7 @@ class ingestNight:
 if __name__ == '__main__':
     x = ingestNight(raw_dir='/scr/rsw/sedm/data/raw/')
 
-    x.ingest_nightly_raw_files('20181204', prefix='rc')
+    x.ingest_nightly_raw_files('20181204', prefix='all')
 
     #print(x.gather_files('/scr/rsw/sedm/redux/20190629', suffix=''))
 
