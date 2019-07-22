@@ -176,6 +176,19 @@ def weather_stats():
     out['css_resources'] = INLINE.render_css()
     return render_template('weather_stats.html', sedm_dict=out)
 
+@app.route('/add_growth', methods=['GET', 'POST'])
+def add_growth():
+    x = request.files['jsonfile'].read()
+    if x:
+        content = json.loads(x)
+        output = open('/scr2/sedm/sedmpy/web/static/request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
+        data = json.dumps(content)
+        output.write(data)
+        output.close()
+        return('Content-type: text/html\n <title>Test CGI</title>')
+    else:
+        print('Not a json file')
+        return('ERROR')
 
 @app.route('/get_marshal_id', methods=['GET', 'POST'])
 def get_marhsal_id():
