@@ -892,7 +892,7 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
     request_query = ("""SELECT a.designator, o.name, o.ra, o.dec, r.inidate, r.enddate, r.priority, r.status, r.lastmodified, r.obs_seq, r.exptime, r.id 
                         FROM request r, object o, allocation a 
                         WHERE o.id = r.object_id AND a.id = r.allocation_id  
-                            AND ( r.lastmodified >= DATE('%s') AND r.lastmodified <= DATE('%s') )
+                            AND ( r.enddate > DATE('%s') AND r.inidate <= DATE('%s') )
                             AND r.allocation_id IN
                            (SELECT a.id
                             FROM allocation a, groups g, usergroups ug, users u, program p

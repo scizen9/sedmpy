@@ -63,8 +63,6 @@ class ScheduleNight:
         self.tr_row = Template("""<tr id="${allocation}">
                                <td>${obstime}</td>
                                <td>${objname}</td>
-                               <td>${startdate}</td>
-                               <td>${enddate}</td>
                                <td>${contact}</td>
                                <td>${project}</td>
                                <td>${ra}</td>
@@ -299,7 +297,7 @@ class ScheduleNight:
         return results
 
     def remove_setting_targets(self, target_list, start_time="", end_time="",
-                               airmass=(1, 1.8), moon=(30,180)):
+                               airmass=(1, 2.3), moon=(20,180)):
         """
         
         :param targets: 
@@ -379,15 +377,15 @@ class ScheduleNight:
 
         targets['HA'] = targets.apply(self._set_target_ha, axis=1)
         targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
-        print(targets['HA'])
-        targets = targets.sort_values(['priority'], ascending=[False])
 
+        targets = targets.sort_values(['priority', 'HA'], ascending=[False, False])
+        print(targets[['priority', 'HA']])
 
         # 3. Go through all the targets until we fill up the night
         current_time = start_time
 
         while current_time <= end_time:
-            print(current_time.iso)
+            print("Using input datetime of: ", current_time.iso)
             # Include focus time?
             if do_focus:
                 current_time += TimeDelta(300, format='sec')
@@ -399,8 +397,14 @@ class ScheduleNight:
             time_remaining = end_time - current_time
 
             if time_remaining.sec <= 0:
+
                 break
 
+            self.running_obs_time = current_time
+            targets['HA'] = targets.apply(self._set_target_ha, axis=1)
+
+            targets = targets.sort_values(['priority', 'HA'], ascending=[False, False])
+            #print(targets[['priority','HA']], current_time)
             z = self.get_next_observable_target(targets, obs_time=current_time,
                                                 max_time=time_remaining,
                                                 return_type=return_type)
@@ -439,8 +443,8 @@ class ScheduleNight:
             return html_str
 
     def get_next_observable_target(self, target_list=None, obs_time=None,
-                                   max_time=-1, airmass=(1, 3.0),
-                                   moon_sep=(20, 180), ignore_target=None,
+                                   max_time=-1, airmass=(1, 3.00),
+                                   moon_sep=(0, 180), ignore_target=None,
                                    return_type=''):
         """
 
@@ -454,7 +458,7 @@ class ScheduleNight:
                 req_id: float
                 obs_dict: dict
         """
-        print(obs_time)
+
 
         # If the target_list is empty then all we can do is return back no
         # target and do a standard for the time being
@@ -485,7 +489,7 @@ class ScheduleNight:
                           astroplan.MoonSeparationConstraint(min=moon_sep[0] * u.degree)]
                           
             # we add an additional phase constraint if the object is periodic
-            if row.typedesig == 'v':
+            """if row.typedesig == 'v':
                 if ~np.isnan(row['mjd0']):
                     epoch = Time(row['mjd0'], fmt='mjd')
                 else:
@@ -496,7 +500,7 @@ class ScheduleNight:
                                         period=u.day * row['phasedays'])
                 constraint.append(astroplan.PhaseConstraint(periodic_event,
                         min=(row['phase'] - row['sampletolerance']) % 1,
-                        max=(row['phase'] + row['sampletolerance']) % 1))
+                        max=(row['phase'] + row['sampletolerance']) % 1))"""
                             
             if row.typedesig in 'vf':
                 if astroplan.is_observable(constraint, self.obs_site,
