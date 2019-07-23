@@ -51,7 +51,7 @@ class SedmDB:
             Creates the connection to SedmDB.
             """
             sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
-                                         user=self.user_sedmdb)
+                                         user=self.user_sedmdb, password='user$edm1235')
             return sedmdbcon
 
     instance = None

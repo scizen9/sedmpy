@@ -53,7 +53,40 @@ class ingestNight:
                                     'end_pa': 'parang_end', 'ser_no': 'camera'}
 
 
+        self.telescope_stats_dict = dict(BITPIX="int", NAXIS="int", NAXIS1="int", NAXIS2="int", EXTEND="bool",
+                                         BZERO="int", EXPTIME="float", ADCSPEED="float", TEMP="float", GAIN_SET="float",
+                                         ADC="float", MODEL="str", INTERFC="str", SNSR_NM="str", SER_NO="str",
+                                         TELESCOP="str", LST="str", MJD_OBS="float", JD="float", APPEQX="float",
+                                         EQUINOX="float", TEL_HA="str", RA="str", TEL_RA="str", DEC="str",
+                                         TEL_DEC="str", TEL_AZ="float", TEL_EL="float", AIRMASS="float", TEL_PA="float",
+                                         RA_RATE="float", DEC_RATE="float", RA_OFF="float", DEC_OFF="float",
+                                         TELHASP="float", TELDECSP="float", RA_REFR="float", DEC_REFR="float",
+                                         FOCPOS="float", IFUFOCUS="float", IFUFOC2="float", DOMEST="str", DOMEMO="str",
+                                         DOME_GAP="float", DOMEAZ="float", WSCRMO="str", TELCONT="str", LAMPSTAT="str",
+                                         LAMPCUR="float", HG_LAMP="str", XE_LAMP="str", CD_LAMP="str", TELPOWST="str",
+                                         OILSTAT="str", WEASTAT="str", SUNSTAT="str", REMOTST="str", TELRDST="str",
+                                         HAAX_ST="str", FOCSTAT="str", DEC_AX="str", OBJECT="str", OBJTYPE="str",
+                                         IMGTYPE="str", OBJNAME="str", OBJEQX="str", OBJRA="str", OBJDEC="str",
+                                         ORA_RAT="float", ODEC_RAT="float", SUNRISE="str", SUNSET="str", TEL_MO="str",
+                                         WSCR_EL="str", SOL_RA="time", SOL_DEC="str", WIND_DIR="float", WSP_CUR="float",
+                                         WSP_AVG="float", OUT_AIR="float", OUT_HUM="float", OUT_DEW="float",
+                                         IN_AIR="float", IN_HUM="float", IN_DEW="float", MIR_TEMP="float",
+                                         TOP_AIR="float", PRI_TEMP="float", SEC_TEMP="float", FLO_TEMP="float",
+                                         BOT_TEMP="float", MID_TEMP="float", TOP_TEMP="float", WETNESS="float",
+                                         FILTER="str", ABPAIR="str", IMGSET="str", NAME="str", UTC="datetime",
+                                         OBSDATE="date", OBSTIME="time", P60PRID="str", P60PRNM="str", P60PRPI="str",
+                                         EMAIL="str", INSTRUME="str", REQ_ID="int", OBJ_ID="int", GAIN="float",
+                                         CAM_NAME="str", CRPIX1="float", CRPIX2="float", CDELT1="float", CDELT2="float",
+                                         CTYPE1="str", CTYPE2="str", CRVAL1="float", CRVAL2="float",
+                                         END_SHUT="datetime", ENDAIR="float", ENDDOME="str", END_RA="str",
+                                         END_DEC="str", END_PA="str", ELAPTIME="float", observation_id="int")
+
         self.db = SedmDB(host="pharos", dbname='sedmdb', port=5432)
+
+    def _format_telescope_stats_dict(self, headerdict):
+
+        for k, i in headerdict.items():
+            print(k, i)
 
     def gather_files(self, directory, prefix='all', suffix='all',
                      recursive=False):
@@ -116,7 +149,7 @@ class ingestNight:
 
     def ingest_nightly_raw_files(self, night, directory='', prefix='rc', updateIngest=False,
                                  add_to_inges_list=True, check_ingest_list=True,
-                                 check_by='night', ingest_file=""):
+                                 check_by='night', ingest_file="", add_telescope_stats=True):
         """
 
         :return:
@@ -241,13 +274,24 @@ class ingestNight:
 
             # At this point we check to see if we have everything we need for
             # adding the target to the database
+            ret = None
 
             if all_fields_accounted_for:
                 print("Adding %s to the database" % f)
                 ret = self.db.add_observation(header_dict)
                 print(ret)
 
+            if add_telescope_stats:
+                print("Adding header information for %s "
+                      "into the telescope_stats database" % f)
+                tstats_dict = dict(hdu)
 
+                
+
+                # Start by looking if their is a ret value for the observation id
+
+        # Now add the rest of the header information into the telescope stats
+        # database
         """
         Adds an observation
 
