@@ -3,6 +3,8 @@ from astropy.io import fits
 import glob
 import os
 import json
+import datetime
+import pprint
 from db.SedmDb import SedmDB
 import astropy.units as u
 from astropy.coordinates import SkyCoord
@@ -77,16 +79,119 @@ class ingestNight:
                                          OBSDATE="date", OBSTIME="time", P60PRID="str", P60PRNM="str", P60PRPI="str",
                                          EMAIL="str", INSTRUME="str", REQ_ID="int", OBJ_ID="int", GAIN="float",
                                          CAM_NAME="str", CRPIX1="float", CRPIX2="float", CDELT1="float", CDELT2="float",
-                                         CTYPE1="str", CTYPE2="str", CRVAL1="float", CRVAL2="float",
+                                         CTYPE1="str", CTYPE2="str", CRVAL1="float", CRVAL2="float", CCDTEMP="float",
                                          END_SHUT="datetime", ENDAIR="float", ENDDOME="str", END_RA="str",
-                                         END_DEC="str", END_PA="str", ELAPTIME="float", observation_id="int")
+                                         END_DEC="str", END_PA="str", ELAPTIME="float", OBSERVATION_ID="int",
+                                         UTCDAY="int", OBJ_RA_DEG="float", OBJ_DEC_DEG="float",
+                                         TEL_RA_DEG="float", TEL_DEC_DEG="float", HA_HOUR_DEG="float")
 
+        self.conversion_dict = {'TEMP': "CCDTEMP", "OBJECT": "OBJNAME"}
         self.db = SedmDB(host="pharos", dbname='sedmdb', port=5432)
 
-    def _format_telescope_stats_dict(self, headerdict):
+    def _insert_telescope_stats_dict(self, headerdict, observation_id):
+        new_dict = {}
+
+        # Check if their
+        print(observation_id, "<--This is the observation id")
+        pprint.pprint(headerdict)
+        try:
+            sql = """INSERT INTO telescope_stats (observation_id) VALUES(%s)""" % observation_id
+
+            self.db.execute_sql(sql)
+        except Exception as e:
+            print(e)
+            print(str(e))
+            print("HERE")
+            if "already exists" in str(e):
+                pass
+
+        # Convert needed entreies
+        headerdict['UTCDAY'] = headerdict['UTC'].split(":")[1]
+        headerdict['UTC'] = "%s %s" % (headerdict['OBSDATE'], headerdict['UTC'].split(":", 2)[-1])
+
+        for k in ['OBJ', 'TEL_']:
+            if headerdict[k+'RA'] and headerdict[k+'DEC']:
+                ra = headerdict[k+'RA']
+                dec = headerdict[k+'DEC']
+                if ":" in ra or ":" in dec:
+                    k = k.replace('_',"")
+                    c = SkyCoord(ra=ra, dec=dec, unit=(u.hourangle, u.deg))
+                    headerdict[k+'_RA_DEG'] = c.ra.degree
+                    headerdict[k+'_DEC_DEG'] = c.dec.degree
+
 
         for k, i in headerdict.items():
-            print(k, i)
+            print(k, i, type(i))
+            if k.upper() in self.conversion_dict:
+                k = self.conversion_dict[k]
+
+            if k.upper() not in self.telescope_stats_dict:
+                print(k, "Is not in the dictionary")
+                continue
+            elif k.upper() in ['EXPTIME', 'SIMPILE']:
+                print("EXCLUDING:", k.upper())
+                continue
+            elif self.telescope_stats_dict[k.upper()] == 'str':
+                try:
+                    new_dict[k.lower()] = str(i)
+                except:
+                    print("String Exception Class", i)
+                    new_dict[k.lower()] = 'StrTypeFailure'
+            elif self.telescope_stats_dict[k.upper()] == 'float':
+                try:
+                    new_dict[k.lower()] = float(i)
+                except:
+                    print("Float Exception Class", k, i)
+                    new_dict[k.lower()] = -9999.999
+            elif self.telescope_stats_dict[k.upper()] == 'int':
+                try:
+                    new_dict[k.lower()] = int(i)
+                except:
+                    print("Int Exception Class", i)
+                    new_dict[k.lower()] = -9999
+            elif self.telescope_stats_dict[k.upper()] == 'time':
+                try:
+                    new_dict[k.lower()] = str(i)
+                except:
+                    print("Time Exception Class", i)
+                    new_dict[k.lower()] = '00:00:00'
+            elif self.telescope_stats_dict[k.upper()] == 'date':
+                try:
+                    new_dict[k.lower()] = str(i)
+                except:
+                    print("Date Exception Class", i)
+                    new_dict[k.lower()] = '2000-00-00'
+            elif self.telescope_stats_dict[k.upper()] == 'datetime':
+                try:
+                    new_dict[k.lower()] = str(i)
+                except:
+                    print("Datetime Exception Class", i)
+                    new_dict[k.lower()] = "2000-01-01 00:00:00"
+            elif self.telescope_stats_dict[k.upper()] == 'bool':
+                try:
+                    print("BOOL Character = ", i, type(i))
+                    if isinstance(i, bool):
+                        new_dict[k.lower()] = i
+                    elif i.lower() in ['n', 'no', 'false']:
+                        print("False element")
+                        new_dict[k.lower()] = False
+                    else:
+                        print("True Element")
+                        new_dict[k.lower()] = True
+                except:
+                    print("Bool Exception Class", i)
+                    new_dict[k.lower()] = False
+            else:
+                print(k, "Has no class")
+                print(self.telescope_stats_dict[k.upper()])
+                continue
+            if isinstance(new_dict[k.lower()], str):
+                sql = """UPDATE telescope_stats SET %s = '%s' WHERE observation_id=%s""" % (k.lower(), new_dict[k.lower()], observation_id)
+            else:
+                sql = """UPDATE telescope_stats SET %s = %s WHERE observation_id=%s""" % (k.lower(), new_dict[k.lower()], observation_id)
+            self.db.execute_sql(sql)
+
+        return new_dict
 
     def gather_files(self, directory, prefix='all', suffix='all',
                      recursive=False):
@@ -178,7 +283,6 @@ class ingestNight:
 
         # 3. Now check the database for all matches
         needs_to_be_removed_list = []
-        print(len(raw_files), raw_files)
         if check_by == 'night':
             query = "SELECT fitsfile,id FROM observation WHERE fitsfile LIKE '%%%s%%'" % night
             print(query)
@@ -186,25 +290,35 @@ class ingestNight:
 
             for idx, val in enumerate(raw_files):
                 base_file = os.path.basename(val)
+                if "a_" in base_file:
+                    continue
                 for idx2, sublist in enumerate(ret):
                     #print(sublist, base_file)
                     if base_file in sublist[0]:
                         print("Found it!", sublist, base_file)
                         needs_to_be_removed_list.append(idx)
+                        if add_telescope_stats:
+                            hdu = fits.getheader(val)
+                            tstats_dict = dict(hdu)
+                            self._insert_telescope_stats_dict(tstats_dict, sublist[1])
+
                         break
 
-            print(needs_to_be_removed_list)
             for index in sorted(needs_to_be_removed_list, reverse=True):
                 del raw_files[index]
         # 4. At this point we should only have files that have not been added to the database
-        print(len(raw_files), raw_files)
 
-
+        import time
+        #time.sleep(1000)
         # 5. Add files to the database
-        for f in raw_files:
+        for f in sorted(raw_files):
 
             # Open the header file
             hdu = fits.getheader(f)
+            print(f, "here")
+            print(hdu.keys())
+            if "a_" in f:
+                continue
             c = SkyCoord(ra=hdu['ra'], dec=hdu['dec'], unit=(u.hourangle, u.deg))
 
             if all(key in hdu for key in self.required_obs_header):
@@ -268,7 +382,9 @@ class ingestNight:
                     if k not in hdu:
                         print(k)
                         print("Missing header value: %s" % k)
-
+                        missing_file = open('missing_header_list.txt', 'w')
+                        missing_file.write('%s: %s\n' % (f,k))
+                continue
 
             # Now we check for optional values
 
@@ -278,15 +394,19 @@ class ingestNight:
 
             if all_fields_accounted_for:
                 print("Adding %s to the database" % f)
-                ret = self.db.add_observation(header_dict)
+                #ret = self.db.add_observation(header_dict)
                 print(ret)
 
             if add_telescope_stats:
                 print("Adding header information for %s "
                       "into the telescope_stats database" % f)
-                tstats_dict = dict(hdu)
 
-                
+                if not ret:
+                    ret = self.db.execute_sql("SELECT id FROM observation WHERE fitsfile = '%s'" % os.path.basename(f))
+                tstats_dict = dict(hdu)
+                self._insert_telescope_stats_dict(tstats_dict, ret[0])
+
+
 
                 # Start by looking if their is a ret value for the observation id
 
@@ -336,7 +456,9 @@ if __name__ == '__main__':
     x = ingestNight(raw_dir='/scr/rsw/sedm/data/raw/')
 
     x.ingest_nightly_raw_files('20181204', prefix='all')
-
+    #hdu = fits.getheader('/scr/rsw/sedm/data/raw/20181204/rc20181204_05_02_24.fits')
+    #tstats_dict = dict(hdu)
+    #print(x._insert_telescope_stats_dict(tstats_dict, 20190717231726230))
     #print(x.gather_files('/scr/rsw/sedm/redux/20190629', suffix=''))
 
 
