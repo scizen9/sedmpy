@@ -64,7 +64,7 @@ computer = os.uname()[1] # a quick fix
 if computer == 'pele':
     raw_dir = '/scr/rsw/sedm/raw/'
     phot_dir = '/scr/rsw/sedm/phot/'
-    redux_dir = '/scr/rsw/sedm/redux/'
+    redux_dir = '/scr/rsw/sedm/data/redux/'
     status_dir = '/scr/rsw/'
     host = 'pharos.caltech.edu'
     port = 5432
@@ -1354,34 +1354,39 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         object_id = False
                         print("There was an error. You can't see this")
 
-                if object_id:
-                    target_requests = db.get_from_request(values=['allocation_id'],
-                                                      where_dict={'object_id':
-                                                                      object_id,
-                                                                  'status':
-                                                                      'COMPLETED'})
+                # If we are not the admin then we need to check if the user can see the object
+                if user_id != 2:
 
-                if not target_requests:
-                    target_requests = db.get_from_request(values=['allocation_id'],
+                    if object_id:
+                        target_requests = db.get_from_request(values=['allocation_id'],
                                                           where_dict={'object_id':
                                                                           object_id,
                                                                       'status':
-                                                                          'OBSERVED'})
+                                                                          'COMPLETED'})
 
-                print("Object id", object_id)
-                # Right now I am only seeing if there exists a match between
-                # allocations of all request.  It's possible the request could
-                # have been made by another group as another follow-up and thus
-                # the user shouldn't be able to see it.  This should be able to
-                # be fixed once all request are listed in the headers of the
-                # science images.
-                for req in target_requests:
-                    print(sci_targ, targ_name)
-                    print(allocation_id_list, "List of allocations this person can see")
-                    if req[0] in allocation_id_list:
-                        show_list.append((sci_targ, targ_name))
-                    else:
-                        print("You can't see this at allocation id list")
+                    if not target_requests:
+                        target_requests = db.get_from_request(values=['allocation_id'],
+                                                              where_dict={'object_id':
+                                                                              object_id,
+                                                                          'status':
+                                                                              'OBSERVED'})
+
+                    print("Object id", object_id)
+                    # Right now I am only seeing if there exists a match between
+                    # allocations of all request.  It's possible the request could
+                    # have been made by another group as another follow-up and thus
+                    # the user shouldn't be able to see it.  This should be able to
+                    # be fixed once all request are listed in the headers of the
+                    # science images.
+                    for req in target_requests:
+                        print(sci_targ, targ_name)
+                        print(allocation_id_list, "List of allocations this person can see")
+                        if req[0] in allocation_id_list:
+                            show_list.append((sci_targ, targ_name))
+                        else:
+                            print("You can't see this at allocation id list")
+                else:
+                    show_list.append((sci_targ, targ_name))
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
