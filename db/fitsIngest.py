@@ -8,7 +8,8 @@ import pprint
 from db.SedmDb import SedmDB
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-
+import re
+from string import Template
 
 class ingestNight:
     """
@@ -16,7 +17,7 @@ class ingestNight:
     processed images for that night.
     """
     def __init__(self, raw_dir='/scr2/sedm/raw/',
-                 ifu_proc_dir='/scr2/sedmdrp/redux/',
+                 ifu_proc_dir='/scr/rsw/sedm/data/redux/',
                  rc_proc_dir='/scr2/sedm/phot/',
                  ifu_prexfix='ifu', rc_prefix='rc',
                  ingest_file='ingest.json',
@@ -86,7 +87,79 @@ class ingestNight:
                                          TEL_RA_DEG="float", TEL_DEC_DEG="float", HA_HOUR_DEG="float")
 
         self.conversion_dict = {'TEMP': "CCDTEMP", "OBJECT": "OBJNAME"}
+
+        self.standard_file_dict = {
+            'adr_fit': 'adr_fit',
+            'calibch': 'calibcheck',
+            'fluxcal': 'fluxcal',
+            'ifu_spa': 'ifu_spaxels',
+            'psfprof': 'psfprofile',
+            'pysedm_': 'pysedm_report',
+            'spaxels': 'spaxels',
+            'spec_ap': 'spec_aperture',
+            'spec_au': 'spec_auto',
+            'verify_': 'verify'
+        }
+
+        self.science_file_dict = {
+            'flex_sodi': 'flex_sodium',
+            'flexuretr': 'flexure',
+            'adr_fit_a': 'adr_fit',
+            'forcepsf_': 'forcepsf_fitted',
+            'forcepsfm': 'forcepsf_model',
+            'guider_cr': 'guider_stack',
+            'ifu_spaxe': 'ifu_spaxels',
+            'maskcrr_b': 'mask_crr_b',
+            'psfprofil': 'psfprofile',
+            'pysedm_re': 'pysedm_report',
+            'spaxels_s': 'spaxels',
+            'spec_auto': 'spec_auto',
+            'spec_aper': 'spec_aperture',
+            'verify_au': 'verify'
+        }
+
+        self.calibration_file_dict = {
+            'what.list': {'product_type': 'what.list', 'ext_type': 'txt'},
+            'Makefile': {'product_type': 'makefile', 'ext_type': 'txt'},
+            'bias0.1.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'bias0.1.lst': {'product_type': 'calibration', 'ext_type': 'lst'},
+            'bias2.0.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'bias2.0.lst': {'product_type': 'calibration', 'ext_type': 'lst'},
+            'dome.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'dome.lst': {'product_type': 'calibration', 'ext_type': 'lst'},
+            'Hg.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'Hg.lst': {'product_type': 'calibration', 'ext_type': 'lst'},
+            'Cd.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'Cd.lst': {'product_type': 'calibration', 'ext_type': 'lst'},
+            'Xe.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'Xe.lst': {'product_type': 'calibration', 'ext_type': 'lst'},
+            'bkgd_dome.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'e3d_dome.fits': {'product_type': 'calibration', 'ext_type': 'fits'},
+            'snid.param': {'product_type': 'snid_param', 'ext_type': 'txt'},
+            'report.txt': {'product_type': 'report', 'ext_type': 'txt'},
+            'report_ztf.txt': {'product_type': 'report_ztf', 'ext_type': 'txt'},
+        }
+
+
+        self.dataproduct = Template("""INSERT INTO dataproducts (observation_id,
+                                  obsdate, product_name, product_type, camera, basedir, ext_type) 
+                                  VALUE 
+                                  (${observation_id}, ${obsdate}, ${product_name}, ${product_type}, 
+                                  ${camera}, ${basedir}, ${product_type})""")
+
         self.db = SedmDB(host="pharos", dbname='sedmdb', port=5432)
+
+    def _insert_dataproducts_dict(self, obsdate, observation_id=0, product_name="",
+                                  product_type=):
+        """
+
+        :param productdict:
+        :param observation_id:
+        :return:
+        """
+
+        query = self.dataproduct.substitute(p)
+
 
     def _insert_telescope_stats_dict(self, headerdict, observation_id):
         new_dict = {}
@@ -251,6 +324,151 @@ class ingestNight:
         """
 
         pass
+
+    def ingest_nightly_data_products(self, night, camera="", directory="",
+                                     include_subdirectories=True, ignore_raw_files=True):
+        """
+
+        :param night:
+        :param directory:
+        :param include_subdirectories:
+        :return:
+        """
+
+        if not directory and camera.lower() == 'ifu':
+            directory = os.path.join(self.ifu_proc_dir, night)
+
+        # Start by getting all files in a directory
+        if camera == 'ifu':
+            print("Searching %s for data products" % directory)
+            # Start by getting all the observation id for a night
+            obs_list = self.db.execute_sql("SELECT id, fitsfile FROM observation "
+                                           "WHERE fitsfile LIKE '%%ifu%s%%'"  % night)
+
+            # Get the list of all files in directory tree at given path
+            listOfFiles = list()
+            for (dirpath, dirnames, filenames) in os.walk(directory):
+                listOfFiles += [os.path.join(dirpath, file) for file in filenames]
+
+            # Now look to see if the dataproduct is a fits file and already in the obs_list
+            if listOfFiles == 0:
+                return "No products to add"
+
+            non_fits_id_list = []
+            for f in listOfFiles:
+                # Start by checking if it has a fits id associated with it
+                print("Parsing file: %s" % f)
+                base_file = os.path.basename(f)
+                match = re.search(r'\d{8}_\d{2}_\d{2}_\d{2}', base_file)
+                if not match:
+                    if base_file in self.calibration_file_dict:
+                        product_type = self.calibration_file_dict[base_file]['product_type']
+                        ext_type = self.calibration_file_dict[base_file]['ext_type']
+                    elif base_file[-3:] == 'pkl':
+                        product_type = 'pickle_file'
+                        ext_type = 'pickle'
+                    elif "wavesolution_dispersionmap" in base_file:
+                        product_type = 'dispersionmap'
+                        ext_type = base_file.split('.')[-1]
+                    elif "wavesolution_stats" in base_file:
+                        product_type = 'wavesolution_stats'
+                        ext_type = base_file.split('.')[-1]
+                    elif "_flat3d" in base_file:
+                        product_type = 'flat3d'
+                        ext_type = base_file.split('.')[-1]
+                    elif "%s_Flat.fits" % night == base_file:
+                        product_type = "calibration"
+                        ext_type = 'fits'
+                    elif "%s_dome_stats.txt" % night == base_file:
+                        product_type = "dome_stats"
+                        ext_type = 'txt'
+                    else:
+                        print("No match for %s" % f)
+                        non_fits_id_list.append(f)
+                        continue
+#                    self._insert_dataproducts_dict()
+                    continue
+                # Check if it is a raw fits file
+                print("Match '%s' found in file %s" % (match.group(), base_file))
+                match_str = match.group()
+                raw_filename = "ifu%s.fits" % match_str
+                #print(filename, os.path.basename(f))
+                if raw_filename == os.path.basename(f):
+                    print("MATCH!!!")
+                    continue
+                elif re.search(r'\d{4}_\d{8}_\d{2}_\d{2}_\d{2}.txt', base_file):
+                    product_type = 'growth_file'
+                    ext_type = 'json'
+                    #self._insert_dataproducts_dict()
+
+                # If we are here then we have a file that is associated with a particular observation
+                filename = os.path.basename(f)
+
+                # Try and find the observation_id associated with the match string
+                observation_id = ""
+                for obs in obs_list:
+                    if match_str in obs[1]:
+                        print("Found observation! Using id number:%s" % obs[0])
+                        observation_id = obs[0]
+                        break
+
+                # Calibration Group
+                if len(filename) == 27 and filename[:2] == 'b_':
+                    print("Bias corrected file")
+                    product_type = 'calibration'
+                    ext_type = filename.split('.')[-1]
+                elif len(filename) == 31 and filename[:5] == 'crr_b':
+                    print("Corrected file")
+                    product_type = 'calibration'
+                    ext_type = filename.split('.')[-1]
+                elif len(filename) == 35 and filename[:9] == 'maskcrr_b':
+                    print("Mask Corrected file")
+                    product_type = 'calibration'
+                    ext_type = filename.split('.')[-1]
+                elif len(filename) == 36 and filename[:4] == 'bkgd':
+                    print("Background Corrected file")
+                    product_type = 'calibration'
+                    ext_type = filename.split('.')[-1]
+                elif len(filename) > 30 and filename[:4] == 'guid':
+                    print("Guider Corrected file")
+                    product_type = 'calibration'
+                    ext_type = filename.split('.')[-1]
+
+
+                # Standard group
+                elif 'STD' in filename:
+                    if "e3" in filename:
+                        print("E3D file")
+                    elif filename[:7] in self.standard_file_dict:
+                        typ = self.standard_file_dict[filename[:7]]
+                        print("File type: %s" % typ)
+                    else:
+                        print("UNKOWN FILETYPE Standard", f)
+
+                    base, ext = filename.split('STD')
+                    print("Base:%s\nExt:%s" % (base, ext))
+
+                else:
+                    if "e3" in filename:
+                        print("E3D file")
+                    elif "snid" in filename:
+                        print("SNID output")
+                    elif filename[:9] in self.science_file_dict:
+                        typ = self.science_file_dict[filename[:9]]
+                        print("File type: %s" % typ)
+                    elif filename == 'rc%s.fits' % match_str:
+                        print("Raw filts files")
+                    elif 'finder' in filename:
+                        print("Finder file")
+                    elif 'rc%s' % night in filename:
+                        print("Astrometry file")
+                    else:
+                        print("UNKOWN FILETYPE Science", f)
+
+                    #base, ext = filename.split('STD')
+                    #print("Base:%s\nExt:%s" % (base, ext))
+                    pass
+            print(non_fits_id_list)
 
     def ingest_nightly_raw_files(self, night, directory='', prefix='rc', updateIngest=False,
                                  add_to_inges_list=True, check_ingest_list=True,
@@ -455,7 +673,8 @@ class ingestNight:
 if __name__ == '__main__':
     x = ingestNight(raw_dir='/scr/rsw/sedm/data/raw/')
 
-    x.ingest_nightly_raw_files('20181204', prefix='all')
+    #x.ingest_nightly_raw_files('20181204', prefix='all')
+    x.ingest_nightly_data_products('20181204', 'ifu')
     #hdu = fits.getheader('/scr/rsw/sedm/data/raw/20181204/rc20181204_05_02_24.fits')
     #tstats_dict = dict(hdu)
     #print(x._insert_telescope_stats_dict(tstats_dict, 20190717231726230))
