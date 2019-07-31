@@ -51,7 +51,7 @@ class SedmDB:
             Creates the connection to SedmDB.
             """
             sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
-                                         user=self.user_sedmdb)
+                                         user=self.user_sedmdb, password='user$edm1235')
             return sedmdbcon
 
     instance = None
@@ -3733,5 +3733,21 @@ if __name__ == "__main__":
     import datetime
     x = SedmDB(host="pharos.caltech.edu")
 
-    x.expire_requests(send_alerts=False)
 
+    x.expire_requests(send_alerts=False)
+    import time
+    time.sleep(10000)
+    """'username'(str),
+    'name'(str),
+    'email'(str),
+    'password'(str)(will
+    be
+    hashed + salted)"""
+
+    user1={
+        'user_id': 20190709172706025,
+        'group_id': 20180306195517558,
+    }
+    #print(x.add_user(user1))
+    print(x.add_usergroup(20190709172810018, 20180306195517558))
+    print(x.add_usergroup(20190709172810018, 20170826174800000))
