@@ -443,7 +443,7 @@ class ScheduleNight:
             return html_str
 
     def get_next_observable_target(self, target_list=None, obs_time=None,
-                                   max_time=-1, airmass=(1, 3.00),
+                                   max_time=-1, airmass=(1, 2.7),
                                    moon_sep=(0, 180), ignore_target=None,
                                    return_type=''):
         """

@@ -189,22 +189,25 @@ def fancy_request_table(df):
         takes a list like ['1ifu'], [180, 180, 180], etc and makes it take up
         less space and also be more human-readable
         """
-        if type(li[0]) == str:
-            # ie it's an obs_seq
-            for i, val in enumerate(li):
-                if val[0] == '1':
-                    li[i] = val[1:]
-                else:
-                    li[i] = val[1:] + ' x' + val[0]
-        else:  # ie exptime
-            for i, val in enumerate(li):
-                if all([j == val for j in li[i:]]) and i < len(li) - 1:
-                    # all the rest match, of which there's >1
-                    li = li[:i] + ['{}ea'.format(val)]
-                    break
-                else:
-                    li[i] = str(val)
-        return ', '.join(li)
+        try:
+            if type(li[0]) == str:
+                # ie it's an obs_seq
+                for i, val in enumerate(li):
+                    if val[0] == '1':
+                        li[i] = val[1:]
+                    else:
+                        li[i] = val[1:] + ' x' + val[0]
+            else:  # ie exptime
+                for i, val in enumerate(li):
+                    if all([j == val for j in li[i:]]) and i < len(li) - 1:
+                        # all the rest match, of which there's >1
+                        li = li[:i] + ['{}ea'.format(val)]
+                        break
+                    else:
+                        li[i] = str(val)
+            return ', '.join(li)
+        except:
+            return "ERROR,PARSING_THE_FILTER_STRING"
 
     df['status'] = [i.lower() for i in df['status']]
     df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '') for i in df['allocation']]
