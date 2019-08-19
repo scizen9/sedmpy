@@ -8,9 +8,11 @@ import datetime
 import sys
 try:
     from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from marshal_commenter import get_missing_info
     from marshal_commenter import auth
 except ImportError:
     from growth.marshal_commenter import add_SNID_pysedm_autoannot as add_annots
+    from growth.marshal_commenter import get_missing_info
     from growth.marshal_commenter import auth
 
 
@@ -283,7 +285,7 @@ def upload_phot(phot_file, instrument_id=65, request_id=''):
 def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
                    request_id='', exptime=3600, observer='SEDmRobot',
                    reducedby="auto", obsdate="", output_dir='targets/',
-                   format_type='ascii',
+                   format_type='ascii', sourceid=None,
                    check_quality=True, quality=1, min_quality=2):
     """
     Add spectra to the growth marshal.  If the fill_by_file is selected then
@@ -301,14 +303,15 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     :param obsdate: 
     :param output_dir: 
     :param format_type:
+    :param sourceid:
     :param check_quality:
     :param quality:
     :param min_quality:
 
     :return: 
     """
-    if not request_id:
-        print("Can't update without a request id")
+    if not request_id and not sourceid:
+        print("Can't update without either a request id or a source id")
         return False
 
     basefile = os.path.basename(spec_file)
@@ -334,11 +337,18 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
         del submission_dict['quality']
 
     # print(type(format_type), type(request_id), type(instrument_id))
-    submission_dict.update({'format': format_type.rstrip().lstrip(),
-                           'instrument_id': instrument_id,
-                            'request_id': request_id,
-                            'observer': observer.rstrip().lstrip(),
-                            'proprietary': 1})
+    if sourceid:
+        submission_dict.update({'format': format_type.rstrip().lstrip(),
+                                'instrument_id': instrument_id,
+                                'sourceid': sourceid,
+                                'observer': observer.rstrip().lstrip(),
+                                'proprietary': 1})
+    else:
+        submission_dict.update({'format': format_type.rstrip().lstrip(),
+                                'instrument_id': instrument_id,
+                                'request_id': request_id,
+                                'observer': observer.rstrip().lstrip(),
+                                'proprietary': 1})
 
     # 1a. [Optional] Check the quality if it is smaller or equal to min quality
     # then upload spectra
@@ -496,11 +506,16 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             username = target['username']
             out_dir = 'targets/'
 
-
     # Did we get a marshal ID?
     if marshal_id is None:
         print("Unable to find marshal id for target %s" % objname)
-    elif marshal_id <= 0:
+        sourceid, specid = get_missing_info(objname, None, None, 1)
+        if sourceid:
+            print("Using source id instead: %d" % sourceid)
+            marshal_id = sourceid
+    else:
+        sourceid = None
+    if marshal_id <= 0:
         print("Not an object from the marshal")
     else:
         print("Updating target %s using id %d" % (objname, marshal_id))
@@ -514,6 +529,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
 
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=marshal_id,
+                                      sourceid=sourceid,
                                       output_dir=out_dir)
             if not spec_ret:
                 spec_stat = 'IFU: Failed ' + ts_str
