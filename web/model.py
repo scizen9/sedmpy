@@ -64,7 +64,7 @@ computer = os.uname()[1] # a quick fix
 if computer == 'pele':
     raw_dir = '/scr/rsw/sedm/raw/'
     phot_dir = '/scr/rsw/sedm/phot/'
-    redux_dir = '/scr/rsw/sedm/redux/'
+    redux_dir = '/scr/rsw/sedm/data/redux/'
     status_dir = '/scr/rsw/'
     host = 'pharos.caltech.edu'
     port = 5432
@@ -189,22 +189,25 @@ def fancy_request_table(df):
         takes a list like ['1ifu'], [180, 180, 180], etc and makes it take up
         less space and also be more human-readable
         """
-        if type(li[0]) == str:
-            # ie it's an obs_seq
-            for i, val in enumerate(li):
-                if val[0] == '1':
-                    li[i] = val[1:]
-                else:
-                    li[i] = val[1:] + ' x' + val[0]
-        else:  # ie exptime
-            for i, val in enumerate(li):
-                if all([j == val for j in li[i:]]) and i < len(li) - 1:
-                    # all the rest match, of which there's >1
-                    li = li[:i] + ['{}ea'.format(val)]
-                    break
-                else:
-                    li[i] = str(val)
-        return ', '.join(li)
+        try:
+            if type(li[0]) == str:
+                # ie it's an obs_seq
+                for i, val in enumerate(li):
+                    if val[0] == '1':
+                        li[i] = val[1:]
+                    else:
+                        li[i] = val[1:] + ' x' + val[0]
+            else:  # ie exptime
+                for i, val in enumerate(li):
+                    if all([j == val for j in li[i:]]) and i < len(li) - 1:
+                        # all the rest match, of which there's >1
+                        li = li[:i] + ['{}ea'.format(val)]
+                        break
+                    else:
+                        li[i] = str(val)
+            return ', '.join(li)
+        except:
+            return "ERROR,PARSING_THE_FILTER_STRING"
 
     df['status'] = [i.lower() for i in df['status']]
     df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '') for i in df['allocation']]
@@ -892,7 +895,7 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
     request_query = ("""SELECT a.designator, o.name, o.ra, o.dec, r.inidate, r.enddate, r.priority, r.status, r.lastmodified, r.obs_seq, r.exptime, r.id 
                         FROM request r, object o, allocation a 
                         WHERE o.id = r.object_id AND a.id = r.allocation_id  
-                            AND ( r.lastmodified >= DATE('%s') AND r.lastmodified <= DATE('%s') )
+                            AND ( r.enddate > DATE('%s') AND r.inidate <= DATE('%s') )
                             AND r.allocation_id IN
                            (SELECT a.id
                             FROM allocation a, groups g, usergroups ug, users u, program p
@@ -1354,30 +1357,39 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         object_id = False
                         print("There was an error. You can't see this")
 
-                if object_id:
-                    target_requests = db.get_from_request(values=['allocation_id'],
-                                                      where_dict={'object_id':
-                                                                      object_id,
-                                                                  'status':
-                                                                      'COMPLETED'})
+                # If we are not the admin then we need to check if the user can see the object
+                if user_id != 2:
 
-                if not target_requests:
-                    target_requests = db.get_from_request(values=['allocation_id'],
+                    if object_id:
+                        target_requests = db.get_from_request(values=['allocation_id'],
                                                           where_dict={'object_id':
                                                                           object_id,
                                                                       'status':
-                                                                          'OBSERVED'})
-                # Right now I am only seeing if there exists a match between
-                # allocations of all request.  It's possible the request could
-                # have been made by another group as another follow-up and thus
-                # the user shouldn't be able to see it.  This should be able to
-                # be fixed once all request are listed in the headers of the
-                # science images.
-                for req in target_requests:
-                    if req[0] in allocation_id_list:
-                        show_list.append((sci_targ, targ_name))
-                    else:
-                        print("You can't see this")
+                                                                          'COMPLETED'})
+
+                    if not target_requests:
+                        target_requests = db.get_from_request(values=['allocation_id'],
+                                                              where_dict={'object_id':
+                                                                              object_id,
+                                                                          'status':
+                                                                              'OBSERVED'})
+
+                    print("Object id", object_id)
+                    # Right now I am only seeing if there exists a match between
+                    # allocations of all request.  It's possible the request could
+                    # have been made by another group as another follow-up and thus
+                    # the user shouldn't be able to see it.  This should be able to
+                    # be fixed once all request are listed in the headers of the
+                    # science images.
+                    for req in target_requests:
+                        print(sci_targ, targ_name)
+                        print(allocation_id_list, "List of allocations this person can see")
+                        if req[0] in allocation_id_list:
+                            show_list.append((sci_targ, targ_name))
+                        else:
+                            print("You can't see this at allocation id list")
+                else:
+                    show_list.append((sci_targ, targ_name))
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
@@ -1651,7 +1663,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
                     if req[0] in allocation_id_list:
                         show_list.append((sci_targ, targ_name))
                     else:
-                        print("You can't see this")
+                        print("You can't see this at target request 2")
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
@@ -2344,7 +2356,7 @@ def get_user_observations(username, password, obsdate):
                     if req[0] in allocation_id_list:
                         show_list.append((sci_targ, targ_name))
                     else:
-                        print("You can't see this")
+                        print("You can't see this at target request")
             else:
                 targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
                 show_list.append((sci_targ, targ_name))
@@ -2528,19 +2540,19 @@ def get_filter_exptime(obsfilter, mag):
 
     mag = float(mag)
     if mag > 18:
-        ifu_exptime = 3600
+        ifu_exptime = 2250
         r_exptime = 180
         g_exptime = 180
         i_exptime = 180
         u_exptime = 300
     elif 15 < mag < 18:
-        ifu_exptime = 2700
+        ifu_exptime = 1800
         r_exptime = 120
         g_exptime = 120
         i_exptime = 120
         u_exptime = 300
     elif 13 < mag < 15:
-        ifu_exptime = 60
+        ifu_exptime = 1200
         r_exptime = 1
         g_exptime = 1
         i_exptime = 1
@@ -2629,6 +2641,6 @@ def get_p18obsdata(obsdate):
 
 
 if __name__ == "__main__":
-    x = get_user_observations('SEDm_admin', 'db@dm!n', '20190226')
-    #x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
+
+    x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
     print(x)
