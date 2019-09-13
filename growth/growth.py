@@ -611,12 +611,13 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
             print("No REQ_ID found: %s" % fi)
             continue
         # Extract object name
-        fname = os.path.basename(fi)
-        if "spec" in fi:
-            objname = fname.split('_')[-1].split('.')[0]
+        tname = fi.split('ifu')[-1].split('_')[4:]
+        if len(tname) > 1:
+            objname = '_'.join(tname).split('.txt')[0]
         else:
-            objname = fname.split('_')[0]
+            objname = tname[0].split('.txt')[0]
         # Extract observation id
+        fname = os.path.basename(fi)
         if 'ifu' in fname:
             obs_id = ":".join(fname.split('ifu')[-1].split('_')[1:4])
         elif 'rc' in fname:

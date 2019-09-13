@@ -28,8 +28,6 @@ if __name__ == "__main__":
                         help='new x position (spaxels)')
     parser.add_argument('new_y', type=str, default=None, nargs='?',
                         help='new y position (spaxels)')
-    parser.add_argument('--slack', action='store_true', default=False,
-                        help='update slack pysedm-report channel')
     parser.add_argument('--recover', action='store_true', default=False,
                         help='recover Quality 5 extraction')
     parser.add_argument('--local', action='store_true', default=False,
@@ -38,8 +36,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.obs_id:
-        logging.info("Usage - redex <obs_id> [<x> <y>] [--slack] [--recover] "
-                     "[--local]")
+        logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]")
     else:
 
         # Get tag id

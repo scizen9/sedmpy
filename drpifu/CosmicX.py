@@ -49,6 +49,12 @@ if __name__ == '__main__':
             'gauss' and 'moffat' produce circular PSF kernels. The 'gaussx' and
             'gaussy' produce Gaussian kernels in the x and y directions
             respectively.""")
+    parser.add_argument("--cleantype", choices=['median', 'medmask', 'meanmask', 'idw'], default='meanmask', help="""Set which clean algorithm is used:
+            'median': An umasked 5x5 median filter
+            'medmask': A masked 5x5 median filter
+            'meanmask': A masked 5x5 mean filter
+            'idw': A masked 5x5 inverse distance weighted interpolation
+            Default: "meanmask".""")
     parser.add_argument("--satlevel", type=float, default=50000.0, help="""If we find agglomerations of pixels above this level, we consider it to be a saturated star and do not try to correct and pixels around it. A negative satlevel skips this feature.""")
     parser.add_argument("--verbose", action="store_true", default=False, help="""Flag to print some progress information on the screen.""")
     parser.add_argument("--sepmed", action="store_true", default=False, help="""Flag to use separable median (faster).""")
@@ -62,7 +68,7 @@ if __name__ == '__main__':
     f.close()
 
     if header['EXPTIME'] >= args.minexptime:
-        mask, clean = _lacosmicx.lacosmicx(array, gain=args.gain, readnoise=args.readnoise, psffwhm=args.psffwhm, sigclip=args.sigclip, sigfrac=args.sigfrac, objlim=args.objlim, fsmode=args.fsmode, psfmodel=args.psfmodel, verbose=args.verbose, sepmed=args.sepmed)
+        mask, clean = _lacosmicx.lacosmicx(array, gain=args.gain, readnoise=args.readnoise, psffwhm=args.psffwhm, sigclip=args.sigclip, sigfrac=args.sigfrac, objlim=args.objlim, fsmode=args.fsmode, psfmodel=args.psfmodel, verbose=args.verbose, sepmed=args.sepmed, cleantype=args.cleantype)
 
         header['history'] = "LA CosmicX: cleaned cosmic rays"
         header['history'] = "LA CosmicX params: sigclip=%5.2f sigfrac=%5.2f objlim=%5.2f" % (args.sigclip, args.sigfrac, args.objlim)
