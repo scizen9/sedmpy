@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('--local', action='store_true', default=False,
                         help='Process data locally only (no push to marshal or '
                              'slack')
-    parser.add_argument('--lstep', type=int, default=None,
+    parser.add_argument('--lstep', type=str, default=None,
                         help='new lstep value (default is 1)')
     args = parser.parse_args()
 
