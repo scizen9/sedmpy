@@ -144,7 +144,7 @@ if __name__ == "__main__":
                 xs = args.new_x
                 ys = args.new_y
                 pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--centroid", xs, ys, "--lstep %d" % lstep,
+                        "6", "--centroid", xs, ys, "--lstep", lstep,
                         "--tag", tagstr, "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                     sys.exit(1)
             else:
                 pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--display", "--lstep %d" % lstep, "--tag", tagstr,
+                        "6", "--display", "--lstep", lstep, "--tag", tagstr,
                         "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
