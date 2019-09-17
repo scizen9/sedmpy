@@ -40,7 +40,7 @@ if __name__ == "__main__":
     if args.lstep:
         lstep = args.lstep
     else:
-        lstep = 1
+        lstep = "1"
 
     if not args.obs_id:
         logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]"
