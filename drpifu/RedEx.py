@@ -33,10 +33,18 @@ if __name__ == "__main__":
     parser.add_argument('--local', action='store_true', default=False,
                         help='Process data locally only (no push to marshal or '
                              'slack')
+    parser.add_argument('--lstep', type=int, default=None,
+                        help='new lstep value (default is 1)')
     args = parser.parse_args()
 
+    if args.lstep:
+        lstep = args.lstep
+    else:
+        lstep = 1
+
     if not args.obs_id:
-        logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]")
+        logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]"
+                     " [--lstep <n>]")
     else:
 
         # Get tag id
@@ -137,7 +145,7 @@ if __name__ == "__main__":
                 ys = args.new_y
                 pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
                         "6", "--centroid", xs, ys, "--tag", tagstr,
-                        "--reducer", reducer]
+                        "--lstep %d" % lstep, "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
@@ -145,7 +153,8 @@ if __name__ == "__main__":
                     sys.exit(1)
             else:
                 pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--display", "--tag", tagstr, "--reducer", reducer]
+                        "6", "--display", "--tag", tagstr, "--lstep %d" % lstep,
+                        "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
