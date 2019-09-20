@@ -1,0 +1,7 @@
+{% extends "sedm_base.html" %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    {{sedm_dict.expired | safe}}
+{% endblock %}
