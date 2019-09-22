@@ -166,9 +166,10 @@ class ScheduleNight:
         ifu_exptime = 0
 
         # 1. First we extract the filter sequence
+
         seq = list(target['obs_seq'])
         exptime = list(target['exptime'])
-
+        print(seq, exptime)
         # 2. Remove ifu observations first if they exist
         index = [i for i, s in enumerate(seq) if 'ifu' in s]
 

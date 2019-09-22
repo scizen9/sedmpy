@@ -2,6 +2,10 @@ Message from Auto-SEDm:
 
 Request for follow-up on {object_name} has exceeded its end date and has expired.
 
+To see the full list of expired targets for the last seven days, visit
+
+http://pharos.caltech.edu/expired/
+
 This is an auto-generated alert.
 
 From Auto-SEDm

@@ -3732,22 +3732,23 @@ def _id_from_time():
 if __name__ == "__main__":
     import datetime
     x = SedmDB(host="pharos.caltech.edu")
+    print(x.expire_requests(send_alerts=True))
+    d = {'username': 'test',
+    'name': 'test',
+    'email': 'rsw@astro.caltech.edu',
+    'password': 'pass4sedm'}
+
+    #x.add_user(d)
 
 
-    x.expire_requests(send_alerts=False)
-    import time
-    time.sleep(10000)
-    """'username'(str),
-    'name'(str),
-    'email'(str),
-    'password'(str)(will
-    be
-    hashed + salted)"""
-
-    user1={
-        'user_id': 20190709172706025,
-        'group_id': 20180306195517558,
+    """obsdict = {
+        'object_id': 20190811030012746,
+        'user_id': 189,
+        'allocation_id': 20180131224646741,
+        'exptime': '{2400}',
+        'priority': 3.05,
+        'inidate': '2019-08-09',
+        'enddate': '2019-08-12',
+        'obs_seq': '{1ifu}'
     }
-    #print(x.add_user(user1))
-    print(x.add_usergroup(20190709172810018, 20180306195517558))
-    print(x.add_usergroup(20190709172810018, 20170826174800000))
+    print(x.add_request(obsdict))"""
