@@ -755,6 +755,8 @@ class ingestNight:
 if __name__ == '__main__':
     x = ingestNight(raw_dir='/scr/rsw/sedm/data/raw/')
 
+
+
     x.ingest_nightly_raw_files('20190729', prefix='all')
     x.ingest_nightly_data_products('20190729', 'ifu')
     #hdu = fits.getheader('/scr/rsw/sedm/data/raw/20181204/rc20181204_05_02_24.fits')

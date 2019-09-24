@@ -2191,6 +2191,7 @@ def get_marshal_id(marshal='growth', request_id=None):
             return ret
 
 
+
 def get_user_observations(username, password, obsdate):
     """
 
@@ -2309,6 +2310,9 @@ def get_user_observations(username, password, obsdate):
         for sci_targ in science_list:
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
+            if user_id==2:
+                show_list.append((sci_targ, targ_name))
+                continue
             if 'STD' not in targ_name:
                 # 1. Get the object id
 
@@ -2353,6 +2357,7 @@ def get_user_observations(username, password, obsdate):
                 # be fixed once all request are listed in the headers of the
                 # science images.
                 for req in target_requests:
+
                     if req[0] in allocation_id_list:
                         show_list.append((sci_targ, targ_name))
                     else:
@@ -2404,6 +2409,8 @@ def get_user_observations(username, password, obsdate):
 
             background = (glob.glob('%sbkgd_crr_b_%s.fits' % (obsdir, fits_file)))
 
+            astrom_list = (glob.glob('%sguider_crr_b_%s_astrom.fits' % (obsdir, fits_file)))
+
             if name not in science_dict:
 
                 science_dict[name] = {'image_list': image_list,
@@ -2412,7 +2419,8 @@ def get_user_observations(username, password, obsdate):
                                       'spec_ascii_list': spec_ascii_list,
                                       'fluxcals': fluxcals,
                                       'specall': spec_all_list,
-                                      'background': background}
+                                      'background': background,
+                                      'astrom': astrom_list}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
@@ -2422,7 +2430,8 @@ def get_user_observations(username, password, obsdate):
                                                              'spec_ascii_list': spec_ascii_list,
                                                              'fluxcals': fluxcals,
                                                              'specall': spec_all_list,
-                                                             'background': background}
+                                                             'background': background,
+                                                             'astrom': astrom_list}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
@@ -2449,6 +2458,9 @@ def get_user_observations(username, password, obsdate):
                         data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
                 if obj_data['background']:
                     for j in obj_data['background']:
+                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                if obj_data['astrom']:
+                    for j in obj_data['astrom']:
                         data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
 
             # ToDO: Grab data from somewhere to put in the meta data column
