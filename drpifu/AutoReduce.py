@@ -927,7 +927,13 @@ def update_spec(input_specfile, update=False):
         if hk in ff[0].header:
             spec_dict[key] = ff[0].header[hk]
         else:
-            logging.warning("Header keyword not found: %s" % hk)
+            if 'PSFELL' in hk and 'PSFAB' in ff[0].header:
+                b_a = ff[0].header['PSFAB']
+                smaja = ff[0].header['PSFFWHM']
+                smina = smaja * b_a
+                spec_dict['psf_ell'] = (smaja - smina)/smaja
+            else:
+                logging.warning("Header keyword not found: %s" % hk)
 
     # Check for classification info
     good_class = False
