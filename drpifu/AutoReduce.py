@@ -928,10 +928,13 @@ def update_spec(input_specfile, update=False):
             spec_dict[key] = ff[0].header[hk]
         else:
             if 'PSFELL' in hk and 'PSFAB' in ff[0].header:
-                b_a = ff[0].header['PSFAB']
-                smaja = ff[0].header['PSFFWHM']
-                smina = smaja * b_a
-                spec_dict['psf_ell'] = (smaja - smina)/smaja
+                try:
+                    b_a = ff[0].header['PSFAB']
+                    smaja = ff[0].header['PSFFWHM']
+                    smina = smaja * b_a
+                    spec_dict['psf_ell'] = (smaja - smina)/smaja
+                except TypeError:
+                    logging.warning("PSF values contain NaN")
             else:
                 logging.warning("Header keyword not found: %s" % hk)
 
