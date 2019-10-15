@@ -2511,6 +2511,16 @@ def get_status():
     with open(status_dir+'telstatus.json') as json_file:
         data = json.load(json_file)
 
+    rc_start_time = datetime.datetime.strptime(data['rc_LastStartTime'], '%Y-%m-%d %H:%M:%S.%f')
+    rc_end_time = rc_start_time + datetime.timedelta(seconds=float(data['rc_ExposureTime']))
+    data['rc_EndExposureTime'] = rc_end_time.strftime("%Y-%m-%d %H:%M:%S")
+    data['rc_LastStartTime'] = rc_start_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    ifu_start_time = datetime.datetime.strptime(data['ifu_LastStartTime'], '%Y-%m-%d %H:%M:%S.%f')
+    ifu_end_time = ifu_start_time + datetime.timedelta(seconds=float(data['ifu_ExposureTime']))
+    data['ifu_EndExposureTime'] = ifu_end_time.strftime("%Y-%m-%d %H:%M:%S")
+    data['ifu_LastStartTime'] = ifu_start_time.strftime("%Y-%m-%d %H:%M:%S")
+
     return data
 
 def get_obstimes():
