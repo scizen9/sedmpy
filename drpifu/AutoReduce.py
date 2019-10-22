@@ -30,6 +30,7 @@ import time
 import glob
 import sys
 import os
+import re
 import subprocess
 import astropy.io.fits as pf
 import logging
@@ -77,13 +78,33 @@ def cube_ready(caldir='./', cur_date_str=None):
         hgf = 'HexaGrid.pkl'
         wsf = 'WaveSolution.pkl'
         fff = 'Flat.fits'
+        statf = 'wavesolution_stats.txt'
     else:
         tmf = cur_date_str + '_TraceMatch.pkl'
         tmmf = cur_date_str + '_TraceMatch_WithMasks.pkl'
         hgf = cur_date_str + '_HexaGrid.pkl'
         wsf = cur_date_str + '_WaveSolution.pkl'
         fff = cur_date_str + '_Flat.fits'
+        statf = cur_date_str + '_wavesolution_stats.txt'
 
+    # check stats for wavesolution
+    fs = False
+    wstatf = os.path.join(caldir, statf)
+    if os.path.exists(wstatf):
+        with open(wstatf) as infil:
+            for line in infil:
+                test = re.findall(r'AvgRMS:', line)
+                if test:
+                    fs = (float(line.split()[-1]) < 25.0)
+        # Does wavelength solution pass?
+        if not fs:
+            # NO: move bad files away
+            os.mkdir(os.path.join(caldir, 'bad'))
+            os.system("mv %s_* %s" % (os.path.join(caldir, cur_date_str),
+                                      os.path.join(caldir, 'bad')))
+            logging.warning("Wavelength stats failed, moved cube to 'bad'")
+        else:
+            logging.info("Wavelength stats passed")
     # Do we have all the calibration files?
     ft = os.path.exists(os.path.join(caldir, tmf))
     ftm = os.path.exists(os.path.join(caldir, tmmf))
