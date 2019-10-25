@@ -734,12 +734,16 @@ def dosci(destdir='./', datestr=None, local=False):
                     cmd = ("touch", badfn)
                     subprocess.call(cmd)
                 else:
-                    # Update SedmDb cube table
-                    cube_id = update_cube(f)
-                    if cube_id > 0:
-                        logging.info("SEDM db accepted cube at id %d" % cube_id)
+                    if local:
+                        logging.warning("Not updating SEDM db")
                     else:
-                        logging.warning("SEDM db rejected cube")
+                        # Update SedmDb cube table
+                        cube_id = update_cube(f)
+                        if cube_id > 0:
+                            logging.info("SEDM db accepted cube at id %d"
+                                         % cube_id)
+                        else:
+                            logging.warning("SEDM db rejected cube")
                     # Use auto psf extraction for standard stars
                     logging.info("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std",
@@ -777,14 +781,17 @@ def dosci(destdir='./', datestr=None, local=False):
                         # check if extraction succeeded
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
-                            # Update SedmDb table spec
-                            spec_id = update_spec(proced)
-                            if spec_id > 0:
-                                logging.info("update of %s with cube_id %d" %
-                                             (proced, cube_id))
+                            if local:
+                                logging.warning("Not updating SEDM db")
                             else:
-                                logging.warning("failed to update spec %s" %
-                                                proced)
+                                # Update SedmDb table spec
+                                spec_id = update_spec(proced)
+                                if spec_id > 0:
+                                    logging.info("update of %s with cube_id %d"
+                                                 % (proced, cube_id))
+                                else:
+                                    logging.warning("failed to update spec %s" %
+                                                    proced)
                         else:
                             logging.error("Not found: %s" % proced)
                         # Did we generate a flux calibration?
@@ -828,12 +835,16 @@ def dosci(destdir='./', datestr=None, local=False):
                     cmd = ("touch", badfn)
                     subprocess.call(cmd)
                 else:
-                    # Update SedmDb cube table
-                    cube_id = update_cube(f)
-                    if cube_id > 0:
-                        logging.info("SEDM db accepted cube at id %d" % cube_id)
+                    if local:
+                        logging.warning("Not updating SEDM db")
                     else:
-                        logging.warning("SEDM db rejected cube")
+                        # Update SedmDb cube table
+                        cube_id = update_cube(f)
+                        if cube_id > 0:
+                            logging.info("SEDM db accepted cube at id %d"
+                                         % cube_id)
+                        else:
+                            logging.warning("SEDM db rejected cube")
                     # Use forced psf for science targets
                     logging.info("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -1173,8 +1184,9 @@ def email_user(spec_file, utdate, object_name):
 
 def make_finder(ffile):
     """ Spawn a process that makes a finder for the ifu file """
-    cmd = ("/scr2/sedmdrp/spy", "/scr2/sedmdrp/sedmpy/drpifu/acq_finder.py",
-           "--imfile", ffile)
+    spy = os.path.join(os.getenv("HOME"), "spy")
+    prog = os.path.join(os.getenv("HOME"), "sedmpy", "drpifu", "acq_finder.py")
+    cmd = (spy, prog, "--imfile", ffile)
     subprocess.Popen(cmd)
 
 
@@ -1729,9 +1741,12 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     else:
         logging.info("Calibrations already present in %s" % outdir)
 
-    # Update spec_calib table in sedmdb
-    spec_calib_id = update_calibration(cur_date_str)
-    logging.info("SEDM db accepted spec_calib at id %d" % spec_calib_id)
+    if local:
+        logging.warning("Not updating SEDM db")
+    else:
+        # Update spec_calib table in sedmdb
+        spec_calib_id = update_calibration(cur_date_str)
+        logging.info("SEDM db accepted spec_calib at id %d" % spec_calib_id)
 
     logging.info("Calibration stage complete, ready for science!")
     # Link recent flux cal file
