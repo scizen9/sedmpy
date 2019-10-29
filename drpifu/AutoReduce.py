@@ -36,6 +36,8 @@ import astropy.io.fits as pf
 import logging
 import argparse
 import ephem
+import smtplib
+from email.message import EmailMessage
 import db.SedmDb
 
 from astropy.time import Time
@@ -88,23 +90,33 @@ def cube_ready(caldir='./', cur_date_str=None):
         statf = cur_date_str + '_wavesolution_stats.txt'
 
     # check stats for wavesolution
-    fs = False
+    wave_stats_ok = False
     wstatf = os.path.join(caldir, statf)
     if os.path.exists(wstatf):
         with open(wstatf) as infil:
             for line in infil:
                 test = re.findall(r'AvgRMS:', line)
                 if test:
-                    fs = (float(line.split()[-1]) < 25.0)
+                    wave_stats_ok = (float(line.split()[-1]) < 25.0)
         # Does wavelength solution pass?
-        if not fs:
+        if wave_stats_ok:
+            logging.info("Wavelength stats passed")
+        else:
             # NO: move bad files away
             os.mkdir(os.path.join(caldir, 'bad'))
             os.system("mv %s_* %s" % (os.path.join(caldir, cur_date_str),
                                       os.path.join(caldir, 'bad')))
             logging.warning("Wavelength stats failed, moved cube to 'bad'")
-        else:
-            logging.info("Wavelength stats passed")
+            # Send email
+            msg = EmailMessage()
+            msg['To'] = "rsw@astro.caltech.edu,neill@srl.caltech.edu"
+            msg['Subject'] = "SEDM Error - Wave solution failure for %s" \
+                             % cur_date_str
+            msg['From'] = 'No_reply_sedm_robot@astro.caltech.edu'
+            msg.set_content("Wavelength AvgRMS > 25nm")
+            # Send the message via local SMTP server.
+            with smtplib.SMTP('smtp-server.astro.caltech.edu') as s:
+                s.send_message(msg)
     # Do we have all the calibration files?
     ft = os.path.exists(os.path.join(caldir, tmf))
     ftm = os.path.exists(os.path.join(caldir, tmmf))
@@ -323,7 +335,8 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
                 # Record in database
                 obs_id = update_observation(src)
                 if obs_id > 0:
-                    logging.info("SEDM db accepted observation at id %d" % obs_id)
+                    logging.info("SEDM db accepted observation at id %d"
+                                 % obs_id)
                 else:
                     logging.warning("SEDM db rejected observation")
             else:
@@ -1063,8 +1076,8 @@ def update_spec(input_specfile, update=False):
             if class_id < 0 and update:
                 logging.info("Classification already exists for this spec")
             else:
-                logging.info("Classification accepted with id %d, and status %s" %
-                             (class_id, cstatus))
+                logging.info("Classification accepted with id %d,"
+                             " and status %s" % (class_id, cstatus))
         else:
             logging.info("No classification associated with input spectrum")
         return spec_id
