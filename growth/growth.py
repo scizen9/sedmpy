@@ -611,7 +611,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
             print("No REQ_ID found: %s" % fi)
             continue
         # Extract object name
-        tname = fi.split('ifu')[-1].split('_')[4:]
+        tname = fi.split('_ifu')[-1].split('_')[4:]
         if len(tname) > 1:
             objname = '_'.join(tname).split('.txt')[0]
         else:
@@ -619,9 +619,9 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
         # Extract observation id
         fname = os.path.basename(fi)
         if 'ifu' in fname:
-            obs_id = ":".join(fname.split('ifu')[-1].split('_')[1:4])
+            obs_id = ":".join(fname.split('_ifu')[-1].split('_')[1:4])
         elif 'rc' in fname:
-            obs_id = ":".join(fname.split('rc')[-1].split('_')[1:4])
+            obs_id = ":".join(fname.split('_rc')[-1].split('_')[1:4])
         else:
             obs_id = "..:..:.."
         # Are we uploading only one file?
