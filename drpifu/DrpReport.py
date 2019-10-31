@@ -21,13 +21,13 @@ def report():
     recs = []
     for f in flist:
         # Get object name
-        tname = f.split('ifu')[-1].split('_')[4:]
+        tname = f.split('_ifu')[-1].split('_')[4:]
         if len(tname) > 1:
             objname = '_'.join(tname).split('.txt')[0]
         else:
             objname = tname[0].split('.txt')[0]
         # Get time string
-        tstr = ':'.join(f.split('ifu')[-1].split('_')[1:4])
+        tstr = ':'.join(f.split('_ifu')[-1].split('_')[1:4])
         # check the ascii spectrum file for SNID data
         with open(f, "r") as sfl:
             lines = sfl.readlines()
@@ -111,7 +111,7 @@ def report():
         print("\nThere were/was %d failed extraction(s)" % len(flist))
         for f in flist:
             tstr = ':'.join(f.split('ifu')[-1].split('_')[1:4])
-            tok = f.split("_failed")[0].split("ifu")[-1]
+            tok = f.split("_failed")[0].split("_ifu")[-1]
             out = subprocess.check_output(('grep', tok, 'what.list'),
                                           universal_newlines=True)
             print("%8s %-25s FAILED" % (tstr, out.split()[3]))

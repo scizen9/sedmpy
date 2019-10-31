@@ -1048,7 +1048,7 @@ def update_spec(input_specfile, update=False):
 
     # Get observation and object ids
     ifufile = 'ifu' + '_'.join(
-        input_specfile.split('ifu')[-1].split('_')[:4]) + '.fits'
+        input_specfile.split('_ifu')[-1].split('_')[:4]) + '.fits'
     observation_id = sedmdb.get_from_observation(['id', 'object_id'],
                                                  {'fitsfile': ifufile},
                                                  {'fitsfile': '~'})
@@ -1138,7 +1138,7 @@ def update_cube(input_fitsfile):
     sedmdb = db.SedmDb.SedmDB()
 
     # Get observation id
-    fitsfile = 'ifu'+input_fitsfile.split('ifu')[-1]
+    fitsfile = 'ifu'+input_fitsfile.split('_ifu')[-1]
     observation_id = sedmdb.get_from_observation(['id'],
                                                  {'fitsfile': fitsfile},
                                                  {'fitsfile': '~'})
