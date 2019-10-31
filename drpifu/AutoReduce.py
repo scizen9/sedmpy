@@ -732,31 +732,9 @@ def dosci(destdir='./', datestr=None, local=False):
             ncp += 1
             # are we a standard star?
             if 'STD-' in obj:
-                # Build cube for STD observation
-                logging.info("Building STD cube for " + fn)
-                # Don't solve WCS for standards (always brightest in IFU)
-                cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
-                logging.info(" ".join(cmd))
-                retcode = subprocess.call(cmd)
-                # Check results
-                if retcode != 0:
-                    logging.error("Error generating cube for " + fn)
-                    # Do this to prevent constant re-try
-                    badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
-                            "_failed.fits"
-                    cmd = ("touch", badfn)
-                    subprocess.call(cmd)
-                else:
-                    if local:
-                        logging.warning("Not updating SEDM db")
-                    else:
-                        # Update SedmDb cube table
-                        cube_id = update_cube(f)
-                        if cube_id > 0:
-                            logging.info("SEDM db accepted cube at id %d"
-                                         % cube_id)
-                        else:
-                            logging.warning("SEDM db rejected cube")
+                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                                    local=local, sci=False, hdr=None)
+                if e3d_good:
                     # Use auto psf extraction for standard stars
                     logging.info("Extracting std star spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn, "--std",
@@ -780,7 +758,7 @@ def dosci(destdir='./', datestr=None, local=False):
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.error("Error running report for " +
+                            logging.error("Error running pysedm_report for " +
                                           fn.split('.')[0])
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
@@ -800,8 +778,8 @@ def dosci(destdir='./', datestr=None, local=False):
                                 # Update SedmDb table spec
                                 spec_id = update_spec(proced)
                                 if spec_id > 0:
-                                    logging.info("update of %s with cube_id %d"
-                                                 % (proced, cube_id))
+                                    logging.info("update of %s with spec_id %d"
+                                                 % (proced, spec_id))
                                 else:
                                     logging.warning("failed to update spec %s" %
                                                     proced)
@@ -822,42 +800,10 @@ def dosci(destdir='./', datestr=None, local=False):
                             logging.info("No flux calibration generated")
             else:
                 # Build cube for science observation
-                logging.info("Building science cube for " + fn)
+                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                                    local=local, sci=True, hdr=hdr)
 
-                # Check for moving target: no guider image for those
-                if 'RA_RATE' in hdr and 'DEC_RATE' in hdr:
-                    if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
-                        logging.info("Non-sidereal object")
-                        cmd = ("ccd_to_cube.py", datestr, "--build", fn)
-                    # Solve WCS for static science targets
-                    else:
-                        cmd = ("ccd_to_cube.py", datestr, "--build", fn,
-                               "--solvewcs")
-                else:
-                    cmd = ("ccd_to_cube.py", datestr, "--build", fn,
-                           "--solvewcs")
-
-                logging.info(" ".join(cmd))
-                retcode = subprocess.call(cmd)
-                # Check results
-                if retcode != 0:
-                    logging.error("Error generating cube for " + fn)
-                    # Do this to prevent constant re-try
-                    badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
-                            "_failed.fits"
-                    cmd = ("touch", badfn)
-                    subprocess.call(cmd)
-                else:
-                    if local:
-                        logging.warning("Not updating SEDM db")
-                    else:
-                        # Update SedmDb cube table
-                        cube_id = update_cube(f)
-                        if cube_id > 0:
-                            logging.info("SEDM db accepted cube at id %d"
-                                         % cube_id)
-                        else:
-                            logging.warning("SEDM db rejected cube")
+                if e3d_good:
                     # Use forced psf for science targets
                     logging.info("Extracting object spectra for " + fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -910,13 +856,73 @@ def dosci(destdir='./', datestr=None, local=False):
                             else:
                                 email_user(proced, datestr, obj)
                                 # Update SedmDb table spec
-                                update_spec(proced)
-                                logging.info("update of %s with cube_id %d" %
-                                             (proced, cube_id))
+                                spec_id = update_spec(proced)
+                                logging.info("update of %s with spec_id %d" %
+                                             (proced, spec_id))
                         else:
                             logging.error("Not found: %s" % proced)
     return ncp, copied
     # END: dosci
+
+
+def make_e3d(fnam=None, destdir=None, datestr=None, local=False, sci=False,
+             hdr=None):
+    """ Make the e3d cube"""
+    cube_good = False
+    if fnam is None:
+        logging.error("Need input file name")
+        fn = None
+    else:
+        fn = fnam.split('/')[-1]
+    if destdir is None:
+        logging.error("Need destination dir")
+    if datestr is None:
+        logging.error("Need date string")
+    if sci:
+        lab = "Science"
+    else:
+        lab = "STD"
+    cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
+    if hdr:
+        # Check for moving target: no guider image for those
+        if 'RA_RATE' in hdr and 'DEC_RATE' in hdr:
+            if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
+                logging.info("Non-sidereal object")
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+
+    proccubefn = "e3d_%s_*.fits" % fn.split('.')[0]
+    procedcube = glob.glob(os.path.join(destdir, proccubefn))
+    if len(procedcube) == 0:
+        # Build cube for observation
+        logging.info("Building %s cube for %s" % (lab, fn))
+        logging.info(" ".join(cmd))
+        retcode = subprocess.call(cmd)
+        # Check results
+        if retcode != 0:
+            logging.error("Error generating cube for " + fn)
+            # Do this to prevent constant re-try
+            badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
+                    "_failed.fits"
+            cmd = ("touch", badfn)
+            subprocess.call(cmd)
+        else:
+            logging.info("%s cube generated for %s" % (lab, fn))
+            cube_good = True
+            if local:
+                logging.warning("Not updating SEDM db")
+            else:
+                # Update SedmDb cube table
+                cube_id = update_cube(fnam)
+                if cube_id > 0:
+                    logging.info("SEDM db accepted cube at id %d"
+                                 % cube_id)
+                else:
+                    logging.warning("SEDM db rejected cube")
+    else:
+        logging.info("%s cube already exists for %s" % (lab, fn))
+        cube_good = True
+    return cube_good
+    # END: make_e3d
 
 
 def update_spec(input_specfile, update=False):
