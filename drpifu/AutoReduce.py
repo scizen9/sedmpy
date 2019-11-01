@@ -1242,7 +1242,7 @@ def find_recent(redd, fname, destdir, dstr):
         # Get all but the most recent reduced data directories
         fspec = os.path.join(redd, '20??????')
         srtlist = sorted([d for d in glob.glob(fspec)
-                          if os.path.isdir(d)])[0:-1]
+                          if os.path.isdir(d)])
         redlist = srtlist[0:srtlist.index(destdir)]
         logging.info("Looking backwards for %s starting at %s" %
                      (fname, redlist[-1]))
@@ -1288,8 +1288,11 @@ def find_recent_bias(redd, fname, destdir):
     else:
         # Get all but the most recent reduced data directories
         fspec = os.path.join(redd, '20??????')
-        redlist = sorted([d for d in glob.glob(fspec)
-                          if os.path.isdir(d)])[0:-1]
+        srtlist = sorted([d for d in glob.glob(fspec)
+                          if os.path.isdir(d)])
+        redlist = srtlist[0:srtlist.index(destdir)]
+        logging.info("Looking backwards for %s starting at %s" %
+                     (fname, redlist[-1]))
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
             src = glob.glob(os.path.join(d, fname))
@@ -1330,9 +1333,12 @@ def find_recent_fluxcal(redd, fname, destdir):
     # Search in redd for file
     else:
         # Get all but the most recent reduced data directories
-        dspec = os.path.join(redd, '20??????')
-        redlist = sorted([d for d in glob.glob(dspec)
-                          if os.path.isdir(d)])[0:-1]
+        fspec = os.path.join(redd, '20??????')
+        srtlist = sorted([d for d in glob.glob(fspec)
+                          if os.path.isdir(d)])
+        redlist = srtlist[0:srtlist.index(destdir)]
+        logging.info("Looking backwards for %s starting at %s" %
+                     (fname, redlist[-1]))
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
             src = sorted(glob.glob(os.path.join(d, fname)))
