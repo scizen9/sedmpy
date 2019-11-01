@@ -1606,6 +1606,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         os.mkdir(outdir)
     # Go there
     os.chdir(outdir)
+    if indir is not None:
+        # Generate new Makefile
+        retcode = subprocess.call("~/spy plan ifu*.fits", shell=True)
+        if retcode != 0:
+            logging.warning("Error making plan in %s" % indir)
     # report
     logging.info("Raw files from  : %s" % srcdir)
     logging.info("Reduced files to: %s" % outdir)
