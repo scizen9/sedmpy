@@ -670,7 +670,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
     # END: cpsci
 
 
-def dosci(destdir='./', datestr=None, local=False):
+def dosci(destdir='./', datestr=None, local=False, nodb=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -682,6 +682,7 @@ def dosci(destdir='./', datestr=None, local=False):
         destdir (str): destination directory (typically in /scr2/sedm/redux)
         datestr (str): YYYYMMDD date string
         local (bool): set to skip pushing to marshal and slack
+        nodb (bool): if True no update to SEDM db
 
     Returns:
         int: Number of ifu images actually copied
@@ -733,7 +734,7 @@ def dosci(destdir='./', datestr=None, local=False):
             # are we a standard star?
             if 'STD-' in obj:
                 e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
-                                    local=local, sci=False, hdr=None)
+                                    nodb=nodb, sci=False, hdr=None)
                 if e3d_good:
                     # Use auto psf extraction for standard stars
                     logging.info("Extracting std star spectra for " + fn)
@@ -772,8 +773,8 @@ def dosci(destdir='./', datestr=None, local=False):
                         # check if extraction succeeded
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
-                            if local:
-                                logging.warning("Not updating SEDM db")
+                            if nodb:
+                                logging.warning("Not updating spec in SEDM db")
                             else:
                                 # Update SedmDb table spec
                                 spec_id = update_spec(proced)
@@ -801,7 +802,7 @@ def dosci(destdir='./', datestr=None, local=False):
             else:
                 # Build cube for science observation
                 e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
-                                    local=local, sci=True, hdr=hdr)
+                                    nodb=nodb, sci=True, hdr=hdr)
 
                 if e3d_good:
                     # Use forced psf for science targets
@@ -837,7 +838,7 @@ def dosci(destdir='./', datestr=None, local=False):
                                           fn.split('.')[0])
                         # Upload spectrum to marshal
                         if local:
-                            logging.info("local: skipping ztfupload")
+                            logging.warning("local: skipping ztfupload")
                         else:
                             cmd = ("make", "ztfupload")
                             retcode = subprocess.call(cmd)
@@ -852,9 +853,12 @@ def dosci(destdir='./', datestr=None, local=False):
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
                             if local:
-                                logging.info("local: skipping email, db update")
+                                logging.warning("local: skipping email")
                             else:
                                 email_user(proced, datestr, obj)
+                            if nodb:
+                                logging.warning("No update of spec in SEDM db")
+                            else:
                                 # Update SedmDb table spec
                                 spec_id = update_spec(proced)
                                 logging.info("update of %s with spec_id %d" %
@@ -865,7 +869,7 @@ def dosci(destdir='./', datestr=None, local=False):
     # END: dosci
 
 
-def make_e3d(fnam=None, destdir=None, datestr=None, local=False, sci=False,
+def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
              hdr=None):
     """ Make the e3d cube"""
     cube_good = False
@@ -908,8 +912,8 @@ def make_e3d(fnam=None, destdir=None, datestr=None, local=False, sci=False,
         else:
             logging.info("%s cube generated for %s" % (lab, fn))
             cube_good = True
-            if local:
-                logging.warning("Not updating SEDM db")
+            if nodb:
+                logging.warning("Not updating cube in SEDM db")
             else:
                 # Update SedmDb cube table
                 cube_id = update_cube(fnam)
@@ -1540,7 +1544,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
 
 
 def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
-             piggyback=False, local=False):
+             piggyback=False, local=False, nodb=False):
     """One night observing loop: processes calibrations and science data
 
     Copy raw cal files until we are ready to process the night's
@@ -1560,6 +1564,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         indir (str): input directory for single night processing
         piggyback (bool): basic processing done by StartObs.py
         local (bool): True if no marshal/slack update required
+        nodb (bool): True if no update to SEDM db
 
     Returns:
         bool: True if night completed normally, False otherwise
@@ -1760,7 +1765,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     else:
         logging.info("Calibrations already present in %s" % outdir)
 
-    if local:
+    if nodb:
         logging.warning("Not updating SEDM db")
     else:
         # Update spec_calib table in sedmdb
@@ -1788,12 +1793,13 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             # Record starting time for new file processing
             start_time = time.time()
             if piggyback:
-                nsci, science = dosci(outdir, datestr=cur_date_str, local=local)
+                nsci, science = dosci(outdir, datestr=cur_date_str,
+                                      local=local, nodb=nodb)
                 ncp = nsci
             else:
                 ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str)
                 nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      local=local)
+                                      local=local, nodb=nodb)
             # We copied some new ones so report processing time
             if ncp > 0:
                 proc_time = int(time.time() - start_time)
@@ -1870,7 +1876,8 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
 
 
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
-       check_precal=True, indate=None, piggyback=False, local=False):
+       check_precal=True, indate=None, piggyback=False, local=False,
+       nodb=False):
     """Outermost infinite loop that watches for a new raw directory.
 
     Keep a list of raw directories in `redd` and fire off
@@ -1885,6 +1892,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         indate (str): input date to process: YYYYMMDD (e.g. 20180626)
         piggyback (bool): True if using other script to copy data
         local (bool): True if no marshal/slack update required
+        nodb (bool): True if no update of SEDM Db
 
     Returns:
         None
@@ -1910,7 +1918,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
 
         if not wait:
             stat = obs_loop(rawlist, redd, check_precal=check_precal,
-                            piggyback=piggyback, local=local)
+                            piggyback=piggyback, local=local, nodb=nodb)
             its += 1
             logging.info("Finished SEDM observing iteration %d in raw dir %s" %
                          (its, rawlist[-1]))
@@ -1956,7 +1964,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         indir = os.path.join(rawd, indate)
         logging.info("Processing raw data from %s" % indir)
         stat = obs_loop(rawlist, redd, check_precal=check_precal, indir=indir,
-                        piggyback=piggyback, local=local)
+                        piggyback=piggyback, local=local, nodb=nodb)
         its += 1
         logging.info("Finished SEDM processing in raw dir %s with status %d" %
                      (indir, stat))
@@ -1986,6 +1994,8 @@ if __name__ == '__main__':
     parser.add_argument('--local', action="store_true", default=False,
                         help='Process data locally only (no push to marshal or '
                              'slack')
+    parser.add_argument('--nodb', action="store_true", default=False,
+                        help='Do not update SEDM Db')
 
     args = parser.parse_args()
 
@@ -1994,4 +2004,4 @@ if __name__ == '__main__':
     else:
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
-           piggyback=args.piggyback, local=args.local)
+           piggyback=args.piggyback, local=args.local, nodb=args.nodb)
