@@ -1241,8 +1241,11 @@ def find_recent(redd, fname, destdir, dstr):
     else:
         # Get all but the most recent reduced data directories
         fspec = os.path.join(redd, '20??????')
-        redlist = sorted([d for d in glob.glob(fspec)
+        srtlist = sorted([d for d in glob.glob(fspec)
                           if os.path.isdir(d)])[0:-1]
+        redlist = srtlist[0:srtlist.index(destdir)]
+        logging.info("Looking backwards for %s starting at %s" %
+                     (fname, redlist[-1]))
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
             src = glob.glob(os.path.join(d, '20??????' + fname))
