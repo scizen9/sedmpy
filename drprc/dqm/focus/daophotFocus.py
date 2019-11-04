@@ -1,4 +1,3 @@
-from photutils import DAOStarFinder
 from photutils import IRAFStarFinder
 from matplotlib import pylab as plt
 from astropy.io import fits
@@ -9,12 +8,17 @@ import datetime
 from astropy.stats import sigma_clipped_stats
 
 
-
 def get_stats(image, data_extension=0, fwhm=5.0, threshold=2, sigma=3.0,
               header_extension=0, header_keyword='FOCPOS'):
     """
     
-    :param image: 
+    :param image:
+    :param data_extension:
+    :param fwhm:
+    :param threshold:
+    :param sigma:
+    :param header_extension:
+    :param header_keyword:
     :return: 
     """
     # 1. Start by making sure the image exists
@@ -26,23 +30,24 @@ def get_stats(image, data_extension=0, fwhm=5.0, threshold=2, sigma=3.0,
     try:
         hdu = fits.open(image)
         data = hdu[data_extension].data
-        #data = data[100:900, 1200:2400]
-        #print(data)
+        # data = data[100:900, 1200:2400]
+        # print(data)
         focus_stage = hdu[header_extension].header[header_keyword]
         hdu.close()
-    except Exception as e:
+    except Exception:
         return -1 * (time.time() - start), "Image not found"
 
     print("Time to open images:%ss" % float(time.time()-start))
-    start=time.time()
+    start = time.time()
     # 3. Now get the initial stats from the image
 
     mean, median, std = sigma_clipped_stats(data, sigma=sigma)
     print("Time to get stats:%ss" % float(time.time() - start))
     start = time.time()
     # 4. Find the sources
-    daofind = IRAFStarFinder(fwhm=fwhm, threshold=threshold * std, sigma_radius=2.5, minsep_fwhm=5,
-                             sharplo=0.5, sharphi=5.0, roundlo=0.0, roundhi=0.5, sky=None,
+    daofind = IRAFStarFinder(fwhm=fwhm, threshold=threshold * std,
+                             sigma_radius=2.5, minsep_fwhm=5, sharplo=0.5,
+                             sharphi=5.0, roundlo=0.0, roundhi=0.5, sky=None,
                              exclude_border=True)
 
     print("Time to setup star finder:%ss" % float(time.time() - start))
@@ -52,12 +57,16 @@ def get_stats(image, data_extension=0, fwhm=5.0, threshold=2, sigma=3.0,
     print("Time to get sources:%ss" % float(time.time() - start))
     start = time.time()
     focus_list = []
-    #print(sources)
+    # print(sources)
     if sources:
 
-    #    #print(np.mean(sources['sharpness']),np.mean(sources['roundness1']), np.mean(sources['roundness2']),np.mean(sources['npix']), np.mean(sources['sky']),np.mean(sources['peak']),np.mean(sources['flux']), np.mean(sources['mag']), focus_stage, image)
-        #print(sources[0]['fwhm', 'xcentroid', 'ycentroid'], focus_stage)
-        print(np.mean(sources['fwhm']), np.mean(sources['roundness']), np.mean(sources['pa']), focus_stage, image)
+        # print(np.mean(sources['sharpness']),np.mean(sources['roundness1']),
+        # np.mean(sources['roundness2']),np.mean(sources['npix']),
+        # np.mean(sources['sky']),np.mean(sources['peak']),
+        # np.mean(sources['flux']), np.mean(sources['mag']), focus_stage, image)
+        # print(sources[0]['fwhm', 'xcentroid', 'ycentroid'], focus_stage)
+        print(np.mean(sources['fwhm']), np.mean(sources['roundness']),
+              np.mean(sources['pa']), focus_stage, image)
         return [np.mean(sources['fwhm']), np.std(sources['fwhm']), focus_stage]
 
 
@@ -82,7 +91,8 @@ def analyse_sex(fwhm_list, focpos_list, std_list, plot=True, interactive=False):
     selected_ids = selected_ids + best_seeing_id
     selected_ids = np.minimum(selected_ids, n - 1)
     selected_ids = np.maximum(selected_ids, 0)
-    print("FWHMS: %s, focpos: %s, Best seeing id: %d. Selected ids %s" % (fwhms, focpos, best_seeing_id, selected_ids))
+    print("FWHMS: %s, focpos: %s, Best seeing id: %d. Selected ids %s"
+          % (fwhms, focpos, best_seeing_id, selected_ids))
     selected_ids = np.array(list(set(selected_ids)))
 
     focpos = focpos[selected_ids]
@@ -97,7 +107,7 @@ def analyse_sex(fwhm_list, focpos_list, std_list, plot=True, interactive=False):
     p = np.poly1d(coefs)
     print("Best focus:%.2f" % x[np.argmin(p(x))], coefs, std_fwhm)
 
-    if (plot == True):
+    if plot:
         plt.title("Best focus:%.2f" % x[np.argmin(p(x))])
         with open("focus", "w") as f:
             f.write(str(focpos))
@@ -106,10 +116,12 @@ def analyse_sex(fwhm_list, focpos_list, std_list, plot=True, interactive=False):
         plt.plot(x, p(x), "-")
         plt.xlabel("Focus (mm)")
         plt.ylabel("FWHM (arcsec)")
-        if (interactive):
+        if interactive:
             plt.show()
         else:
-            plt.savefig(os.path.join("focus_%s.png" % (datetime.datetime.utcnow()).strftime("%Y%m%d-%H:%M:%S")))
+            plt.savefig(os.path.join("focus_%s.png" %
+                                     (datetime.datetime.utcnow()).strftime(
+                                         "%Y%m%d-%H:%M:%S")))
             plt.clf()
     return x[np.argmin(p(x))], coefs[0]
 

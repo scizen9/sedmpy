@@ -15,10 +15,11 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
     """
     
     :param img: 
-    :param radius: 
+    :param radius:
     :param with_pix: 
     :param first_call: 
-    :param tweak: 
+    :param tweak:
+    :param make_plots:
     :return: 
     """
     s = time.time()
@@ -42,13 +43,14 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
                "%.4f -t %d --overwrite %s "
                "" % (ra, dec, radius, tweak, img))
     else:
-        cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius "
-           "%.4f -p --new-fits %s -W none -B none -M none "
-           "-R none -S none -t %d --overwrite %s --parity neg "
-           "" % (ra, dec, radius, astro, tweak, img))
+        cmd = (" solve-field --no-fits2fits --ra %s --dec %s --radius"
+               " %.4f -p --new-fits %s -W none -B none -M none -R none"
+               " -S none -t %d --overwrite %s --parity neg "
+               % (ra, dec, radius, astro, tweak, img))
 
     if with_pix:
-        cmd = cmd + " --scale-units arcsecperpix --scale-low 0.355 --scale-high 0.400 --"
+        cmd = cmd + " --scale-units arcsecperpix --scale-low 0.355" \
+                    " --scale-high 0.400 --"
 
     print(cmd)
 
@@ -75,7 +77,7 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
         print("Astrometry failed on file %s! Trying with a larger radius..."
               % img)
 
-        #solve_astrometry(img, radius=8, with_pix=True, first_call=False)
+        # solve_astrometry(img, radius=8, with_pix=True, first_call=False)
 
         if not os.path.isfile(astro):
             print("Astrometry FAILED!")
@@ -84,6 +86,7 @@ def solve_astrometry(img, radius=2.5, with_pix=True,
     # doesn't exist.
     print(time.time()-s)
     return astro
+
 
 def get_offset_to_brightest2(image):
     """
@@ -109,7 +112,6 @@ def make_cutouts(image):
     :return:
     """
 
-
     image_data = fits.getdata(image)
     image_header = fits.getheader(image)
     wcs = WCS(image_header)
@@ -120,7 +122,8 @@ def make_cutouts(image):
 #    ref_ra = rdata_center[0]
 #    ref_dec = rdata_center[1]
 
-    objCoords = SkyCoord(169.90527008, 61.920226159, unit=(u.deg, u.deg), frame='icrs')
+    objCoords = SkyCoord(169.90527008, 61.920226159, unit=(u.deg, u.deg),
+                         frame='icrs')
 
     refCoords = SkyCoord(170, 62, unit=(u.deg, u.deg), frame='icrs')
 
@@ -137,9 +140,6 @@ def make_cutouts(image):
     hdu.writeto('rdata.fits', output_verify="fix", )
 
 
-
-
-
 def get_offset_to_brightest(image):
     """
     Get the offset to the brightest object near the reference pixel
@@ -153,9 +153,11 @@ def get_offset_to_brightest(image):
     obj_ra, obj_dec = image_header['OBJRA'], image_header['OBJDEC']
 
     if not isinstance(obj_ra, float) and not isinstance(obj_dec, float):
-        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.hour, u.deg), frame='icrs')
+        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.hour, u.deg),
+                             frame='icrs')
     else:
-        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.deg, u.deg), frame='icrs')
+        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.deg, u.deg),
+                             frame='icrs')
 
     wcs = WCS(image_header)
     pra, pdec = wcs.all_world2pix(objCoords.ra.degree, objCoords.dec.degree, 0)
@@ -200,9 +202,11 @@ def get_offset_to_reference(image, get_ref_from_header=False,
     obj_ra, obj_dec = image_header['OBJRA'], image_header['OBJDEC']
 
     if not isinstance(obj_ra, float) and not isinstance(obj_dec, float):
-        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.hour, u.deg), frame='icrs')
+        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.hour, u.deg),
+                             frame='icrs')
     else:
-        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.deg, u.deg), frame='icrs')
+        objCoords = SkyCoord(obj_ra, obj_dec, unit=(u.deg, u.deg),
+                             frame='icrs')
 
     # 3. Get the WCS reference pixel position
     wcs = WCS(fits.getheader(image))
@@ -253,7 +257,10 @@ def calculate_offset(raw_image, overwrite=True, use_brightest=True,
     :param overwrite: 
     :param use_brightest: 
     :param use_closest: 
-    :param use_average: 
+    :param use_average:
+    :param parse_directory_from_file:
+    :param base_dir:
+    :param make_plots:
     :return: 
     """
 
@@ -286,13 +293,15 @@ def calculate_offset(raw_image, overwrite=True, use_brightest=True,
 
 if __name__ == "__main__":
 
-    t = calculate_offset('/data2/sedm/20190427/rc20190427_05_48_48.fits', parse_directory_from_file=False, make_plots=True)
+    t = calculate_offset('/data2/sedm/20190427/rc20190427_05_48_48.fits',
+                         parse_directory_from_file=False, make_plots=True)
 
     """import glob
     files = glob.glob('/data1/sedm/astrom/rc*.fits')
     data = open('astrometry_solve.txt', 'w')
     for i in files:
-        t = calculate_offset(i, parse_directory_from_file=False, make_plots=True)
+        t = calculate_offset(i, parse_directory_from_file=False,
+                             make_plots=True)
         print(t)
         try:
             st = ''
@@ -310,5 +319,5 @@ if __name__ == "__main__":
     data.close()
     #print(ret)
     #print(get_offset_to_reference('/scr/rsw/sedm/data/raw/20181204/rc20181204_09_59_04.new'))
-    #print(calculate_offset(image2, False))"""
-
+    #print(calculate_offset(image2, False))
+    """
