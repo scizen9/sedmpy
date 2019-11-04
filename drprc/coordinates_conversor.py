@@ -63,8 +63,8 @@ def getDegDec(hh, mm, ss):
 def getRaFromDeg(deg):
     hh = int(deg/15)
     mm = int((deg/15. - hh)*60)
-    ss = ((deg/15. - hh)*60 - mm )*60
-    return hh,mm,("%.2f"%ss).zfill(4)
+    ss = ((deg/15. - hh)*60 - mm)*60
+    return hh, mm, ("%.2f" % ss).zfill(4)
 
 
 def getDecFromDeg(deg):
@@ -75,7 +75,7 @@ def getDecFromDeg(deg):
     deg = np.abs(deg)
     hh = int(deg)
     mm = int((deg - hh)*60)
-    ss = ((deg - hh)*60 - mm )*60
+    ss = ((deg - hh)*60 - mm)*60
     return sign*hh, mm, ("%.2f" % ss).zfill(4)
 
 
