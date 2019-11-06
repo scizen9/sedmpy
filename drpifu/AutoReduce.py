@@ -18,12 +18,20 @@ Functions
 Note:
     This is used as a python script as follows::
 
-        usage: StartObs.py [-h] [--rawdir RAWDIR] [--reduxdir REDUXDIR]
+        usage: AutoReduce.py [-h] [--rawdir RAWDIR] [--reduxdir REDUXDIR]
 
         optional arguments:
           -h, --help           show this help message and exit
           --rawdir RAWDIR      Input raw directory (/scr2/sedm/raw)
           --reduxdir REDUXDIR  Output reduced directory (/scr2/sedm/redux)
+          --wait               Wait for new directory first (False)
+          --piggyback          Don't copy data, copied by another script (False)
+          --skip_precal        Skip check of previous day for cal files? (False)
+          --date YYYYMMDD      Select date to process (None)
+          --update YYYYMMDD    UTDate directory to update (None)
+          --local              Process data locally, no push to marshal or slack
+                               (False)
+          --nodb               Do not update SEDM Db (False)
 
 """
 import time
@@ -52,6 +60,11 @@ try:
     import marshal_commenter as mc
 except ImportError:
     import growth.marshal_commenter as mc
+
+try:
+    import rcimg
+except ImportError:
+    import drprc.rcimg as rcimg
 
 drp_ver = Version.ifu_drp_version()
 logging.basicConfig(
@@ -736,10 +749,20 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                 e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=False, hdr=None)
                 if e3d_good:
+                    # Get seeing
+                    seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
+                                              save_fig=True)
                     # Use auto psf extraction for standard stars
+                    if seeing > 0:
+                        logging.info("seeing measured as %f" % seeing)
+                        cmd = ("extract_star.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot", "--maxpos",
+                               "--seeing", "%f.2" % seeing)
+                    else:
+                        logging.info("seeing not measured for %s" % fn)
+                    cmd = ("extract_star.py", datestr, "--auto", fn,
+                           "--std", "--tag", "robot", "--maxpos")
                     logging.info("Extracting std star spectra for " + fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn, "--std",
-                           "--tag", "robot", "--maxpos")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
@@ -799,16 +822,27 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                             subprocess.call(cmd, shell=True)
                         else:
                             logging.info("No flux calibration generated")
+                else:
+                    logging.error("Cannot perform extraction for %s" % fn)
             else:
                 # Build cube for science observation
                 e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=True, hdr=hdr)
 
                 if e3d_good:
+                    # Get seeing
+                    seeing = rcimg.get_seeing(imfile=fn, destdir=destdir)
                     # Use forced psf for science targets
-                    logging.info("Extracting object spectra for " + fn)
+                    if seeing > 0:
+                        logging.info("seeing measured as %f" % seeing)
+                        cmd = ("extract_star.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot",
+                               "--seeing", "%f.2" % seeing)
+                    else:
+                        logging.info("seeing not measured for %s" % fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
                            "--autobins", "6", "--tag", "robot")
+                    logging.info("Extracting object spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
@@ -865,6 +899,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                                              (proced, spec_id))
                         else:
                             logging.error("Not found: %s" % proced)
+                else:
+                    logging.error("Cannot perform extraction for %s" % fn)
     return ncp, copied
     # END: dosci
 
