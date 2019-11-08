@@ -8,6 +8,25 @@ except ImportError:
 import datetime
 from astropy.io import fits
 import glob
+import os
+from configparser import ConfigParser
+import codecs
+
+cfg_parser = ConfigParser()
+
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              'config/sedmconfig.cfg')
+    # '/scr2/sedmdrp/sedmpy/drpifu/config/sedmconfig.cfg'
+
+# Open the file with the correct encoding
+with codecs.open(configfile, 'r') as f:
+    cfg_parser.read_file(f)
+
+_rawpath = cfg_parser.get('paths', 'rawpath')
+_reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 
 def time_from_fspec(filespec=None, imtype="ifu"):
@@ -109,19 +128,19 @@ def build_image_report(indir=None, fspec=None):
     t_obs = time_from_fspec(specfile)
     try:
         if is_std:
-            fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
-                    (indir, object_name.split("STD-")[-1])
+            fspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
+                                 % (indir, object_name.split("STD-")[-1]))
         else:
-            fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*ACQ-%s_*.png" % \
-                    (indir, object_name)
+            fspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
+                                 % (indir, object_name))
         finder_file = glob.glob(fspec)
         if not finder_file:
             if is_std:
-                fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*_%s_*.png" % \
-                        (indir, object_name.split("STD-")[-1])
+                fspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
+                                     % (indir, object_name.split("STD-")[-1]))
             else:
-                fspec = "/scr2/sedmdrp/redux/%s/finders/finder_*_%s_*.png" % \
-                        (indir, object_name)
+                fspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
+                                     % (indir, object_name))
             finder_file = glob.glob(fspec)
         if finder_file:
             # Get delta time = (t_obs - t_acq)

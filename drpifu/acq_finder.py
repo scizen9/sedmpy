@@ -36,7 +36,9 @@ cfg_parser = ConfigParser()
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = '/scr2/sedmdrp/sedmpy/drpifu/config/sedmconfig.cfg'
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              'config/sedmconfig.cfg')
+    # '/scr2/sedmdrp/sedmpy/drpifu/config/sedmconfig.cfg'
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
@@ -44,6 +46,7 @@ with codecs.open(configfile, 'r') as f:
 
 _rawpath = cfg_parser.get('paths', 'rawpath')
 _reduxpath = cfg_parser.get('paths', 'reduxpath')
+_srcpath = cfg_parser.get('paths', 'srcpath')
 
 
 def finder(myfile, findername, searchrad=0.2/60.):
@@ -359,20 +362,20 @@ if __name__ == "__main__":
                 astrof = dest.replace(".fits", "_astrom.fits").replace(".gz",
                                                                        "")
                 if not os.path.exists(astrof):
-                    returncode = subprocess.call(['/scr2/sedmdrp/bin/do_astrom',
+                    returncode = subprocess.call([_srcpath+'bin/do_astrom',
                                                   dest])
                     if returncode != 0:
                         print("Astrometry failed, perform median subtraction")
                         returncode = subprocess.call(
-                            ['/scr2/sedmdrp/spy',
-                             '/scr2/sedmdrp/sedmpy/drpifu/med_sub.py', '-i',
+                            [_srcpath+'bin/spy',
+                             _srcpath+'drpifu/med_sub.py', '-i',
                              f.split('/')[-1]])
                         if returncode != 0:
                             print("Astrometry failed for %s, "
                                   "skipping finder %s" % (dest, finderpath))
                             continue
                         returncode = subprocess.call(
-                            ['/scr2/sedmdrp/bin/do_astrom', dest])
+                            [_srcpath+'bin/do_astrom', dest])
                     if returncode != 0:
                         print("Astrometry failed for %s, skipping finder %s" %
                               (dest, finderpath))

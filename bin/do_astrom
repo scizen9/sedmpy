@@ -4,8 +4,7 @@
 
 echo $1
 #
-# set PATH
-setenv PATH /usr/local/anaconda2/bin:/scr2/sedmdrp/bin:/usr/local/optical/astrometry/bin:/usr/local/bin:/bin:/usr/bin
+# be sure that 'fitsheader' and 'solve-field' are both in your standard path
 #
 # set variables
 set ra = `fitsheader -k TEL_RA  $1 | grep TEL_RA | awk '{print $3}' | awk -F\' '{print $2}'`
