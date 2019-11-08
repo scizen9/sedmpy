@@ -97,11 +97,12 @@ def analyze_sex_cat(catalog, show_plot=False, save_fig=False, write_out=False,
         logging.info("FWHM seeing = %.2f asec" % seeing)
         # Plot or save?
         if show_plot or save_fig:
+            plt.clf()
             if show_plot:
                 plt.ion()
             else:
                 plt.ioff()
-            plt.hist(fwhms, bins=20)
+            plt.hist(fwhms)
             ylims = plt.gca().get_ylim()
             plt.title(catalog.split('/')[-1] + ' (%.2f ")' % seeing)
             plt.xlabel("Seeing FWHM (arcsec)")
