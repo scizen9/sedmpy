@@ -50,6 +50,8 @@ import db.SedmDb
 
 from astropy.time import Time
 from astropy.coordinates import Angle
+from configparser import ConfigParser
+import codecs
 
 try:
     import Version
@@ -70,6 +72,22 @@ drp_ver = Version.ifu_drp_version()
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
     datefmt='%Y%m%d %H:%M:%S', level=logging.INFO)
+
+# Get pipeline configuration
+cfg_parser = ConfigParser()
+# Find config file: default is sedmpy/drpifu/config/sedmconfig.cfg
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              'config/sedmconfig.cfg')
+# Open the file with the correct encoding
+with codecs.open(configfile, 'r') as f:
+    cfg_parser.read_file(f)
+# Get paths
+_rawpath = cfg_parser.get('paths', 'rawpath')
+_reduxpath = cfg_parser.get('paths', 'reduxpath')
+_srcpath = cfg_parser.get('paths', 'srcpath')
 
 
 def cube_ready(caldir='./', cur_date_str=None):
@@ -280,7 +298,7 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
     # END: cal_proc_ready
 
 
-def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
+def docp(src, dest, onsky=True, verbose=False, skip_cals=False, nodb=False):
     """Low level copy from raw directory to redux directory.
 
     Checks for raw ifu files, while avoiding any test and focus images.
@@ -292,6 +310,7 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
         onsky (bool): test for dome conditions or not
         verbose (bool): output messages?
         skip_cals (bool): skip copying cal images?
+        nodb (bool): don't update SEDM db
 
     Returns:
         (int, int, int): number of images linked, number of standard
@@ -345,13 +364,16 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False):
                 logging.info('Target %s linked to %s' % (obj, dest))
             ncp = 1
             if 'REQ_ID' in hdr and 'OBJ_ID' in hdr:
-                # Record in database
-                obs_id = update_observation(src)
-                if obs_id > 0:
-                    logging.info("SEDM db accepted observation at id %d"
-                                 % obs_id)
+                if not nodb:
+                    # Record in database
+                    obs_id = update_observation(src)
+                    if obs_id > 0:
+                        logging.info("SEDM db accepted observation at id %d"
+                                     % obs_id)
+                    else:
+                        logging.warning("SEDM db rejected observation")
                 else:
-                    logging.warning("SEDM db rejected observation")
+                    logging.warning("Not updating obs in SEDM db")
             else:
                 logging.warning("Missing request and/or object ids,"
                                 " no db update")
@@ -617,7 +639,7 @@ def proc_bias_crrs(ncp=1, piggyback=False):
     # END: proc_bias_crrs
 
 
-def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
+def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None, nodb=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -630,6 +652,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
         destdir (str): destination directory (typically in /scr2/sedm/redux)
         fsize (int): size of completely copied file in bytes
         datestr (str): YYYYMMDD date string
+        nodb (bool): skip update of SEDM db
 
     Returns:
         int: Number of ifu images actually copied
@@ -658,7 +681,8 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
             # No? then copy the file
             if len(prev) == 0:
                 # Call copy
-                nc, ns, nob = docp(f, destdir + '/' + fn, skip_cals=True)
+                nc, ns, nob = docp(f, destdir + '/' + fn, skip_cals=True,
+                                   nodb=nodb)
                 if nc >= 1:
                     copied.append(fn)
                 if ns >= 1:
@@ -755,13 +779,15 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                     # Use auto psf extraction for standard stars
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        cmd = ("extract_star.py", datestr, "--auto", fn,
-                               "--std", "--tag", "robot", "--maxpos",
-                               "--seeing", "%f.2" % seeing)
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot",
+                               "--centroid", "brightest",
+                               "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
-                           "--std", "--tag", "robot", "--maxpos")
+                           "--std", "--tag", "robot", "--maxpos")  # ,
+                    # "--centroid", "brightest")
                     logging.info("Extracting std star spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -831,13 +857,15 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
 
                 if e3d_good:
                     # Get seeing
-                    seeing = rcimg.get_seeing(imfile=fn, destdir=destdir)
+                    seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
+                                              save_fig=True)
                     # Use forced psf for science targets
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        cmd = ("extract_star.py", datestr, "--auto", fn,
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
                                "--autobins", "6", "--tag", "robot",
-                               "--seeing", "%f.2" % seeing)
+                               "--centroid", "auto",
+                               "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
                     cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -1405,7 +1433,7 @@ def find_recent_fluxcal(redd, fname, destdir):
     return ret
 
 
-def cpprecal(dirlist, destdir='./', fsize=8400960):
+def cpprecal(dirlist, destdir='./', fsize=8400960, nodb=False):
     """Copy raw cal files from previous date's directory
 
     Make sure we only look in previous day directory for files created
@@ -1417,6 +1445,7 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
         dirlist (list): a list of raw directories (typically in /scr2/sedm/raw)
         destdir (str): where to put the files
         fsize (int): size of completely copied file in bytes
+        nodb (bool): skip update of SEDM db
 
     Returns:
         int: number of images actually copied
@@ -1473,7 +1502,8 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
                                 if not os.path.exists(destfil):
                                     nc, ns, nob = docp(src, destfil,
                                                        onsky=False,
-                                                       verbose=True)
+                                                       verbose=True,
+                                                       nodb=nodb)
                                     ncp += nc
                             else:
                                 logging.warning("Bad dome - lamp not on: %s"
@@ -1484,7 +1514,7 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
                             # Copy arc images
                             if not os.path.exists(destfil):
                                 nc, ns, nob = docp(src, destfil, onsky=False,
-                                                   verbose=True)
+                                                   verbose=True, nodb=nodb)
                                 ncp += nc
                     # Check for biases
                     elif 'bias' in obj:
@@ -1492,7 +1522,7 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
                             # Copy bias images
                             if not os.path.exists(destfil):
                                 nc, ns, nob = docp(src, destfil, onsky=False,
-                                                   verbose=True)
+                                                   verbose=True, nodb=nodb)
                                 ncp += nc
             else:
                 logging.warning("Truncated file: %s" % src)
@@ -1501,7 +1531,7 @@ def cpprecal(dirlist, destdir='./', fsize=8400960):
     # END: cpprecal
 
 
-def cpcal(srcdir, destdir='./', fsize=8400960):
+def cpcal(srcdir, destdir='./', fsize=8400960, nodb=False):
     """Copy raw cal files from srcdir into destdir.
 
     Find calibration files taken within 10 hours of the day changeover
@@ -1511,6 +1541,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
         srcdir (str): source for raw cal images
         destdir (str): place to put the cal images
         fsize (int): size of completely copied file in bytes
+        nodb (bool): skip update of SEDM db
 
     Returns:
         int: number of images actually copied
@@ -1565,7 +1596,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
                         if lampcur > 0.0:
                             # Copy dome images
                             nc, ns, nob = docp(src, destfil, onsky=False,
-                                               verbose=True)
+                                               verbose=True, nodb=nodb)
                             ncp += nc
                         else:
                             logging.warning("Bad dome - lamp not on: %s" % src)
@@ -1574,14 +1605,14 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
                     if exptime > 25.:
                         # Copy arc images
                         nc, ns, nob = docp(src, destfil, onsky=False,
-                                           verbose=True)
+                                           verbose=True, nodb=nodb)
                         ncp += nc
                 # Check for biases
                 elif 'bias' in obj:
                     if exptime <= 0.:
                         # Copy bias images
                         nc, ns, nob = docp(src, destfil, onsky=False,
-                                           verbose=True)
+                                           verbose=True, nodb=nodb)
                         ncp += nc
 
     return ncp
@@ -1643,10 +1674,14 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # Go there
     os.chdir(outdir)
     if indir is not None:
-        # Generate new Makefile
-        retcode = subprocess.call("~/spy plan ifu*.fits", shell=True)
-        if retcode != 0:
-            logging.warning("Error making plan in %s" % indir)
+        fl = glob.glob("ifu*.fits")
+        if len(fl) > 0:
+            # Generate new Makefile
+            retcode = subprocess.call("~/spy plan ifu*.fits", shell=True)
+            if retcode != 0:
+                logging.warning("Error making plan in %s" % indir)
+        else:
+            logging.warning("No fits files in %s yet, so no plan made" % indir)
     # report
     logging.info("Raw files from  : %s" % srcdir)
     logging.info("Reduced files to: %s" % outdir)
@@ -1660,11 +1695,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             ncp = 0
         else:
             # Copy raw cal files from previous date directory
-            npre = cpprecal(rawlist, outdir)
+            npre = cpprecal(rawlist, outdir, nodb=nodb)
             logging.info("Linked %d raw cal files from %s" % (npre,
                                                               rawlist[-2]))
             # Now check the current source dir for raw cal files
-            ncp = cpcal(srcdir, outdir)
+            ncp = cpcal(srcdir, outdir, nodb=nodb)
             logging.info("Linked %d raw cal files from %s" % (ncp, srcdir))
         # Now loop until we have the raw cal files we need or sun is down
         while not cal_proc_ready(outdir, ncp=ncp, test_cal_ims=piggyback):
@@ -1679,13 +1714,13 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 if check_precal and now.tuple()[3] >= 20:
                     logging.info("checking %s for new raw cal files..."
                                  % rawlist[-2])
-                    ncp = cpprecal(rawlist, outdir)
+                    ncp = cpprecal(rawlist, outdir, nodb=nodb)
                     logging.info("Linked %d raw cal files from %s"
                                  % (ncp, rawlist[-2]))
                 else:
                     logging.info("checking %s for new raw cal files..."
                                  % srcdir)
-                    ncp = cpcal(srcdir, outdir)
+                    ncp = cpcal(srcdir, outdir, nodb=nodb)
                 logging.info("Linked %d raw cal files from %s" % (ncp, srcdir))
             if ncp <= 0:
                 # Check to see if we are still before an hour after sunset
@@ -1847,7 +1882,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                                       local=local, nodb=nodb)
                 ncp = nsci
             else:
-                ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str)
+                ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str,
+                                    nodb=nodb)
                 nsci, science = dosci(outdir, datestr=cur_date_str,
                                       local=local, nodb=nodb)
             # We copied some new ones so report processing time
@@ -2027,10 +2063,10 @@ if __name__ == '__main__':
 
             """, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--rawdir', type=str, default='/scr2/sedm/raw',
-                        help='Input raw directory (/scr2/sedm/raw)')
-    parser.add_argument('--reduxdir', type=str, default='/scr2/sedmdrp/redux',
-                        help='Output reduced directory (/scr2/sedmdrp/redux)')
+    parser.add_argument('--rawdir', type=str, default=_rawpath,
+                        help='Input raw directory (%s)' % _rawpath)
+    parser.add_argument('--reduxdir', type=str, default=_reduxpath,
+                        help='Output reduced directory (%s)' % _reduxpath)
     parser.add_argument('--wait', action="store_true", default=False,
                         help='Wait for new directory first')
     parser.add_argument('--piggyback', action="store_true", default=False,
