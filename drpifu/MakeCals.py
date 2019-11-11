@@ -107,7 +107,7 @@ def cube_ready(caldir='./', cur_date_str=None):
             for line in infil:
                 test = re.findall(r'AvgRMS:', line)
                 if test:
-                    wave_stats_ok = (float(line.split()[-1]) < 25.0)
+                    wave_stats_ok = (float(line.split()[-1]) < 35.0)
         # Does wavelength solution pass?
         if wave_stats_ok:
             logging.info("Wavelength stats passed")
@@ -144,12 +144,22 @@ def cal_proc_ready(caldir='./'):
 
     ret = False
 
-    dof = glob.glob(os.path.join(caldir, 'dome.fits'))
-    hgf = glob.glob(os.path.join(caldir, 'Hg.fits'))
-    cdf = glob.glob(os.path.join(caldir, 'Cd.fits'))
-    xef = glob.glob(os.path.join(caldir, 'Xe.fits'))
+    dof = glob.glob(os.path.join(caldir, 'dome.fit*'))
+    hgf = glob.glob(os.path.join(caldir, 'Hg.fit*'))
+    cdf = glob.glob(os.path.join(caldir, 'Cd.fit*'))
+    xef = glob.glob(os.path.join(caldir, 'Xe.fit*'))
     if len(dof) == 1 and len(hgf) == 1 and len(cdf) == 1 and len(xef) == 1:
         ret = True
+
+    # Gunzip if needed
+    if 'gz' in dof[0]:
+        subprocess.run(["gunzip", "dome.fit*.gz"])
+    if 'gz' in hgf[0]:
+        subprocess.run(["gunzip", "Hg.fit*.gz"])
+    if 'gz' in cdf[0]:
+        subprocess.run(["gunzip", "Cd.fit*.gz"])
+    if 'gz' in xef[0]:
+        subprocess.run(["gunzip", "Xe.fit*.gz"])
 
     return ret
     # END: cal_proc_ready
@@ -322,14 +332,6 @@ def cal_loop(redd=None, indir=None, nodb=False):
     cur_date_str = str(outdir.split('/')[-1])
     # change to directory
     os.chdir(outdir)
-    fl = glob.glob("ifu*.fits")
-    if len(fl) > 0:
-        # Generate new Makefile
-        retcode = subprocess.call("~/spy plan ifu*.fits", shell=True)
-        if retcode != 0:
-            logging.warning("Error making plan in %s" % indir)
-    else:
-        logging.error("No fits files in %s yet, so no plan made" % indir)
     # report
     logging.info("Reduced files to: %s" % outdir)
 
