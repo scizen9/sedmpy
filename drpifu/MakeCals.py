@@ -144,22 +144,26 @@ def cal_proc_ready(caldir='./'):
 
     ret = False
 
-    dof = glob.glob(os.path.join(caldir, 'dome.fit*'))
-    hgf = glob.glob(os.path.join(caldir, 'Hg.fit*'))
-    cdf = glob.glob(os.path.join(caldir, 'Cd.fit*'))
-    xef = glob.glob(os.path.join(caldir, 'Xe.fit*'))
+    # Check for gzipped versions first
+    dof = glob.glob(os.path.join(caldir, 'dome.fits.gz'))
+    if len(dof) == 1:
+        subprocess.run(["gunzip", dof[0]])
+    hgf = glob.glob(os.path.join(caldir, 'Hg.fits.gz'))
+    if len(hgf) == 1:
+        subprocess.run(["gunzip", hgf[0]])
+    cdf = glob.glob(os.path.join(caldir, 'Cd.fits.gz'))
+    if len(cdf) == 1:
+        subprocess.run(["gunzip", cdf[0]])
+    xef = glob.glob(os.path.join(caldir, 'Xe.fits.gz'))
+    if len(xef) == 1:
+        subprocess.run(["gunzip", xef[0]])
+
+    dof = glob.glob(os.path.join(caldir, 'dome.fits'))
+    hgf = glob.glob(os.path.join(caldir, 'Hg.fits'))
+    cdf = glob.glob(os.path.join(caldir, 'Cd.fits'))
+    xef = glob.glob(os.path.join(caldir, 'Xe.fits'))
     if len(dof) == 1 and len(hgf) == 1 and len(cdf) == 1 and len(xef) == 1:
         ret = True
-
-    # Gunzip if needed
-    if 'gz' in dof[0]:
-        subprocess.run(["gunzip", "dome.fit*.gz"])
-    if 'gz' in hgf[0]:
-        subprocess.run(["gunzip", "Hg.fit*.gz"])
-    if 'gz' in cdf[0]:
-        subprocess.run(["gunzip", "Cd.fit*.gz"])
-    if 'gz' in xef[0]:
-        subprocess.run(["gunzip", "Xe.fit*.gz"])
 
     return ret
     # END: cal_proc_ready
