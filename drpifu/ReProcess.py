@@ -9,7 +9,7 @@ Functions
 Note:
     This is used as a python script as follows::
 
-        usage: MakeCals.py [-h] [--rawdir RAWDIR] [--reduxdir REDUXDIR]
+        usage: ReProcess.py [-h] [--rawdir RAWDIR] [--reduxdir REDUXDIR]
 
         optional arguments:
           -h, --help           show this help message and exit
@@ -26,10 +26,16 @@ import re
 import subprocess
 import logging
 import argparse
-import db.SedmDb
+from astropy.io import fits as pf
 
 from configparser import ConfigParser
 import codecs
+from .AutoReduce import update_spec, make_e3d, update_calibration
+
+try:
+    import rcimg
+except ImportError:
+    import drprc.rcimg as rcimg
 
 try:
     import Version
@@ -158,155 +164,15 @@ def cal_proc_ready(caldir='./'):
     # END: cal_proc_ready
 
 
-def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
-    """ Update the SEDM database spec_calib table on pharos
-        by adding a new spectral calibration"""
-
-    spec_calib_dict = {}
-
-    src = os.path.join(src_dir, utdate)
-    if os.path.exists(src):
-
-        dome_master = os.path.join(src, 'dome.fits')
-        if os.path.exists(dome_master):
-            spec_calib_dict['dome_master'] = dome_master
-        else:
-            logging.info("spec cal item not found: %s" % dome_master)
-
-        bias_slow_master = os.path.join(src, 'bias0.1.fits')
-        if os.path.exists(bias_slow_master):
-            spec_calib_dict['bias_slow_master'] = bias_slow_master
-        else:
-            logging.info("spec cal item not found: %s" % bias_slow_master)
-
-        bias_fast_master = os.path.join(src, 'bias2.0.fits')
-        if os.path.exists(bias_fast_master):
-            spec_calib_dict['bias_fast_master'] = bias_fast_master
-        else:
-            logging.info("spec cal item not found: %s" % bias_fast_master)
-
-        flat = os.path.join(src, utdate + '_Flat.fits')
-        if os.path.exists(flat):
-            spec_calib_dict['flat'] = flat
-        else:
-            logging.info("spec cal item not found: %s" % flat)
-
-        hg_master = os.path.join(src, 'Hg.fits')
-        if os.path.exists(hg_master):
-            spec_calib_dict['hg_master'] = hg_master
-        else:
-            logging.info("spec cal item not found: %s" % hg_master)
-
-        xe_master = os.path.join(src, 'Xe.fits')
-        if os.path.exists(xe_master):
-            spec_calib_dict['xe_master'] = xe_master
-        else:
-            logging.info("spec cal item not found: %s" % xe_master)
-
-        cd_master = os.path.join(src, 'Cd.fits')
-        if os.path.exists(cd_master):
-            spec_calib_dict['cd_master'] = cd_master
-        else:
-            logging.info("spec cal item not found: %s" % cd_master)
-
-        hexagrid = os.path.join(src, utdate + '_HexaGrid.pkl')
-        if os.path.exists(hexagrid):
-            spec_calib_dict['hexagrid'] = hexagrid
-        else:
-            logging.info("spec cal item not found: %s" % hexagrid)
-
-        tracematch = os.path.join(src, utdate + '_TraceMatch.pkl')
-        if os.path.exists(tracematch):
-            spec_calib_dict['tracematch'] = tracematch
-        else:
-            logging.info("spec cal item not found: %s" % tracematch)
-
-        tracematch_withmasks = os.path.join(
-            src, utdate + '_TraceMatch_WithMasks.pkl')
-        if os.path.exists(tracematch_withmasks):
-            spec_calib_dict['tracematch_withmasks'] = tracematch_withmasks
-        else:
-            logging.info("spec cal item not found: %s" % tracematch_withmasks)
-
-        wavesolution = os.path.join(src, utdate + '_WaveSolution.pkl')
-        if os.path.exists(wavesolution):
-            spec_calib_dict['wavesolution'] = wavesolution
-        else:
-            logging.info("spec cal item not found: %s" % wavesolution)
-
-        dispersionmap = os.path.join(
-            src, utdate + '_wavesolution_dispersionmap.png')
-        if os.path.exists(dispersionmap):
-            spec_calib_dict['dispersionmap'] = dispersionmap
-        else:
-            logging.info("spec cal item not found: %s" % dispersionmap)
-
-        flatmap = os.path.join(src, utdate + '_flat3d.png')
-        if os.path.exists(flatmap):
-            spec_calib_dict['flatmap'] = flatmap
-        else:
-            logging.info("spec cal item not found: %s" % flatmap)
-
-        wstats = os.path.join(src, utdate + '_wavesolution_stats.txt')
-        if os.path.exists(wstats):
-            with open(wstats) as sf:
-                stat_line = sf.readline()
-                while stat_line:
-                    if 'NSpax' in stat_line:
-                        spec_calib_dict['nspaxels'] = int(stat_line.split()[-1])
-                        logging.info("Wave NSpax = %d" %
-                                     spec_calib_dict['nspaxels'])
-                    elif 'MinRMS' in stat_line:
-                        spec_calib_dict['wave_rms_min'] = \
-                            float(stat_line.split()[-1])
-                    elif 'AvgRMS' in stat_line:
-                        spec_calib_dict['wave_rms_avg'] =\
-                            float(stat_line.split()[-1])
-                    elif 'MaxRMS' in stat_line:
-                        spec_calib_dict['wave_rms_max'] =\
-                            float(stat_line.split()[-1])
-                    stat_line = sf.readline()
-        else:
-            logging.info("spec cal item not found: %s" % wstats)
-
-        dstats = os.path.join(src, utdate + '_dome_stats.txt')
-        if os.path.exists(dstats):
-            with open(dstats) as sf:
-                stat_line = sf.readline()
-                while stat_line:
-                    if 'NSpax' in stat_line:
-                        nspax = int(stat_line.split()[-1])
-                        logging.info("Dome NSpax = %d" % nspax)
-                        if spec_calib_dict['nspaxels'] == 0:
-                            spec_calib_dict['nspaxels'] = nspax
-                    elif 'MinWid' in stat_line:
-                        spec_calib_dict['width_rms_min'] = \
-                            float(stat_line.split()[-1])
-                    elif 'AvgWid' in stat_line:
-                        spec_calib_dict['width_rms_avg'] = \
-                            float(stat_line.split()[-1])
-                    elif 'MaxWid' in stat_line:
-                        spec_calib_dict['width_rms_max'] = \
-                            float(stat_line.split()[-1])
-                    stat_line = sf.readline()
-        else:
-            logging.info("spec cal item not found: %s" % dstats)
-
-    else:
-        logging.warning("Source dir does not exist: %s" % src)
-
-    spec_calib_dict['utdate'] = utdate
-    spec_calib_dict['drpver'] = drp_ver
-
-    sedmdb = db.SedmDb.SedmDB()
-    spec_calib_id, status = sedmdb.add_spec_calib(spec_calib_dict)
-    logging.info(status)
-    return spec_calib_id
-    # END: update_calibration
-
-
-def delete_old_pysedm_files(odir, ut_date):
+def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
     """Remove all the old pysedm output files"""
+    if keep_spec:
+        # Make archive directory
+        archdir = os.path.join(odir, 'pysedm')
+        if not os.path.exists(archdir):
+            os.mkdir(archdir)
+    else:
+        archdir = None
     # Get list of pysedm files to remove
     flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
@@ -317,9 +183,23 @@ def delete_old_pysedm_files(odir, ut_date):
     # Remove them
     if len(flist) > 0:
         for fl in flist:
-            os.remove(fl)
+            # Keep spectra?
+            if keep_spec:
+                if 'spec_' in fl:
+                    shutil.move(fl, archdir)
+                else:
+                    os.remove(fl)
+            else:
+                os.remove(fl)
     else:
         logging.warning("No pysedm files found in %s" % odir)
+    # If we keep the spectra, gzip them
+    if keep_spec:
+        # Now gzip the files in the archive
+        flist = os.listdir(archdir)
+        for fl in flist:
+            if 'gz' not in fl:
+                subprocess.run(["gzip", fl])
     # END: delete_old_pysedm_files
 
 
@@ -404,6 +284,155 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
+def dosci(destdir='./', datestr=None, nodb=False):
+    """Copies new science ifu image files from srcdir to destdir.
+
+    Searches for most recent ifu image in destdir and looks for and
+    copies any ifu images in srcdir that are newer and complete.
+    Then bias subtracts and CR rejects the copied images.  If any are standard
+    star observations, process them as well.
+
+    Args:
+        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        datestr (str): YYYYMMDD date string
+        nodb (bool): if True no update to SEDM db
+
+    Returns:
+        int: Number of ifu images actually copied
+
+    """
+
+    # Record copies and standard star observations
+    ncp = 0
+    copied = []
+    # Get list of source files in destination directory
+    srcfiles = sorted(glob.glob(os.path.join(destdir, 'crr_b_ifu*.fits')))
+    # Loop over source files
+    for f in srcfiles:
+        # get base filename
+        fn = f.split('/')[-1]
+        procfn = 'spec*auto*' + fn.split('.')[0] + '*.fits'
+        proced = glob.glob(os.path.join(destdir, procfn))
+        # Is our source file processed?
+        if len(proced) == 0:
+            # Read FITS header
+            ff = pf.open(f)
+            hdr = ff[0].header
+            ff.close()
+            # Get OBJECT keyword
+            try:
+                obj = hdr['OBJECT'].replace(" [A]", "").replace(" ", "-")
+            except KeyError:
+                logging.warning(
+                    "Could not find OBJECT keyword, setting to Test")
+                obj = 'Test'
+            # Get DOMEST keyword
+            try:
+                dome = hdr['DOMEST']
+            except KeyError:
+                logging.warning(
+                    "Could not find DOMEST keyword, settting to null")
+                dome = ''
+            # skip Cal files
+            if 'Calib:' in obj:
+                continue
+            # skip if dome closed
+            if 'CLOSED' in dome or 'closed' in dome:
+                continue
+            # record action
+            copied.append(fn)
+            ncp += 1
+            # are we a standard star?
+            if 'STD-' in obj:
+                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                                    nodb=nodb, sci=False, hdr=None)
+                if e3d_good:
+                    # Get seeing
+                    seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
+                                              save_fig=True)
+                    # Use auto psf extraction for standard stars
+                    if seeing > 0:
+                        logging.info("seeing measured as %f" % seeing)
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot",
+                               "--centroid", "brightest",
+                               "--seeing", "%.2f" % seeing)
+                    else:
+                        logging.info("seeing not measured for %s" % fn)
+                    cmd = ("extract_star.py", datestr, "--auto", fn,
+                           "--std", "--tag", "robot", "--maxpos")  # ,
+                    # "--centroid", "brightest")
+                    logging.info("Extracting std star spectra for " + fn)
+                    logging.info(" ".join(cmd))
+                    retcode = subprocess.call(cmd)
+                    if retcode != 0:
+                        logging.error("Error extracting std star spectra for "
+                                      + fn)
+                        badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
+                                "_failed.fits"
+                        cmd = ("touch", badfn)
+                        subprocess.call(cmd)
+                    else:
+                        cmd = ("pysedm_report.py", datestr, "--contains",
+                               fn.split('.')[0])
+                        logging.info(" ".join(cmd))
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
+                            logging.error("Error running pysedm_report for " +
+                                          fn.split('.')[0])
+                        # run Verify.py
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                              (datestr, fn.split('.')[0])
+                        logging.info(cmd)
+                        subprocess.call(cmd, shell=True)
+                        # run make report
+                        cmd = ("make", "report")
+                        logging.info(" ".join(cmd))
+                        subprocess.call(cmd)
+                        # check if extraction succeeded
+                        proced = glob.glob(os.path.join(destdir, procfn))[0]
+                        if os.path.exists(proced):
+                            if nodb:
+                                logging.warning("Not updating spec in SEDM db")
+                            else:
+                                # Update SedmDb table spec
+                                spec_id = update_spec(proced)
+                                if spec_id > 0:
+                                    logging.info("update of %s with spec_id %d"
+                                                 % (proced, spec_id))
+                                else:
+                                    logging.warning("failed to update spec %s" %
+                                                    proced)
+                        else:
+                            logging.error("Not found: %s" % proced)
+                        # Did we generate a flux calibration?
+                        flxcal = glob.glob(
+                            os.path.join(destdir,
+                                         "fluxcal_auto_robot_lstep1__%s_*.fits"
+                                         % fn.split('.')[0]))
+                        if flxcal:
+                            # Generate effective area and efficiency plots
+                            cmd = "~/sedmpy/drpifu/Eff.py %s --contains %s" % \
+                                  (datestr, fn.split('.')[0])
+                            logging.info(cmd)
+                            subprocess.call(cmd, shell=True)
+                        else:
+                            logging.info("No flux calibration generated")
+                else:
+                    logging.error("Cannot perform extraction for %s" % fn)
+            else:
+                # Build cube for science observation
+                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                                    nodb=nodb, sci=True, hdr=hdr)
+
+                if e3d_good:
+                    logging.info("e3d science cube generated")
+                else:
+                    logging.error("Cannot perform extraction for %s" % fn)
+    return ncp, copied
+    # END: dosci
+
+
 def cal_loop(redd=None, indir=None, nodb=False,
              arch_kpy=False, arch_pysedm=False):
     """Create calibration files for one night.
@@ -434,8 +463,8 @@ def cal_loop(redd=None, indir=None, nodb=False,
         archive_old_kpy_files(outdir)
     if arch_pysedm:
         archive_old_pysedm_files(outdir, cur_date_str)
-    # else:
-    #    delete_old_pysedm_files(outdir, cur_date_str)
+    else:
+        delete_old_pysedm_files(outdir, cur_date_str, keep_spec=True)
 
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
@@ -510,6 +539,8 @@ def cal_loop(redd=None, indir=None, nodb=False,
                     # Gzip cal images
                     subprocess.run(["gzip", "dome.fits", "Hg.fits", "Cd.fits",
                                     "Xe.fits"])
+                    # Build e3d cubes
+                    dosci(outdir, datestr=cur_date_str, nodb=nodb)
                 else:
                     logging.error("Making of wavesolution failed!")
             else:
