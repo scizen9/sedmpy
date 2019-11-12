@@ -21,6 +21,7 @@ Note:
 import time
 import glob
 import os
+import shutil
 import re
 import subprocess
 import logging
@@ -304,13 +305,115 @@ def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
     # END: update_calibration
 
 
-def cal_loop(redd=None, indir=None, nodb=False):
+def delete_old_pysedm_files(odir, ut_date):
+    """Remove all the old pysedm output files"""
+    # Get list of pysedm files to remove
+    flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
+    flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
+    flist.append(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
+    flist.append(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
+    flist.append(glob.glob(os.path.join(odir, 'pysedm_run.log')))
+    flist.append(glob.glob(os.path.join(odir, 'report.txt')))
+    # Remove them
+    if len(flist) > 0:
+        for fl in flist:
+            os.remove(fl)
+    else:
+        logging.warning("No pysedm files found in %s" % odir)
+    # END: delete_old_pysedm_files
+
+
+def archive_old_pysedm_files(odir, ut_date):
+    """Move all the old pysedm output files to ./pysedm/"""
+    # Make archive directory
+    archdir = os.path.join(odir, 'pysedm')
+    if not os.path.exists(archdir):
+        os.mkdir(archdir)
+    # Get list of pysedm files to move
+    flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
+    flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
+    flist.append(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
+    flist.append(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
+    flist.append(glob.glob(os.path.join(odir, 'pysedm_run.log')))
+    flist.append(glob.glob(os.path.join(odir, 'report.txt')))
+    # Move them into the archive
+    if len(flist) > 0:
+        for fl in flist:
+            shutil.move(fl, archdir)
+    else:
+        logging.warning("No pysedm files found in %s" % odir)
+    # Now gzip the files in the archive
+    flist = os.listdir(archdir)
+    for fl in flist:
+        if 'gz' not in fl:
+            subprocess.run(["gzip", fl])
+    # END: archive_old_pysedm_files
+
+
+def archive_old_kpy_files(odir):
+    """Move all the old kpy output files to ./kpy/"""
+    # Make archive directory
+    archdir = os.path.join(odir, 'kpy')
+    if not os.path.exists(archdir):
+        os.mkdir(archdir)
+    # Get list of kpy files to move
+    flist = glob.glob(os.path.join(odir, '*.npy'))
+    flist.extend(glob.glob(os.path.join(odir, '*SEDM*')))
+    flist.extend(glob.glob(os.path.join(odir, 'allspec_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'bs_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'bgd_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'back_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'cog_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'cube_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'flex_bs_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'image_*')))
+    flist.extend(glob.glob(os.path.join(odir, 's_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'seg_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'var_*')))
+    flist.extend(glob.glob(os.path.join(odir, 'XYs_*')))
+    flist.append(glob.glob(os.path.join(odir, 'cat_Hg.fits.txt')))
+    flist.append(glob.glob(os.path.join(odir, 'default.conv')))
+    flist.append(glob.glob(os.path.join(odir, 'deleteme')))
+    flist.append(glob.glob(os.path.join(odir, 'ds9_dome.fits_segments.reg')))
+    flist.append(glob.glob(os.path.join(odir, 'filtered_Hg.fit*')))
+    flist.append(glob.glob(os.path.join(odir, 'flat-field-values.pdf')))
+    flist.append(glob.glob(os.path.join(odir, 'rough.reg')))
+    flist.append(glob.glob(os.path.join(odir, 'Standard_Correction.pdf')))
+    # Move them into the archive
+    if len(flist) > 0:
+        for fl in flist:
+            shutil.move(fl, archdir)
+    else:
+        logging.warning("No kpy files found in %s" % odir)
+    # Now check spec files
+    flist = glob.glob(os.path.join(odir, 'spec_*'))
+    if len(flist) > 0:
+        nspecmv = 0
+        for fl in flist:
+            if '_crr_b_ifu' not in fl:
+                shutil.move(fl, archdir)
+                nspecmv += 1
+        logging.info("Moved %d kpy spec files into %s" % (nspecmv, archdir))
+    else:
+        logging.warning("No spec files found in %s" % odir)
+    # Now gzip the files in the archive
+    flist = os.listdir(archdir)
+    for fl in flist:
+        if 'gz' not in fl:
+            subprocess.run(["gzip", fl])
+    # END: archive_old_kpy_files
+
+
+def cal_loop(redd=None, indir=None, nodb=False,
+             arch_kpy=False, arch_pysedm=False):
     """Create calibration files for one night.
 
     Args:
         redd (str): reduced directory (something like /scr2/sedm/redux)
         indir (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
+        arch_kpy (bool): True to archive old kpy files into ./kpy/
+        arch_pysedm (bool): True to archive old pysedm files into ./pysedm/
 
     Returns:
         bool: True if cals completed normally, False otherwise
@@ -326,6 +429,13 @@ def cal_loop(redd=None, indir=None, nodb=False):
     os.chdir(outdir)
     # report
     logging.info("Reduced files to: %s" % outdir)
+    # Do we archive first?
+    if arch_kpy:
+        archive_old_kpy_files(outdir)
+    if arch_pysedm:
+        archive_old_pysedm_files(outdir, cur_date_str)
+    # else:
+    #    delete_old_pysedm_files(outdir, cur_date_str)
 
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
@@ -397,7 +507,7 @@ def cal_loop(redd=None, indir=None, nodb=False):
 
                     logging.info(
                         "Calibration stage complete, ready for science!")
-                    # Re-gzip cal images
+                    # Gzip cal images
                     subprocess.run(["gzip", "dome.fits", "Hg.fits", "Cd.fits",
                                     "Xe.fits"])
                 else:
@@ -426,6 +536,10 @@ if __name__ == '__main__':
                         help='Select date to process')
     parser.add_argument('--nodb', action="store_true", default=False,
                         help='Do not update SEDM Db')
+    parser.add_argument('--archive_kpy', action="store_true", default=False,
+                        help='Archive any existing kpy files')
+    parser.add_argument('--archive_pysedm', action="store_true", default=False,
+                        help='Archive any existing pysedm files')
 
     args = parser.parse_args()
 
