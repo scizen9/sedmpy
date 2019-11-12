@@ -1,19 +1,10 @@
 """Conduct automatic reduction of SEDM data in sedmdrp@pharos
 
 Functions
-    * :func:`go`           outer loop waits for new data directory
-    * :func:`obs_loop`     one night observing loop
-    * :func:`cpcal`        copies calibration images into redux directory
-    * :func:`cpprecal`     copies calibration images from previous day directory
-    * :func:`find_recent`  finds the most recent processed calibration file
-    * :func:`cpsci`        copies new science images files into redux directory
-    * :func:`proc_stds`    processes standard star observations
-    * :func:`proc_bias_crrs`  processes biases and CR rejection
-    * :func:`proc_bkg_flex`   processes bkg sub and flex calculation
-    * :func:`docp`            low level copy routine
+    * :func:`cal_loop`     one night calibration loop
     * :func:`cal_proc_ready`  check if all required raw cal images are present
     * :func:`cube_ready`      check if all required cal files are present
-    * :func:`bias_ready`    check if master bias files are present
+    * :func:`update_calibration`    update cal cube in SEDM db
 
 Note:
     This is used as a python script as follows::
@@ -22,11 +13,8 @@ Note:
 
         optional arguments:
           -h, --help           show this help message and exit
-          --rawdir RAWDIR      Input raw directory (/scr2/sedm/raw)
           --reduxdir REDUXDIR  Output reduced directory (/scr2/sedm/redux)
           --date YYYYMMDD      Select date to process (None)
-          --local              Process data locally, no push to marshal or slack
-                               (False)
           --nodb               Do not update SEDM Db (False)
 
 """
@@ -409,6 +397,9 @@ def cal_loop(redd=None, indir=None, nodb=False):
 
                     logging.info(
                         "Calibration stage complete, ready for science!")
+                    # Re-gzip cal images
+                    subprocess.run(["gzip", "dome.fits", "Hg.fits", "Cd.fits",
+                                    "Xe.fits"])
                 else:
                     logging.error("Making of wavesolution failed!")
             else:
