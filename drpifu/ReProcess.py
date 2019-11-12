@@ -176,10 +176,10 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
     # Get list of pysedm files to remove
     flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
-    flist.append(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
-    flist.append(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
-    flist.append(glob.glob(os.path.join(odir, 'pysedm_run.log')))
-    flist.append(glob.glob(os.path.join(odir, 'report.txt')))
+    flist.extend(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
+    flist.extend(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
+    flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
+    flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
     # Remove them
     if len(flist) > 0:
         for fl in flist:
@@ -212,10 +212,10 @@ def archive_old_pysedm_files(odir, ut_date):
     # Get list of pysedm files to move
     flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
-    flist.append(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
-    flist.append(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
-    flist.append(glob.glob(os.path.join(odir, 'pysedm_run.log')))
-    flist.append(glob.glob(os.path.join(odir, 'report.txt')))
+    flist.extend(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
+    flist.extend(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
+    flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
+    flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
     # Move them into the archive
     if len(flist) > 0:
         for fl in flist:
@@ -253,14 +253,14 @@ def archive_old_kpy_files(odir):
     flist.extend(glob.glob(os.path.join(odir, 'seg_*')))
     flist.extend(glob.glob(os.path.join(odir, 'var_*')))
     flist.extend(glob.glob(os.path.join(odir, 'XYs_*')))
-    flist.append(glob.glob(os.path.join(odir, 'cat_Hg.fits.txt')))
-    flist.append(glob.glob(os.path.join(odir, 'default.conv')))
-    flist.append(glob.glob(os.path.join(odir, 'deleteme')))
-    flist.append(glob.glob(os.path.join(odir, 'ds9_dome.fits_segments.reg')))
-    flist.append(glob.glob(os.path.join(odir, 'filtered_Hg.fit*')))
-    flist.append(glob.glob(os.path.join(odir, 'flat-field-values.pdf')))
-    flist.append(glob.glob(os.path.join(odir, 'rough.reg')))
-    flist.append(glob.glob(os.path.join(odir, 'Standard_Correction.pdf')))
+    flist.extend(glob.glob(os.path.join(odir, 'cat_Hg.fits.txt')))
+    flist.extend(glob.glob(os.path.join(odir, 'default.conv')))
+    flist.extend(glob.glob(os.path.join(odir, 'deleteme')))
+    flist.extend(glob.glob(os.path.join(odir, 'ds9_dome.fits_segments.reg')))
+    flist.extend(glob.glob(os.path.join(odir, 'filtered_Hg.fit*')))
+    flist.extend(glob.glob(os.path.join(odir, 'flat-field-values.pdf')))
+    flist.extend(glob.glob(os.path.join(odir, 'rough.reg')))
+    flist.extend(glob.glob(os.path.join(odir, 'Standard_Correction.pdf')))
     # Move them into the archive
     if len(flist) > 0:
         for fl in flist:
