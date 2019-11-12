@@ -219,7 +219,9 @@ def archive_old_pysedm_files(odir, ut_date):
     # Move them into the archive
     if len(flist) > 0:
         for fl in flist:
-            shutil.move(fl, archdir)
+            rute = fl.split('/')[-1]
+            if os.path.exists(os.path.join(archdir, rute)):
+                shutil.move(fl, archdir)
     else:
         logging.warning("No pysedm files found in %s" % odir)
     # Now gzip the files in the archive
@@ -262,7 +264,9 @@ def archive_old_kpy_files(odir):
     # Move them into the archive
     if len(flist) > 0:
         for fl in flist:
-            shutil.move(fl, archdir)
+            rute = fl.split('/')[-1]
+            if not os.path.exists(os.path.join(archdir, rute)):
+                shutil.move(fl, archdir)
     else:
         logging.warning("No kpy files found in %s" % odir)
     # Now check spec files
