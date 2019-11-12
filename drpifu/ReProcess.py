@@ -30,7 +30,7 @@ from astropy.io import fits as pf
 
 from configparser import ConfigParser
 import codecs
-from .AutoReduce import update_spec, make_e3d, update_calibration
+from AutoReduce import update_spec, make_e3d, update_calibration
 
 try:
     import rcimg
@@ -577,4 +577,5 @@ if __name__ == '__main__':
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
-        cal_loop(redd=args.reduxdir, indir=args.date, nodb=args.nodb)
+        cal_loop(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
+                 arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm)
