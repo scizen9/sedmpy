@@ -225,7 +225,7 @@ def archive_old_pysedm_files(odir, ut_date):
         nfilemv = 0
         for fl in flist:
             rute = fl.split('/')[-1]
-            if os.path.exists(os.path.join(archdir, rute)):
+            if not os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
                 nfilemv += 1
         logging.info("Moved %d old pysedm files into %s" % (nfilemv, archdir))
