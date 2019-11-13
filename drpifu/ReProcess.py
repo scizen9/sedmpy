@@ -482,7 +482,8 @@ def cal_loop(redd=None, indir=None, nodb=False,
     else:
         delete_old_pysedm_files(outdir, cur_date_str, keep_spec=True)
 
-    # Check if processed cal files are ready
+    # Check calibration status
+    cal_good = False
     if not cube_ready(outdir, cur_date_str):
         # Process calibrations
         if cal_proc_ready(outdir):
@@ -536,27 +537,26 @@ def cal_loop(redd=None, indir=None, nodb=False,
                             os.path.join(outdir, cur_date_str + '_Flat.fits'))):
                         logging.info("Making of %s_Flat.fits failed!"
                                      % cur_date_str)
-                    procf_time = int(time.time() - start_time)
-                    # Report times
-                    logging.info("Calibration processing took "
-                                 "%d s (grid), %d s (waves),  and %d s (flat)" %
-                                 (procg_time, procw_time, procf_time))
-                    if nodb:
-                        logging.warning("Not updating SEDM db")
                     else:
-                        # Update spec_calib table in sedmdb
-                        spec_calib_id = update_calibration(cur_date_str)
+                        procf_time = int(time.time() - start_time)
+                        # Report times
+                        logging.info("Calibration processing took %d s (grid), "
+                                     "%d s (waves),  and %d s (flat)" %
+                                     (procg_time, procw_time, procf_time))
+                        if nodb:
+                            logging.warning("Not updating SEDM db")
+                        else:
+                            # Update spec_calib table in sedmdb
+                            spec_calib_id = update_calibration(cur_date_str)
+                            logging.info(
+                                "SEDM db accepted spec_calib at id %d"
+                                % spec_calib_id)
+                        cal_good = True
                         logging.info(
-                            "SEDM db accepted spec_calib at id %d"
-                            % spec_calib_id)
-
-                    logging.info(
-                        "Calibration stage complete, ready for science!")
-                    # Gzip cal images
-                    subprocess.run(["gzip", "dome.fits", "Hg.fits", "Cd.fits",
-                                    "Xe.fits"])
-                    # Build e3d cubes
-                    dosci(outdir, datestr=cur_date_str, nodb=nodb)
+                            "Calibration stage complete, ready for science!")
+                        # Gzip cal images
+                        subprocess.run(["gzip", "dome.fits", "Hg.fits",
+                                        "Cd.fits", "Xe.fits"])
                 else:
                     logging.error("Making of wavesolution failed!")
             else:
@@ -566,6 +566,19 @@ def cal_loop(redd=None, indir=None, nodb=False,
             logging.error("These calibrations failed!")
     else:
         logging.info("Calibrations already present in %s" % outdir)
+        cal_good = True
+    # Proceed to build e3d cubes
+    if cal_good:
+        # Gunzip input files
+        logging.info("Gunzipping crr_b_ifu%s*.fits.gz in dir %s"
+                     % (cur_date_str, cur_date_str))
+        subprocess.run(["gunzip", "crr_b_ifu%s*.fits.gz" % cur_date_str])
+        dosci(outdir, datestr=cur_date_str, nodb=nodb)
+        # Re-gzip input files
+        # Gunzip input files
+        logging.info("Gzipping crr_b_ifu%s*.fits in dir %s"
+                     % (cur_date_str, cur_date_str))
+        subprocess.run(["gzip", "crr_b_ifu%s*.fits" % cur_date_str])
 
     return ret
     # END: cal_loop
