@@ -31,7 +31,10 @@ from astropy.io import fits as pf
 
 from configparser import ConfigParser
 import codecs
-from AutoReduce import update_spec, make_e3d, update_calibration
+try:
+    from AutoReduce import update_spec, make_e3d, update_calibration
+except ImportError:
+    from drpifu.AutoReduce import update_spec, make_e3d, update_calibration
 import SEDMr
 
 try:
