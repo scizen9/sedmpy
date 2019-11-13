@@ -182,13 +182,17 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
     # Remove them
     if len(flist) > 0:
+        ndelfile = 0
+        nkeepspec = 0
         for fl in flist:
             # Keep spectra?
             if keep_spec:
                 if 'spec_' in fl:
                     shutil.move(fl, archdir)
+                    nkeepspec += 1
                 else:
                     os.remove(fl)
+                    ndelfile += 1
             else:
                 os.remove(fl)
     else:
@@ -199,7 +203,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
         flist = os.listdir(archdir)
         for fl in flist:
             if 'gz' not in fl:
-                subprocess.run(["gzip", fl])
+                subprocess.run(["gzip", os.path.join(archdir, fl)])
     # END: delete_old_pysedm_files
 
 
@@ -218,17 +222,20 @@ def archive_old_pysedm_files(odir, ut_date):
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
     # Move them into the archive
     if len(flist) > 0:
+        nfilemv = 0
         for fl in flist:
             rute = fl.split('/')[-1]
             if os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
+                nfilemv += 1
+        logging.info("Moved %d old pysedm files into %s" % (nfilemv, archdir))
     else:
         logging.warning("No pysedm files found in %s" % odir)
     # Now gzip the files in the archive
     flist = os.listdir(archdir)
     for fl in flist:
         if 'gz' not in fl:
-            subprocess.run(["gzip", fl])
+            subprocess.run(["gzip", os.path.join(archdir, fl)])
     # END: archive_old_pysedm_files
 
 
@@ -263,10 +270,13 @@ def archive_old_kpy_files(odir):
     flist.extend(glob.glob(os.path.join(odir, 'Standard_Correction.pdf')))
     # Move them into the archive
     if len(flist) > 0:
+        nfilemv = 0
         for fl in flist:
             rute = fl.split('/')[-1]
             if not os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
+                nfilemv += 1
+        logging.info("Moved %d old kpy files into %s" % (nfilemv, archdir))
     else:
         logging.warning("No kpy files found in %s" % odir)
     # Now check spec files
@@ -284,7 +294,7 @@ def archive_old_kpy_files(odir):
     flist = os.listdir(archdir)
     for fl in flist:
         if 'gz' not in fl:
-            subprocess.run(["gzip", fl])
+            subprocess.run(["gzip", os.path.join(archdir, fl)])
     # END: archive_old_kpy_files
 
 
