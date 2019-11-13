@@ -458,6 +458,9 @@ def get_posas(indir):
     flist = glob.glob(os.path.join(indir, 'sp_*.npy'))
     for fl in flist:
         data = np.load(fl, encoding='latin1')[0]
+        object = data['meta']['header']['OBJECT']
+        pos = data['positionA']
+        out_dict[object] = pos
     return out_dict
     # END: get_posas
 
