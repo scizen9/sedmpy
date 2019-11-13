@@ -570,15 +570,17 @@ def cal_loop(redd=None, indir=None, nodb=False,
     # Proceed to build e3d cubes
     if cal_good:
         # Gunzip input files
-        logging.info("Gunzipping crr_b_ifu%s*.fits.gz in dir %s"
-                     % (cur_date_str, cur_date_str))
-        subprocess.run(["gunzip", "crr_b_ifu%s*.fits.gz" % cur_date_str])
+        cmd = ["gunzip",
+               os.path.join(outdir, "crr_b_ifu%s*.fits.gz" % cur_date_str)]
+        logging.info(" ".join(cmd))
+        subprocess.run(cmd)
+        # Process e3d and standards
         dosci(outdir, datestr=cur_date_str, nodb=nodb)
         # Re-gzip input files
-        # Gunzip input files
-        logging.info("Gzipping crr_b_ifu%s*.fits in dir %s"
-                     % (cur_date_str, cur_date_str))
-        subprocess.run(["gzip", "crr_b_ifu%s*.fits" % cur_date_str])
+        cmd = ["gzip",
+               os.path.join(outdir, "crr_b_ifu%s*.fits" % cur_date_str)]
+        logging.info(" ".join(cmd))
+        subprocess.run(cmd)
 
     return ret
     # END: cal_loop
