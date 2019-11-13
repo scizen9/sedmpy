@@ -1,7 +1,7 @@
 """Conduct automatic reduction of SEDM data in sedmdrp@pharos
 
 Functions
-    * :func:`cal_loop`     one night calibration loop
+    * :func:`reproc`     one night calibration loop
     * :func:`cal_proc_ready`  check if all required raw cal images are present
     * :func:`cube_ready`      check if all required cal files are present
     * :func:`update_calibration`    update cal cube in SEDM db
@@ -26,11 +26,13 @@ import re
 import subprocess
 import logging
 import argparse
+import numpy as np
 from astropy.io import fits as pf
 
 from configparser import ConfigParser
 import codecs
 from AutoReduce import update_spec, make_e3d, update_calibration
+import SEDMr
 
 try:
     import rcimg
@@ -449,9 +451,20 @@ def dosci(destdir='./', datestr=None, nodb=False):
     # END: dosci
 
 
-def cal_loop(redd=None, indir=None, nodb=False,
-             arch_kpy=False, arch_pysedm=False):
-    """Create calibration files for one night.
+def get_posas(indir):
+    """Create a dictionary of A positions from kpy sp_*.npy files"""
+    out_dict = {}
+    # Get input sp_*.npy files
+    flist = glob.glob(os.path.join(indir, 'sp_*.npy'))
+    for fl in flist:
+        data = np.load(fl, encoding='latin1')[0]
+    return out_dict
+    # END: get_posas
+
+
+def reproc(redd=None, indir=None, nodb=False,
+           arch_kpy=False, arch_pysedm=False):
+    """Create calibration files and reprocess data for one night.
 
     Args:
         redd (str): reduced directory (something like /scr2/sedm/redux)
@@ -570,18 +583,18 @@ def cal_loop(redd=None, indir=None, nodb=False,
     # Proceed to build e3d cubes
     if cal_good:
         # Gunzip input files
-        cmd = ["gunzip", "crr_b_ifu%s\*.fits.gz" % cur_date_str]
-        logging.info(" ".join(cmd))
-        subprocess.run(cmd)
+        cmd = ["gunzip crr_b_ifu%s*.fits.gz" % cur_date_str]
+        logging.info(cmd)
+        subprocess.call(cmd, shell=True)
         # Process e3d and standards
         dosci(outdir, datestr=cur_date_str, nodb=nodb)
         # Re-gzip input files
-        cmd = ["gzip", "crr_b_ifu%s\*.fits" % cur_date_str]
-        logging.info(" ".join(cmd))
-        subprocess.run(cmd)
+        cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
+        logging.info(cmd)
+        subprocess.call(cmd, shell=True)
 
     return ret
-    # END: cal_loop
+    # END: reproc
 
 
 if __name__ == '__main__':
@@ -606,5 +619,5 @@ if __name__ == '__main__':
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
-        cal_loop(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
-                 arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm)
+        reproc(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
+               arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm)
