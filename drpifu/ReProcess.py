@@ -331,6 +331,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
     for f in srcfiles:
         # get base filename
         fn = f.split('/')[-1]
+        rute = fn.split('.fit')[0]
         procfn = 'spec*auto*' + fn.split('.')[0] + '*.fits'
         proced = glob.glob(os.path.join(destdir, procfn))
         # Is our source file processed?
@@ -341,12 +342,10 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
             ff.close()
             # Get OBJECT keyword
             try:
-                objkey = hdr['OBJECT']
-                obj = objkey.replace(" [A]", "").replace(" ", "-")
+                obj = hdr['OBJECT'].replace(" [A]", "").replace(" ", "-")
             except KeyError:
                 logging.warning(
                     "Could not find OBJECT keyword, setting to Test")
-                objkey = 'Test'
                 obj = 'Test'
             # Get DOMEST keyword
             try:
@@ -449,12 +448,12 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                 if e3d_good:
                     logging.info("e3d science cube generated")
                     # Do we have a position
-                    if objkey not in posdic:
-                        logging.info("No position for %s" % objkey)
+                    if rute not in posdic:
+                        logging.info("No position for %s" % rute)
                         continue
                     # Position
-                    xpos = posdic[objkey][0]
-                    ypos = posdic[objkey][1]
+                    xpos = posdic[rute][0]
+                    ypos = posdic[rute][1]
                     # Get seeing
                     seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
                                               save_fig=True)
@@ -492,11 +491,10 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.error("Error running report for " +
-                                          fn.split('.')[0])
+                            logging.error("Error running report for " + rute)
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
-                              (datestr, fn.split('.')[0])
+                              (datestr, rute)
                         subprocess.call(cmd, shell=True)
                         # update database
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
@@ -516,22 +514,70 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
     # END: dosci
 
 
-def get_extract_pos(indir):
-    """Create a dictionary of A positions from kpy sp_*.npy files"""
+def get_extract_pos(indir, indate):
+    """Create a dictionary of A positions from pysedm spec_*.fits files"""
     out_dict = {}
     ndic = 0
-    # Get input spec_ files
-    flist = glob.glob(os.path.join(indir, 'spec_*.fits'))
+    # Get input crr_b_ifu files
+    flist = glob.glob(os.path.join(indir, 'crr_b_ifu%s_*.fit*' % indate))
+    # loop over input image files
     for fl in flist:
+        # Get fits header
         ff = pf.open(fl)
-        objname = ff[0].header['OBJECT']
+        header = ff[0].header
+        ff.close()
+        # Get OBJECT keyword
         try:
-            xpos = ff[0].header['XPOS']
-            ypos = ff[0].header['YPOS']
-            out_dict[objname] = (xpos, ypos)
-            ndic += 1
+            objname = header['OBJECT']
         except KeyError:
+            objname = 'Test'
+        # Skip cal files
+        if 'Calib' in objname:
             continue
+        # Get spec files
+        rute = fl.split('/')[-1].split('.fit')[0]
+        specfs = glob.glob(os.path.join(indir, 'spec_*_%s_*.fits' % rute))
+        # Find good positions
+        redo_xpos = None
+        redo_ypos = None
+        xpos = None
+        ypos = None
+        nadd = 0
+        for sf in specfs:
+            # Skip unwanted spectra
+            if '_aperture_' in sf:
+                continue
+            if '_ea' in sf:
+                continue
+            # Read header
+            ff = pf.open(sf)
+            header = ff[0].header
+            ff.close()
+            if '_redo' in sf:
+                try:
+                    redo_xpos = header['XPOS']
+                    redo_ypos = header['YPOS']
+                except KeyError:
+                    continue
+            else:
+                try:
+                    xpos = header['XPOS']
+                    ypos = header['YPOS']
+                except KeyError:
+                    continue
+        # END for sf in specfs:
+        # Check positions and add to dictionary
+        if redo_xpos is not None and redo_ypos is not None:
+            out_dict[rute] = (redo_xpos, redo_ypos)
+            ndic += 1
+            nadd += 1
+        elif xpos is not None and ypos is not None:
+            out_dict[rute] = (xpos, ypos)
+            ndic += 1
+            nadd += 1
+        if nadd <= 0:
+            logging.warning("No position for %s" % rute)
+    # END for fl in flist:
     return out_dict, ndic
     # END: get_extract_pos
 
@@ -562,7 +608,7 @@ def reproc(redd=None, indir=None, nodb=False,
     # report
     logging.info("Reduced files to: %s" % outdir)
     # Get kpy position dictionary
-    pos_dic, ndic = get_extract_pos(outdir)
+    pos_dic, ndic = get_extract_pos(outdir, cur_date_str)
     if ndic <= 0:
         logging.warning("No pysedm positions found")
     # Do we archive first?
