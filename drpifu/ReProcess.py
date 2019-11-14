@@ -305,7 +305,7 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
-def dosci(destdir='./', datestr=None, nodb=False):
+def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -342,10 +342,12 @@ def dosci(destdir='./', datestr=None, nodb=False):
             ff.close()
             # Get OBJECT keyword
             try:
-                obj = hdr['OBJECT'].replace(" [A]", "").replace(" ", "-")
+                objkey = hdr['OBJECT']
+                obj = objkey.replace(" [A]", "").replace(" ", "-")
             except KeyError:
                 logging.warning(
                     "Could not find OBJECT keyword, setting to Test")
+                objkey = 'Test'
                 obj = 'Test'
             # Get DOMEST keyword
             try:
@@ -445,9 +447,70 @@ def dosci(destdir='./', datestr=None, nodb=False):
                 # Build cube for science observation
                 e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=True, hdr=hdr)
-
                 if e3d_good:
                     logging.info("e3d science cube generated")
+                    # Do we have a position
+                    if '[B]' in objkey or objkey not in posdic:
+                        logging.info("No position for %s" % objkey)
+                        continue
+                    # Position
+                    xpos = posdic[objkey][0]
+                    ypos = posdic[objkey][1]
+                    # Get seeing
+                    seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
+                                              save_fig=True)
+                    # Use forced psf for science targets
+                    if seeing > 0:
+                        logging.info("seeing measured as %f" % seeing)
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot",
+                               "--centroid", "%.2f" % xpos, "%.2f" % ypos,
+                               "--seeing", "%.2f" % seeing)
+                    else:
+                        logging.info("seeing not measured for %s" % fn)
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot",
+                               "--centroid", "%.2f" % xpos, "%.2f" % ypos)
+                    logging.info("Extracting object spectra for " + fn)
+                    logging.info(" ".join(cmd))
+                    retcode = subprocess.call(cmd)
+                    if retcode != 0:
+                        logging.error("Error extracting object spectrum for "
+                                      + fn)
+                        badfn = "spec_auto_notfluxcal_" + fn.split('.')[0] + \
+                                "_failed.fits"
+                        cmd = ("touch", badfn)
+                        subprocess.call(cmd)
+                    else:
+                        logging.info("Running SNID for " + fn)
+                        cmd = ("make", "classify")
+                        logging.info(" ".join(cmd))
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
+                            logging.error("Error running SNID")
+                        cmd = ("pysedm_report.py", datestr, "--contains",
+                               fn.split('.')[0])
+                        logging.info(" ".join(cmd))
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
+                            logging.error("Error running report for " +
+                                          fn.split('.')[0])
+                        # run Verify.py
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                              (datestr, fn.split('.')[0])
+                        subprocess.call(cmd, shell=True)
+                        # update database
+                        proced = glob.glob(os.path.join(destdir, procfn))[0]
+                        if os.path.exists(proced):
+                            if nodb:
+                                logging.warning("No update of spec in SEDM db")
+                            else:
+                                # Update SedmDb table spec
+                                spec_id = update_spec(proced)
+                                logging.info("update of %s with spec_id %d" %
+                                             (proced, spec_id))
+                        else:
+                            logging.error("Not found: %s" % proced)
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
     return ncp, copied
@@ -457,6 +520,7 @@ def dosci(destdir='./', datestr=None, nodb=False):
 def get_posas(indir):
     """Create a dictionary of A positions from kpy sp_*.npy files"""
     out_dict = {}
+    ndic = 0
     # Get input sp_*.npy files
     flist = glob.glob(os.path.join(indir, 'sp_*.npy'))
     for fl in flist:
@@ -465,9 +529,10 @@ def get_posas(indir):
         try:
             pos = data['positionA']
             out_dict[objname] = pos
+            ndic += 1
         except KeyError:
             continue
-    return out_dict
+    return out_dict, ndic
     # END: get_posas
 
 
@@ -496,6 +561,10 @@ def reproc(redd=None, indir=None, nodb=False,
     os.chdir(outdir)
     # report
     logging.info("Reduced files to: %s" % outdir)
+    # Get kpy position dictionary
+    pos_dic, ndic = get_posas(outdir)
+    if ndic <= 0:
+        logging.warning("No kpy positions found")
     # Do we archive first?
     if arch_kpy:
         archive_old_kpy_files(outdir)
@@ -596,7 +665,7 @@ def reproc(redd=None, indir=None, nodb=False,
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
         # Process e3d and standards
-        dosci(outdir, datestr=cur_date_str, nodb=nodb)
+        dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic)
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
         logging.info(cmd)
