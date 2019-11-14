@@ -35,7 +35,6 @@ try:
     from AutoReduce import update_spec, make_e3d, update_calibration
 except ImportError:
     from drpifu.AutoReduce import update_spec, make_e3d, update_calibration
-import SEDMr
 
 try:
     import rcimg
@@ -450,7 +449,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                 if e3d_good:
                     logging.info("e3d science cube generated")
                     # Do we have a position
-                    if '[B]' in objkey or objkey not in posdic:
+                    if objkey not in posdic:
                         logging.info("No position for %s" % objkey)
                         continue
                     # Position
@@ -517,23 +516,24 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
     # END: dosci
 
 
-def get_posas(indir):
+def get_extract_pos(indir):
     """Create a dictionary of A positions from kpy sp_*.npy files"""
     out_dict = {}
     ndic = 0
-    # Get input sp_*.npy files
-    flist = glob.glob(os.path.join(indir, 'sp_*.npy'))
+    # Get input spec_ files
+    flist = glob.glob(os.path.join(indir, 'spec_*.fits'))
     for fl in flist:
-        data = np.load(fl, encoding='latin1')[0]
-        objname = data['meta']['header']['OBJECT']
+        ff = pf.open(fl)
+        objname = ff[0].header['OBJECT']
         try:
-            pos = data['positionA']
-            out_dict[objname] = pos
+            xpos = ff[0].header['XPOS']
+            ypos = ff[0].header['YPOS']
+            out_dict[objname] = (xpos, ypos)
             ndic += 1
         except KeyError:
             continue
     return out_dict, ndic
-    # END: get_posas
+    # END: get_extract_pos
 
 
 def reproc(redd=None, indir=None, nodb=False,
@@ -562,9 +562,9 @@ def reproc(redd=None, indir=None, nodb=False,
     # report
     logging.info("Reduced files to: %s" % outdir)
     # Get kpy position dictionary
-    pos_dic, ndic = get_posas(outdir)
+    pos_dic, ndic = get_extract_pos(outdir)
     if ndic <= 0:
-        logging.warning("No kpy positions found")
+        logging.warning("No pysedm positions found")
     # Do we archive first?
     if arch_kpy:
         archive_old_kpy_files(outdir)
