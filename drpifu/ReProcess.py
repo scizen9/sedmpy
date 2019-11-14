@@ -36,6 +36,11 @@ except ImportError:
     from drpifu.AutoReduce import update_spec, make_e3d, update_calibration
 
 try:
+    from HdrFix import sedm_fix_header
+except ImportError:
+    from drpifu.HdrFix import sedm_fix_header
+
+try:
     import rcimg
 except ImportError:
     import drprc.rcimg as rcimg
@@ -155,14 +160,19 @@ def cal_proc_ready(caldir='./'):
     xef = glob.glob(os.path.join(caldir, 'Xe.fits.gz'))
     if len(xef) == 1:
         subprocess.run(["gunzip", xef[0]])
-
+    # Test
     dof = glob.glob(os.path.join(caldir, 'dome.fits'))
     hgf = glob.glob(os.path.join(caldir, 'Hg.fits'))
     cdf = glob.glob(os.path.join(caldir, 'Cd.fits'))
     xef = glob.glob(os.path.join(caldir, 'Xe.fits'))
     if len(dof) == 1 and len(hgf) == 1 and len(cdf) == 1 and len(xef) == 1:
         ret = True
-
+    if ret:
+        # Fix headers
+        sedm_fix_header('dome.fits')
+        sedm_fix_header('Hg.fits')
+        sedm_fix_header('Cd.fits')
+        sedm_fix_header('Xe.fits')
     return ret
     # END: cal_proc_ready
 
@@ -190,7 +200,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
         for fl in flist:
             # Keep spectra?
             if keep_spec:
-                if 'spec_' in fl:
+                if 'spec_' in fl and 'snid' not in fl:
                     shutil.move(fl, archdir)
                     nkeepspec += 1
                 else:
@@ -345,7 +355,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
         # Is our source file processed?
         if len(proced) == 0:
             # Read FITS header
-            ff = pf.open(f)
+            ff = pf.open(fl)
             hdr = ff[0].header
             ff.close()
             # Get OBJECT keyword
@@ -371,6 +381,8 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
             # record action
             copied.append(fn)
             ncp += 1
+            # Fix header
+            sedm_fix_header(fl)
             # are we a standard star?
             if 'STD-' in obj:
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
@@ -542,6 +554,9 @@ def get_extract_pos(indir, indate):
         # Skip cal files
         if 'Calib' in objname:
             continue
+        # Gunzip non Calib files
+        if 'gz' in fl:
+            subprocess.call("gunzip %s" % fl, shell=True)
         # Get spec files
         rute = fl.split('/')[-1].split('.fit')[0]
         specfs = glob.glob(os.path.join(indir, 'spec_*_%s_*.fits' % rute))
@@ -715,11 +730,7 @@ def reproc(redd=None, indir=None, nodb=False,
         cal_good = True
     # Proceed to build e3d cubes
     if cal_good:
-        # Gunzip input files
-        cmd = ["gunzip crr_b_ifu%s*.fits.gz" % cur_date_str]
-        logging.info(cmd)
-        subprocess.call(cmd, shell=True)
-        # Process e3d and standards
+        # Process observations
         dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic)
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
