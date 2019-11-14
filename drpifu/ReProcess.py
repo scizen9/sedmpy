@@ -468,9 +468,9 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                                "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                        cmd = ("extractstar.py", datestr, "--auto", fn,
-                               "--autobins", "6", "--tag", "robot",
-                               "--centroid", "%.2f" % xpos, "%.2f" % ypos)
+                    cmd = ("extract_star.py", datestr, "--auto", fn,
+                           "--autobins", "6", "--tag", "robot",
+                           "--centroid", "%.2f" % xpos, "%.2f" % ypos)
                     logging.info("Extracting object spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
