@@ -237,9 +237,9 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
                 # Are we complete?
                 if os.stat(cal).st_size >= fsize:
                     # Read FITS header
-                    f = pf.open(cal)
-                    hdr = f[0].header
-                    f.close()
+                    ff = pf.open(cal)
+                    hdr = ff[0].header
+                    ff.close()
                     # Get OBJECT keyword
                     try:
                         obj = hdr['OBJECT']
@@ -324,9 +324,9 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False, nodb=False):
     # Was a science object copied
     nobj = 0
     # Read FITS header
-    f = pf.open(src)
-    hdr = f[0].header
-    f.close()
+    ff = pf.open(src)
+    hdr = ff[0].header
+    ff.close()
     # Get OBJECT and DOMEST keywords
     try:
         obj = hdr['OBJECT']
@@ -671,11 +671,11 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None, nodb=False):
     # Get list of source files
     srcfiles = sorted(glob.glob(os.path.join(srcdir, 'ifu*.fits')))
     # Loop over source files
-    for f in srcfiles:
+    for fl in srcfiles:
         # get base filename
-        fn = f.split('/')[-1]
+        fn = fl.split('/')[-1]
         # Is our source file complete?
-        if os.stat(f).st_size >= fsize:
+        if os.stat(fl).st_size >= fsize:
             # has it been previously copied?
             prev = [s for s in dflist if fn in s]
             # No? then copy the file
@@ -732,15 +732,15 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
     # Get list of source files in destination directory
     srcfiles = sorted(glob.glob(os.path.join(destdir, 'crr_b_ifu*.fits')))
     # Loop over source files
-    for f in srcfiles:
+    for fl in srcfiles:
         # get base filename
-        fn = f.split('/')[-1]
+        fn = fl.split('/')[-1]
         procfn = 'spec*auto*' + fn.split('.')[0] + '*.fits'
         proced = glob.glob(os.path.join(destdir, procfn))
         # Is our source file processed?
         if len(proced) == 0:
             # Read FITS header
-            ff = pf.open(f)
+            ff = pf.open(fl)
             hdr = ff[0].header
             ff.close()
             # Get OBJECT keyword
@@ -764,13 +764,13 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
             if 'CLOSED' in dome or 'closed' in dome:
                 continue
             # make finder
-            make_finder(f)
+            make_finder(fl)
             # record action
             copied.append(fn)
             ncp += 1
             # are we a standard star?
             if 'STD-' in obj:
-                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=False, hdr=None)
                 if e3d_good:
                     # Get seeing
@@ -852,7 +852,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                     logging.error("Cannot perform extraction for %s" % fn)
             else:
                 # Build cube for science observation
-                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=True, hdr=hdr)
 
                 if e3d_good:
@@ -993,7 +993,7 @@ def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
     # END: make_e3d
 
 
-def update_spec(input_specfile, update=False):
+def update_spec(input_specfile, update_db=False):
     """ Update the SEDM database on pharos by adding a new spec entry"""
 
     header_dict = {
@@ -1037,8 +1037,8 @@ def update_spec(input_specfile, update=False):
     ff = pf.open(input_specfile)
 
     # Get object name
-    object = ff[0].header['OBJECT'].split()[0]
-    class_dict['class_source'] = object
+    objnam = ff[0].header['OBJECT'].split()[0]
+    class_dict['class_source'] = objnam
 
     # Get header keyword values
     for key in header_dict.keys():
@@ -1086,16 +1086,16 @@ def update_spec(input_specfile, update=False):
     spec_dict['asciifile'] = input_specfile.split('.fit')[0] + '.txt'
 
     # Get marshal spec id
-    if 'STD' not in object and spec_dict['quality'] <= 2:
+    if 'STD' not in objnam and spec_dict['quality'] <= 2:
         srcid = None
         specid = None
-        srcid, specid = mc.get_missing_info(object, utdate, srcid, specid)
+        srcid, specid = mc.get_missing_info(objnam, utdate, srcid, specid)
         if srcid is None:
-            logging.info("Not an object on the marshal: %s" % object)
+            logging.info("Not an object on the marshal: %s" % objnam)
         else:
             if specid is None:
                 logging.info("No spectrum found on the marshal: %s, %s"
-                             % (utdate, object))
+                             % (utdate, objnam))
             else:
                 spec_dict['marshal_spec_id'] = specid
 
@@ -1108,7 +1108,7 @@ def update_spec(input_specfile, update=False):
                                    {'fitsfile': '~'})
     if spec_id:
         logging.info("Spectrum already in db: %s" % input_specfile)
-        if update:
+        if update_db:
             logging.info("Updating from %s" % input_specfile)
             spec_dict['id'] = spec_id[0][0]
         else:
@@ -1141,7 +1141,7 @@ def update_spec(input_specfile, update=False):
         spec_dict['spec_calib_id'] = spec_calib_id[0][0]
 
         # Add into database
-        spec_id, status = sedmdb.add_spec(spec_dict, update=update)
+        spec_id, status = sedmdb.add_spec(spec_dict, update=update_db)
         # update classification
         class_dict['spec_id'] = spec_id
         logging.info(status)
@@ -1411,14 +1411,14 @@ def find_recent_fluxcal(redd, fname, destdir):
                 if os.path.islink(s):
                     continue
                 # Read FITS header
-                f = pf.open(s)
-                hdr = f[0].header
-                f.close()
+                ff = pf.open(s)
+                hdr = ff[0].header
+                ff.close()
                 # Skip if not Telluric corrected
                 if 'TELLFLTR' not in hdr:
                     continue
+                newfile = os.path.join(destdir, s.split('/')[-1])
                 try:
-                    newfile = os.path.join(destdir, s.split('/')[-1])
                     os.symlink(s, newfile)
                 except OSError:
                     logging.warning("File already exists: %s" % newfile)
@@ -1478,9 +1478,9 @@ def cpprecal(dirlist, destdir='./', fsize=8400960, nodb=False):
         for src in flist:
             if os.stat(src).st_size >= fsize:
                 # Read FITS header
-                f = pf.open(src)
-                hdr = f[0].header
-                f.close()
+                ff = pf.open(src)
+                hdr = ff[0].header
+                ff.close()
                 # Get OBJECT keyword
                 obj = hdr['OBJECT']
                 # Filter Calibs and avoid test images
@@ -1573,9 +1573,9 @@ def cpcal(srcdir, destdir='./', fsize=8400960, nodb=False):
         # Copy only if source complete or larger than local file
         if src_size >= fsize and src_size > loc_size:
             # Read FITS header
-            f = pf.open(src)
-            hdr = f[0].header
-            f.close()
+            ff = pf.open(src)
+            hdr = ff[0].header
+            ff.close()
             # Get OBJECT keyword
             try:
                 obj = hdr['OBJECT']
@@ -1727,13 +1727,14 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 now = ephem.now()
                 if now < sunset + ephem.hour:
                     logging.info("UT  = %d%02d%02d %02d_%02d_%02.0f < sunset "
-                                 "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, so keep "
-                                 "waiting" % (now.tuple()[0], now.tuple()[1],
-                                              now.tuple()[2], now.tuple()[3],
-                                              now.tuple()[4], now.tuple()[5],
-                                        sunset.tuple()[0], sunset.tuple()[1],
-                                        sunset.tuple()[2], sunset.tuple()[3],
-                                        sunset.tuple()[4], sunset.tuple()[5]))
+                                 "(%d%02d%02d %02d_%02d_%02.0f)"
+                                 " + 1hr, so keep waiting" %
+                                 (now.tuple()[0], now.tuple()[1],
+                                  now.tuple()[2], now.tuple()[3],
+                                  now.tuple()[4], now.tuple()[5],
+                                  sunset.tuple()[0], sunset.tuple()[1],
+                                  sunset.tuple()[2], sunset.tuple()[3],
+                                  sunset.tuple()[4], sunset.tuple()[5]))
                 else:
                     logging.info("UT = %d%02d%02d %02d_%02d_%02.0f >= sunset "
                                  "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, time "

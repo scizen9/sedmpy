@@ -26,7 +26,6 @@ import re
 import subprocess
 import logging
 import argparse
-import numpy as np
 from astropy.io import fits as pf
 
 from configparser import ConfigParser
@@ -324,6 +323,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
         destdir (str): destination directory (typically in /scr2/sedm/redux)
         datestr (str): YYYYMMDD date string
         nodb (bool): if True no update to SEDM db
+        posdic (dict): position dictionary from get_extract_pos function
 
     Returns:
         int: Number of ifu images actually copied
@@ -336,9 +336,9 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
     # Get list of source files in destination directory
     srcfiles = sorted(glob.glob(os.path.join(destdir, 'crr_b_ifu*.fits')))
     # Loop over source files
-    for f in srcfiles:
+    for fl in srcfiles:
         # get base filename
-        fn = f.split('/')[-1]
+        fn = fl.split('/')[-1]
         rute = fn.split('.fit')[0]
         procfn = 'spec*auto*' + fn.split('.')[0] + '*.fits'
         proced = glob.glob(os.path.join(destdir, procfn))
@@ -373,7 +373,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
             ncp += 1
             # are we a standard star?
             if 'STD-' in obj:
-                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=False, hdr=None)
                 if e3d_good:
                     # Get seeing
@@ -451,7 +451,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                     logging.error("Cannot perform extraction for %s" % fn)
             else:
                 # Build cube for science observation
-                e3d_good = make_e3d(fnam=f, destdir=destdir, datestr=datestr,
+                e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=True, hdr=hdr)
                 if e3d_good:
                     logging.info("e3d science cube generated")

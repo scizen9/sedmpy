@@ -1,13 +1,88 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
+import glob
+import argparse
+import logging
+import astropy.io.fits as pf
+
+
+def sedm_fix_header(fname):
+    """Make sure required keywords are present and correct"""
+    ff = pf.open(fname, 'update')
+    # image type
+    if 'OBJECT' in ff[0].header:
+        obj = ff[0].header['OBJECT']
+        if 'STD-' in obj:
+            ff[0].header['IMGTYPE'] = 'Standard'
+        elif 'Calib' in obj:
+            if 'dome' in obj:
+                ff[0].header['IMGTYPE'] = 'dome'
+            elif 'bias' in obj:
+                ff[0].header['IMGTYPE'] = 'bias'
+            else:
+                ff[0].header['IMGTYPE'] = 'lamp'
+        else:
+            ff[0].header['IMGTYPE'] = 'Science'
+    # RA rate
+    if 'RA_RATE' not in ff[0].header:
+        if 'RARATE' in ff[0].header:
+            ra_rate = float(ff[0].header['RARATE'])
+            ff[0].header['RA_RATE'] = ra_rate
+        else:
+            logging.warning("No RARATE keyword")
+            ff[0].header['RA_RATE'] = 0.
+    # DEC rate
+    if 'DEC_RATE' not in ff[0].header:
+        if 'DECRATE' in ff[0].header:
+            dec_rate = float(ff[0].header['DECRATE'])
+            ff[0].header['DEC_RATE'] = dec_rate
+        else:
+            logging.warning("No DECRATE keyword")
+            ff[0].header['DEC_RATE'] = 0.
+    # Humidity
+    if 'IN_HUM' not in ff[0].header:
+        if 'Inside_Rel_Hum' in ff[0].header:
+            rel_hum = ff[0].header['Inside_Rel_Hum']
+            ff[0].header['IN_HUM'] = rel_hum
+        else:
+            ff[0].header['IN_HUM'] = -1.
+            logging.warning("No relative humidity")
+    # Temperature
+    if 'IN_AIR' not in ff[0].header:
+        if 'Inside_Air_Temp' in ff[0].header:
+            in_temp = ff[0].header['Inside_Air_Temp']
+            ff[0].header['IN_AIR'] = in_temp
+        else:
+            ff[0].header['IN_AIR'] = -1.
+            logging.warning("No inside temperature")
+    # Parallactic Angle
+    if 'TEL_PA' not in ff[0].header:
+        if 'PRLLTC' in ff[0].header:
+            tel_pa = ff[0].header['PRLLTC']
+            ff[0].header['TEL_PA'] = tel_pa
+        else:
+            logging.warning("No telescope PA")
+            ff[0].header['TEL_PA'] = -1.
+    # MJD Obs
+    if 'MJD_OBS' not in ff[0].header:
+        if 'JD' in ff[0].header:
+            mjd = ff[0].header['JD'] - 2400000.5
+            ff[0].header['MJD_OBS'] = mjd
+        else:
+            logging.warning("No julian date")
+            ff[0].header['MJD_OBS'] = 0.
+    # Equinox
+    if type(ff[0].header['EQUINOX']) == str:
+        ff[0].header['EQUINOX'] = 2000
+    # Dome status
+    if 'DOMEST' not in ff[0].header:
+        ff[0].header['DOMEST'] = 'Open'
+    # Close
+    ff.close()
+
 
 if __name__ == "__main__":
-
-    import os
-    import glob
-    import argparse
-    import logging
-    import astropy.io.fits as pf
 
     logging.basicConfig(
         format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -35,70 +110,6 @@ if __name__ == "__main__":
         # get a list of files
         flist = glob.glob(os.path.join(reddir, dd, fspec))
         # loop over files
-        for fl in flist:
-            logging.info(fl)
-            fname = fl.split('/')[-1]
-            ff = pf.open(fl, 'update')
-            # set NAME keyword if needed
-            if 'dome' in fname:
-                ff[0].header['NAME'] = 'Calib: dome lamp'
-            if 'Cd' in fname:
-                ff[0].header['NAME'] = 'Calib: Cd lamp'
-            if 'Hg' in fname:
-                ff[0].header['NAME'] = 'Calib: Hg lamp'
-            if 'Xe' in fname:
-                ff[0].header['NAME'] = 'Calib: Xe lamp'
-            # image type
-            if 'OBJECT' in ff[0].header:
-                obj = ff[0].header['OBJECT']
-                if 'STD-' in obj:
-                    ff[0].header['IMGTYPE'] = 'Standard'
-                elif 'Calib' in obj:
-                    if 'dome' in obj:
-                        ff[0].header['IMGTYPE'] = 'dome'
-                    elif 'bias' in obj:
-                        ff[0].header['IMGTYPE'] = 'bias'
-                    else:
-                        ff[0].header['IMGTYPE'] = 'lamp'
-                else:
-                    ff[0].header['IMGTYPE'] = 'Science'
-            # RA rate
-            if 'RARATE' in ff[0].header:
-                ra_rate = float(ff[0].header['RARATE'])
-                ff[0].header['RA_RATE'] = ra_rate
-            else:
-                logging.warning("No RARATE keyword")
-                ff[0].header['RA_RATE'] = 0.
-            # DEC rate
-            if 'DECRATE' in ff[0].header:
-                dec_rate = float(ff[0].header['DECRATE'])
-                ff[0].header['DEC_RATE'] = dec_rate
-            else:
-                logging.warning("No DECRATE keyword")
-                ff[0].header['DEC_RATE'] = 0.
-            # Humidity
-            if 'Inside_Rel_Hum' in ff[0].header:
-                rel_hum = ff[0].header['Inside_Rel_Hum']
-                ff[0].header['IN_HUM'] = rel_hum
-            else:
-                ff[0].header['IN_HUM'] = -1.
-                logging.warning("No relative humidity")
-            # Temperature
-            if 'Inside_Air_Temp' in ff[0].header:
-                in_temp = ff[0].header['Inside_Air_Temp']
-                ff[0].header['IN_AIR'] = in_temp
-            else:
-                ff[0].header['IN_AIR'] = -1.
-                logging.warning("No inside temperature")
-            # Parallactic Angle
-            if 'PRLLTC' in ff[0].header:
-                tel_pa = ff[0].header['PRLLTC']
-                ff[0].header['TEL_PA'] = tel_pa
-            else:
-                logging.warning("No telescope PA")
-                ff[0].header['TEL_PA'] = -1.
-            # Equinox
-            ff[0].header['EQUINOX'] = 2000
-            ff[0].header['DOMEST'] = 'Open'
-            # Close
-            ff.close()
+        for file_name in flist:
+            logging.info(file_name)
+            sedm_fix_header(file_name)
