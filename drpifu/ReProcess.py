@@ -177,6 +177,8 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
             os.mkdir(archdir)
     else:
         archdir = None
+    ndelfile = 0
+    nkeepspec = 0
     # Get list of pysedm files to remove
     flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
@@ -184,10 +186,8 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
     flist.extend(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
     flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
-    # Remove them
+    # Remove or move them
     if len(flist) > 0:
-        ndelfile = 0
-        nkeepspec = 0
         for fl in flist:
             # Keep spectra?
             if keep_spec:
@@ -199,15 +199,22 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
                     ndelfile += 1
             else:
                 os.remove(fl)
+                ndelfile += 1
+        # If we keep the spectra, gzip them
+        if keep_spec:
+            # Now gzip the files in the archive
+            flist = os.listdir(archdir)
+            for fl in flist:
+                if 'gz' not in fl:
+                    subprocess.run(["gzip", os.path.join(archdir, fl)])
+            logging.info("Moved %d spectra to %s and\n"
+                         " deleted %d other files in %s" %
+                         (nkeepspec, archdir, ndelfile, ut_date))
+        else:
+            logging.info("Deleted %d old pysedm files in %s" %
+                         (ndelfile, ut_date))
     else:
         logging.warning("No pysedm files found in %s" % odir)
-    # If we keep the spectra, gzip them
-    if keep_spec:
-        # Now gzip the files in the archive
-        flist = os.listdir(archdir)
-        for fl in flist:
-            if 'gz' not in fl:
-                subprocess.run(["gzip", os.path.join(archdir, fl)])
     # END: delete_old_pysedm_files
 
 
@@ -233,14 +240,15 @@ def archive_old_pysedm_files(odir, ut_date):
             if not os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
                 nfilemv += 1
-        logging.info("Moved %d old pysedm files into %s" % (nfilemv, archdir))
+        # Now gzip the files in the archive
+        flist = os.listdir(archdir)
+        for fl in flist:
+            if 'gz' not in fl:
+                subprocess.run(["gzip", os.path.join(archdir, fl)])
+        logging.info("Archived %d old pysedm files into %s" %
+                     (nfilemv, archdir))
     else:
         logging.warning("No pysedm files found in %s" % odir)
-    # Now gzip the files in the archive
-    flist = os.listdir(archdir)
-    for fl in flist:
-        if 'gz' not in fl:
-            subprocess.run(["gzip", os.path.join(archdir, fl)])
     # END: archive_old_pysedm_files
 
 
@@ -578,6 +586,7 @@ def get_extract_pos(indir, indate):
         if nadd <= 0:
             logging.warning("No position for %s" % rute)
     # END for fl in flist:
+    logging.info("Found %d positions in %s" % (ndic, indate))
     return out_dict, ndic
     # END: get_extract_pos
 
