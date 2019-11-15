@@ -647,6 +647,11 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
     """
     # Default return value
     ret = False
+    # Report extraction version
+    if oldext:
+        logging.info("Using old extract_star.py routine")
+    else:
+        logging.info("Using new extractstar.py routine")
     # Output directory is based on redd and indir
     outdir = os.path.join(redd, indir)
     # Current date string
@@ -787,10 +792,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.oldext:
-        logging.info("Using old extract_star.py routine")
-    else:
-        logging.info("Using new extractstar.py routine")
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
