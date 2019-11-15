@@ -216,7 +216,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
             for fl in flist:
                 if 'gz' not in fl:
                     subprocess.run(["gzip", os.path.join(archdir, fl)])
-            logging.info("Moved %d spectra to %s and\n"
+            logging.info("Moved %d spectra to %s and"
                          " deleted %d other files in %s" %
                          (nkeepspec, archdir, ndelfile, ut_date))
         else:
