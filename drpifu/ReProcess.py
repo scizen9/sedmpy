@@ -200,7 +200,9 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
         for fl in flist:
             # Keep spectra?
             if keep_spec:
-                if 'spec_' in fl and 'snid' not in fl:
+                if 'spec_' in fl and 'snid' not in fl and \
+                        '_ea.fit' not in fl and \
+                        '.png' not in fl and '.pdf' not in fl:
                     shutil.move(fl, archdir)
                     nkeepspec += 1
                 else:
@@ -321,7 +323,7 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
-def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
+def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -334,6 +336,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
         datestr (str): YYYYMMDD date string
         nodb (bool): if True no update to SEDM db
         posdic (dict): position dictionary from get_extract_pos function
+        oldext (bool): True to use old extract_star instead of new extractstar
 
     Returns:
         int: Number of ifu images actually copied
@@ -394,15 +397,23 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                     # Use auto psf extraction for standard stars
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        cmd = ("extractstar.py", datestr, "--auto", fn,
-                               "--std", "--tag", "robot",
-                               "--centroid", "brightest",
-                               "--seeing", "%.2f" % seeing)
+                        if oldext:
+                            cmd = ("extract_star.py", datestr, "--auto", fn,
+                                   "--std", "--tag", "robot", "--maxpos")
+                        else:
+                            cmd = ("extractstar.py", datestr, "--auto", fn,
+                                   "--std", "--tag", "robot",
+                                   "--centroid", "brightest",
+                                   "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn,
-                           "--std", "--tag", "robot", "--maxpos")  # ,
-                    # "--centroid", "brightest")
+                        if oldext:
+                            cmd = ("extract_star.py", datestr, "--auto", fn,
+                                   "--std", "--tag", "robot", "--maxpos")
+                        else:
+                            cmd = ("extractstar.py", datestr, "--auto", fn,
+                                   "--std", "--tag", "robot",
+                                   "--centroid", "brightest")
                     logging.info("Extracting std star spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -447,10 +458,12 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                         else:
                             logging.error("Not found: %s" % proced)
                         # Did we generate a flux calibration?
-                        flxcal = glob.glob(
-                            os.path.join(destdir,
-                                         "fluxcal_auto_robot_lstep1__%s_*.fits"
-                                         % fn.split('.')[0]))
+                        if oldext:
+                            fcspec = "fluxcal_auto_robot_lstep1__%s_*.fits" % \
+                                     fn.split('.')[0]
+                        else:
+                            fcspec = "fluxcal_%s_*.fits" % fn.split('.')[0]
+                        flxcal = glob.glob(os.path.join(destdir, fcspec))
                         if flxcal:
                             # Generate effective area and efficiency plots
                             cmd = "~/sedmpy/drpifu/Eff.py %s --contains %s" % \
@@ -480,15 +493,25 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None):
                     # Use forced psf for science targets
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        cmd = ("extractstar.py", datestr, "--auto", fn,
-                               "--autobins", "6", "--tag", "robot",
-                               "--centroid", "%.2f" % xpos, "%.2f" % ypos,
-                               "--seeing", "%.2f" % seeing)
+                        if oldext:
+                            cmd = ("extract_star.py", datestr, "--auto", fn,
+                                   "--autobins", "6", "--tag", "robot",
+                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos)
+                        else:
+                            cmd = ("extractstar.py", datestr, "--auto", fn,
+                                   "--autobins", "6", "--tag", "robot",
+                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos,
+                                   "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn,
-                           "--autobins", "6", "--tag", "robot",
-                           "--centroid", "%.2f" % xpos, "%.2f" % ypos)
+                        if oldext:
+                            cmd = ("extract_star.py", datestr, "--auto", fn,
+                                   "--autobins", "6", "--tag", "robot",
+                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos)
+                        else:
+                            cmd = ("extractstar.py", datestr, "--auto", fn,
+                                   "--autobins", "6", "--tag", "robot",
+                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos)
                     logging.info("Extracting object spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -606,7 +629,7 @@ def get_extract_pos(indir, indate):
     # END: get_extract_pos
 
 
-def reproc(redd=None, indir=None, nodb=False,
+def reproc(redd=None, indir=None, nodb=False, oldext=False,
            arch_kpy=False, arch_pysedm=False):
     """Create calibration files and reprocess data for one night.
 
@@ -614,6 +637,7 @@ def reproc(redd=None, indir=None, nodb=False,
         redd (str): reduced directory (something like /scr2/sedm/redux)
         indir (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
+        oldext (bool): True to use old extract_star instead of new extractstar
         arch_kpy (bool): True to archive old kpy files into ./kpy/
         arch_pysedm (bool): True to archive old pysedm files into ./pysedm/
 
@@ -731,7 +755,8 @@ def reproc(redd=None, indir=None, nodb=False,
     # Proceed to build e3d cubes
     if cal_good:
         # Process observations
-        dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic)
+        dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic,
+              oldext=oldext)
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
         logging.info(cmd)
@@ -757,11 +782,18 @@ if __name__ == '__main__':
                         help='Archive any existing kpy files')
     parser.add_argument('--archive_pysedm', action="store_true", default=False,
                         help='Archive any existing pysedm files')
+    parser.add_argument('--oldext', action="store_true", default=False,
+                        help='Use old extract_star.py for extraction')
 
     args = parser.parse_args()
 
+    if args.oldext:
+        logging.info("Using old extract_star.py routine")
+    else:
+        logging.info("Using new extractstar.py routine")
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
         reproc(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
-               arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm)
+               arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm,
+               oldext=args.oldext)
