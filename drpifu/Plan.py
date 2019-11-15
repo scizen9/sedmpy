@@ -11,7 +11,14 @@ def extract_info(infiles):
 
     print("-- Plan.py: Ingesting headers --")
 
+    has_rc = False
+    has_ifu = False
     for ix, ifile in enumerate(infiles):
+        rute = ifile.split('/')[-1]
+        if rute.startswith('rc'):
+            has_rc = True
+        if rute.startswith('ifu'):
+            has_ifu = True
         ff = pf.open(ifile)
         ff[0].header['filename'] = ifile
         if 'JD' not in ff[0].header:
@@ -19,8 +26,16 @@ def extract_info(infiles):
             continue
         headers.append(ff[0].header)
         ff.close()
+    if has_rc and has_ifu:
+        print("Has both rc and ifu images: choose one or the other")
+        sys.exit(1)
 
-    return sorted(headers, key=lambda x: x['JD'])
+    if has_rc:
+        print("Generating Makefile for rc images")
+    if has_ifu:
+        print("Generating Makefile for ifu images")
+
+    return sorted(headers, key=lambda x: x['JD']), has_rc
 
 
 def identify_observations(headers):
@@ -131,6 +146,44 @@ def identify_observations(headers):
     return objs, calibs
 
 
+make_preamble_rc = """
+PY = ~/spy
+PYC = ~/sedmpy/drpifu
+PYR = ~/sedmpy/drprc
+IMCOMBINE = $(PY) $(PYC)/Imcombine.py
+REPORT = $(PY) $(PYR)/DrpReport.py
+
+BSUB = $(PY) $(PYC)/Debias.py
+CRRSUB =  $(PY) $(PYC)/CosmicX.py
+
+SRCS = $(wildcard rc*fits)
+BIAS = $(addprefix b_,$(SRCS))
+CRRS = $(addprefix crr_,$(BIAS))
+
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
+
+crr_b_% : b_%
+	$(CRRSUB) --niter 4 --sepmed --gain 1.0 --readnoise 5.0 --objlim 4.8 \\
+		--sigclip 5.0 --fsmode convolve --psfmodel gauss --psffwhm=2 \\
+		$< $@ mask$@
+
+bias: bias0.1.fits bias2.0.fits $(BIAS)
+crrs: $(CRRS)
+
+$(BIAS): bias0.1.fits bias2.0.fits
+	$(BSUB) $(subst b_,,$@)
+
+$(CRRS): 
+	$(CRRSUB) --niter 4 --sepmed --gain 1.0 --readnoise 5.0 --objlim 4.8 \\
+		--sigclip 5.0 --fsmode convolve --psfmodel gauss --psffwhm=2 \\
+		$(subst crr_,,$@) $@ mask$@
+
+calimgs: dome.fits Hg.fits Cd.fits Xe.fits
+
+"""
+
+
 make_preamble = """
 PY = ~/spy
 PYC = ~/sedmpy/drpifu
@@ -208,7 +261,7 @@ def makefile_imcombine(objname, files, dependencies=""):
     return first + second + "\n"
 
 
-def to_makefile(objs, calibs):
+def to_makefile(objs, calibs, make_rc):
 
     makefile = ""
 
@@ -224,7 +277,10 @@ def to_makefile(objs, calibs):
     for objname, objfile in objs.items():
         all_targs += "%s.fits " % objname
 
-    preamble = make_preamble
+    if make_rc:
+        preamble = make_preamble_rc
+    else:
+        preamble = make_preamble
 
     f = open("Makefile", "w")
     clean = "\n\nclean:\n\trm %s" % all_targs
@@ -233,16 +289,16 @@ def to_makefile(objs, calibs):
     f.close()
 
 
-def make_plan(headers):
+def make_plan(headers, make_rc):
     """Convert headers to a makefile, assuming headers sorted by JD."""
 
     objs, calibs = identify_observations(headers)
-    to_makefile(objs, calibs)
+    to_makefile(objs, calibs, make_rc)
 
 
 if __name__ == '__main__':
 
     files = sys.argv[1:]
-    to_process = extract_info(files)
+    to_process, for_rc = extract_info(files)
 
-    make_plan(to_process)
+    make_plan(to_process, for_rc)
