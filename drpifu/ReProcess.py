@@ -177,7 +177,7 @@ def cal_proc_ready(caldir='./'):
     # END: cal_proc_ready
 
 
-def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
+def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     """Remove all the old pysedm output files"""
     if keep_spec:
         # Make archive directory
@@ -188,6 +188,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
         archdir = None
     ndelfile = 0
     nkeepspec = 0
+    nkeepcube = 0
     # Get list of pysedm files to remove
     flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
@@ -198,6 +199,13 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
     # Remove or move them
     if len(flist) > 0:
         for fl in flist:
+            # Do we keep cals and cubes?
+            if keep_cubes:
+                rute = fl.split('/')[-1]
+                if rute.startswith(ut_date) or \
+                   rute.startswith('e3d_') or rute.startswith('flex'):
+                    nkeepcube += 1
+                    continue
             # Keep spectra?
             if keep_spec:
                 if 'spec_' in fl and 'snid' not in fl and \
@@ -218,18 +226,19 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False):
             for fl in flist:
                 if 'gz' not in fl:
                     subprocess.run(["gzip", os.path.join(archdir, fl)])
-            logging.info("Moved %d spectra to %s and"
-                         " deleted %d other files in %s" %
-                         (nkeepspec, archdir, ndelfile, ut_date))
-        else:
-            logging.info("Deleted %d old pysedm files in %s" %
-                         (ndelfile, ut_date))
+            logging.info("Moved %d old pysedm spectra to %s" %
+                         (nkeepspec, archdir))
+        if keep_cubes:
+            logging.info("Kept %d old pysedm cal and cube files in %s" %
+                         (nkeepcube, ut_date))
+        logging.info("Deleted %d old pysedm files in %s" %
+                     (ndelfile, ut_date))
     else:
         logging.warning("No pysedm files found in %s" % odir)
     # END: delete_old_pysedm_files
 
 
-def archive_old_pysedm_files(odir, ut_date):
+def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
     """Move all the old pysedm output files to ./pysedm/"""
     # Make archive directory
     archdir = os.path.join(odir, 'pysedm')
@@ -246,8 +255,15 @@ def archive_old_pysedm_files(odir, ut_date):
     # Move them into the archive
     if len(flist) > 0:
         nfilemv = 0
+        nkeepcube = 0
         for fl in flist:
             rute = fl.split('/')[-1]
+            # Do we keep cals and cubes?
+            if keep_cubes:
+                if rute.startswith(ut_date) or \
+                        rute.startswith('e3d_') or rute.startswith('flex'):
+                    nkeepcube += 1
+                    continue
             if not os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
                 nfilemv += 1
@@ -303,7 +319,7 @@ def archive_old_kpy_files(odir):
                 nfilemv += 1
         logging.info("Moved %d old kpy files into %s" % (nfilemv, archdir))
     else:
-        logging.warning("No kpy files found in %s" % odir)
+        logging.warning("No old kpy files found in %s" % odir)
     # Now check spec files
     flist = glob.glob(os.path.join(odir, 'spec_*'))
     if len(flist) > 0:
@@ -312,7 +328,7 @@ def archive_old_kpy_files(odir):
             if '_crr_b_ifu' not in fl:
                 shutil.move(fl, archdir)
                 nspecmv += 1
-        logging.info("Moved %d kpy spec files into %s" % (nspecmv, archdir))
+        logging.info("Moved %d old kpy spec files into %s" % (nspecmv, archdir))
     else:
         logging.warning("No spec files found in %s" % odir)
     # Now gzip the files in the archive
@@ -630,7 +646,7 @@ def get_extract_pos(indir, indate):
 
 
 def reproc(redd=None, indir=None, nodb=False, oldext=False,
-           arch_kpy=False, arch_pysedm=False):
+           arch_kpy=False, arch_pysedm=False, keep_cubes=False):
     """Create calibration files and reprocess data for one night.
 
     Args:
@@ -640,6 +656,7 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
         oldext (bool): True to use old extract_star instead of new extractstar
         arch_kpy (bool): True to archive old kpy files into ./kpy/
         arch_pysedm (bool): True to archive old pysedm files into ./pysedm/
+        keep_cubes (bool): True to preserve cals and e3d*.fits files
 
     Returns:
         bool: True if cals completed normally, False otherwise
@@ -668,9 +685,10 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
     if arch_kpy:
         archive_old_kpy_files(outdir)
     if arch_pysedm:
-        archive_old_pysedm_files(outdir, cur_date_str)
+        archive_old_pysedm_files(outdir, cur_date_str, keep_cubes=keep_cubes)
     else:
-        delete_old_pysedm_files(outdir, cur_date_str, keep_spec=True)
+        delete_old_pysedm_files(outdir, cur_date_str, keep_cubes=keep_cubes,
+                                keep_spec=True)
 
     # Check calibration status
     cal_good = False
@@ -789,6 +807,8 @@ if __name__ == '__main__':
                         help='Archive any existing pysedm files')
     parser.add_argument('--oldext', action="store_true", default=False,
                         help='Use old extract_star.py for extraction')
+    parser.add_argument('--preserve_cubes', action="store_true", default=False,
+                        help='Keep calibs and e3d_*.fits files')
 
     args = parser.parse_args()
 
@@ -797,4 +817,4 @@ if __name__ == '__main__':
     else:
         reproc(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
                arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm,
-               oldext=args.oldext)
+               oldext=args.oldext, keep_cubes=args.preserve_cubes)
