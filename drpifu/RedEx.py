@@ -87,7 +87,7 @@ if __name__ == "__main__":
             ff.flush()
             ff.close()
             # Update database entry
-            ar.update_spec(fits_file, update=True)
+            ar.update_spec(fits_file, update_db=True)
             # Update quality in text file
             text_file = glob.glob(os.path.join(rd, dd,
                                   "spec_auto_robot_lstep1__*_%s_*.txt" %
