@@ -681,7 +681,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None, nodb=False):
             # No? then copy the file
             if len(prev) == 0:
                 # Call copy
-                nc, ns, nob = docp(f, destdir + '/' + fn, skip_cals=True,
+                nc, ns, nob = docp(fl, destdir + '/' + fn, skip_cals=True,
                                    nodb=nodb)
                 if nc >= 1:
                     copied.append(fn)
