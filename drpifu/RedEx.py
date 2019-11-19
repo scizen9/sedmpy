@@ -35,6 +35,9 @@ if __name__ == "__main__":
                              'slack')
     parser.add_argument('--lstep', type=str, default=None,
                         help='new lstep value (default is 1)')
+    parser.add_argument('--newext', action='store_true', default=False,
+                        help='re-extract using extractstar.py instead of'
+                             'extract_star.py')
     args = parser.parse_args()
 
     if args.lstep:
@@ -44,7 +47,7 @@ if __name__ == "__main__":
 
     if not args.obs_id:
         logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]"
-                     " [--lstep <n>]")
+                     " [--lstep <n>] [--newext]")
     else:
 
         # Get tag id
@@ -143,18 +146,31 @@ if __name__ == "__main__":
             if args.new_x and args.new_y:
                 xs = args.new_x
                 ys = args.new_y
-                pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--centroid", xs, ys, "--lstep", lstep,
-                        "--tag", tagstr, "--reducer", reducer]
+                if args.newext:
+                    pars = ["extractstar.py", dd, "--auto", ob_id,
+                            "--autobins", "6", "--centroid", xs, ys,
+                            "--lstep", lstep, "--tag", tagstr,
+                            "--reducer", reducer]
+                else:
+                    pars = ["extract_star.py", dd, "--auto", ob_id,
+                            "--autobins", "6", "--centroid", xs, ys,
+                            "--lstep", lstep, "--tag", tagstr,
+                            "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
                     logging.error("Extraction failed.")
                     sys.exit(1)
             else:
-                pars = ["extract_star.py", dd, "--auto", ob_id, "--autobins",
-                        "6", "--display", "--lstep", lstep, "--tag", tagstr,
-                        "--reducer", reducer]
+                if args.newext:
+                    pars = ["extractstar.py", dd, "--auto", ob_id,
+                            "--autobins", "6", "--display", "--lstep", lstep,
+                            "--centroid", "auto",
+                            "--tag", tagstr, "--reducer", reducer]
+                else:
+                    pars = ["extract_star.py", dd, "--auto", ob_id,
+                            "--autobins", "6", "--display", "--lstep", lstep,
+                            "--tag", tagstr, "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
