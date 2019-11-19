@@ -65,12 +65,12 @@ logging.basicConfig(
 
 # Get pipeline configuration
 cfg_parser = ConfigParser()
-# Find config file: default is sedmpy/drpifu/config/sedmconfig.cfg
+# Find config file: default is sedmpy/config/sedmconfig.cfg
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
     configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              'config/sedmconfig.cfg')
+                              '../config/sedmconfig.cfg')
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
     cfg_parser.read_file(f)

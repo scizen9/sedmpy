@@ -37,8 +37,7 @@ try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
     configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              'config/sedmconfig.cfg')
-    # '/scr2/sedmdrp/sedmpy/drpifu/config/sedmconfig.cfg'
+                              '../config/sedmconfig.cfg')
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
