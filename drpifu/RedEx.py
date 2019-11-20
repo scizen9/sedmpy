@@ -38,6 +38,8 @@ if __name__ == "__main__":
     parser.add_argument('--newext', action='store_true', default=False,
                         help='re-extract using extractstar.py instead of'
                              'extract_star.py')
+    parser.add_argument('--testing', action="store_true", default=False,
+                        help='just testing: extract spec, but no uploads')
     args = parser.parse_args()
 
     if args.lstep:
@@ -224,7 +226,7 @@ if __name__ == "__main__":
                         os.remove(f)
                     sys.exit(1)
             # Re-report
-            if args.local:
+            if args.local or args.testing:
                 pars = ["pysedm_report.py", dd, "--contains", tagstr]
             else:
                 pars = ["pysedm_report.py", dd, "--contains", tagstr, "--slack"]
@@ -236,9 +238,14 @@ if __name__ == "__main__":
             # Upload spectrum to marshal
             if not args.local:
                 home = os.environ['HOME']
-                cmd = [os.path.join(home, "spy"),
-                       os.path.join(home, "sedmpy/growth/growth.py"), dd,
-                       "--reducedby", reducer]
+                if args.testing:
+                    cmd = [os.path.join(home, "spy"),
+                           os.path.join(home, "sedmpy/growth/growth.py"), dd,
+                           "--reducedby", reducer, "--testing"]
+                else:
+                    cmd = [os.path.join(home, "spy"),
+                           os.path.join(home, "sedmpy/growth/growth.py"), dd,
+                           "--reducedby", reducer]
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
@@ -247,7 +254,7 @@ if __name__ == "__main__":
             fits_file = glob.glob(
                 os.path.join(rd, dd, "spec_auto_%s_*_%s.fits" %
                              (tagstr, obname)))
-            if len(fits_file) == 1:
+            if len(fits_file) == 1 and not args.testing:
                 # Update database entry
                 ar.update_spec(fits_file[0])
                 if not args.local:
