@@ -146,7 +146,8 @@ def send_instrument_configuration(instrument_id="",
 
 
 def update_request(status, request_id, instrument_id='',
-                   output_dir='targets', filename='', save=True):
+                   output_dir='targets', filename='', save=True,
+                   testing=False):
     """
     Function to update the status of any request as long as it has
     not been deleted. The new status will show up on the status section
@@ -157,7 +158,8 @@ def update_request(status, request_id, instrument_id='',
     :param instrument_id: 
     :param request_id: 
     :param output_dir: 
-    :param save: 
+    :param save:
+    :param testing:
     :return: 
     """
 
@@ -179,13 +181,17 @@ def update_request(status, request_id, instrument_id='',
                      'request_id': request_id,
                      'new_status': status}
 
-    # 3. Write and read in the json file to memory
-    json_file = open(write_json_file(status_config, output_file), 'r')
+    # Are we testing?
+    if testing:
+        ret = 'TESTING update_request(): no data sent to marshal'
+    else:
+        # 3. Write and read in the json file to memory
+        json_file = open(write_json_file(status_config, output_file), 'r')
 
-    # 4. Send the request, close the file, and save if needed
-    ret = requests.post(growth_stat_url, auth=(user, pwd),
-                        files={'jsonfile': json_file})
-    json_file.close()
+        # 4. Send the request, close the file, and save if needed
+        ret = requests.post(growth_stat_url, auth=(user, pwd),
+                            files={'jsonfile': json_file})
+        json_file.close()
 
     if not save:
         os.remove(output_file)
@@ -231,12 +237,13 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
     return return_dict
 
 
-def upload_phot(phot_file, instrument_id=65, request_id=''):
+def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
     """
 
     :param phot_file:
     :param instrument_id:
     :param request_id:
+    :param testing:
     :return:
     """
 
@@ -275,10 +282,13 @@ def upload_phot(phot_file, instrument_id=65, request_id=''):
         json_file.write(json.dumps(submission_dict))
         json_file.close()
 
-        json_file = open('photometryExample.txt', 'r')
-        ret = requests.post(growth_phot_url, auth=(user, pwd),
-                            files={'jsonfile': json_file})
-        json_file.close()
+        if testing:
+            ret = "TESTING upload_phot(): no data sent to marshal"
+        else:
+            json_file = open('photometryExample.txt', 'r')
+            ret = requests.post(growth_phot_url, auth=(user, pwd),
+                                files={'jsonfile': json_file})
+            json_file.close()
         return ret
 
 
@@ -286,7 +296,8 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
                    request_id='', exptime=3600, observer='SEDmRobot',
                    reducedby="auto", obsdate="", output_dir='targets/',
                    format_type='ascii', sourceid=None,
-                   check_quality=True, quality=1, min_quality=2):
+                   check_quality=True, quality=1, min_quality=2,
+                   testing=False):
     """
     Add spectra to the growth marshal.  If the fill_by_file is selected then
     most of the keywords will be filled from the spectra file itself.  If
@@ -307,6 +318,7 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     :param check_quality:
     :param quality:
     :param min_quality:
+    :param testing:
 
     :return: 
     """
@@ -356,19 +368,20 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     if check_quality and quality > min_quality:
         print("Spectra quality does not pass")
         return False
-    
-    # 2. Open the configuration and spec file for transmission
-    json_file = open(write_json_file(submission_dict, output_file), 'r')
-    upfile = open(spec_file, 'r')
-
-    # 3. Send the request
-    ret = requests.post(growth_spec_url, auth=(user, pwd),
-                        files={'jsonfile': json_file, 'upfile': upfile})
+    # Are we just testing?
+    if testing:
+        ret = 'TESTING upload_spectra(): no data sent to marshal'
+    else:
+        # 2. Open the configuration and spec file for transmission
+        json_file = open(write_json_file(submission_dict, output_file), 'r')
+        upfile = open(spec_file, 'r')
+        # 3. Send the request
+        ret = requests.post(growth_spec_url, auth=(user, pwd),
+                            files={'jsonfile': json_file, 'upfile': upfile})
+        # 4. Close files and send request response
+        upfile.close()
+        json_file.close()
     print(ret)
-
-    # 4. Close files and send request response
-    upfile.close()
-    json_file.close()
 
     return True
 
@@ -387,7 +400,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                             pull_requests=False, request_id=None,
                             add_phot=False, phot_file='', search_db=None,
                             target_dir='requests/', target_base_name='request',
-                            reducedby=None):
+                            reducedby=None, testing=False):
     """
     Go through the request and find the one that matches the objname
     :param objname:
@@ -403,6 +416,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     :param target_dir:
     :param target_base_name:
     :param reducedby:
+    :param testing:
     :return: 
     """
 
@@ -530,13 +544,15 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             spec_ret = upload_spectra(spectra_file, fill_by_file=True,
                                       request_id=marshal_id,
                                       sourceid=sourceid,
-                                      output_dir=out_dir)
+                                      output_dir=out_dir,
+                                      testing=testing)
             if not spec_ret:
                 spec_stat = 'IFU: Failed ' + ts_str
             else:
                 spec_stat = 'IFU: Complete ' + ts_str
                 annots_posted = add_annots(spectra_file, auth,
-                                           reducedby=reducedby)
+                                           reducedby=reducedby,
+                                           testing=testing)
                 if annots_posted:
                     print("Annotations successfully posted")
                 else:
@@ -557,7 +573,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             elif add_phot:
                 status = phot_stat
             status_ret = update_request(status, request_id=marshal_id,
-                                        output_dir=out_dir)
+                                        output_dir=out_dir, testing=testing)
 
         return_link = growth_view_source_url + "name=%s" % object_name
 
@@ -567,7 +583,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     return return_link, spec_ret, phot_ret, status_ret
 
           
-def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
+def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
+                     testing=False):
     """Given a target directory get all files that have ztf or ZTF as base 
        name
 
@@ -575,6 +592,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
        :param upfil:
        :param dbase:
        :param reducedby:
+       :param testing:
        """
 
     if target_dir[-1] != '/':
@@ -638,7 +656,8 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None):
                                                       request_id=req_id,
                                                       search_db=dbase,
                                                       pull_requests=pr,
-                                                      reducedby=reducedby)
+                                                      reducedby=reducedby,
+                                                      testing=testing)
         # Mark as uploaded
         os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # Only need to pull requests the first time
@@ -682,6 +701,8 @@ Uploads results to the growth marshal.
                         help='Do not use SEDM database')
     parser.add_argument('--reducedby', type=str, default=None,
                         help='reducer (defaults to auto)')
+    parser.add_argument('--testing', action="store_true", default=False,
+                        help='Do not actually post to marshal (for testing)')
     args = parser.parse_args()
 
     # Check environment
@@ -714,9 +735,9 @@ Uploads results to the growth marshal.
             if not os.path.exists(trgdir):
                 os.mkdir(trgdir)
             parse_ztf_by_dir(srcdir, upfil=args.data_file,
-                             reducedby=args.reducedby)
+                             reducedby=args.reducedby, testing=args.testing)
         else:
             import db.SedmDb
             sedmdb = db.SedmDb.SedmDB()
             parse_ztf_by_dir(srcdir, upfil=args.data_file, dbase=sedmdb,
-                             reducedby=args.reducedby)
+                             reducedby=args.reducedby, testing=args.testing)

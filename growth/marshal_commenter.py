@@ -65,7 +65,8 @@ def get_missing_info(ztfname, obsdate, sourceid, specid, reducedby=None):
 
 
 def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
-                        specid=None, obsdate=None, reducedby=None):
+                        specid=None, obsdate=None, reducedby=None,
+                        testing=False):
     """
     adds a comment (not autoannotation) with attachment to a particular SEDM
     spectrum on the view_spec page, which will also appear elsewhere.
@@ -79,6 +80,7 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
     obsdate: 'YYYYMMDD', necessary for finding the correct spectrum. Assumes
             exactly 1 SEDM spectrum that night
     reducedby: <str> who did the reduction, defaults to 'auto'
+    testing: <bool> are we just testing?
 
     return: True if success, False if not
     """
@@ -90,31 +92,38 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
         print("ERROR - Unable to get info required to post comment")
         return False
 
-    with open(fname, 'rb') as att:
-        r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
-                          data={'comment':   comment,
-                                'tablename': 'spec',
-                                'tableid':    specid,
-                                'camefrom':  'view_spec',
-                                'name':       ztfname,
-                                'sourceid':   sourceid,
-                                'specid':     specid,
-                                'commit':    'yes'
-                                }, files={"attachment": att})
+    ddict = {'comment':    comment,
+             'tablename': 'spec',
+             'tableid':    specid,
+             'camefrom':  'view_spec',
+             'name':       ztfname,
+             'sourceid':   sourceid,
+             'specid':     specid,
+             'commit':    'yes'}
 
-    if 'Updating Database' in r.text or 'copied file successfully' in r.text:
-        print('{} uploaded'.format(fname.split('/')[-1]))
+    if testing:
+        print("TESTING add_spec_attachment(): no data sent to marshal")
+        print(fname)
+        print(ddict)
         return True
     else:
-        print('error submitting comment')
-        print(r.text)
-        raise Exception
-        # return False
+        with open(fname, 'rb') as att:
+            r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
+                              data=ddict, files={"attachment": att})
+
+        if 'Updating Database' in r.text or 'copied file successfully' in r.text:
+            print('{} uploaded'.format(fname.split('/')[-1]))
+            return True
+        else:
+            print('error submitting comment')
+            print(r.text)
+            raise Exception
+            # return False
 
 
 def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
                        sourceid=None, specid=None, obsdate=None,
-                       reducedby=None):
+                       reducedby=None, testing=False):
     """
     adds an autoannotation without attachment to a particular SEDM spectrum
     on the view_spec page, which will also appear elsewhere.
@@ -127,6 +136,7 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
     specid: <int> around ~1700. faster if you provide it
     obsdate: 'YYYYMMDD' or 'YYYY-MM-DD', necessary for finding the correct
             spectrum if no specid. Assumes exactly 1 SEDM spectrum that night
+    testing: <bool> are we testing only?
 
     return: True if success, False if not
     """
@@ -134,30 +144,36 @@ def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
     sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid,
                                         reducedby=reducedby)
 
-    r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
-                      data={'comment':    value,
-                            'datatype':   datatype,
-                            'tablename': 'spec',
-                            'type':       annot_type,
-                            'tableid':    specid,
-                            'table':     'autoannotations',
-                            'camefrom':  'view_spec',
-                            'name':       ztfname,
-                            'sourceid':   sourceid,
-                            'specid':     specid,
-                            'commit':    'yes'
-                            })
+    ddict = {'comment':    value,
+             'datatype':   datatype,
+             'tablename': 'spec',
+             'type':       annot_type,
+             'tableid':    specid,
+             'table':     'autoannotations',
+             'camefrom':  'view_spec',
+             'name':       ztfname,
+             'sourceid':   sourceid,
+             'specid':     specid,
+             'commit':    'yes'}
 
-    if 'Updating Database' in r.text or 'copied file successfully' in r.text:
-        print('{}: {} posted'.format(annot_type, value))
+    if testing:
+        print("TESTING add_spec_autoannot(): no data sent to marshal")
+        print(ddict)
         return True
     else:
-        print('error submitting comment')
-        print(r.text)
-        return False
+        r = requests.post(growth_base_url + "add_spec.cgi", auth=cred,
+                          data=ddict)
+
+        if 'Updating Database' in r.text or 'copied file successfully' in r.text:
+            print('{}: {} posted'.format(annot_type, value))
+            return True
+        else:
+            print('error submitting comment')
+            print(r.text)
+            return False
 
 
-def add_SNID_pysedm_autoannot(fname, cred, reducedby=None):
+def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
     """
     if z < 0.3 and rlap > 5.0
         adds autoannotations with SNID rlap, z, type, etc
@@ -166,6 +182,8 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None):
     fname: '*ZTF18aaaaaaa.txt' that has a bunch of
             "# SNIDMATCH[something]: [val]" in the header
     cred: ('username', 'password')
+    reducedby: (str)
+    testing: (bool)
 
     returns: True if all four comments/attachments works, False
             (and it'll exit early) otherwise
@@ -216,7 +234,8 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None):
         pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
                                         pysedm_report, cred,
                                         obsdate=header['obsdate'],
-                                        reducedby=reducedby)
+                                        reducedby=reducedby,
+                                        testing=testing)
     except IndexError:
         print('no pysedm_report for {}?'.format(header['name']))
         pr_posted = False
@@ -251,7 +270,8 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None):
         if not add_spec_autoannot(header['name'], header['snidmatch' + key],
                                   'AUTO_SNID_' + key, dtypes[key], cred,
                                   obsdate=header['obsdate'],
-                                  reducedby=reducedby):
+                                  reducedby=reducedby,
+                                  testing=testing):
             return False
 
     if pr_posted:
@@ -265,7 +285,7 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None):
         return False
     add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
                         cred,  obsdate=header['obsdate'],
-                        reducedby=reducedby)
+                        reducedby=reducedby, testing=testing)
 
     return True
 
