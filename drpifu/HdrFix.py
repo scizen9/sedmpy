@@ -160,6 +160,10 @@ def sedm_fix_header(fname):
         else:
             refr = -999.
         ff[0].header['HA_REFR'] = (refr, "Telescope HA Refraction")
+    # Dome gap
+    if 'DOMEGAP' in ff[0].header:
+        domegap = ff[0].header
+        ff[0].header['DOME_GAP'] = domegap
 
     # Now verify header
     for k, v in header_types.items():
