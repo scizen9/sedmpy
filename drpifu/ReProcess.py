@@ -251,7 +251,6 @@ def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
     flist.extend(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
     flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
-    flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
     # Move them into the archive
     if len(flist) > 0:
         nfilemv = 0

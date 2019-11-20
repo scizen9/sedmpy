@@ -1,0 +1,7 @@
+#!/bin/csh
+#
+# reproc - reprocess sedm data for a given night
+echo Reprocessing IFU data in $1
+$HOME/spy $HOME/sedmpy/drpifu/ReProcess.py --date $1 --nodb | & tee $SEDMREDUXPATH/reproc.log
+mv $SEDMREDUXPATH/reproc.log $SEDMREDUXPATH/$1/pysedm_run.log
+echo Done
