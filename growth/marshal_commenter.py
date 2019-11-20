@@ -237,7 +237,7 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
                                                                     '.png'))[0]
         pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
                                         pysedm_report, cred,
-                                        obsdate=obsdate,   # header['obsdate'],
+                                        obsdate=obsdate,
                                         reducedby=reducedby,
                                         testing=testing)
     except IndexError:
@@ -273,7 +273,7 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
     for key in dtypes:
         if not add_spec_autoannot(header['name'], header['snidmatch' + key],
                                   'AUTO_SNID_' + key, dtypes[key], cred,
-                                  obsdate=obsdate,  # header['obsdate'],
+                                  obsdate=obsdate,
                                   reducedby=reducedby,
                                   testing=testing):
             return False
@@ -288,7 +288,7 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
     if not glob(image_filename):
         return False
     add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
-                        cred,  obsdate=obsdate,  # header['obsdate'],
+                        cred,  obsdate=obsdate,
                         reducedby=reducedby, testing=testing)
 
     return True

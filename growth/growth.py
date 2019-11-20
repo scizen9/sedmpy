@@ -228,6 +228,7 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
                                               shell=True,
                                               universal_newlines=True)
                 date_str += " " + out.split(sep, 1)[-1]
+                date_str = " ".join(date_str.split()).split('.')[0]
                 return_dict[k] = date_str
             else:
                 return_dict[k] = out.split(sep, 1)[-1]
