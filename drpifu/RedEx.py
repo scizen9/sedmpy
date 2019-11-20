@@ -261,5 +261,8 @@ if __name__ == "__main__":
                     # e-mail user that re-extraction was made
                     ar.email_user(fits_file[0], dd, obname)
             else:
-                logging.error("Error finding fits file")
+                if args.testing:
+                    logging.info("TESTING RedEx.py script")
+                else:
+                    logging.error("Error finding fits file")
         ret = subprocess.call(["make", "report"])

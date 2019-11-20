@@ -371,6 +371,7 @@ def upload_spectra(spec_file, fill_by_file=False, instrument_id=65,
     # Are we just testing?
     if testing:
         ret = 'TESTING upload_spectra(): no data sent to marshal'
+        print(submission_dict)
     else:
         # 2. Open the configuration and spec file for transmission
         json_file = open(write_json_file(submission_dict, output_file), 'r')
