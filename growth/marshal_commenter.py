@@ -225,8 +225,9 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
             return False
 
     # Update obsdate
-    obsdate = header['obsdate'].strip() + " " + \
-              header['obstime'].strip().split('.')[0]
+    if ':' not in header['obsdate']:
+        obsdate = header['obsdate'].strip() + " " + \
+                  header['obstime'].strip().split('.')[0]
 
     # PYSEDM_REPORT
     # must be posted after the SNID plot or else it'll be overwritten
