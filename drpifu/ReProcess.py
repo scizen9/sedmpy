@@ -27,6 +27,7 @@ import subprocess
 import logging
 import argparse
 from astropy.io import fits as pf
+from astropy.time import Time, TimeDelta
 
 from configparser import ConfigParser
 import codecs
@@ -70,6 +71,279 @@ with codecs.open(configfile, 'r') as f:
 _rawpath = cfg_parser.get('paths', 'rawpath')
 _reduxpath = cfg_parser.get('paths', 'reduxpath')
 _srcpath = cfg_parser.get('paths', 'srcpath')
+
+
+def docp(src, dest, onsky=True, verbose=False, skip_cals=False, header=None):
+    """Low level copy from raw directory to redux directory.
+
+    Checks for raw ifu files, while avoiding any test and focus images.
+    Uses os.symlink to do the copying (linked to conserve disk space).
+
+    Args:
+        src (str): source file
+        dest (str): destination file
+        onsky (bool): test for dome conditions or not
+        verbose (bool): output messages?
+        skip_cals (bool): skip copying cal images?
+        header (dict): header from source image
+
+    Returns:
+        (int, int, int): number of images linked, number of standard
+                    star images linked, number of sci objects linked
+
+    """
+    # Record copies
+    ncp = 0
+    # Was a standard star observation copied?
+    nstd = 0
+    # Was a science object copied
+    nobj = 0
+    # Read FITS header if needed
+    if header is None:
+        ff = pf.open(src)
+        hdr = ff[0].header
+        ff.close()
+    else:
+        hdr = header
+    # Get OBJECT and DOMEST keywords
+    try:
+        obj = hdr['OBJECT']
+    except KeyError:
+        logging.warning("Could not find OBJECT keyword, setting to Test")
+        obj = 'Test'
+    try:
+        dome = hdr['DOMEST']
+    except KeyError:
+        logging.warning("Could not find DOMEST keyword, setting to null")
+        dome = ''
+    # Check if dome conditions are not right
+    if onsky and ('CLOSED' in dome or 'closed' in dome):
+        if verbose:
+            logging.warning('On sky and dome is closed, skipping %s' % src)
+    # All other conditions are OK
+    else:
+        # Skip test and Focus images
+        if skip_cals:
+            copy_this = ('test' not in obj and 'Focus:' not in obj and
+                         'STOW' not in obj and 'Test' not in obj and
+                         'Calib:' not in obj)
+        else:
+            copy_this = ('test' not in obj and 'Focus:' not in obj and
+                         'STOW' not in obj and 'Test' not in obj)
+
+        if copy_this:
+            # Symlink to save disk space
+            os.symlink(src, dest)
+            if 'STD-' in obj:
+                nstd = 1
+                logging.info("Standard %s linked to %s" % (obj, dest))
+            else:
+                nobj = 1
+                logging.info('Target %s linked to %s' % (obj, dest))
+            ncp = 1
+        # Report skipping and type
+        else:
+            if verbose and 'test' in obj:
+                logging.info('test file %s not linked' % src)
+            if verbose and 'Focus:' in obj:
+                logging.info('Focus file %s not linked' % src)
+            if verbose and 'Calib:' in obj:
+                logging.info('calib file %s not linked' % src)
+
+    return ncp, nstd, nobj
+    # END: docp
+
+
+def cpcal(srcdir, destdir='./', fsize=8400960):
+    """Copy raw cal files from srcdir into destdir.
+
+    Find calibration files taken within 10 hours of the day changeover
+    and copy them to the destination directory.
+
+    Args:
+        srcdir (str): source for raw cal images
+        destdir (str): place to put the cal images
+        fsize (int): size of completely copied file in bytes
+
+    Returns:
+        int: number of images actually copied
+
+    """
+
+    # Get current date
+    sdate = srcdir.split('/')[-1]
+    # Get list of current raw calibration files
+    # (within 10 hours of day changeover)
+    fspec = os.path.join(srcdir, "ifu%s_0*.fits" % sdate)
+    flist = sorted(glob.glob(fspec))
+    # Record number copied
+    ncp = 0
+    # Loop over file list
+    for src in flist:
+        # Get destination filename
+        imf = src.split('/')[-1]
+        destfil = os.path.join(destdir, imf)
+        # Does our local file already exist?
+        if glob.glob(destfil):
+            # Get the size to compare with source
+            loc_size = os.stat(destfil).st_size
+        else:
+            # Doesn't yet exist locally
+            loc_size = 0
+        # Get source size to compare
+        src_size = os.stat(src).st_size
+        # Copy only if source complete or larger than local file
+        if src_size >= fsize and src_size > loc_size:
+            # Read FITS header
+            ff = pf.open(src)
+            hdr = ff[0].header
+            ff.close()
+            # Get OBJECT keyword
+            try:
+                obj = hdr['OBJECT']
+            except KeyError:
+                obj = ''
+            # Filter Calibs and avoid test images and be sure it is part of
+            # a series.
+            if 'Calib' in obj and 'of' in obj and 'test' not in obj and \
+                    'Test' not in obj:
+                exptime = hdr['EXPTIME']
+                lampcur = hdr['LAMPCUR']
+                # Check for dome exposures
+                if 'dome' in obj:
+                    if exptime > 100. and ('dome' in obj and
+                                           'Xe' not in obj and
+                                           'Hg' not in obj and
+                                           'Cd' not in obj):
+                        if lampcur > 0.0:
+                            # Copy dome images
+                            nc, ns, nob = docp(src, destfil, onsky=False,
+                                               verbose=True, header=hdr)
+                            ncp += nc
+                        else:
+                            logging.warning("Bad dome - lamp not on: %s" % src)
+                # Check for arcs
+                elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
+                    if exptime > 25.:
+                        # Copy arc images
+                        nc, ns, nob = docp(src, destfil, onsky=False,
+                                           verbose=True, header=hdr)
+                        ncp += nc
+                # Check for biases
+                elif 'bias' in obj:
+                    if exptime <= 0.:
+                        # Copy bias images
+                        nc, ns, nob = docp(src, destfil, onsky=False,
+                                           verbose=True, header=hdr)
+                        ncp += nc
+
+    return ncp
+    # END: cpcal
+
+
+def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
+    """Copy raw cal files from previous date's directory
+
+    Make sure we only look in previous day directory for files created
+    within four hours of the day changeover for possible raw calibration
+    files required for the current night's calibration.  Copy any such
+    files into the destination directory.
+
+    Args:
+        rawd (str): top level raw directory (like '/scr2/sedm/raw')
+        destdir (str): where to put the files
+        cdate (str): date of interest in format 'YYYYMMDD'
+        fsize (int): size of completely copied file in bytes
+
+    Returns:
+        int: number of images actually copied
+
+    """
+
+    # Get current and previous dates
+    # Do Time arithmetic
+    ctime = Time(cdate[0:4]+'-'+cdate[4:6]+'-'+cdate[6:])
+    one_day = TimeDelta(1.0, format='jd')
+    # Previous night
+    ptime = ctime - one_day
+    #
+    # previous source dir
+    pdate = ''.join(ptime.iso.split()[0].split('-'))
+    # Set the previous night as the source directory
+    srcdir = os.path.join(rawd, pdate)
+
+    # Record how many images copied
+    ncp = 0
+    # If there is a previous night, get those files
+    if os.path.exists(srcdir):
+        # Get list of previous night's raw cal files
+        # (within four hours of day changeover)
+        flist = sorted(glob.glob(os.path.join(srcdir, "ifu%s_2*.fits*" % pdate)))
+        # Loop over file list
+        for src in flist:
+            if os.stat(src).st_size >= fsize:
+                # Read FITS header
+                ff = pf.open(src)
+                hdr = ff[0].header
+                ff.close()
+                # Get OBJECT keyword
+                obj = hdr['OBJECT']
+                # Filter Calibs and avoid test images
+                if 'Calib' in obj and 'of' in obj and 'test' not in obj and \
+                        'Test' not in obj:
+                    # Copy cal images
+                    imf = src.split('/')[-1]
+                    destfil = os.path.join(destdir, imf)
+                    try:
+                        exptime = hdr['EXPTIME']
+                    except KeyError:
+                        exptime = 1.0
+                        logging.warning("EXPTIME keyword not found, setting to 1.0")
+                    try:
+                        lampcur = hdr['LAMPCUR']
+                    except KeyError:
+                        lampcur = 1.0
+                        logging.warning("LAMPCUR keyword not found, setting to 1.0")
+                    # Check for dome exposures
+                    if 'dome' in obj:
+                        if exptime >= 60. and ('dome' in obj and
+                                               'Xe' not in obj and
+                                               'Hg' not in obj and
+                                               'Cd' not in obj):
+                            if lampcur > 0.0:
+                                # Copy dome images
+                                if not os.path.exists(destfil):
+                                    nc, ns, nob = docp(src, destfil,
+                                                       onsky=False,
+                                                       verbose=True,
+                                                       header=hdr)
+                                    ncp += nc
+                            else:
+                                logging.warning("Bad dome - lamp not on: %s"
+                                                % src)
+                    # Check for arcs
+                    elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
+                        if exptime > 25.:
+                            # Copy arc images
+                            if not os.path.exists(destfil):
+                                nc, ns, nob = docp(src, destfil, onsky=False,
+                                                   verbose=True, header=hdr)
+                                ncp += nc
+                    # Check for biases
+                    elif 'bias' in obj:
+                        if exptime <= 0.:
+                            # Copy bias images
+                            if not os.path.exists(destfil):
+                                nc, ns, nob = docp(src, destfil, onsky=False,
+                                                   verbose=True, header=hdr)
+                                ncp += nc
+            else:
+                logging.warning("Truncated file: %s" % src)
+    else:
+        logging.warning("No previous directory: %s" % srcdir)
+
+    return ncp
+    # END: cpprecal
 
 
 def cube_ready(caldir='./', cur_date_str=None):
@@ -803,6 +1077,9 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
 
 def re_reduce(rawd=None, redd=None, ut_date=None):
     """Relink raw files and produce reduced cal files"""
+    npre = cpprecal(rawd=rawd, destdir=os.path.join(redd, ut_date) , cdate=ut_date)
+    ncal = cpcal(srcdir=os.path.join(rawd, ut_date), destdir=os.path.join(redd, ut_date))
+    print("%d precal and %d cal images copied" % (npre, ncal))
 
 
 if __name__ == '__main__':
