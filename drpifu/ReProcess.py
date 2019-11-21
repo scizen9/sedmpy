@@ -177,6 +177,17 @@ def cal_proc_ready(caldir='./'):
     # END: cal_proc_ready
 
 
+def delete_old_raw_files(odir):
+    """Remove all the old raw input files"""
+
+    # Get list of raw files to remove
+    flist = glob.glob(os.path.join(odir, "*.fits*"))
+    flist.extend(glob.glob(os.path.join(odir, '*.lst')))
+    for fl in flist:
+        os.remove(fl)
+    logging.info("Removed %d old raw files" % len(flist))
+
+
 def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     """Remove all the old pysedm output files"""
     if keep_spec:
@@ -649,7 +660,7 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
     """Create calibration files and reprocess data for one night.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
         indir (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
         oldext (bool): True to use old extract_star instead of new extractstar
@@ -688,6 +699,8 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
     else:
         delete_old_pysedm_files(outdir, cur_date_str, keep_cubes=keep_cubes,
                                 keep_spec=True)
+    # Remove old raw files
+    delete_old_raw_files(outdir)
 
     # Check calibration status
     cal_good = False
@@ -788,12 +801,18 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
     # END: reproc
 
 
+def re_reduce(rawd=None, redd=None, ut_date=None):
+    """Relink raw files and produce reduced cal files"""
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="""Make cals for PYSEDM pipeline
 
             """, formatter_class=argparse.RawTextHelpFormatter)
 
+    parser.add_argument('--rawdir', type=str, default=_rawpath,
+                        help='Input raw directory (%s)' % _rawpath)
     parser.add_argument('--reduxdir', type=str, default=_reduxpath,
                         help='Output reduced directory (%s)' % _reduxpath)
     parser.add_argument('--date', type=str, default=None,
@@ -808,12 +827,18 @@ if __name__ == '__main__':
                         help='Use old extract_star.py for extraction')
     parser.add_argument('--preserve_cubes', action="store_true", default=False,
                         help='Keep calibs and e3d_*.fits files')
+    parser.add_argument('--reduce', action="store_true", default=False,
+                        help='Re-reduce raw images')
 
     args = parser.parse_args()
 
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
-        reproc(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
-               arch_kpy=args.archive_kpy, arch_pysedm=args.archive_pysedm,
-               oldext=args.oldext, keep_cubes=args.preserve_cubes)
+        if args.reduce:
+            re_reduce(rawd=args.rawdir, redd=args.reduxdir, ut_date=args.date)
+        else:
+            reproc(redd=args.reduxdir, indir=args.date,
+                   nodb=args.nodb, arch_kpy=args.archive_kpy,
+                   arch_pysedm=args.archive_pysedm, oldext=args.oldext,
+                   keep_cubes=args.preserve_cubes)

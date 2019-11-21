@@ -5,6 +5,13 @@ import argparse
 import logging
 import astropy.io.fits as pf
 
+try:
+    import Version
+except ImportError:
+    import drpifu.Version as Version
+
+drp_ver = Version.ifu_drp_version()
+
 header_types = {"TELESCOP": str, "LST": str,
                 "MJD_OBS": float, "JD": float,
                 "APPEQX": float, "EQUINOX": int, "TEL_HA": str,
@@ -40,6 +47,25 @@ header_types = {"TELESCOP": str, "LST": str,
                 "END_SHUT": str, "ENDAIR": float, "ENDDOME": str,
                 "END_RA": str, "END_DEC": str, "END_PA": float,
                 "ENDBARPR": float, "ENDSECPR": float, "ELAPTIME": float}
+
+
+def date_time_from_filename(fname):
+    # get date and time from filename
+    if 'ifu' in fname:
+        date_str = fname.split('ifu')[-1].split('_')[0]
+    elif 'rc' in fname:
+        date_str = fname.split('rc')[-1].split('_')[0]
+    else:
+        date_str = '11111111'
+    date = "-".join([date_str[:4], date_str[4:6], date_str[6:]])
+    try:
+        time_str = fname.split('_', 1)[-1].split('.')[0]
+        time = ":".join([time_str.split('_')[0],
+                         time_str.split('_')[1],
+                         time_str.split('_')[2]])
+    except IndexError:
+        time = "00:00:00"
+    return date, time
 
 
 def sedm_fix_header(fname):
@@ -162,8 +188,13 @@ def sedm_fix_header(fname):
         ff[0].header['HA_REFR'] = (refr, "Telescope HA Refraction")
     # Dome gap
     if 'DOMEGAP' in ff[0].header:
-        domegap = ff[0].header
+        domegap = ff[0].header['DOMEGAP']
         ff[0].header['DOME_GAP'] = domegap
+    # OBSDATE and OBSTIME
+    if 'OBSDATE' not in ff[0].header or 'OBSTIME' not in ff[0].header:
+        dt, tm = date_time_from_filename(fname)
+        ff[0].header['OBSDATE'] = (dt, "UT Start Date")
+        ff[0].header['OBSTIME'] = (tm, "UT Start Time")
 
     # Now verify header
     for k, v in header_types.items():
@@ -209,6 +240,8 @@ def sedm_fix_header(fname):
                         ff[0].header[k] = False
         else:
             logging.warning("Illegal type for keyword %s" % k)
+    # Put version in header
+    ff[0].header['HDRFIXV'] = (drp_ver, "HdrFix version")
     # Close
     ff.close()
 
@@ -237,5 +270,5 @@ if __name__ == "__main__":
         flist = glob.glob(fspec)
         # loop over files
         for file_name in flist:
-            logging.info(file_name)
+            logging.info("Fixing header for %s" % file_name)
             sedm_fix_header(file_name)
