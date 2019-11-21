@@ -4,6 +4,7 @@ import glob
 import argparse
 import logging
 import astropy.io.fits as pf
+from astropy.time import Time
 
 try:
     import Version
@@ -241,7 +242,8 @@ def sedm_fix_header(fname):
         else:
             logging.warning("Illegal type for keyword %s" % k)
     # Put version in header
-    ff[0].header['HDRFIXV'] = (drp_ver, "HdrFix version")
+    ff[0].header['HFIXVERS'] = (drp_ver, "HdrFix version")
+    ff[0].header['HFIXDATE'] = (Time.now().fits, "HdrFix fix date")
     # Close
     ff.close()
 
