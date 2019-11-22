@@ -1822,9 +1822,15 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                              "%d s (bias,crrs), %d s (grid),"
                              "%d s (waves),  and %d s (flat)" %
                              (procb_time, procg_time, procw_time, procf_time))
-
         # Check status
-        if not cube_ready(outdir, cur_date_str):
+        if cube_ready(outdir, cur_date_str):
+            if nodb:
+                logging.warning("Not updating SEDM db")
+            else:
+                # Update spec_calib table in sedmdb
+                spec_calib_id = update_calibration(cur_date_str)
+                logging.info("SEDM db accepted spec_calib at id %d" % spec_calib_id)
+        else:
             logging.error("These calibrations failed!")
             logging.info("Let's get our calibrations from a previous night")
             nct = find_recent(redd, '_TraceMatch.pkl', outdir,
@@ -1852,13 +1858,6 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             logging.info("Using older calibration files")
     else:
         logging.info("Calibrations already present in %s" % outdir)
-
-    if nodb:
-        logging.warning("Not updating SEDM db")
-    else:
-        # Update spec_calib table in sedmdb
-        spec_calib_id = update_calibration(cur_date_str)
-        logging.info("SEDM db accepted spec_calib at id %d" % spec_calib_id)
 
     logging.info("Calibration stage complete, ready for science!")
     # Link recent flux cal file
