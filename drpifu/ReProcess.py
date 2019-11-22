@@ -762,8 +762,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
     """
 
     # Record copies and standard star observations
-    ncp = 0
-    copied = []
+    nextr = 0
     # Get list of source files in destination directory
     srcfiles = sorted(glob.glob(os.path.join(destdir, 'crr_b_ifu*.fits')))
     # Loop over source files
@@ -781,7 +780,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
             ff.close()
             # Get OBJECT keyword
             try:
-                obj = hdr['OBJECT'].replace(" [A]", "").replace(" ", "-")
+                obj = hdr['OBJECT'].split("[").strip().replace(" ", "-")
             except KeyError:
                 logging.warning(
                     "Could not find OBJECT keyword, setting to Test")
@@ -799,11 +798,6 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
             # skip if dome closed
             if 'CLOSED' in dome or 'closed' in dome:
                 continue
-            # record action
-            copied.append(fn)
-            ncp += 1
-            # Fix header
-            sedm_fix_header(fl)
             # are we a standard star?
             if 'STD-' in obj:
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
@@ -843,6 +837,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
+                        nextr += 1
                         cmd = ("pysedm_report.py", datestr, "--contains",
                                fn.split('.')[0])
                         logging.info(" ".join(cmd))
@@ -941,6 +936,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
+                        nextr += 1
                         logging.info("Running SNID for " + fn)
                         cmd = ("make", "classify")
                         logging.info(" ".join(cmd))
@@ -971,7 +967,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                             logging.error("Not found: %s" % proced)
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
-    return ncp, copied
+    return nextr
     # END: dosci
 
 
@@ -1223,7 +1219,7 @@ def re_extract(redd=None, indir=None, nodb=False, oldext=False):
     # change to directory
     os.chdir(outdir)
     # report
-    logging.info("Reduced files to: %s" % outdir)
+    logging.info("Extracted spectra to: %s" % outdir)
     # Get kpy position dictionary
     pos_dic, ndic = read_extract_pos(outdir)
     if ndic <= 0:
@@ -1236,15 +1232,16 @@ def re_extract(redd=None, indir=None, nodb=False, oldext=False):
     else:
         logging.info("Calibrations present in %s" % outdir)
         # Process observations
-        dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic,
-              oldext=oldext)
+        nextr = dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic,
+                      oldext=oldext)
+        logging.info("%d spectra extracted." % nextr)
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
 
     return ret
-    # END: reproc
+    # END: re_extract
 
 
 def re_cube(redd=None, indir=None, nodb=False):
@@ -1306,13 +1303,11 @@ def re_cube(redd=None, indir=None, nodb=False):
             if 'STD-' in obj:
                 if make_e3d(fnam=fl, destdir=destdir, datestr=indir, nodb=nodb):
                     ncube += 1
-                    subprocess.call(["gzip", fl])
             else:
                 # Build cube for science observation
                 if make_e3d(fnam=fl, destdir=destdir, datestr=indir, nodb=nodb,
                             sci=True, hdr=hdr):
                     ncube += 1
-                    subprocess.call(["gzip", fl])
         # END: for fl in srcfiles:
         logging.info("%d cubes made out of %d attempted" % (ncube, ntry))
 
