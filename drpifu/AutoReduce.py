@@ -90,12 +90,13 @@ _reduxpath = cfg_parser.get('paths', 'reduxpath')
 _srcpath = cfg_parser.get('paths', 'srcpath')
 
 
-def cube_ready(caldir='./', cur_date_str=None):
+def cube_ready(caldir='./', cur_date_str=None, avrmslim=35.0):
     """Check for all required calibration files in calibration directory.
 
     Args:
         caldir (str): directory to check
         cur_date_str (str): current date in YYYYMMDD format
+        avrmslim (float): wavelength solution rms limit for success
 
     Returns:
         bool: True if calibration files are present, False if any are missing.
@@ -128,7 +129,8 @@ def cube_ready(caldir='./', cur_date_str=None):
             for line in infil:
                 test = re.findall(r'AvgRMS:', line)
                 if test:
-                    wave_stats_ok = (float(line.split()[-1]) < 25.0)
+                    avrms = float(line.split()[-1])
+                    wave_stats_ok = (avrms < avrmslim)
         # Does wavelength solution pass?
         if wave_stats_ok:
             logging.info("Wavelength stats passed")
@@ -144,7 +146,7 @@ def cube_ready(caldir='./', cur_date_str=None):
             msg['Subject'] = "SEDM Error - Wave solution failure for %s" \
                              % cur_date_str
             msg['From'] = 'No_reply_sedm_robot@astro.caltech.edu'
-            msg.set_content("Wavelength AvgRMS > 25nm")
+            msg.set_content("Wavelength AvgRMS = %.1f > %.1f nm" % (avrms, avrmslim))
             # Send the message via local SMTP server.
             with smtplib.SMTP('smtp-server.astro.caltech.edu') as s:
                 s.send_message(msg)
