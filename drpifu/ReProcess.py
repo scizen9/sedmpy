@@ -780,7 +780,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
             ff.close()
             # Get OBJECT keyword
             try:
-                obj = hdr['OBJECT'].split("[").strip().replace(" ", "-")
+                obj = hdr['OBJECT'].split("[")[0].strip().replace(" ", "-")
             except KeyError:
                 logging.warning(
                     "Could not find OBJECT keyword, setting to Test")
