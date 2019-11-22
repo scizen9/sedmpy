@@ -32,9 +32,11 @@ from astropy.time import Time, TimeDelta
 from configparser import ConfigParser
 import codecs
 try:
-    from AutoReduce import update_spec, make_e3d, update_calibration
+    from AutoReduce import update_spec, make_e3d, update_calibration, \
+        proc_bias_crrs
 except ImportError:
-    from drpifu.AutoReduce import update_spec, make_e3d, update_calibration
+    from drpifu.AutoReduce import update_spec, make_e3d, update_calibration, \
+        proc_bias_crrs
 
 try:
     from HdrFix import sedm_fix_header
@@ -132,8 +134,11 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False, header=None):
                          'STOW' not in obj and 'Test' not in obj)
 
         if copy_this:
-            # Symlink to save disk space
-            os.symlink(src, dest)
+            if '.gz' in src:
+                subprocess.call("gunzip -c %s > %s" % (src, dest), shell=True)
+            else:
+                # Symlink to save disk space
+                os.symlink(src, dest)
             if 'STD-' in obj:
                 nstd = 1
                 logging.info("Standard %s linked to %s" % (obj, dest))
@@ -152,6 +157,60 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False, header=None):
 
     return ncp, nstd, nobj
     # END: docp
+
+
+def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
+    """Copies new science ifu image files from srcdir to destdir.
+
+    Searches for most recent ifu image in destdir and looks for and
+    copies any ifu images in srcdir that are newer and complete.
+    Then bias subtracts and CR rejects the copied images.  If any are standard
+    star observations, process them as well.
+
+    Args:
+        srcdir (str): source directory (typically in /scr2/sedm/raw)
+        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        fsize (int): size of completely copied file in bytes
+        datestr (str): YYYYMMDD date string
+
+    Returns:
+        int: Number of ifu images actually copied
+
+    """
+    # Record copies and standard star observations
+    ncp = 0
+    nstd = 0
+    nobj = 0
+    copied = []
+    stds = []
+    sciobj = []
+    # Get list of source files
+    srcfiles = sorted(glob.glob(os.path.join(srcdir,
+                                             'ifu%s_*.fits*' % datestr)))
+    # Loop over source files
+    for src in srcfiles:
+        # get base filename
+        fn = src.split('/')[-1].split('.gz')[0]
+        destfl = os.path.join(destdir, fn)
+        # Is our source file complete?
+        if os.stat(src).st_size >= fsize or '.gz' in src:
+            # Call copy
+            nc, ns, nob = docp(src, destfl, skip_cals=True)
+            if nc >= 1:
+                copied.append(fn)
+            if ns >= 1:
+                stds.append(fn)
+            if nob >= 1:
+                sciobj.append(fn)
+            # Record copies
+            ncp += nc
+            nstd += ns
+            nobj += nob
+    # We copied files
+    logging.info("Linked/copied %d files" % ncp)
+
+    return ncp, copied
+    # END: cpsci
 
 
 def cpcal(srcdir, destdir='./', fsize=8400960):
@@ -174,14 +233,14 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
     sdate = srcdir.split('/')[-1]
     # Get list of current raw calibration files
     # (within 10 hours of day changeover)
-    fspec = os.path.join(srcdir, "ifu%s_0*.fits" % sdate)
+    fspec = os.path.join(srcdir, "ifu%s_0*.fits*" % sdate)
     flist = sorted(glob.glob(fspec))
     # Record number copied
     ncp = 0
     # Loop over file list
     for src in flist:
         # Get destination filename
-        imf = src.split('/')[-1]
+        imf = src.split('/')[-1].split('.gz')[0]
         destfil = os.path.join(destdir, imf)
         # Does our local file already exist?
         if glob.glob(destfil):
@@ -193,7 +252,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
         # Get source size to compare
         src_size = os.stat(src).st_size
         # Copy only if source complete or larger than local file
-        if src_size >= fsize and src_size > loc_size:
+        if (src_size >= fsize and src_size > loc_size) or '.gz' in src:
             # Read FITS header
             ff = pf.open(src)
             hdr = ff[0].header
@@ -205,10 +264,15 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
                 obj = ''
             # Filter Calibs and avoid test images and be sure it is part of
             # a series.
-            if 'Calib' in obj and 'of' in obj and 'test' not in obj and \
-                    'Test' not in obj:
+            if 'Calib' in obj and 'test' not in obj and 'Test' not in obj:
                 exptime = hdr['EXPTIME']
+                if exptime < 0:
+                    exptime = 0.0
+                    logging.warning("illegal EXPTIME value, setting to 0.0")
                 lampcur = hdr['LAMPCUR']
+                if lampcur < 0:
+                    lampcur = 1.0
+                    logging.warning("illegal LAMPCUR value, setting to 1.0")
                 # Check for dome exposures
                 if 'dome' in obj:
                     if exptime > 100. and ('dome' in obj and
@@ -224,7 +288,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
                             logging.warning("Bad dome - lamp not on: %s" % src)
                 # Check for arcs
                 elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
-                    if exptime > 25.:
+                    if exptime > 10.:
                         # Copy arc images
                         nc, ns, nob = docp(src, destfil, onsky=False,
                                            verbose=True, header=hdr)
@@ -278,10 +342,11 @@ def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
     if os.path.exists(srcdir):
         # Get list of previous night's raw cal files
         # (within four hours of day changeover)
-        flist = sorted(glob.glob(os.path.join(srcdir, "ifu%s_2*.fits*" % pdate)))
+        flist = sorted(glob.glob(os.path.join(srcdir,
+                                              "ifu%s_2*.fits*" % pdate)))
         # Loop over file list
         for src in flist:
-            if os.stat(src).st_size >= fsize:
+            if os.stat(src).st_size >= fsize or '.gz' in src:
                 # Read FITS header
                 ff = pf.open(src)
                 hdr = ff[0].header
@@ -289,21 +354,18 @@ def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
                 # Get OBJECT keyword
                 obj = hdr['OBJECT']
                 # Filter Calibs and avoid test images
-                if 'Calib' in obj and 'of' in obj and 'test' not in obj and \
-                        'Test' not in obj:
+                if 'Calib' in obj and 'test' not in obj and 'Test' not in obj:
                     # Copy cal images
-                    imf = src.split('/')[-1]
+                    imf = src.split('/')[-1].split('.gz')[0]
                     destfil = os.path.join(destdir, imf)
-                    try:
-                        exptime = hdr['EXPTIME']
-                    except KeyError:
-                        exptime = 1.0
-                        logging.warning("EXPTIME keyword not found, setting to 1.0")
-                    try:
-                        lampcur = hdr['LAMPCUR']
-                    except KeyError:
+                    exptime = hdr['EXPTIME']
+                    if exptime < 0:
+                        exptime = 0.0
+                        logging.warning("illegal EXPTIME value, setting to 0.0")
+                    lampcur = hdr['LAMPCUR']
+                    if lampcur < 0:
                         lampcur = 1.0
-                        logging.warning("LAMPCUR keyword not found, setting to 1.0")
+                        logging.warning("illegal LAMPCUR value, setting to 1.0")
                     # Check for dome exposures
                     if 'dome' in obj:
                         if exptime >= 60. and ('dome' in obj and
@@ -323,7 +385,7 @@ def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
                                                 % src)
                     # Check for arcs
                     elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
-                        if exptime > 25.:
+                        if exptime > 10.:
                             # Copy arc images
                             if not os.path.exists(destfil):
                                 nc, ns, nob = docp(src, destfil, onsky=False,
@@ -441,14 +503,33 @@ def cal_proc_ready(caldir='./'):
     xef = glob.glob(os.path.join(caldir, 'Xe.fits'))
     if len(dof) == 1 and len(hgf) == 1 and len(cdf) == 1 and len(xef) == 1:
         ret = True
-    if ret:
-        # Fix headers
-        sedm_fix_header('dome.fits')
-        sedm_fix_header('Hg.fits')
-        sedm_fix_header('Cd.fits')
-        sedm_fix_header('Xe.fits')
     return ret
     # END: cal_proc_ready
+
+
+def archive_old_data(odir, ut_date):
+    """Remove old files and take appropriate action for archiving"""
+    # Extract old positions, if available
+    pos_dict = get_extract_pos(odir, ut_date)
+    # First archive old kpy files (if any)
+    archive_old_kpy_files(odir)
+    # Now remove old pysedm cals and cubes
+    delete_old_pysedm_files(odir, ut_date, keep_spec=True, keep_cubes=False)
+    # Now delete old raw data
+    delete_old_raw_files(odir)
+    # Output positions, if available
+    if len(pos_dict) > 0:
+        ofil = os.path.join(odir, 'old_positions.txt')
+        with open(ofil, 'w') as fh:
+            logging.info("Writing positions to old_positions.txt")
+            for k, v in pos_dict.items():
+                rec = "%s %.2f %.2f" % (k, v[0], v[1])
+                logging.info(rec)
+                fh.write(rec+"\n")
+        logging.info("%d old positions written to old_positions.txt" %
+                     len(pos_dict))
+    else:
+        logging.warning("No old pysedm positions found")
 
 
 def delete_old_raw_files(odir):
@@ -462,15 +543,40 @@ def delete_old_raw_files(odir):
     logging.info("Removed %d old raw files" % len(flist))
 
 
+def clean_raw_data(odir):
+    """Remove unused raw files after reduction"""
+    # Remove intermediate processing files
+    flist = glob.glob(os.path.join(odir, "b_ifu*.fits"))
+    flist.extend(glob.glob(os.path.join(odir, "ifu*.fits")))
+    for fl in flist:
+        os.remove(fl)
+    ndel = len(flist)
+    # Remove calib files
+    flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
+    for fl in flist:
+        ff = pf.open(fl)
+        hdr = ff[0].header
+        ff.close()
+        try:
+            obj = hdr['OBJECT']
+        except KeyError:
+            obj = 'Test'
+        if 'Calib' in obj:
+            os.remove(fl)
+            ndel += 1
+        else:
+            rute = fl.split('/')[-1]
+            if rute.startswith('maskcrr_'):
+                subprocess.call(["gzip", fl])
+
+    return ndel
+
+
 def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     """Remove all the old pysedm output files"""
-    if keep_spec:
-        # Make archive directory
-        archdir = os.path.join(odir, 'pysedm')
-        if not os.path.exists(archdir):
-            os.mkdir(archdir)
-    else:
-        archdir = None
+    # Potential archive directory
+    archdir = os.path.join(odir, 'pysedm')
+    # Keep track of how many files
     ndelfile = 0
     nkeepspec = 0
     nkeepcube = 0
@@ -483,6 +589,10 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
     # Remove or move them
     if len(flist) > 0:
+        if keep_spec:
+            # Make archive directory
+            if not os.path.exists(archdir):
+                os.mkdir(archdir)
         for fl in flist:
             # Do we keep cals and cubes?
             if keep_cubes:
@@ -495,7 +605,8 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
             if keep_spec:
                 if 'spec_' in fl and 'snid' not in fl and \
                         '_ea.fit' not in fl and \
-                        '.png' not in fl and '.pdf' not in fl:
+                        '.png' not in fl and '.pdf' not in fl or \
+                        'report.txt' in fl:
                     shutil.move(fl, archdir)
                     nkeepspec += 1
                 else:
@@ -525,10 +636,8 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
 
 def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
     """Move all the old pysedm output files to ./pysedm/"""
-    # Make archive directory
+    # Potential archive directory
     archdir = os.path.join(odir, 'pysedm')
-    if not os.path.exists(archdir):
-        os.mkdir(archdir)
     # Get list of pysedm files to move
     flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
@@ -538,6 +647,9 @@ def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
     # Move them into the archive
     if len(flist) > 0:
+        # Make archive directory
+        if not os.path.exists(archdir):
+            os.mkdir(archdir)
         nfilemv = 0
         nkeepcube = 0
         for fl in flist:
@@ -565,10 +677,8 @@ def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
 
 def archive_old_kpy_files(odir):
     """Move all the old kpy output files to ./kpy/"""
-    # Make archive directory
+    # Potential archive directory
     archdir = os.path.join(odir, 'kpy')
-    if not os.path.exists(archdir):
-        os.mkdir(archdir)
     # Get list of kpy files to move
     flist = glob.glob(os.path.join(odir, '*.npy'))
     flist.extend(glob.glob(os.path.join(odir, '*SEDM*')))
@@ -594,8 +704,11 @@ def archive_old_kpy_files(odir):
     flist.extend(glob.glob(os.path.join(odir, 'Standard_Correction.pdf')))
     flist.extend(glob.glob(os.path.join(odir, 'run.log')))
     # Move them into the archive
+    nfilemv = 0
     if len(flist) > 0:
-        nfilemv = 0
+        # Make archive directory
+        if not os.path.exists(archdir):
+            os.mkdir(archdir)
         for fl in flist:
             rute = fl.split('/')[-1]
             if not os.path.exists(os.path.join(archdir, rute)):
@@ -606,8 +719,11 @@ def archive_old_kpy_files(odir):
         logging.warning("No old kpy files found in %s" % odir)
     # Now check spec files
     flist = glob.glob(os.path.join(odir, 'spec_*'))
+    nspecmv = 0
     if len(flist) > 0:
-        nspecmv = 0
+        # Make archive directory
+        if not os.path.exists(archdir):
+            os.mkdir(archdir)
         for fl in flist:
             if '_crr_b_ifu' not in fl:
                 shutil.move(fl, archdir)
@@ -616,10 +732,12 @@ def archive_old_kpy_files(odir):
     else:
         logging.warning("No spec files found in %s" % odir)
     # Now gzip the files in the archive
-    flist = os.listdir(archdir)
-    for fl in flist:
-        if 'gz' not in fl:
-            subprocess.run(["gzip", os.path.join(archdir, fl)])
+    if os.path.exists(archdir) and nfilemv+nspecmv > 0:
+        flist = os.listdir(archdir)
+        logging.info("gzipping old kpy files...")
+        for fl in flist:
+            if '.gz' not in fl:
+                subprocess.run(["gzip", os.path.join(archdir, fl)])
     # END: archive_old_kpy_files
 
 
@@ -857,16 +975,40 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
     # END: dosci
 
 
+def read_extract_pos(indir):
+    """Read old_positions.txt into positions dictionary"""
+    pos_dict = {}
+    ndic = 0
+    pfile = os.path.join(indir, 'old_positions.txt')
+    if os.path.exists(pfile):
+        with open(pfile, 'r') as pfh:
+            for cnt, line in enumerate(pfh):
+                parts = line.split()
+                try:
+                    pos_dict[parts[0]] = (float(parts[1]), float(parts[2]))
+                    ndic += 1
+                except:
+                    continue
+    else:
+        logging.warning("old_positions.txt not found in %s" % indir)
+    return pos_dict, ndic
+
+
 def get_extract_pos(indir, indate):
     """Create a dictionary of A positions from pysedm spec_*.fits files"""
     out_dict = {}
-    ndic = 0
+    redo_dict = {}
     # Get input crr_b_ifu files
-    flist = glob.glob(os.path.join(indir, 'crr_b_ifu%s_*.fit*' % indate))
-    # loop over input image files
-    for fl in flist:
+    flist = glob.glob(os.path.join(indir, 'spec_*_crr_b_ifu%s_*.fit*' % indate))
+    # loop over input spec files
+    for specfs in flist:
+        # Skip unwanted spectra
+        if '_aperture_' in specfs:
+            continue
+        if '_ea' in specfs:
+            continue
         # Get fits header
-        ff = pf.open(fl)
+        ff = pf.open(specfs)
         header = ff[0].header
         ff.close()
         # Get OBJECT keyword
@@ -874,58 +1016,37 @@ def get_extract_pos(indir, indate):
             objname = header['OBJECT']
         except KeyError:
             objname = 'Test'
-        # Skip cal files
+        # Skip cal, STD files
         if 'Calib' in objname:
             continue
-        # Gunzip non Calib files
-        if 'gz' in fl:
-            subprocess.call("gunzip %s" % fl, shell=True)
-        # Get spec files
-        rute = fl.split('/')[-1].split('.fit')[0]
-        specfs = glob.glob(os.path.join(indir, 'spec_*_%s_*.fits' % rute))
+        if 'STD-' in objname:
+            continue
+        # Get image ID
+        rute = "ifu" + "_".join(specfs.split('_ifu')[-1].split('_', 4)[:4])
+
         # Find good positions
-        redo_xpos = None
-        redo_ypos = None
-        xpos = None
-        ypos = None
-        nadd = 0
-        for sf in specfs:
-            # Skip unwanted spectra
-            if '_aperture_' in sf:
+        if '_redo' in specfs:
+            try:
+                redo_xpos = header['XPOS']
+                redo_ypos = header['YPOS']
+                redo_dict[rute] = (redo_xpos, redo_ypos)
+            except KeyError:
                 continue
-            if '_ea' in sf:
+        else:
+            try:
+                xpos = header['XPOS']
+                ypos = header['YPOS']
+                out_dict[rute] = (xpos, ypos)
+            except KeyError:
                 continue
-            # Read header
-            ff = pf.open(sf)
-            header = ff[0].header
-            ff.close()
-            if '_redo' in sf:
-                try:
-                    redo_xpos = header['XPOS']
-                    redo_ypos = header['YPOS']
-                except KeyError:
-                    continue
-            else:
-                try:
-                    xpos = header['XPOS']
-                    ypos = header['YPOS']
-                except KeyError:
-                    continue
-        # END for sf in specfs:
-        # Check positions and add to dictionary
-        if redo_xpos is not None and redo_ypos is not None:
-            out_dict[rute] = (redo_xpos, redo_ypos)
-            ndic += 1
-            nadd += 1
-        elif xpos is not None and ypos is not None:
-            out_dict[rute] = (xpos, ypos)
-            ndic += 1
-            nadd += 1
-        if nadd <= 0:
-            logging.warning("No position for %s" % rute)
-    # END for fl in flist:
-    logging.info("Found %d positions in %s" % (ndic, indate))
-    return out_dict, ndic
+    # END for specfs in flist:
+    # Check redo dictionary
+    if len(redo_dict) > 0:
+        for k, v in redo_dict.items():
+            out_dict[k] = v
+
+    logging.info("Found %d positions in %s" % (len(out_dict), indate))
+    return out_dict
     # END: get_extract_pos
 
 
@@ -1075,11 +1196,273 @@ def reproc(redd=None, indir=None, nodb=False, oldext=False,
     # END: reproc
 
 
+def re_extract(redd=None, indir=None, nodb=False, oldext=False):
+    """Re-extract spectra from cube files for one night.
+
+    Args:
+        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
+        indir (str): input directory for single night processing
+        nodb (bool): True if no update to SEDM db
+        oldext (bool): True to use old extract_star instead of new extractstar
+
+    Returns:
+        bool: True if cals completed normally, False otherwise
+
+    """
+    # Default return value
+    ret = False
+    # Report extraction version
+    if oldext:
+        logging.info("Using old extract_star.py routine")
+    else:
+        logging.info("Using new extractstar.py routine")
+    # Output directory is based on redd and indir
+    outdir = os.path.join(redd, indir)
+    # Current date string
+    cur_date_str = indir
+    # change to directory
+    os.chdir(outdir)
+    # report
+    logging.info("Reduced files to: %s" % outdir)
+    # Get kpy position dictionary
+    pos_dic, ndic = read_extract_pos(outdir)
+    if ndic <= 0:
+        logging.warning("No pysedm positions found")
+
+    # Check calibration status
+    if not cube_ready(outdir, cur_date_str):
+        # Report status
+        logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
+    else:
+        logging.info("Calibrations present in %s" % outdir)
+        # Process observations
+        dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic,
+              oldext=oldext)
+        # Re-gzip input files
+        cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
+        logging.info(cmd)
+        subprocess.call(cmd, shell=True)
+
+    return ret
+    # END: reproc
+
+
+def re_cube(redd=None, indir=None, nodb=False):
+    """Create e3d cube files for one night.
+
+    Args:
+        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
+        indir (str): input directory for single night processing
+        nodb (bool): True if no update to SEDM db
+
+    Returns:
+        int: Number of cubes made
+
+    """
+    # Output directory is based on redd and indir
+    destdir = os.path.join(redd, indir)
+    # Report
+    logging.info("Cube files to: %s" % destdir)
+    # Count cubes attempted and successfully made
+    ncube = 0
+    ntry = 0
+    # Check calibration status
+    if not cube_ready(destdir, indir):
+        logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
+    else:
+        logging.info("Calibrations present in %s" % destdir)
+        # Proceed to build e3d cubes
+        # Get list of source files in destination directory
+        srcfiles = sorted(glob.glob(os.path.join(destdir, 'crr_b_ifu*.fits')))
+        # Loop over source files
+        for fl in srcfiles:
+            # Read FITS header
+            ff = pf.open(fl)
+            hdr = ff[0].header
+            ff.close()
+            # Get OBJECT keyword
+            try:
+                obj = hdr['OBJECT']
+            except KeyError:
+                logging.warning(
+                    "Could not find OBJECT keyword, setting to Test")
+                obj = 'Test'
+            # Get DOMEST keyword
+            try:
+                dome = hdr['DOMEST']
+            except KeyError:
+                logging.warning(
+                    "Could not find DOMEST keyword, settting to null")
+                dome = ''
+            # skip Cal files
+            if 'Calib:' in obj:
+                continue
+            # skip if dome closed
+            if 'CLOSED' in dome or 'closed' in dome:
+                continue
+            # Now we try for a cube
+            ntry += 1
+            # are we a standard star?
+            if 'STD-' in obj:
+                if make_e3d(fnam=fl, destdir=destdir, datestr=indir, nodb=nodb):
+                    ncube += 1
+                    subprocess.call(["gzip", fl])
+            else:
+                # Build cube for science observation
+                if make_e3d(fnam=fl, destdir=destdir, datestr=indir, nodb=nodb,
+                            sci=True, hdr=hdr):
+                    ncube += 1
+                    subprocess.call(["gzip", fl])
+        # END: for fl in srcfiles:
+        logging.info("%d cubes made out of %d attempted" % (ncube, ntry))
+
+    return ncube
+    # END: re_cube
+
+
+def re_calib(redd=None, indir=None, nodb=False):
+    """Create calibration files for one night.
+
+    Args:
+        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
+        indir (str): input directory for single night processing
+        nodb (bool): True if no update to SEDM db
+
+    Returns:
+        bool: True if cals completed normally, False otherwise
+
+    """
+    # Output directory is based on redd and indir
+    outdir = os.path.join(redd, indir)
+    # Go there
+    os.chdir(outdir)
+    # Current date string
+    cur_date_str = indir
+    # report
+    logging.info("Calibration files to: %s" % outdir)
+
+    # Check calibration status
+    if not cube_ready(outdir, cur_date_str):
+        # Process calibrations
+        if cal_proc_ready(outdir):
+            # Process calibration
+            start_time = time.time()
+            cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
+                   "--hexagrid")
+            logging.info(" ".join(cmd))
+            subprocess.call(cmd)
+            procg_time = int(time.time() - start_time)
+            if os.path.exists(
+               os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
+                # Process wavelengths
+                start_time = time.time()
+                # Spawn nsub sub-processes to solve wavelengths faster
+                nsub = 8
+                cmd = ("derive_wavesolution.py", cur_date_str,
+                       "--nsub", "%d" % nsub)
+                logging.info(" ".join(cmd))
+                subprocess.Popen(cmd)
+                time.sleep(60)
+                # Get a list of solved spaxels
+                wslist = glob.glob(os.path.join(outdir, cur_date_str +
+                                                '_WaveSolution_range*.pkl'))
+                # Wait until they are all finished
+                nfin = len(wslist)
+                while nfin < nsub:
+                    time.sleep(60)
+                    wslist = glob.glob(
+                        os.path.join(outdir, cur_date_str +
+                                     '_WaveSolution_range*.pkl'))
+                    if len(wslist) != nfin:
+                        print("\nFinished %d out of %d parts"
+                              % (len(wslist), nsub))
+                        nfin = len(wslist)
+                    else:
+                        print(".", end="", flush=True)
+                logging.info("Finished all %d parts, merging..." % nsub)
+                # Merge the solutions
+                subprocess.call(("derive_wavesolution.py", cur_date_str,
+                                 "--merge"))
+                procw_time = int(time.time() - start_time)
+                if os.path.exists(
+                   os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
+                    # Process flat
+                    start_time = time.time()
+                    cmd = ("ccd_to_cube.py", cur_date_str, "--flat")
+                    logging.info(" ".join(cmd))
+                    subprocess.call(cmd)
+                    if not (os.path.exists(
+                            os.path.join(outdir, cur_date_str + '_Flat.fits'))):
+                        logging.info("Making of %s_Flat.fits failed!"
+                                     % cur_date_str)
+                    else:
+                        procf_time = int(time.time() - start_time)
+                        # Report times
+                        logging.info("Calibration processing took %d s (grid), "
+                                     "%d s (waves),  and %d s (flat)" %
+                                     (procg_time, procw_time, procf_time))
+                        if nodb:
+                            logging.warning("Not updating SEDM db")
+                        else:
+                            # Update spec_calib table in sedmdb
+                            spec_calib_id = update_calibration(cur_date_str)
+                            logging.info(
+                                "SEDM db accepted spec_calib at id %d"
+                                % spec_calib_id)
+                        logging.info(
+                            "Calibration stage complete, ready for science!")
+                        # Gzip cal images
+                        subprocess.run(["gzip", "dome.fits", "Hg.fits",
+                                        "Cd.fits", "Xe.fits"])
+                else:
+                    logging.error("Making of wavesolution failed!")
+            else:
+                logging.error("Making of tracematch and hexagrid failed!")
+        # Check status
+        if not cube_ready(outdir, cur_date_str):
+            logging.error("These calibrations failed!")
+    else:
+        logging.info("Calibrations already present in %s" % outdir)
+    # END: re_calib
+
+
 def re_reduce(rawd=None, redd=None, ut_date=None):
-    """Relink raw files and produce reduced cal files"""
-    npre = cpprecal(rawd=rawd, destdir=os.path.join(redd, ut_date) , cdate=ut_date)
-    ncal = cpcal(srcdir=os.path.join(rawd, ut_date), destdir=os.path.join(redd, ut_date))
-    print("%d precal and %d cal images copied" % (npre, ncal))
+    """Relink/copy raw files and produce reduced cal files"""
+    # Input/output directories
+    idir = os.path.join(rawd, ut_date)
+    odir = os.path.join(redd, ut_date)
+
+    # Make sure we are in our output directory
+    os.chdir(odir)
+
+    # Archive/delete any old data
+    archive_old_data(odir, ut_date)
+
+    # Check for precal files
+    npre = cpprecal(rawd=rawd, destdir=odir, cdate=ut_date)
+    logging.info("%d pre-cal images copied" % npre)
+
+    # Now get any cals from this date
+    ncal = cpcal(srcdir=idir, destdir=odir)
+    logging.info("%d cal images copied" % ncal)
+
+    # Now get science images from this date
+    nsci, sci = cpsci(srcdir=idir, destdir=odir, datestr=ut_date)
+    logging.info("%d sci images copied" % nsci)
+
+    # Now do basic reduction
+    proc_bias_crrs(npre+ncal+nsci)
+
+    # Make cal images
+    logging.info("Calling make calimgs")
+    subprocess.call(("make", "calimgs"))
+
+    # Now clean up raw files
+    ncln = clean_raw_data(odir)
+    logging.info("%d raw files cleaned" % ncln)
+
+    logging.info("Reduction complete.")
+    # END: re_reduce
 
 
 if __name__ == '__main__':
@@ -1106,6 +1489,12 @@ if __name__ == '__main__':
                         help='Keep calibs and e3d_*.fits files')
     parser.add_argument('--reduce', action="store_true", default=False,
                         help='Re-reduce raw images')
+    parser.add_argument('--calibrate', action="store_true", default=False,
+                        help='Re-make calibrations')
+    parser.add_argument('--cube', action="store_true", default=False,
+                        help='Re-make e3d*.fits cubes')
+    parser.add_argument('--extract', action="store_true", default=False,
+                        help='Re-extract targets')
 
     args = parser.parse_args()
 
@@ -1114,8 +1503,13 @@ if __name__ == '__main__':
     else:
         if args.reduce:
             re_reduce(rawd=args.rawdir, redd=args.reduxdir, ut_date=args.date)
+        elif args.calibrate:
+            re_calib(redd=args.reduxdir, indir=args.date, nodb=args.nodb)
+        elif args.cube:
+            re_cube(redd=args.reduxdir, indir=args.date, nodb=args.nodb)
+        elif args.extract:
+            re_extract(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
+                       oldext=args.oldext)
         else:
-            reproc(redd=args.reduxdir, indir=args.date,
-                   nodb=args.nodb, arch_kpy=args.archive_kpy,
-                   arch_pysedm=args.archive_pysedm, oldext=args.oldext,
-                   keep_cubes=args.preserve_cubes)
+            logging.error(
+                "Must specify one of --[reduce|calibrate|cube|extract]")
