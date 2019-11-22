@@ -81,6 +81,7 @@ def sedm_fix_header(fname):
         if 'STD-' in obj:
             ff[0].header['IMGTYPE'] = 'Standard'
             ff[0].header['ABPAIR'] = False
+            ff[0].header['NAME'] = obj
         elif 'Calib' in obj:
             if 'dome' in obj:
                 ff[0].header['IMGTYPE'] = 'dome'
@@ -97,9 +98,11 @@ def sedm_fix_header(fname):
                     lamps_dic['XE_LAMP'] = 'on'
                 else:
                     logging.warning("Unknown lamp type")
+            ff[0].header['NAME'] = obj
             ff[0].header['ABPAIR'] = False
         else:
             ff[0].header['IMGTYPE'] = 'Science'
+            ff[0].header['NAME'] = obj.split('[')[0].strip()
             # ABPAIR status (assume true unless otherwise)
             if 'ABPAIR' not in ff[0].header:
                 ff[0].header['ABPAIR'] = True
