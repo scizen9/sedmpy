@@ -77,7 +77,7 @@ def sedm_fix_header(fname):
                  'CD_LAMP': 'off', 'XE_LAMP': 'off'}
     # image type
     if 'OBJECT' in ff[0].header:
-        obj = ff[0].header['OBJECT']
+        obj = ff[0].header['OBJECT'].split('[')[0].strip()
         if 'STD-' in obj:
             ff[0].header['IMGTYPE'] = 'Standard'
             ff[0].header['ABPAIR'] = False
@@ -102,7 +102,7 @@ def sedm_fix_header(fname):
             ff[0].header['ABPAIR'] = False
         else:
             ff[0].header['IMGTYPE'] = 'Science'
-            ff[0].header['NAME'] = obj.split('[')[0].strip()
+            ff[0].header['NAME'] = obj
             # ABPAIR status (assume true unless otherwise)
             if 'ABPAIR' not in ff[0].header:
                 ff[0].header['ABPAIR'] = True
