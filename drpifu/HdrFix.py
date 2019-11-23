@@ -102,7 +102,7 @@ def sedm_fix_header(fname):
             ff[0].header['ABPAIR'] = False
         else:
             ff[0].header['IMGTYPE'] = 'Science'
-            ff[0].header['NAME'] = obj
+            ff[0].header['NAME'] = obj.replace(" ", "-")
             # ABPAIR status (assume true unless otherwise)
             if 'ABPAIR' not in ff[0].header:
                 ff[0].header['ABPAIR'] = True
