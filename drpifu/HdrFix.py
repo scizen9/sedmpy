@@ -199,6 +199,13 @@ def sedm_fix_header(fname):
         dt, tm = date_time_from_filename(fname)
         ff[0].header['OBSDATE'] = (dt, "UT Start Date")
         ff[0].header['OBSTIME'] = (tm, "UT Start Time")
+    # END values
+    if 'ENDAIR' not in ff[0].header:
+        if 'AIRMASS' in ff[0].header:
+            ff[0].header['ENDAIR'] = ff[0].header['AIRMASS']
+    if 'END_PA' not in ff[0].header:
+        if 'TEL_PA' in ff[0].header:
+            ff[0].header['END_PA'] = ff[0].header['TEL_PA']
 
     # Now verify header
     for k, v in header_types.items():
