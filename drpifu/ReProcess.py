@@ -769,7 +769,6 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
     for fl in srcfiles:
         # get base filename
         fn = fl.split('/')[-1]
-        rute = fn.split('.fit')[0]
         procfn = 'spec*auto*' + fn.split('.')[0] + '*.fits'
         proced = glob.glob(os.path.join(destdir, procfn))
         # Is our source file processed?
@@ -894,12 +893,13 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                 if e3d_good:
                     logging.info("e3d science cube generated")
                     # Do we have a position
-                    if rute not in posdic:
-                        logging.info("No position for %s" % rute)
+                    pos_key = fn.split('_', 2)[-1].split('.')[0]
+                    if pos_key not in posdic:
+                        logging.info("No position for %s" % fn)
                         continue
                     # Position
-                    xpos = posdic[rute][0]
-                    ypos = posdic[rute][1]
+                    xpos = posdic[pos_key][0]
+                    ypos = posdic[pos_key][1]
                     # Get seeing
                     seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
                                               save_fig=True)
@@ -948,10 +948,10 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.error("Error running report for " + rute)
+                            logging.error("Error running report for " + fn)
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
-                              (datestr, rute)
+                              (datestr, fn.split('.')[0])
                         subprocess.call(cmd, shell=True)
                         # update database
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
