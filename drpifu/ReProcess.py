@@ -1224,6 +1224,8 @@ def re_extract(redd=None, indir=None, nodb=False, oldext=False):
     pos_dic, ndic = read_extract_pos(outdir)
     if ndic <= 0:
         logging.warning("No pysedm positions found")
+    else:
+        logging.info("%d pysedm positions found" % ndic)
 
     # Check calibration status
     if not cube_ready(outdir, cur_date_str):
