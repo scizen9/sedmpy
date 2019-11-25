@@ -634,32 +634,29 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     # END: delete_old_pysedm_files
 
 
-def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
-    """Move all the old pysedm output files to ./pysedm/"""
+def archive_old_pysedm_extractions(redd=None, ut_date=None):
+    """Move all the old pysedm extraction output files to ./pysedm/"""
+    # TODO: add date stamp to archive file
+    # output dir
+    odir = os.path.join(redd, ut_date)
     # Potential archive directory
     archdir = os.path.join(odir, 'pysedm')
     # Get list of pysedm files to move
-    flist = glob.glob(os.path.join(odir, '%s_*' % ut_date))
-    flist.extend(glob.glob(os.path.join(odir, '*_crr_b_ifu%s*' % ut_date)))
-    flist.extend(glob.glob(os.path.join(odir, 'bkgd_dome.fit*')))
-    flist.extend(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
-    flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
-    flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
+    flist = glob.glob(os.path.join(odir, '*auto*_crr_b_ifu%s*' % ut_date))
+    flist.extend(glob.glob(os.path.join(odir,
+                                        "fluxcal_crr_b_ifu%s*" % ut_date)))
+    flist.extend(glob.glob(os.path.join(odir,
+                                        '*notfluxcal*_crr_b_ifu%s*' % ut_date)))
+    flist.extend(glob.glob(os.path.join(odir, 'report*.txt')))
+    flist.extend(glob.glob(os.path.join(odir, 'rp_extract.log')))
     # Move them into the archive
     if len(flist) > 0:
         # Make archive directory
         if not os.path.exists(archdir):
             os.mkdir(archdir)
         nfilemv = 0
-        nkeepcube = 0
         for fl in flist:
             rute = fl.split('/')[-1]
-            # Do we keep cals and cubes?
-            if keep_cubes:
-                if rute.startswith(ut_date) or \
-                        rute.startswith('e3d_') or rute.startswith('flex'):
-                    nkeepcube += 1
-                    continue
             if not os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
                 nfilemv += 1
@@ -668,10 +665,10 @@ def archive_old_pysedm_files(odir, ut_date, keep_cubes=False):
         for fl in flist:
             if 'gz' not in fl:
                 subprocess.run(["gzip", os.path.join(archdir, fl)])
-        logging.info("Archived %d old pysedm files into %s" %
+        logging.info("Archived %d old pysedm extraction files into %s" %
                      (nfilemv, archdir))
     else:
-        logging.warning("No pysedm files found in %s" % odir)
+        logging.warning("No pysedm extraction files found in %s" % odir)
     # END: archive_old_pysedm_files
 
 
@@ -1046,152 +1043,6 @@ def get_extract_pos(indir, indate):
     # END: get_extract_pos
 
 
-def reproc(redd=None, indir=None, nodb=False, oldext=False,
-           arch_kpy=False, arch_pysedm=False, keep_cubes=False):
-    """Create calibration files and reprocess data for one night.
-
-    Args:
-        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
-        indir (str): input directory for single night processing
-        nodb (bool): True if no update to SEDM db
-        oldext (bool): True to use old extract_star instead of new extractstar
-        arch_kpy (bool): True to archive old kpy files into ./kpy/
-        arch_pysedm (bool): True to archive old pysedm files into ./pysedm/
-        keep_cubes (bool): True to preserve cals and e3d*.fits files
-
-    Returns:
-        bool: True if cals completed normally, False otherwise
-
-    """
-    # Default return value
-    ret = False
-    # Report extraction version
-    if oldext:
-        logging.info("Using old extract_star.py routine")
-    else:
-        logging.info("Using new extractstar.py routine")
-    # Output directory is based on redd and indir
-    outdir = os.path.join(redd, indir)
-    # Current date string
-    cur_date_str = str(outdir.split('/')[-1])
-    # change to directory
-    os.chdir(outdir)
-    # report
-    logging.info("Reduced files to: %s" % outdir)
-    # Get kpy position dictionary
-    pos_dic, ndic = get_extract_pos(outdir, cur_date_str)
-    if ndic <= 0:
-        logging.warning("No pysedm positions found")
-    # Do we archive first?
-    if arch_kpy:
-        archive_old_kpy_files(outdir)
-    if arch_pysedm:
-        archive_old_pysedm_files(outdir, cur_date_str, keep_cubes=keep_cubes)
-    else:
-        delete_old_pysedm_files(outdir, cur_date_str, keep_cubes=keep_cubes,
-                                keep_spec=True)
-    # Remove old raw files
-    delete_old_raw_files(outdir)
-
-    # Check calibration status
-    cal_good = False
-    if not cube_ready(outdir, cur_date_str):
-        # Process calibrations
-        if cal_proc_ready(outdir):
-            # Process calibration
-            start_time = time.time()
-            cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
-                   "--hexagrid")
-            logging.info(" ".join(cmd))
-            subprocess.call(cmd)
-            procg_time = int(time.time() - start_time)
-            if os.path.exists(
-               os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
-                # Process wavelengths
-                start_time = time.time()
-                # Spawn nsub sub-processes to solve wavelengths faster
-                nsub = 8
-                cmd = ("derive_wavesolution.py", cur_date_str,
-                       "--nsub", "%d" % nsub)
-                logging.info(" ".join(cmd))
-                subprocess.Popen(cmd)
-                time.sleep(60)
-                # Get a list of solved spaxels
-                wslist = glob.glob(os.path.join(outdir, cur_date_str +
-                                                '_WaveSolution_range*.pkl'))
-                # Wait until they are all finished
-                nfin = len(wslist)
-                while nfin < nsub:
-                    time.sleep(60)
-                    wslist = glob.glob(
-                        os.path.join(outdir, cur_date_str +
-                                     '_WaveSolution_range*.pkl'))
-                    if len(wslist) != nfin:
-                        print("\nFinished %d out of %d parts"
-                              % (len(wslist), nsub))
-                        nfin = len(wslist)
-                    else:
-                        print(".", end="", flush=True)
-                logging.info("Finished all %d parts, merging..." % nsub)
-                # Merge the solutions
-                subprocess.call(("derive_wavesolution.py", cur_date_str,
-                                 "--merge"))
-                procw_time = int(time.time() - start_time)
-                if os.path.exists(
-                   os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
-                    # Process flat
-                    start_time = time.time()
-                    cmd = ("ccd_to_cube.py", cur_date_str, "--flat")
-                    logging.info(" ".join(cmd))
-                    subprocess.call(cmd)
-                    if not (os.path.exists(
-                            os.path.join(outdir, cur_date_str + '_Flat.fits'))):
-                        logging.info("Making of %s_Flat.fits failed!"
-                                     % cur_date_str)
-                    else:
-                        procf_time = int(time.time() - start_time)
-                        # Report times
-                        logging.info("Calibration processing took %d s (grid), "
-                                     "%d s (waves),  and %d s (flat)" %
-                                     (procg_time, procw_time, procf_time))
-                        if nodb:
-                            logging.warning("Not updating SEDM db")
-                        else:
-                            # Update spec_calib table in sedmdb
-                            spec_calib_id = update_calibration(cur_date_str)
-                            logging.info(
-                                "SEDM db accepted spec_calib at id %d"
-                                % spec_calib_id)
-                        cal_good = True
-                        logging.info(
-                            "Calibration stage complete, ready for science!")
-                        # Gzip cal images
-                        subprocess.run(["gzip", "dome.fits", "Hg.fits",
-                                        "Cd.fits", "Xe.fits"])
-                else:
-                    logging.error("Making of wavesolution failed!")
-            else:
-                logging.error("Making of tracematch and hexagrid failed!")
-        # Check status
-        if not cube_ready(outdir, cur_date_str):
-            logging.error("These calibrations failed!")
-    else:
-        logging.info("Calibrations already present in %s" % outdir)
-        cal_good = True
-    # Proceed to build e3d cubes
-    if cal_good:
-        # Process observations
-        dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic,
-              oldext=oldext)
-        # Re-gzip input files
-        cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
-        logging.info(cmd)
-        subprocess.call(cmd, shell=True)
-
-    return ret
-    # END: reproc
-
-
 def re_extract(redd=None, indir=None, nodb=False, oldext=False):
     """Re-extract spectra from cube files for one night.
 
@@ -1494,10 +1345,13 @@ if __name__ == '__main__':
                         help='Re-extract targets')
 
     args = parser.parse_args()
-    #TODO put in handler for archiving pysedm alone prior to extract
+
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
+        if args.archive_pysedm:
+            archive_old_pysedm_extractions(redd=args.reduxdir,
+                                           ut_date=args.date)
         if args.reduce:
             re_reduce(rawd=args.rawdir, redd=args.reduxdir, ut_date=args.date)
         elif args.calibrate:
