@@ -1,10 +1,14 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import glob
+import os
 import argparse
 import logging
 import astropy.io.fits as pf
 from astropy.time import Time
+
+from configparser import ConfigParser
+import codecs
 
 try:
     import Version
@@ -12,6 +16,21 @@ except ImportError:
     import drpifu.Version as Version
 
 drp_ver = Version.ifu_drp_version()
+
+# Get pipeline configuration
+cfg_parser = ConfigParser()
+# Find config file: default is sedmpy/config/sedmconfig.cfg
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              '../config/sedmconfig.cfg')
+# Open the file with the correct encoding
+with codecs.open(configfile, 'r') as f:
+    cfg_parser.read_file(f)
+# Get path
+_rawpath = cfg_parser.get('paths', 'rawpath')
+
 
 header_types = {"TELESCOP": str, "LST": str,
                 "MJD_OBS": float, "JD": float,
@@ -286,17 +305,20 @@ if __name__ == "__main__":
         description="""Fix FITS headers for SEDM observations.""",
         formatter_class=argparse.RawTextHelpFormatter)
     # setup arguments
-    parser.add_argument('--fspec', type=str, default=None,
+    parser.add_argument('--date', type=str, default=None,
                         help='file spec for fits files')
+    parser.add_argument('--rawdir', type=str, default=_rawpath,
+                        help='raw file directory root (%s)' % _rawpath)
     args = parser.parse_args()
 
-    fspec = args.fspec
-
-    if not fspec:
-        logging.info("Usage - hdrfix --fspec <filespec>")
+    if not args.date:
+        logging.error("Must provide a YYYYMMDD date with --date")
+    elif not args.rawdir:
+        logging.error("Must provide a raw file directory with --dir")
     else:
+        indir = os.path.join(args.rawdir, args.date)
         # get a list of files
-        flist = glob.glob(fspec)
+        flist = glob.glob(os.path.join(indir, "*.fits*"))
         # loop over files
         for file_name in flist:
             logging.info("Fixing header for %s" % file_name)
