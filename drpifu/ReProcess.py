@@ -1494,7 +1494,7 @@ if __name__ == '__main__':
                         help='Re-extract targets')
 
     args = parser.parse_args()
-
+    #TODO put in handler for archiving pysedm alone prior to extract
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     else:
