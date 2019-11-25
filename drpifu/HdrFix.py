@@ -112,6 +112,8 @@ def sedm_fix_header(fname):
                         ff[0].header['ABPAIR'] = ('T' in ff[0].header['ABPAIR'])
                     else:
                         ff[0].header['ABPAIR'] = True
+    else:
+        obj = ''
     # Set lamps
     for k, v in lamps_dic.items():
         # Check current value
@@ -202,12 +204,27 @@ def sedm_fix_header(fname):
     # END values
     if 'ENDAIR' not in ff[0].header:
         if 'AIRMASS' in ff[0].header:
-            ff[0].header['ENDAIR'] = ff[0].header['AIRMASS']
+            ff[0].header['ENDAIR'] = ff[0].header['AIRMASS'] * 1.5
     if 'END_PA' not in ff[0].header:
         if 'TEL_PA' in ff[0].header:
             ff[0].header['END_PA'] = ff[0].header['TEL_PA']
+    # INSTRUME
+    ff[0].header['INSTRUME'] = 'SEDM-P60'
+    # OBJNAME
+    if 'OBJNAME' in ff[0].header:
+        if 'simulated' in ff[0].header['OBJNAME']:
+            ff[0].header['OBJNAME'] = obj
+    else:
+        ff[0].header['OBJNAME'] = obj
+    # SER_NO
+    if 'SER_NO' in ff[0].header:
+        if 'Demo' in ff[0].header['SER_NO']:
+            if 'rc' in fname:
+                ff[0].header['SER_NO'] = '04001312'
+            elif 'ifu' in fname:
+                ff[0].header['SER_NO'] = '05313416'
 
-    # Now verify header
+    # Now verify header types
     for k, v in header_types.items():
         if v == str:
             if k not in ff[0].header:
