@@ -26,6 +26,7 @@ import re
 import subprocess
 import logging
 import argparse
+import datetime
 from astropy.io import fits as pf
 from astropy.time import Time, TimeDelta
 
@@ -37,11 +38,6 @@ try:
 except ImportError:
     from drpifu.AutoReduce import update_spec, make_e3d, update_calibration, \
         proc_bias_crrs
-
-try:
-    from HdrFix import sedm_fix_header
-except ImportError:
-    from drpifu.HdrFix import sedm_fix_header
 
 try:
     import rcimg
@@ -639,8 +635,6 @@ def archive_old_pysedm_extractions(redd=None, ut_date=None):
     # TODO: add date stamp to archive file
     # output dir
     odir = os.path.join(redd, ut_date)
-    # Potential archive directory
-    archdir = os.path.join(odir, 'pysedm')
     # Get list of pysedm files to move
     flist = glob.glob(os.path.join(odir, '*auto*_crr_b_ifu%s*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir,
@@ -651,6 +645,11 @@ def archive_old_pysedm_extractions(redd=None, ut_date=None):
     flist.extend(glob.glob(os.path.join(odir, 'rp_extract.log')))
     # Move them into the archive
     if len(flist) > 0:
+        # get time stamp
+        mdate = datetime.datetime.fromtimestamp(os.path.getmtime(flist[0]))
+        stamp = "%4d%02d%02d" % (mdate.year, mdate.month, mdate.day)
+        # Archive directory
+        archdir = os.path.join(odir, "pysedm_%s" % stamp)
         # Make archive directory
         if not os.path.exists(archdir):
             os.mkdir(archdir)
