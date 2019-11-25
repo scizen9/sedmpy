@@ -1042,12 +1042,12 @@ def get_extract_pos(indir, indate):
     # END: get_extract_pos
 
 
-def re_extract(redd=None, indir=None, nodb=False, oldext=False):
+def re_extract(redd=None, ut_date=None, nodb=False, oldext=False):
     """Re-extract spectra from cube files for one night.
 
     Args:
         redd (str): reduced directory (something like /scr2/sedmdrp/redux)
-        indir (str): input directory for single night processing
+        ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
         oldext (bool): True to use old extract_star instead of new extractstar
 
@@ -1062,10 +1062,8 @@ def re_extract(redd=None, indir=None, nodb=False, oldext=False):
         logging.info("Using old extract_star.py routine")
     else:
         logging.info("Using new extractstar.py routine")
-    # Output directory is based on redd and indir
-    outdir = os.path.join(redd, indir)
-    # Current date string
-    cur_date_str = indir
+    # Output directory is based on redd and ut_date
+    outdir = os.path.join(redd, ut_date)
     # change to directory
     os.chdir(outdir)
     # report
@@ -1078,17 +1076,17 @@ def re_extract(redd=None, indir=None, nodb=False, oldext=False):
         logging.info("%d pysedm positions found" % ndic)
 
     # Check calibration status
-    if not cube_ready(outdir, cur_date_str):
+    if not cube_ready(outdir, ut_date):
         # Report status
         logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
     else:
         logging.info("Calibrations present in %s" % outdir)
         # Process observations
-        nextr = dosci(outdir, datestr=cur_date_str, nodb=nodb, posdic=pos_dic,
+        nextr = dosci(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic,
                       oldext=oldext)
         logging.info("%d spectra extracted." % nextr)
         # Re-gzip input files
-        cmd = ["gzip crr_b_ifu%s*.fits" % cur_date_str]
+        cmd = ["gzip crr_b_ifu%s*.fits" % ut_date]
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
 
@@ -1096,27 +1094,27 @@ def re_extract(redd=None, indir=None, nodb=False, oldext=False):
     # END: re_extract
 
 
-def re_cube(redd=None, indir=None, nodb=False):
+def re_cube(redd=None, ut_date=None, nodb=False):
     """Create e3d cube files for one night.
 
     Args:
         redd (str): reduced directory (something like /scr2/sedmdrp/redux)
-        indir (str): input directory for single night processing
+        ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
 
     Returns:
         int: Number of cubes made
 
     """
-    # Output directory is based on redd and indir
-    destdir = os.path.join(redd, indir)
+    # Output directory is based on redd and ut_date
+    destdir = os.path.join(redd, ut_date)
     # Report
     logging.info("Cube files to: %s" % destdir)
     # Count cubes attempted and successfully made
     ncube = 0
     ntry = 0
     # Check calibration status
-    if not cube_ready(destdir, indir):
+    if not cube_ready(destdir, ut_date):
         logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
     else:
         logging.info("Calibrations present in %s" % destdir)
@@ -1153,12 +1151,13 @@ def re_cube(redd=None, indir=None, nodb=False):
             ntry += 1
             # are we a standard star?
             if 'STD-' in obj:
-                if make_e3d(fnam=fl, destdir=destdir, datestr=indir, nodb=nodb):
+                if make_e3d(fnam=fl, destdir=destdir, datestr=ut_date,
+                            nodb=nodb):
                     ncube += 1
             else:
                 # Build cube for science observation
-                if make_e3d(fnam=fl, destdir=destdir, datestr=indir, nodb=nodb,
-                            sci=True, hdr=hdr):
+                if make_e3d(fnam=fl, destdir=destdir, datestr=ut_date,
+                            nodb=nodb, sci=True, hdr=hdr):
                     ncube += 1
         # END: for fl in srcfiles:
         logging.info("%d cubes made out of %d attempted" % (ncube, ntry))
@@ -1167,58 +1166,56 @@ def re_cube(redd=None, indir=None, nodb=False):
     # END: re_cube
 
 
-def re_calib(redd=None, indir=None, nodb=False):
+def re_calib(redd=None, ut_date=None, nodb=False):
     """Create calibration files for one night.
 
     Args:
         redd (str): reduced directory (something like /scr2/sedmdrp/redux)
-        indir (str): input directory for single night processing
+        ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
 
     Returns:
         bool: True if cals completed normally, False otherwise
 
     """
-    # Output directory is based on redd and indir
-    outdir = os.path.join(redd, indir)
+    # Output directory is based on redd and ut_date
+    outdir = os.path.join(redd, ut_date)
     # Go there
     os.chdir(outdir)
-    # Current date string
-    cur_date_str = indir
     # report
     logging.info("Calibration files to: %s" % outdir)
 
     # Check calibration status
-    if not cube_ready(outdir, cur_date_str):
+    if not cube_ready(outdir, ut_date):
         # Process calibrations
         if cal_proc_ready(outdir):
             # Process calibration
             start_time = time.time()
-            cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
+            cmd = ("ccd_to_cube.py", ut_date, "--tracematch",
                    "--hexagrid")
             logging.info(" ".join(cmd))
             subprocess.call(cmd)
             procg_time = int(time.time() - start_time)
             if os.path.exists(
-               os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
+               os.path.join(outdir, ut_date + '_HexaGrid.pkl')):
                 # Process wavelengths
                 start_time = time.time()
                 # Spawn nsub sub-processes to solve wavelengths faster
                 nsub = 8
-                cmd = ("derive_wavesolution.py", cur_date_str,
+                cmd = ("derive_wavesolution.py", ut_date,
                        "--nsub", "%d" % nsub)
                 logging.info(" ".join(cmd))
                 subprocess.Popen(cmd)
                 time.sleep(60)
                 # Get a list of solved spaxels
-                wslist = glob.glob(os.path.join(outdir, cur_date_str +
+                wslist = glob.glob(os.path.join(outdir, ut_date +
                                                 '_WaveSolution_range*.pkl'))
                 # Wait until they are all finished
                 nfin = len(wslist)
                 while nfin < nsub:
                     time.sleep(60)
                     wslist = glob.glob(
-                        os.path.join(outdir, cur_date_str +
+                        os.path.join(outdir, ut_date +
                                      '_WaveSolution_range*.pkl'))
                     if len(wslist) != nfin:
                         print("\nFinished %d out of %d parts"
@@ -1228,20 +1225,20 @@ def re_calib(redd=None, indir=None, nodb=False):
                         print(".", end="", flush=True)
                 logging.info("Finished all %d parts, merging..." % nsub)
                 # Merge the solutions
-                subprocess.call(("derive_wavesolution.py", cur_date_str,
+                subprocess.call(("derive_wavesolution.py", ut_date,
                                  "--merge"))
                 procw_time = int(time.time() - start_time)
                 if os.path.exists(
-                   os.path.join(outdir, cur_date_str + '_WaveSolution.pkl')):
+                   os.path.join(outdir, ut_date + '_WaveSolution.pkl')):
                     # Process flat
                     start_time = time.time()
-                    cmd = ("ccd_to_cube.py", cur_date_str, "--flat")
+                    cmd = ("ccd_to_cube.py", ut_date, "--flat")
                     logging.info(" ".join(cmd))
                     subprocess.call(cmd)
                     if not (os.path.exists(
-                            os.path.join(outdir, cur_date_str + '_Flat.fits'))):
+                            os.path.join(outdir, ut_date + '_Flat.fits'))):
                         logging.info("Making of %s_Flat.fits failed!"
-                                     % cur_date_str)
+                                     % ut_date)
                     else:
                         procf_time = int(time.time() - start_time)
                         # Report times
@@ -1252,7 +1249,7 @@ def re_calib(redd=None, indir=None, nodb=False):
                             logging.warning("Not updating SEDM db")
                         else:
                             # Update spec_calib table in sedmdb
-                            spec_calib_id = update_calibration(cur_date_str)
+                            spec_calib_id = update_calibration(ut_date)
                             logging.info(
                                 "SEDM db accepted spec_calib at id %d"
                                 % spec_calib_id)
@@ -1266,7 +1263,7 @@ def re_calib(redd=None, indir=None, nodb=False):
             else:
                 logging.error("Making of tracematch and hexagrid failed!")
         # Check status
-        if not cube_ready(outdir, cur_date_str):
+        if not cube_ready(outdir, ut_date):
             logging.error("These calibrations failed!")
     else:
         logging.info("Calibrations already present in %s" % outdir)
@@ -1326,14 +1323,10 @@ if __name__ == '__main__':
                         help='Select date to process')
     parser.add_argument('--nodb', action="store_true", default=False,
                         help='Do not update SEDM Db')
-    parser.add_argument('--archive_kpy', action="store_true", default=False,
-                        help='Archive any existing kpy files')
     parser.add_argument('--archive_pysedm', action="store_true", default=False,
                         help='Archive any existing pysedm files')
     parser.add_argument('--oldext', action="store_true", default=False,
                         help='Use old extract_star.py for extraction')
-    parser.add_argument('--preserve_cubes', action="store_true", default=False,
-                        help='Keep calibs and e3d_*.fits files')
     parser.add_argument('--reduce', action="store_true", default=False,
                         help='Re-reduce raw images')
     parser.add_argument('--calibrate', action="store_true", default=False,
@@ -1351,15 +1344,15 @@ if __name__ == '__main__':
         if args.archive_pysedm:
             archive_old_pysedm_extractions(redd=args.reduxdir,
                                            ut_date=args.date)
-        if args.reduce:
+        elif args.reduce:
             re_reduce(rawd=args.rawdir, redd=args.reduxdir, ut_date=args.date)
         elif args.calibrate:
-            re_calib(redd=args.reduxdir, indir=args.date, nodb=args.nodb)
+            re_calib(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb)
         elif args.cube:
-            re_cube(redd=args.reduxdir, indir=args.date, nodb=args.nodb)
+            re_cube(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb)
         elif args.extract:
-            re_extract(redd=args.reduxdir, indir=args.date, nodb=args.nodb,
+            re_extract(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb,
                        oldext=args.oldext)
         else:
-            logging.error(
-                "Must specify one of --[reduce|calibrate|cube|extract]")
+            logging.error("Must specify one of "
+                          "--[reduce|calibrate|cube|extract|archive_pysedm]")
