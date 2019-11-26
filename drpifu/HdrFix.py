@@ -229,6 +229,8 @@ def sedm_fix_header(fname):
             ff[0].header['END_PA'] = ff[0].header['TEL_PA']
     # INSTRUME
     ff[0].header['INSTRUME'] = 'SEDM-P60'
+    # TELESCOP
+    ff[0].header['TELESCOP'] = '60'
     # OBJNAME
     if 'OBJNAME' in ff[0].header:
         if 'simulated' in ff[0].header['OBJNAME']:
