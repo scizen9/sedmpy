@@ -582,6 +582,10 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
             if not os.path.exists(archdir):
                 os.mkdir(archdir)
         for fl in flist:
+            # Skip deleting linked fluxcal file
+            if 'fluxcal_' in fl and os.path.islink(fl):
+                logging.info("Preserve linked fluxcal file: %s" % fl)
+                continue
             # Do we keep cals and cubes?
             if keep_cubes:
                 rute = fl.split('/')[-1]
