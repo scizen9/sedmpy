@@ -515,15 +515,7 @@ def archive_old_data(odir, ut_date):
     delete_old_raw_files(odir)
     # Output positions, if available
     if len(pos_dict) > 0:
-        ofil = os.path.join(odir, 'old_positions.txt')
-        with open(ofil, 'w') as fh:
-            logging.info("Writing positions to old_positions.txt")
-            for k, v in pos_dict.items():
-                rec = "%s %.2f %.2f" % (k, v[0], v[1])
-                logging.info(rec)
-                fh.write(rec+"\n")
-        logging.info("%d old positions written to old_positions.txt" %
-                     len(pos_dict))
+        write_extract_pos(pos_dict=pos_dict, odir=odir)
     else:
         logging.warning("No old pysedm positions found")
 
@@ -632,9 +624,12 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
 
 def archive_old_pysedm_extractions(redd=None, ut_date=None):
     """Move all the old pysedm extraction output files to ./pysedm/"""
-    # TODO: add date stamp to archive file
-    # output dir
+    # Output dir
     odir = os.path.join(redd, ut_date)
+    # Check for old positions
+    if not os.path.exists(os.path.join(odir, 'old_positions.txt')):
+        pos_dic = get_extract_pos(odir, ut_date)
+        write_extract_pos(pos_dict=pos_dic, odir=odir)
     # Get list of pysedm files to move
     flist = glob.glob(os.path.join(odir, '*auto*_crr_b_ifu%s*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir,
@@ -967,6 +962,19 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
     # END: dosci
 
 
+def write_extract_pos(pos_dict=None, odir=None):
+    """Write old positions to old_positions.txt"""
+    ofil = os.path.join(odir, 'old_positions.txt')
+    with open(ofil, 'w') as fh:
+        logging.info("Writing positions to old_positions.txt")
+        for k, v in pos_dict.items():
+            rec = "%s %.2f %.2f" % (k, v[0], v[1])
+            logging.info(rec)
+            fh.write(rec+"\n")
+    logging.info("%d old positions written to old_positions.txt" %
+                 len(pos_dict))
+
+
 def read_extract_pos(indir):
     """Read old_positions.txt into positions dictionary"""
     pos_dict = {}
@@ -983,7 +991,7 @@ def read_extract_pos(indir):
                     continue
     else:
         logging.warning("old_positions.txt not found in %s" % indir)
-    return pos_dict, ndic
+    return pos_dict
 
 
 def get_extract_pos(indir, indate):
@@ -1069,11 +1077,11 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False):
     # report
     logging.info("Extracted spectra to: %s" % outdir)
     # Get kpy position dictionary
-    pos_dic, ndic = read_extract_pos(outdir)
-    if ndic <= 0:
+    pos_dic = read_extract_pos(outdir)
+    if len(pos_dic) <= 0:
         logging.warning("No pysedm positions found")
     else:
-        logging.info("%d pysedm positions found" % ndic)
+        logging.info("%d pysedm positions found" % len(pos_dic))
 
     # Check calibration status
     if not cube_ready(outdir, ut_date):
