@@ -95,7 +95,7 @@ def sedm_fix_header(fname):
     rute = fname.split('/')[-1]
     # Make sure header is correct
     if len(ff[0].header) < 30:
-        logging.warning("Truncated header for %s" % rute)
+        logging.warning("Short header: %s" % rute)
         return
     # lamp status
     lamps_dic = {'LAMPSTAT': 'off', 'HG_LAMP': 'off',
@@ -122,7 +122,7 @@ def sedm_fix_header(fname):
                 elif 'Xe' in obj:
                     lamps_dic['XE_LAMP'] = 'on'
                 else:
-                    logging.warning("Unknown lamp type for %s" % rute)
+                    logging.warning("Unk. lamp: %s" % rute)
             ff[0].header['NAME'] = obj
             ff[0].header['ABPAIR'] = False
         else:
@@ -155,7 +155,7 @@ def sedm_fix_header(fname):
             ra_rate = float(ff[0].header['RARATE'])
             ff[0].header['RA_RATE'] = ra_rate
         else:
-            logging.warning("No RARATE keyword in %s" % rute)
+            logging.warning("No RARATE: %s" % rute)
             ff[0].header['RA_RATE'] = 0.
     # DEC rate
     if 'DEC_RATE' not in ff[0].header:
@@ -163,7 +163,7 @@ def sedm_fix_header(fname):
             dec_rate = float(ff[0].header['DECRATE'])
             ff[0].header['DEC_RATE'] = dec_rate
         else:
-            logging.warning("No DECRATE keyword in %s" % rute)
+            logging.warning("No DECRATE: %s" % rute)
             ff[0].header['DEC_RATE'] = 0.
     # Humidity
     if 'IN_HUM' not in ff[0].header:
@@ -172,7 +172,7 @@ def sedm_fix_header(fname):
             ff[0].header['IN_HUM'] = rel_hum
         else:
             ff[0].header['IN_HUM'] = -999.
-            logging.warning("No relative humidity in %s" % rute)
+            logging.warning("No humidity: %s" % rute)
     # Temperature
     if 'IN_AIR' not in ff[0].header:
         if 'Inside_Air_Temp' in ff[0].header:
@@ -180,14 +180,14 @@ def sedm_fix_header(fname):
             ff[0].header['IN_AIR'] = in_temp
         else:
             ff[0].header['IN_AIR'] = -999.
-            logging.warning("No inside temperature in %s" % rute)
+            logging.warning("No temperature: %s" % rute)
     # Parallactic Angle
     if 'TEL_PA' not in ff[0].header:
         if 'PRLLTC' in ff[0].header:
             tel_pa = ff[0].header['PRLLTC']
             ff[0].header['TEL_PA'] = tel_pa
         else:
-            logging.warning("No telescope PA in %s" % rute)
+            logging.warning("No PA: %s" % rute)
             ff[0].header['TEL_PA'] = -999.
     # MJD Obs
     if 'MJD_OBS' not in ff[0].header:
@@ -195,7 +195,7 @@ def sedm_fix_header(fname):
             mjd = ff[0].header['JD'] - 2400000.5
             ff[0].header['MJD_OBS'] = mjd
         else:
-            logging.warning("No julian date in %s" % rute)
+            logging.warning("No JD: %s" % rute)
             ff[0].header['MJD_OBS'] = 0.
     # Equinox
     if type(ff[0].header['EQUINOX']) == str:
@@ -294,7 +294,7 @@ def sedm_fix_header(fname):
                     except ValueError:
                         ff[0].header[k] = False
         else:
-            logging.warning("Illegal type for keyword %s in %s" % (k, rute))
+            logging.warning("Illegal type for %s: %s" % (k, rute))
     # Put version in header
     ff[0].header['HFIXVERS'] = (drp_ver, "HdrFix version")
     ff[0].header['HFIXDATE'] = (Time.now().fits, "HdrFix fix date")
