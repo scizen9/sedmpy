@@ -97,6 +97,12 @@ def sedm_fix_header(fname):
     if len(ff[0].header) < 30:
         logging.warning("Short header: %s" % rute)
         return
+    # Equinox
+    if 'EQUINOX' in ff[0].header:
+        if type(ff[0].header['EQUINOX']) == str:
+            ff[0].header['EQUINOX'] = 2000
+    else:
+        logging.warning("Bad header: %s" % rute)
     # lamp status
     lamps_dic = {'LAMPSTAT': 'off', 'HG_LAMP': 'off',
                  'CD_LAMP': 'off', 'XE_LAMP': 'off'}
@@ -197,9 +203,6 @@ def sedm_fix_header(fname):
         else:
             logging.warning("No JD: %s" % rute)
             ff[0].header['MJD_OBS'] = 0.
-    # Equinox
-    if type(ff[0].header['EQUINOX']) == str:
-        ff[0].header['EQUINOX'] = 2000
     # Dome status
     if 'DOMEST' not in ff[0].header:
         ff[0].header['DOMEST'] = 'Open'
