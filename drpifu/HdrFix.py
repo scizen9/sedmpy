@@ -91,6 +91,10 @@ def date_time_from_filename(fname):
 def sedm_fix_header(fname):
     """Make sure required keywords are present and correct"""
     ff = pf.open(fname, 'update')
+    # Make sure header is correct
+    if len(ff[0].header) < 30:
+        logging.warning("Truncated header for %s" % fname)
+        return
     # lamp status
     lamps_dic = {'LAMPSTAT': 'off', 'HG_LAMP': 'off',
                  'CD_LAMP': 'off', 'XE_LAMP': 'off'}
@@ -323,5 +327,6 @@ if __name__ == "__main__":
         flist = glob.glob(os.path.join(indir, "*.fits*"))
         # loop over files
         for file_name in flist:
+
             logging.info("Fixing header for %s" % file_name)
             sedm_fix_header(file_name)
