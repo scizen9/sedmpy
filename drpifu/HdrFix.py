@@ -327,6 +327,4 @@ if __name__ == "__main__":
         flist = glob.glob(os.path.join(indir, "*.fits*"))
         # loop over files
         for file_name in flist:
-
-            logging.info("Fixing header for %s" % file_name)
             sedm_fix_header(file_name)
