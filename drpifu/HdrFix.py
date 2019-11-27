@@ -96,14 +96,14 @@ def sedm_fix_header(fname):
     # Make sure header is correct
     if len(ff[0].header) < 30:
         logging.warning("Short header: %s" % rute)
-        return
+        return False
     # Equinox
     if 'EQUINOX' in ff[0].header:
         if type(ff[0].header['EQUINOX']) == str:
             ff[0].header['EQUINOX'] = 2000
     else:
         logging.warning("Bad header: %s" % rute)
-        return
+        return False
     # lamp status
     lamps_dic = {'LAMPSTAT': 'off', 'HG_LAMP': 'off',
                  'CD_LAMP': 'off', 'XE_LAMP': 'off'}
@@ -305,6 +305,8 @@ def sedm_fix_header(fname):
     # Close
     ff.close()
 
+    return True
+
 
 if __name__ == "__main__":
 
@@ -333,6 +335,13 @@ if __name__ == "__main__":
         flist = glob.glob(os.path.join(indir, "*.fits*"))
         # report
         logging.info("Fixing %d fits headers..." % len(flist))
+        # Count
+        nbad = 0
         # loop over files
         for file_name in flist:
-            sedm_fix_header(file_name)
+            if not sedm_fix_header(file_name):
+                nbad += 1
+        if nbad > 0:
+            logging.warning("%d bad FITS files in %s" % args.date)
+        else:
+            logging.info("%d good FITS files fixed in %s" % args.date)
