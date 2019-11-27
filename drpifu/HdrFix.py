@@ -103,6 +103,7 @@ def sedm_fix_header(fname):
             ff[0].header['EQUINOX'] = 2000
     else:
         logging.warning("Bad header: %s" % rute)
+        return
     # lamp status
     lamps_dic = {'LAMPSTAT': 'off', 'HG_LAMP': 'off',
                  'CD_LAMP': 'off', 'XE_LAMP': 'off'}
