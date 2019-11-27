@@ -342,6 +342,7 @@ if __name__ == "__main__":
             if not sedm_fix_header(file_name):
                 nbad += 1
         if nbad > 0:
-            logging.warning("%d bad FITS files in %s" % args.date)
+            logging.warning("%d bad FITS files in %s" % (nbad, args.date))
         else:
-            logging.info("%d good FITS files fixed in %s" % args.date)
+            logging.info("%d good FITS files fixed in %s" % (len(flist),
+                                                             args.date))
