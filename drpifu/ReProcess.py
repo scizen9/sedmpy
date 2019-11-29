@@ -701,6 +701,8 @@ def archive_old_kpy_files(odir):
     # Move them into the archive
     nfilemv = 0
     if len(flist) > 0:
+        # Add report
+        flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
         # Make archive directory
         if not os.path.exists(archdir):
             os.mkdir(archdir)
