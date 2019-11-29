@@ -1282,7 +1282,7 @@ def re_calib(redd=None, ut_date=None, nodb=False):
     # END: re_calib
 
 
-def re_reduce(rawd=None, redd=None, ut_date=None):
+def re_reduce(rawd=None, redd=None, ut_date=None, noprecal=False):
     """Relink/copy raw files and produce reduced cal files"""
     # Input/output directories
     idir = os.path.join(rawd, ut_date)
@@ -1294,9 +1294,13 @@ def re_reduce(rawd=None, redd=None, ut_date=None):
     # Archive/delete any old data
     archive_old_data(odir, ut_date)
 
-    # Check for precal files
-    npre = cpprecal(rawd=rawd, destdir=odir, cdate=ut_date)
-    logging.info("%d pre-cal images copied" % npre)
+    if noprecal:
+        logging.info("Skipping pre-cal check")
+        npre = 0
+    else:
+        # Check for precal files
+        npre = cpprecal(rawd=rawd, destdir=odir, cdate=ut_date)
+        logging.info("%d pre-cal images copied" % npre)
 
     # Now get any cals from this date
     ncal = cpcal(srcdir=idir, destdir=odir)
@@ -1341,6 +1345,8 @@ if __name__ == '__main__':
                         help='Use old extract_star.py for extraction')
     parser.add_argument('--reduce', action="store_true", default=False,
                         help='Re-reduce raw images')
+    parser.add_argument('--skip_precal', action="store_true", default=False,
+                        help='Skip check for pre-cal data from previous night')
     parser.add_argument('--calibrate', action="store_true", default=False,
                         help='Re-make calibrations')
     parser.add_argument('--cube', action="store_true", default=False,
@@ -1357,7 +1363,8 @@ if __name__ == '__main__':
             archive_old_pysedm_extractions(redd=args.reduxdir,
                                            ut_date=args.date)
         elif args.reduce:
-            re_reduce(rawd=args.rawdir, redd=args.reduxdir, ut_date=args.date)
+            re_reduce(rawd=args.rawdir, redd=args.reduxdir, ut_date=args.date,
+                      noprecal=args.skip_precal)
         elif args.calibrate:
             re_calib(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb)
         elif args.cube:
