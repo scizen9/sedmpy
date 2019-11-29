@@ -404,12 +404,13 @@ def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
     # END: cpprecal
 
 
-def cube_ready(caldir='./', cur_date_str=None):
+def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False):
     """Check for all required calibration files in calibration directory.
 
     Args:
         caldir (str): directory to check
         cur_date_str (str): current date in YYYYMMDD format
+        ignore_bad (bool): should we ignore a bad wave stat?
 
     Returns:
         bool: True if calibration files are present, False if any are missing.
@@ -448,10 +449,13 @@ def cube_ready(caldir='./', cur_date_str=None):
             logging.info("Wavelength stats passed")
         else:
             # NO: move bad files away
-            os.mkdir(os.path.join(caldir, 'bad'))
-            os.system("mv %s_* %s" % (os.path.join(caldir, cur_date_str),
-                                      os.path.join(caldir, 'bad')))
-            logging.warning("Wavelength stats failed, moved cube to 'bad'")
+            if ignore_bad:
+                logging.warning("Wavelength stats failed, proceeding anyway")
+            else:
+                os.mkdir(os.path.join(caldir, 'bad'))
+                os.system("mv %s_* %s" % (os.path.join(caldir, cur_date_str),
+                                          os.path.join(caldir, 'bad')))
+                logging.warning("Wavelength stats failed, moved cube to 'bad'")
     # Do we have all the calibration files?
     ft = os.path.exists(os.path.join(caldir, tmf))
     ftm = os.path.exists(os.path.join(caldir, tmmf))
@@ -1108,13 +1112,14 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False):
     # END: re_extract
 
 
-def re_cube(redd=None, ut_date=None, nodb=False):
+def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
     """Create e3d cube files for one night.
 
     Args:
         redd (str): reduced directory (something like /scr2/sedmdrp/redux)
         ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
+        ignore_bad (boo): should we ignore bad wave stats?
 
     Returns:
         int: Number of cubes made
@@ -1128,7 +1133,7 @@ def re_cube(redd=None, ut_date=None, nodb=False):
     ncube = 0
     ntry = 0
     # Check calibration status
-    if not cube_ready(destdir, ut_date):
+    if not cube_ready(destdir, ut_date, ignore_bad=ignore_bad):
         logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
     else:
         logging.info("Calibrations present in %s" % destdir)
@@ -1353,6 +1358,8 @@ if __name__ == '__main__':
                         help='Re-make calibrations')
     parser.add_argument('--cube', action="store_true", default=False,
                         help='Re-make e3d*.fits cubes')
+    parser.add_argument('--ignore_bad', action="store_true", default=False,
+                        help='Proceed in spite of bad calibration')
     parser.add_argument('--extract', action="store_true", default=False,
                         help='Re-extract targets')
 
@@ -1370,7 +1377,8 @@ if __name__ == '__main__':
         elif args.calibrate:
             re_calib(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb)
         elif args.cube:
-            re_cube(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb)
+            re_cube(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb,
+                    ignore_bad=args.ignore_bad)
         elif args.extract:
             re_extract(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb,
                        oldext=args.oldext)
