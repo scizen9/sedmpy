@@ -452,7 +452,8 @@ def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False):
             if ignore_bad:
                 logging.warning("Wavelength stats failed, proceeding anyway")
             else:
-                os.mkdir(os.path.join(caldir, 'bad'))
+                if not os.path.exists(os.path.join(caldir, 'bad')):
+                    os.mkdir(os.path.join(caldir, 'bad'))
                 os.system("mv %s_* %s" % (os.path.join(caldir, cur_date_str),
                                           os.path.join(caldir, 'bad')))
                 logging.warning("Wavelength stats failed, moved cube to 'bad'")
