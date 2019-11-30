@@ -1060,7 +1060,8 @@ def get_extract_pos(indir, indate):
     # END: get_extract_pos
 
 
-def re_extract(redd=None, ut_date=None, nodb=False, oldext=False):
+def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
+               ignore_bad=False):
     """Re-extract spectra from cube files for one night.
 
     Args:
@@ -1068,6 +1069,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False):
         ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
         oldext (bool): True to use old extract_star instead of new extractstar
+        ignore_bad (bool): extract in spite of bad cals?
 
     Returns:
         bool: True if cals completed normally, False otherwise
@@ -1094,7 +1096,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False):
         logging.info("%d pysedm positions found" % len(pos_dic))
 
     # Check calibration status
-    if not cube_ready(outdir, ut_date):
+    if not cube_ready(outdir, ut_date, ignore_bad=ignore_bad):
         # Report status
         logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
     else:
@@ -1381,7 +1383,7 @@ if __name__ == '__main__':
                     ignore_bad=args.ignore_bad)
         elif args.extract:
             re_extract(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb,
-                       oldext=args.oldext)
+                       oldext=args.oldext, ignore_bad=args.ignore_bad)
         else:
             logging.error("Must specify one of "
                           "--[reduce|calibrate|cube|extract|archive_pysedm]")
