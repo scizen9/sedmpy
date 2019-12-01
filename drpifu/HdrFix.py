@@ -97,6 +97,8 @@ def sedm_fix_header(fname):
     if len(ff[0].header) < 30:
         logging.warning("Short header: %s" % rute)
         return False
+    # Count updated keywords
+    nupkey = 1
     # Equinox
     ff[0].header['EQUINOX'] = 2000
     # lamp status
@@ -109,14 +111,18 @@ def sedm_fix_header(fname):
             ff[0].header['IMGTYPE'] = 'Standard'
             ff[0].header['ABPAIR'] = False
             ff[0].header['NAME'] = obj
+            nupkey += 3
         elif 'Calib' in obj:
             if 'dome' in obj:
                 ff[0].header['IMGTYPE'] = 'dome'
+                nupkey += 1
                 lamps_dic['LAMPSTAT'] = 'on'
             elif 'bias' in obj:
                 ff[0].header['IMGTYPE'] = 'bias'
+                nupkey += 1
             else:
                 ff[0].header['IMGTYPE'] = 'lamp'
+                nupkey += 1
                 if 'Hg' in obj:
                     lamps_dic['HG_LAMP'] = 'on'
                 elif 'Cd' in obj:
@@ -127,18 +133,22 @@ def sedm_fix_header(fname):
                     logging.warning("Unk. lamp: %s" % rute)
             ff[0].header['NAME'] = obj
             ff[0].header['ABPAIR'] = False
+            nupkey += 2
         else:
             ff[0].header['IMGTYPE'] = 'Science'
             ff[0].header['NAME'] = obj.replace(" ", "-")
+            nupkey += 2
             # ABPAIR status (assume true unless otherwise)
             if 'ABPAIR' not in ff[0].header:
                 ff[0].header['ABPAIR'] = True
+                nupkey += 1
             else:
                 if type(ff[0].header['ABPAIR']) != bool:
                     if type(ff[0].header['ABPAIR']) == str:
                         ff[0].header['ABPAIR'] = ('T' in ff[0].header['ABPAIR'])
                     else:
                         ff[0].header['ABPAIR'] = True
+                    nupkey += 1
     else:
         obj = ''
     # Set lamps
@@ -148,9 +158,11 @@ def sedm_fix_header(fname):
             # If null, replace with dic value
             if len(ff[0].header[k]) <= 0:
                 ff[0].header[k] = v
+                nupkey += 1
         # If not in header, use dic value
         else:
             ff[0].header[k] = v
+            nupkey += 1
     # RA rate
     if 'RA_RATE' not in ff[0].header:
         if 'RARATE' in ff[0].header:
@@ -159,6 +171,7 @@ def sedm_fix_header(fname):
         else:
             logging.warning("No RARATE: %s" % rute)
             ff[0].header['RA_RATE'] = 0.
+        nupkey += 1
     # DEC rate
     if 'DEC_RATE' not in ff[0].header:
         if 'DECRATE' in ff[0].header:
@@ -167,6 +180,7 @@ def sedm_fix_header(fname):
         else:
             logging.warning("No DECRATE: %s" % rute)
             ff[0].header['DEC_RATE'] = 0.
+        nupkey += 1
     # Humidity
     if 'IN_HUM' not in ff[0].header:
         if 'Inside_Rel_Hum' in ff[0].header:
@@ -175,6 +189,7 @@ def sedm_fix_header(fname):
         else:
             ff[0].header['IN_HUM'] = -999.
             logging.warning("No humidity: %s" % rute)
+        nupkey += 1
     # Temperature
     if 'IN_AIR' not in ff[0].header:
         if 'Inside_Air_Temp' in ff[0].header:
@@ -183,6 +198,7 @@ def sedm_fix_header(fname):
         else:
             ff[0].header['IN_AIR'] = -999.
             logging.warning("No temperature: %s" % rute)
+        nupkey += 1
     # Parallactic Angle
     if 'TEL_PA' not in ff[0].header:
         if 'PRLLTC' in ff[0].header:
@@ -191,6 +207,7 @@ def sedm_fix_header(fname):
         else:
             logging.warning("No PA: %s" % rute)
             ff[0].header['TEL_PA'] = -999.
+        nupkey += 1
     # MJD Obs
     if 'MJD_OBS' not in ff[0].header:
         if 'JD' in ff[0].header:
@@ -199,14 +216,17 @@ def sedm_fix_header(fname):
         else:
             logging.warning("No JD: %s" % rute)
             ff[0].header['MJD_OBS'] = 0.
+        nupkey += 1
     # Dome status
     if 'DOMEST' not in ff[0].header:
         ff[0].header['DOMEST'] = 'Open'
+        nupkey += 1
     # FOCUS keywords
     if 'FOCPOS' not in ff[0].header:
         if 'SECFOCUS' in ff[0].header:
             focus = ff[0].header['SECFOCUS']
             ff[0].header['FOCPOS'] = (focus, "Position of secondary focus")
+            nupkey += 1
     # Refraction keywords
     if 'HA_REFR' not in ff[0].header:
         if 'HAREFR' in ff[0].header:
@@ -216,32 +236,40 @@ def sedm_fix_header(fname):
         else:
             refr = -999.
         ff[0].header['HA_REFR'] = (refr, "Telescope HA Refraction")
+        nupkey += 1
     # Dome gap
     if 'DOMEGAP' in ff[0].header:
         domegap = ff[0].header['DOMEGAP']
         ff[0].header['DOME_GAP'] = domegap
+        nupkey += 1
     # OBSDATE and OBSTIME
     if 'OBSDATE' not in ff[0].header or 'OBSTIME' not in ff[0].header:
         dt, tm = date_time_from_filename(fname)
         ff[0].header['OBSDATE'] = (dt, "UT Start Date")
         ff[0].header['OBSTIME'] = (tm, "UT Start Time")
+        nupkey += 2
     # END values
     if 'ENDAIR' not in ff[0].header:
         if 'AIRMASS' in ff[0].header:
             ff[0].header['ENDAIR'] = ff[0].header['AIRMASS'] * 1.5
+            nupkey += 1
     if 'END_PA' not in ff[0].header:
         if 'TEL_PA' in ff[0].header:
             ff[0].header['END_PA'] = ff[0].header['TEL_PA']
+            nupkey += 1
     # INSTRUME
     ff[0].header['INSTRUME'] = 'SEDM-P60'
     # TELESCOP
     ff[0].header['TELESCOP'] = '60'
+    nupkey += 2
     # OBJNAME
     if 'OBJNAME' in ff[0].header:
         if 'simulated' in ff[0].header['OBJNAME']:
             ff[0].header['OBJNAME'] = obj
+            nupkey += 1
     else:
         ff[0].header['OBJNAME'] = obj
+        nupkey += 1
     # SER_NO
     if 'SER_NO' in ff[0].header:
         if 'Demo' in ff[0].header['SER_NO']:
@@ -249,12 +277,14 @@ def sedm_fix_header(fname):
                 ff[0].header['SER_NO'] = '04001312'
             elif 'ifu' in fname:
                 ff[0].header['SER_NO'] = '05313416'
+            nupkey += 1
 
     # Now verify header types
     for k, v in header_types.items():
         if v == str:
             if k not in ff[0].header:
                 ff[0].header[k] = ''
+                nupkey += 1
             else:
                 if type(ff[0].header[k]) != v:
                     try:
@@ -262,9 +292,11 @@ def sedm_fix_header(fname):
                         ff[0].header[k] = newval
                     except ValueError:
                         ff[0].header[k] = ''
+                    nupkey += 1
         elif v == float:
             if k not in ff[0].header:
                 ff[0].header[k] = -999.
+                nupkey += 1
             else:
                 if type(ff[0].header[k]) != v:
                     try:
@@ -272,9 +304,11 @@ def sedm_fix_header(fname):
                         ff[0].header[k] = newval
                     except ValueError:
                         ff[0].header[k] = -999.
+                    nupkey += 1
         elif v == int:
             if k not in ff[0].header:
                 ff[0].header[k] = -999
+                nupkey += 1
             else:
                 if type(ff[0].header[k]) != v:
                     try:
@@ -282,9 +316,11 @@ def sedm_fix_header(fname):
                         ff[0].header[k] = newval
                     except ValueError:
                         ff[0].header[k] = -999
+                    nupkey += 1
         elif v == bool:
             if k not in ff[0].header:
                 ff[0].header[k] = False
+                nupkey += 1
             else:
                 if type(ff[0].header[k]) != v:
                     try:
@@ -292,11 +328,13 @@ def sedm_fix_header(fname):
                         ff[0].header[k] = newval
                     except ValueError:
                         ff[0].header[k] = False
+                    nupkey += 1
         else:
             logging.warning("Illegal type for %s: %s" % (k, rute))
     # Put version in header
     ff[0].header['HFIXVERS'] = (drp_ver, "HdrFix version")
     ff[0].header['HFIXDATE'] = (Time.now().fits, "HdrFix fix date")
+    ff[0].header['HFIXNKEY'] = (nupkey, "HdrFix number of updated keywords")
     # Close
     ff.close()
 
