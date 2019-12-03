@@ -264,7 +264,8 @@ def sedm_fix_header(fname):
     nupkey += 2
     # OBJNAME
     if 'OBJNAME' in ff[0].header:
-        if 'simulated' in ff[0].header['OBJNAME']:
+        if 'simulated' in ff[0].header['OBJNAME'] or \
+                'telinit' in ff[0].header['OBJNAME']:
             ff[0].header['OBJNAME'] = obj
             nupkey += 1
     else:
