@@ -279,6 +279,13 @@ def sedm_fix_header(fname):
             elif 'ifu' in fname:
                 ff[0].header['SER_NO'] = '05313416'
             nupkey += 1
+    # OBJRA, OBJDEC
+    if 'OBJRA' not in ff[0].header:
+        if 'OBRA' in ff[0].header:
+            ff[0].header['OBJRA'] = ff[0].header['OBRA']
+    if 'OBJDEC' not in ff[0].header:
+        if 'OBDEC' in ff[0].header:
+            ff[0].header['OBJDEC'] = ff[0].header['OBDEC']
 
     # Now verify header types
     for k, v in header_types.items():
