@@ -531,9 +531,13 @@ def delete_old_raw_files(odir):
     # Get list of raw files to remove
     flist = glob.glob(os.path.join(odir, "*.fits*"))
     flist.extend(glob.glob(os.path.join(odir, '*.lst')))
+    ndel = 0
     for fl in flist:
+        if 'fluxcal_' in fl and os.path.islink(fl):
+            continue
         os.remove(fl)
-    logging.info("Removed %d old raw files" % len(flist))
+        ndel += 1
+    logging.info("Removed %d old raw files" % ndel)
 
 
 def clean_raw_data(odir):
