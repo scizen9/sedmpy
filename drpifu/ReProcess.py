@@ -605,7 +605,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
             # Keep spectra?
             if keep_spec:
                 if 'spec_' in fl and 'snid' not in fl and \
-                        '_ea.fit' not in fl and \
+                        '_ea.fit' not in fl and '_failed' not in fl and \
                         '.png' not in fl and '.pdf' not in fl or \
                         'report.txt' in fl:
                     shutil.move(fl, archdir)
@@ -1021,6 +1021,8 @@ def get_extract_pos(indir, indate):
         if '_aperture_' in specfs:
             continue
         if '_ea' in specfs:
+            continue
+        if '_failed' in specfs:
             continue
         # Get fits header
         ff = pf.open(specfs)
