@@ -533,7 +533,7 @@ def delete_old_raw_files(odir):
     flist.extend(glob.glob(os.path.join(odir, '*.lst')))
     ndel = 0
     for fl in flist:
-        if 'fluxcal_' in fl and os.path.islink(fl):
+        if os.path.islink(fl):
             continue
         os.remove(fl)
         ndel += 1
