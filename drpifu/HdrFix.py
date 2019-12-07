@@ -369,21 +369,29 @@ if __name__ == "__main__":
     if not args.date:
         logging.error("Must provide a YYYYMMDD date with --date")
     elif not args.rawdir:
-        logging.error("Must provide a raw file directory with --dir")
+        logging.error("Must provide a raw file directory with --rawdir")
     else:
+        # Get input directory
         indir = os.path.join(args.rawdir, args.date)
+        # Get a place to put bad files, if needed
+        badir = os.path.join(indir, 'bad')
         # get a list of files
         flist = glob.glob(os.path.join(indir, "*.fits*"))
         # report
         logging.info("Fixing %d fits headers..." % len(flist))
         # Count
         nbad = 0
+        ngood = 0
         # loop over files
         for file_name in flist:
-            if not sedm_fix_header(file_name):
+            if sedm_fix_header(file_name):
+                ngood += 1
+            else:
                 nbad += 1
+                if not os.path.exists(badir):
+                    os.mkdir(badir)
+                os.system("mv %s %s" % (file_name, badir))
         if nbad > 0:
             logging.warning("%d bad FITS files in %s" % (nbad, args.date))
-        else:
-            logging.info("%d good FITS files fixed in %s" % (len(flist),
-                                                             args.date))
+        if ngood > 0:
+            logging.info("%d good FITS files fixed in %s" % (ngood, args.date))
