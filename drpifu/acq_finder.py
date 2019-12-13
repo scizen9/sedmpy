@@ -304,15 +304,19 @@ if __name__ == "__main__":
             continue
         if "IMGTYPE" in ff[0].header:
             imgtype = ff[0].header["IMGTYPE"]
-            if ((imgtype.upper() == "ACQUISITION" or
-                 "ACQ" in imgtype.upper()) and ("TEST" not in imgtype.upper())):
-                if "OBJECT" in ff[0].header:
-                    obj = ff[0].header["OBJECT"]
-                    if objnam:
-                        if objnam in obj:
-                            filesacq.append(f)
-                    else:
-                        filesacq.append(f)
+        else:
+            imgtype = ''
+        if "OBJECT" in ff[0].header:
+            obj = ff[0].header["OBJECT"]
+        else:
+            obj = ''
+        if (imgtype.upper() == "ACQUISITION" or "ACQ" in imgtype.upper() or
+           "ACQ" in obj) and ("TEST" not in imgtype.upper()):
+            if objnam:
+                if objnam in obj:
+                    filesacq.append(f)
+            else:
+                filesacq.append(f)
         else:
             if 'OBJECT' in ff[0].header:
                 if 'finding' in ff[0].header['OBJECT'] and \
