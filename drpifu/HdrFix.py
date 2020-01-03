@@ -4,6 +4,7 @@ import glob
 import os
 import argparse
 import logging
+import subprocess
 import astropy.io.fits as pf
 from astropy.time import Time
 
@@ -393,5 +394,9 @@ if __name__ == "__main__":
                 os.system("mv %s %s" % (file_name, badir))
         if nbad > 0:
             logging.warning("%d bad FITS files in %s" % (nbad, args.date))
+            logging.info("gzipping bad files")
+            blist = os.listdir(badir)
+            for fl in blist:
+                subprocess.run(["gzip", os.path.join(badir, fl)])
         if ngood > 0:
             logging.info("%d good FITS files fixed in %s" % (ngood, args.date))
