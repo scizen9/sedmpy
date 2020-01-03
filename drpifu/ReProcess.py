@@ -584,6 +584,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     flist.extend(glob.glob(os.path.join(odir, 'e3d_dome.fit*')))
     flist.extend(glob.glob(os.path.join(odir, 'pysedm_run.log')))
     flist.extend(glob.glob(os.path.join(odir, 'report.txt')))
+    flist.extend(glob.glob(os.path.join(odir, 'snid.param')))
     # Remove or move them
     if len(flist) > 0:
         if keep_spec:
