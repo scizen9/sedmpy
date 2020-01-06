@@ -136,12 +136,18 @@ def identify_observations(headers):
     print("\n-- Standard Star Sets --")
     for k, v in objs.items():
         if "STD-" in k:
-            print("%20s : %2.0i" % (k, len(v[1])))
+            outstr = "%20s : %2.0i " % (k, len(v))
+            for kk, w in v.items():
+                outstr = outstr + " %d" % len(w)
+            print(outstr)
 
     print("\n-- Science Object Sets --")
     for k, v in objs.items():
         if "STD-" not in k:
-            print("%20s : %2.0i" % (k, len(v)))
+            outstr = "%20s : %2.0i " % (k, len(v))
+            for kk, w in v.items():
+                outstr = outstr + " %d" % len(w)
+            print(outstr)
 
     return objs, calibs
 
@@ -269,8 +275,6 @@ def to_makefile(objs, calibs, make_rc):
 
     for calibname, imfiles in calibs.items():
 
-        if "bias" not in calibname:
-            pass
         makefile += makefile_imcombine(calibname, imfiles)
         all_targs += "%s.fits " % calibname
 
@@ -281,6 +285,24 @@ def to_makefile(objs, calibs, make_rc):
         preamble = make_preamble_rc
     else:
         preamble = make_preamble
+
+    outstr = ""
+    arepairs = False
+    for k, v in objs.items():
+        if "STD-" not in k:
+            ispair = False
+            objstr = "%s" % k
+            for kk, w in v.items():
+                if len(w) == 2:
+                    ispair = True
+                    arepairs = True
+                    objstr += " %s %s\n" % (w[0], w[1])
+            if ispair:
+                outstr += objstr
+    if arepairs:
+        f = open("abpairs.tab", "w")
+        f.write(outstr)
+        f.close()
 
     f = open("Makefile", "w")
     clean = "\n\nclean:\n\trm %s" % all_targs
