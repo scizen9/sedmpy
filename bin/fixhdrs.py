@@ -36,7 +36,7 @@ if __name__ == '__main__':
                 for fl in uzlist:
                     if '.fits.gz' in fl:
                         subprocess.run(["gunzip", os.path.join(rd, fl)])
-                subprocess.run(["/scr2/sedmdrp/spy", "/home/sedm/HdrFix.py", "--rawdir", rdir, "--date", rd.split('/')[-1]])
+                subprocess.run(["/scr2/sedmdrp/spy", "/scr2/sedmdrp/sedmpy/drpifu/HdrFix.py", "--rawdir", rdir, "--date", rd.split('/')[-1]])
                 if not args.no_rezip:
                     zlist = os.listdir(rd)
                     print("gzipping %d files" % len(zlist))
