@@ -31,19 +31,23 @@ if __name__ == '__main__':
             if sdate <= int(fdate) <= edate:
                 print(rd)
                 # reduce
-                cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --reduce --date %s | & tee -a rp_reduce.log" % fdate
+                cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --reduce --date %s >& rp_reduce.log" % fdate
+                print(cmd)
                 os.system(cmd)
                 os.system("mv rp_reduce %s" % fdate)
                 # calibrate
-                cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --calibrate --date %s | & tee -a rp_calibrate.log" % fdate
+                cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --calibrate --date %s >& rp_calibrate.log" % fdate
+                print(cmd)
                 os.system(cmd)
                 os.system("mv rp_calibrate %s" % fdate)
                 # cube
-                cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --cube --date %s | & tee -a rp_cube.log" % fdate
+                cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --cube --date %s >& rp_cube.log" % fdate
+                print(cmd)
                 os.system(cmd)
                 os.system("mv rp_cube %s" % fdate)
                 # extract?
                 if args.extract:
-                    cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --extract --date %s | & tee -a rp_extract.log" % fdate
+                    cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --extract --date %s >& rp_extract.log" % fdate
+                    print(cmd)
                     os.system(cmd)
                     os.system("mv rp_extract %s" % fdate)
