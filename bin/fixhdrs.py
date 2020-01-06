@@ -14,8 +14,8 @@ if __name__ == '__main__':
             help='starting date for fixing headers')
     parser.add_argument('--end_date', type=str, default='20161231',
             help='ending date for fixing headers')
-    parser.add_argument('--no_rezip', action="store_true", default=False,
-            help='Do not re-gzip image files')
+    parser.add_argument('--rezip', action="store_true", default=False,
+            help='Re-gzip image files')
 
     args = parser.parse_args()
 
@@ -37,12 +37,12 @@ if __name__ == '__main__':
                     if '.fits.gz' in fl:
                         subprocess.run(["gunzip", os.path.join(rd, fl)])
                 subprocess.run(["/scr2/sedmdrp/spy", "/scr2/sedmdrp/sedmpy/drpifu/HdrFix.py", "--rawdir", rdir, "--date", rd.split('/')[-1]])
-                if not args.no_rezip:
+                if args.rezip:
                     zlist = os.listdir(rd)
                     print("gzipping %d files" % len(zlist))
                     for fl in zlist:
                         if '.fits' in fl:
                             subprocess.run(["gzip", os.path.join(rd, fl)])
                 else:
-                    print("skipping gzipping")
+                    print("skipping re-zipping")
 
