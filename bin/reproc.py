@@ -34,20 +34,20 @@ if __name__ == '__main__':
                 cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --reduce --date %s >& rp_reduce.log" % fdate
                 print(cmd)
                 os.system(cmd)
-                os.system("mv rp_reduce %s" % fdate)
+                os.system("mv rp_reduce.log %s" % fdate)
                 # calibrate
                 cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --calibrate --date %s >& rp_calibrate.log" % fdate
                 print(cmd)
                 os.system(cmd)
-                os.system("mv rp_calibrate %s" % fdate)
+                os.system("mv rp_calibrate.log %s" % fdate)
                 # cube
                 cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --cube --date %s >& rp_cube.log" % fdate
                 print(cmd)
                 os.system(cmd)
-                os.system("mv rp_cube %s" % fdate)
+                os.system("mv rp_cube.log %s" % fdate)
                 # extract?
                 if args.extract:
                     cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --extract --date %s >& rp_extract.log" % fdate
                     print(cmd)
                     os.system(cmd)
-                    os.system("mv rp_extract %s" % fdate)
+                    os.system("mv rp_extract.log %s" % fdate)
