@@ -1212,7 +1212,7 @@ def get_mid_time(tstr_a, tstr_b):
     da = tstr_a[6:8]
     db = tstr_b[6:8]
     date_a = ya + '-' + ma + '-' + da
-    date_b = yb + '_' + mb + '-' + db
+    date_b = yb + '-' + mb + '-' + db
     ha = tstr_a.split('_')[1]
     hb = tstr_b.split('_')[1]
     ma = tstr_a.split('_')[2]
@@ -1223,7 +1223,10 @@ def get_mid_time(tstr_a, tstr_b):
     time_b = hb + ':' + mb + ':' + sb
     ts_a = Time("%s %s" % (date_a, time_a))
     ts_b = Time("%s %s" % (date_b, time_b))
-    return (ts_a + ts_b) / 2.
+    tdel = ts_b - ts_a
+    if tdel.sec > 3600:
+        logging.warning("Time between A/B pair > 3600 s: %.1f s" % tdel.sec)
+    return ts_a + tdel / 2.
 
 
 def make_abpair_cubes(destdir=None):
@@ -1233,29 +1236,44 @@ def make_abpair_cubes(destdir=None):
     with open(os.path.join(destdir, 'abpairs.tab'), 'r') as abf:
         plines = abf.readlines()
     for pl in plines:
+        # parse line
         obj = pl.split()[0]
+        # get time stamps for A/B
         ts_a = pl.split()[1].split('ifu')[-1].split('.fits')[0]
         ts_b = pl.split()[2].split('ifu')[-1].split('.fits')[0]
         ts_ab = get_mid_time(ts_a, ts_b)
+        # get input cubes
         fla = pre + pl.split()[1].split('.fits')[0] + '_' + obj + '.fits'
         flb = pre + pl.split()[2].split('.fits')[0] + '_' + obj + '.fits'
+        # are they present?
         fla_exists = os.path.exists(os.path.join(destdir, fla))
         flb_exists = os.path.exists(os.path.join(destdir, flb))
         if fla_exists and flb_exists:
-            hdu_a = pf.open(fla)
-            hdu_b = pf.open(flb)
+            hdu_a = pf.open(os.path.join(destdir, fla))
+            hdu_b = pf.open(os.path.join(destdir, flb))
+            # do the subtraction
             ima = hdu_a[0].data
             imb = hdu_b[0].data
             dif = ima - imb
             hdu_a[0].data = dif
-            mjda = hdu_a[0].header['MJD_OBS']
-            mjdb = hdu_b[0].header['MJD_OBS']
-            hdu_a[0].header['MJD_OBS'] = (mjda + mjdb) / 2.
+            # update header
+            mjd = ts_ab.jd - 2400000.5
+            hdu_a[0].header['MJD_OBS'] = mjd
             aira = hdu_a[0].header['AIRMASS']
             airb = hdu_b[0].header['AIRMASS']
             hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
             hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
             hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
+            # get output file name
+            ots = str(ts_ab.value
+                      ).replace('-',
+                                '').replace(':',
+                                            '_').replace(' ',
+                                                         '_').split('.')[0]
+            flab = pre + 'ifu' + ots + '_' + obj + '.fits'
+            with open(os.path.join(destdir, flab), 'bw') as ff:
+                hdu_a.writeto(ff)
+            logging.info("wrote A/B cube %s" % flab)
         else:
             logging.warning("Both input cubes not found for %s" % obj)
             if not fla_exists:
