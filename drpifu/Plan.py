@@ -290,15 +290,12 @@ def to_makefile(objs, calibs, make_rc):
     arepairs = False
     for k, v in objs.items():
         if "STD-" not in k:
-            ispair = False
-            objstr = "%s" % k
             for kk, w in v.items():
+                objstr = "%s" % k
                 if len(w) == 2:
-                    ispair = True
                     arepairs = True
                     objstr += " %s %s\n" % (w[0], w[1])
-            if ispair:
-                outstr += objstr
+                    outstr += objstr
     if arepairs:
         f = open("abpairs.tab", "w")
         f.write(outstr)
