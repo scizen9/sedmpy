@@ -1192,9 +1192,77 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
                     ncube += 1
         # END: for fl in srcfiles:
         logging.info("%d cubes made out of %d attempted" % (ncube, ntry))
+        logging.info("now looking for abpairs.tab")
+        if os.path.exists(os.path.join(destdir, 'abpairs.tab')):
+            logging.info("found it!")
+            nab = make_abpair_cubes(destdir)
+            logging.info("%d A/B pair cubes made")
+        else:
+            logging.info("No A/B pairs found.")
 
     return ncube
     # END: re_cube
+
+
+def get_mid_time(tstr_a, tstr_b):
+    ya = tstr_a[0:4]
+    yb = tstr_b[0:4]
+    ma = tstr_a[4:6]
+    mb = tstr_b[4:6]
+    da = tstr_a[6:8]
+    db = tstr_b[6:8]
+    date_a = ya + '-' + ma + '-' + da
+    date_b = yb + '_' + mb + '-' + db
+    ha = tstr_a.split('_')[1]
+    hb = tstr_b.split('_')[1]
+    ma = tstr_a.split('_')[2]
+    mb = tstr_b.split('_')[2]
+    sa = tstr_a.split('_')[3]
+    sb = tstr_b.split('_')[3]
+    time_a = ha + ':' + ma + ':' + sa
+    time_b = hb + ':' + mb + ':' + sb
+    ts_a = Time("%s %s" % (date_a, time_a))
+    ts_b = Time("%s %s" % (date_b, time_b))
+    return (ts_a + ts_b) / 2.
+
+
+def make_abpair_cubes(destdir=None):
+    """Generate A/B pair cubes"""
+    nab = 0
+    pre = 'e3d_crr_b_'
+    with open(os.path.join(destdir, 'abpairs.tab'), 'r') as abf:
+        plines = abf.readlines()
+    for pl in plines:
+        obj = pl.split()[0]
+        ts_a = pl.split()[1].split('ifu')[-1].split('.fits')[0]
+        ts_b = pl.split()[2].split('ifu')[-1].split('.fits')[0]
+        ts_ab = get_mid_time(ts_a, ts_b)
+        fla = pre + pl.split()[1].split('.fits')[0] + '_' + obj + '.fits'
+        flb = pre + pl.split()[2].split('.fits')[0] + '_' + obj + '.fits'
+        fla_exists = os.path.exists(os.path.join(destdir, fla))
+        flb_exists = os.path.exists(os.path.join(destdir, flb))
+        if fla_exists and flb_exists:
+            hdu_a = pf.open(fla)
+            hdu_b = pf.open(flb)
+            ima = hdu_a[0].data
+            imb = hdu_b[0].data
+            dif = ima - imb
+            hdu_a[0].data = dif
+            mjda = hdu_a[0].header['MJD_OBS']
+            mjdb = hdu_b[0].header['MJD_OBS']
+            hdu_a[0].header['MJD_OBS'] = (mjda + mjdb) / 2.
+            aira = hdu_a[0].header['AIRMASS']
+            airb = hdu_b[0].header['AIRMASS']
+            hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
+            hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
+            hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
+        else:
+            logging.warning("Both input cubes not found for %s" % obj)
+            if not fla_exists:
+                logging.warning(fla + ' missing')
+            if not flb_exists:
+                logging.warning(flb + ' missing')
+    # END: make_abpair_cubes
 
 
 def re_calib(redd=None, ut_date=None, nodb=False):
