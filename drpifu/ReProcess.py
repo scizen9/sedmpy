@@ -1201,7 +1201,7 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
         if os.path.exists(os.path.join(destdir, 'abpairs.tab')):
             logging.info("found it!")
             nab = make_abpair_cubes(destdir)
-            logging.info("%d A/B pair cubes made")
+            logging.info("%d A/B pair cubes made" % nab)
         else:
             logging.info("No A/B pairs found.")
 
@@ -1279,12 +1279,14 @@ def make_abpair_cubes(destdir=None):
             with open(os.path.join(destdir, flab), 'bw') as ff:
                 hdu_a.writeto(ff)
             logging.info("wrote A/B cube %s" % flab)
+            nab += 1
         else:
             logging.warning("Both input cubes not found for %s" % obj)
             if not fla_exists:
                 logging.warning(fla + ' missing')
             if not flb_exists:
                 logging.warning(flb + ' missing')
+    return nab
     # END: make_abpair_cubes
 
 
