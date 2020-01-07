@@ -729,14 +729,19 @@ def archive_old_kpy_files(odir):
     # Now check spec files
     flist = glob.glob(os.path.join(odir, 'spec_*'))
     nspecmv = 0
+    specmv = []
     if len(flist) > 0:
+        for fl in flist:
+            if '_crr_b_ifu' not in fl:
+                specmv.append(fl)
+                nspecmv += 1
+    if nspecmv > 0:
         # Make archive directory
         if not os.path.exists(archdir):
             os.mkdir(archdir)
-        for fl in flist:
-            if '_crr_b_ifu' not in fl:
-                shutil.move(fl, archdir)
-                nspecmv += 1
+        for fl in specmv:
+            shutil.move(fl, archdir)
+            nspecmv += 1
         logging.info("Moved %d old kpy spec files into %s" % (nspecmv, archdir))
     else:
         logging.warning("No spec files found in %s" % odir)
