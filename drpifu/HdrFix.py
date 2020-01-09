@@ -402,5 +402,6 @@ if __name__ == "__main__":
             logging.info("%d good FITS files fixed in %s" % (ngood, args.date))
         # Update listings
         os.chdir(indir)
-        os.system("/scr2/sedmdrp/spy what ifu*.fits >! what.list")
-        os.system("/scr2/sedmdrp/spy what rc*.fits >! rcwhat.list")
+        os.system("rm *what.list")
+        os.system("/scr2/sedmdrp/spy what ifu*.fits > what.list")
+        os.system("/scr2/sedmdrp/spy what rc*.fits > rcwhat.list")
