@@ -400,3 +400,7 @@ if __name__ == "__main__":
                 subprocess.run(["gzip", os.path.join(badir, fl)])
         if ngood > 0:
             logging.info("%d good FITS files fixed in %s" % (ngood, args.date))
+        # Update listings
+        os.chdir(indir)
+        subprocess.run(["what"])
+        subprocess.run(["rcwhat"])
