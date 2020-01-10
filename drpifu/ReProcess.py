@@ -34,10 +34,10 @@ from configparser import ConfigParser
 import codecs
 try:
     from AutoReduce import update_spec, make_e3d, update_calibration, \
-        proc_bias_crrs
+        proc_bias_crrs, find_recent
 except ImportError:
     from drpifu.AutoReduce import update_spec, make_e3d, update_calibration, \
-        proc_bias_crrs
+        proc_bias_crrs, find_recent
 
 try:
     import rcimg
@@ -404,13 +404,15 @@ def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
     # END: cpprecal
 
 
-def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False):
+def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False,
+               link_old=False):
     """Check for all required calibration files in calibration directory.
 
     Args:
         caldir (str): directory to check
         cur_date_str (str): current date in YYYYMMDD format
         ignore_bad (bool): should we ignore a bad wave stat?
+        link_old (bool): link previous night's cals if these are bad
 
     Returns:
         bool: True if calibration files are present, False if any are missing.
@@ -457,6 +459,15 @@ def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False):
                 os.system("mv %s_* %s" % (os.path.join(caldir, cur_date_str),
                                           os.path.join(caldir, 'bad')))
                 logging.warning("Wavelength stats failed, moved cube to 'bad'")
+                if link_old:
+                    redd = '/'.join(caldir.split('/')[0:-1])
+                    logging.info("Looking in %s for good cals to use" % redd)
+                    find_recent(redd, '_TraceMatch.pkl', caldir, cur_date_str)
+                    find_recent(redd, '_TraceMatch_WithMasks.pkl', caldir,
+                                cur_date_str)
+                    find_recent(redd, '_HexaGrid.pkl', caldir, cur_date_str)
+                    find_recent(redd, '_WaveSolution.pkl', caldir, cur_date_str)
+                    find_recent(redd, '_Flat.fits', caldir, cur_date_str)
     # Do we have all the calibration files?
     ft = os.path.exists(os.path.join(caldir, tmf))
     ftm = os.path.exists(os.path.join(caldir, tmmf))
@@ -1103,7 +1114,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
     os.chdir(outdir)
     # report
     logging.info("Extracted spectra to: %s" % outdir)
-    # Get kpy position dictionary
+    # Get pysedm position dictionary
     pos_dic = read_extract_pos(outdir)
     if len(pos_dic) <= 0:
         logging.warning("No pysedm positions found")
@@ -1387,8 +1398,9 @@ def re_calib(redd=None, ut_date=None, nodb=False):
             else:
                 logging.error("Making of tracematch and hexagrid failed!")
         # Check status
-        if not cube_ready(outdir, ut_date):
-            logging.error("These calibrations failed!")
+        if not cube_ready(outdir, ut_date, link_old=True):
+            logging.warning("These calibrations failed "
+                            "and can't find any other good ones!")
     else:
         logging.info("Calibrations already present in %s" % outdir)
     # END: re_calib
