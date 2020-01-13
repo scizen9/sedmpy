@@ -766,7 +766,8 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
-def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
+def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
+          stds_only=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -780,6 +781,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
         nodb (bool): if True no update to SEDM db
         posdic (dict): position dictionary from get_extract_pos function
         oldext (bool): True to use old extract_star instead of new extractstar
+        stds_only (bool): True to extract only standard stars
 
     Returns:
         int: Number of ifu images actually copied
@@ -833,23 +835,16 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                     # Use auto psf extraction for standard stars
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        if oldext:
-                            cmd = ("extract_star.py", datestr, "--auto", fn,
-                                   "--std", "--tag", "robot", "--maxpos")
-                        else:
-                            cmd = ("extractstar.py", datestr, "--auto", fn,
-                                   "--std", "--tag", "robot",
-                                   "--centroid", "brightest",
-                                   "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                        if oldext:
-                            cmd = ("extract_star.py", datestr, "--auto", fn,
-                                   "--std", "--tag", "robot", "--maxpos")
-                        else:
-                            cmd = ("extractstar.py", datestr, "--auto", fn,
-                                   "--std", "--tag", "robot",
-                                   "--centroid", "brightest")
+                    if oldext:
+                        cmd = ["extract_star.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot", "--maxpos"]
+                    else:
+                        cmd = ["extractstar.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot",
+                               "--centroid", "brightest",
+                               "--seeing", "2.0"]  # "%.2f" % seeing]
                     logging.info("Extracting std star spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -912,44 +907,44 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
             else:
+                if stds_only:
+                    logging.info("Skipping non-std star observation %s" % fn)
+                    continue
                 # Build cube for science observation
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=True, hdr=hdr)
                 if e3d_good:
                     logging.info("e3d science cube generated")
-                    # Do we have a position
+                    # Do we have a position?
                     pos_key = fn.split('_', 2)[-1].split('.')[0]
                     if pos_key not in posdic:
                         logging.info("No position for %s" % fn)
-                        continue
-                    # Position
-                    xpos = posdic[pos_key][0]
-                    ypos = posdic[pos_key][1]
+                        if oldext:
+                            ccmd = ["--maxpos"]
+                        else:
+                            ccmd = ["--centroid", "brightest"]
+                    else:
+                        # Position
+                        xpos = posdic[pos_key][0]
+                        ypos = posdic[pos_key][1]
+                        ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
                     # Get seeing
                     seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
                                               save_fig=True)
                     # Use forced psf for science targets
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        if oldext:
-                            cmd = ("extract_star.py", datestr, "--auto", fn,
-                                   "--autobins", "6", "--tag", "robot",
-                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos)
-                        else:
-                            cmd = ("extractstar.py", datestr, "--auto", fn,
-                                   "--autobins", "6", "--tag", "robot",
-                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos,
-                                   "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                        if oldext:
-                            cmd = ("extract_star.py", datestr, "--auto", fn,
-                                   "--autobins", "6", "--tag", "robot",
-                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos)
-                        else:
-                            cmd = ("extractstar.py", datestr, "--auto", fn,
-                                   "--autobins", "6", "--tag", "robot",
-                                   "--centroid", "%.2f" % xpos, "%.2f" % ypos)
+                    if oldext:
+                        cmd = ["extract_star.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot"]
+                    else:
+                        cmd = ["extractstar.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot",
+                               "--seeing", "2.0"]  # "%.2f" % seeing]
+                    # Add position parameters
+                    cmd.extend(ccmd)
                     logging.info("Extracting object spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -992,6 +987,8 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                             logging.error("Not found: %s" % proced)
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
+        else:
+            logging.info("%s already extracted" % proced[0])
     return nextr
     # END: dosci
 
@@ -1087,7 +1084,7 @@ def get_extract_pos(indir, indate):
 
 
 def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
-               ignore_bad=False):
+               ignore_bad=False, stds_only=False):
     """Re-extract spectra from cube files for one night.
 
     Args:
@@ -1096,6 +1093,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         nodb (bool): True if no update to SEDM db
         oldext (bool): True to use old extract_star instead of new extractstar
         ignore_bad (bool): extract in spite of bad cals?
+        stds_only (bool): True to only extract standard stars
 
     Returns:
         bool: True if cals completed normally, False otherwise
@@ -1129,7 +1127,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         logging.info("Calibrations present in %s" % outdir)
         # Process observations
         nextr = dosci(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic,
-                      oldext=oldext)
+                      oldext=oldext, stds_only=stds_only)
         logging.info("%d spectra extracted." % nextr)
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % ut_date]
@@ -1479,6 +1477,8 @@ if __name__ == '__main__':
                         help='Proceed in spite of bad calibration')
     parser.add_argument('--extract', action="store_true", default=False,
                         help='Re-extract targets')
+    parser.add_argument('--stds_only', action="store_true", default=False,
+                        help='Only extract standard stars')
 
     args = parser.parse_args()
 
@@ -1498,7 +1498,8 @@ if __name__ == '__main__':
                     ignore_bad=args.ignore_bad)
         elif args.extract:
             re_extract(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb,
-                       oldext=args.oldext, ignore_bad=args.ignore_bad)
+                       oldext=args.oldext, ignore_bad=args.ignore_bad,
+                       stds_only=args.stds_only)
         else:
             logging.error("Must specify one of "
                           "--[reduce|calibrate|cube|extract|archive_pysedm]")
