@@ -709,7 +709,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None, nodb=False):
     # END: cpsci
 
 
-def dosci(destdir='./', datestr=None, local=False, nodb=False):
+def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -722,6 +722,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
         datestr (str): YYYYMMDD date string
         local (bool): set to skip pushing to marshal and slack
         nodb (bool): if True no update to SEDM db
+        oldext (bool): True to use extract_star.py instead of extractstar.py
 
     Returns:
         int: Number of ifu images actually copied
@@ -781,15 +782,17 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                     # Use auto psf extraction for standard stars
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        cmd = ("extractstar.py", datestr, "--auto", fn,
-                               "--std", "--tag", "robot",
-                               "--centroid", "brightest",
-                               "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn,
-                           "--std", "--tag", "robot", "--maxpos")  # ,
-                    # "--centroid", "brightest")
+                    if not oldext:
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot",
+                               "--centroid", "brightest", "--seeing", "2.0")
+                               # "--seeing", "%.2f" % seeing)
+                    else:
+                        logging.info("Old extraction method used")
+                        cmd = ("extract_star.py", datestr, "--auto", fn,
+                               "--std", "--tag", "robot", "--maxpos")
                     logging.info("Extracting std star spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -864,14 +867,18 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False):
                     # Use forced psf for science targets
                     if seeing > 0:
                         logging.info("seeing measured as %f" % seeing)
-                        cmd = ("extractstar.py", datestr, "--auto", fn,
-                               "--autobins", "6", "--tag", "robot",
-                               "--centroid", "auto",
-                               "--seeing", "%.2f" % seeing)
+
                     else:
                         logging.info("seeing not measured for %s" % fn)
-                    cmd = ("extract_star.py", datestr, "--auto", fn,
-                           "--autobins", "6", "--tag", "robot")
+                    if not oldext:
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot",
+                               "--centroid", "auto", "--seeing", "2.0")
+                               # "--seeing", "%.2f" % seeing)
+                    else:
+                        logging.info("Old extraction method used")
+                        cmd = ("extract_star.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "robot")
                     logging.info("Extracting object spectra for " + fn)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
@@ -1622,7 +1629,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960, nodb=False):
 
 
 def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
-             piggyback=False, local=False, nodb=False):
+             piggyback=False, local=False, nodb=False, oldext=False):
     """One night observing loop: processes calibrations and science data
 
     Copy raw cal files until we are ready to process the night's
@@ -1643,6 +1650,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         piggyback (bool): basic processing done by StartObs.py
         local (bool): True if no marshal/slack update required
         nodb (bool): True if no update to SEDM db
+        oldext (bool): True to use extract_star.py instead of extracstar.py
 
     Returns:
         bool: True if night completed normally, False otherwise
@@ -1881,13 +1889,13 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             start_time = time.time()
             if piggyback:
                 nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      local=local, nodb=nodb)
+                                      local=local, nodb=nodb, oldext=oldext)
                 ncp = nsci
             else:
                 ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str,
                                     nodb=nodb)
                 nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      local=local, nodb=nodb)
+                                      local=local, nodb=nodb, oldext=oldext)
             # We copied some new ones so report processing time
             if ncp > 0:
                 proc_time = int(time.time() - start_time)
@@ -1965,7 +1973,7 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
 
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
        check_precal=True, indate=None, piggyback=False, local=False,
-       nodb=False):
+       nodb=False, oldext=False):
     """Outermost infinite loop that watches for a new raw directory.
 
     Keep a list of raw directories in `redd` and fire off
@@ -1981,6 +1989,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         piggyback (bool): True if using other script to copy data
         local (bool): True if no marshal/slack update required
         nodb (bool): True if no update of SEDM Db
+        oldext (bool): True to use extract_star.py instead of extractstar.py
 
     Returns:
         None
@@ -2006,7 +2015,8 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
 
         if not wait:
             stat = obs_loop(rawlist, redd, check_precal=check_precal,
-                            piggyback=piggyback, local=local, nodb=nodb)
+                            piggyback=piggyback, local=local, nodb=nodb,
+                            oldext=oldext)
             its += 1
             logging.info("Finished SEDM observing iteration %d in raw dir %s" %
                          (its, rawlist[-1]))
@@ -2041,7 +2051,7 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
                              "putting reduced data in %s" % (nraw, rawd, redd))
                 logging.info("Latest raw directory is %s" % rawlist[-1])
                 stat = obs_loop(rawlist, redd, check_precal=check_precal,
-                                piggyback=piggyback)
+                                piggyback=piggyback, oldext=oldext)
                 its += 1
                 logging.info("Finished SEDM observing iteration %d in "
                              "raw dir %s" % (its, rawlist[-1]))
@@ -2052,7 +2062,8 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         indir = os.path.join(rawd, indate)
         logging.info("Processing raw data from %s" % indir)
         stat = obs_loop(rawlist, redd, check_precal=check_precal, indir=indir,
-                        piggyback=piggyback, local=local, nodb=nodb)
+                        piggyback=piggyback, local=local, nodb=nodb,
+                        oldext=oldext)
         its += 1
         logging.info("Finished SEDM processing in raw dir %s with status %d" %
                      (indir, stat))
@@ -2084,6 +2095,8 @@ if __name__ == '__main__':
                              'slack')
     parser.add_argument('--nodb', action="store_true", default=False,
                         help='Do not update SEDM Db')
+    parser.add_argument('--oldext', action="store_true", default=False,
+                        help='Use extract_star.py instead of extractstar.py')
 
     args = parser.parse_args()
 
@@ -2092,4 +2105,5 @@ if __name__ == '__main__':
     else:
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
-           piggyback=args.piggyback, local=args.local, nodb=args.nodb)
+           piggyback=args.piggyback, local=args.local, nodb=args.nodb,
+           oldext=args.oldext)
