@@ -35,9 +35,9 @@ if __name__ == "__main__":
                              'slack or db')
     parser.add_argument('--lstep', type=str, default=None,
                         help='new lstep value (default is 1)')
-    parser.add_argument('--newext', action='store_true', default=False,
-                        help='re-extract using extractstar.py instead of'
-                             'extract_star.py')
+    parser.add_argument('--oldext', action='store_true', default=False,
+                        help='re-extract using extract_star.py instead of'
+                             'extractstar.py')
     parser.add_argument('--testing', action="store_true", default=False,
                         help='just testing: extract spec, but no uploads')
     args = parser.parse_args()
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     if not args.obs_id:
         logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]"
-                     " [--lstep <n>] [--newext]")
+                     " [--lstep <n>] [--oldext]")
     else:
 
         # Get tag id
@@ -148,13 +148,13 @@ if __name__ == "__main__":
             if args.new_x and args.new_y:
                 xs = args.new_x
                 ys = args.new_y
-                if args.newext:
-                    pars = ["extractstar.py", dd, "--auto", ob_id,
+                if args.oldext:
+                    pars = ["extract_star.py", dd, "--auto", ob_id,
                             "--autobins", "6", "--centroid", xs, ys,
                             "--lstep", lstep, "--tag", tagstr,
                             "--reducer", reducer]
                 else:
-                    pars = ["extract_star.py", dd, "--auto", ob_id,
+                    pars = ["extractstar.py", dd, "--auto", ob_id,
                             "--autobins", "6", "--centroid", xs, ys,
                             "--lstep", lstep, "--tag", tagstr,
                             "--reducer", reducer]
@@ -164,14 +164,14 @@ if __name__ == "__main__":
                     logging.error("Extraction failed.")
                     sys.exit(1)
             else:
-                if args.newext:
+                if args.oldext:
+                    pars = ["extract_star.py", dd, "--auto", ob_id,
+                            "--autobins", "6", "--display", "--lstep", lstep,
+                            "--tag", tagstr, "--reducer", reducer]
+                else:
                     pars = ["extractstar.py", dd, "--auto", ob_id,
                             "--autobins", "6", "--display", "--lstep", lstep,
                             "--centroid", "auto",
-                            "--tag", tagstr, "--reducer", reducer]
-                else:
-                    pars = ["extract_star.py", dd, "--auto", ob_id,
-                            "--autobins", "6", "--display", "--lstep", lstep,
                             "--tag", tagstr, "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
