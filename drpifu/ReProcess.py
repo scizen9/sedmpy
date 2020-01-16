@@ -660,7 +660,7 @@ def archive_old_pysedm_extractions(redd=None, ut_date=None):
     # Get list of pysedm files to move
     flist = glob.glob(os.path.join(odir, '*auto*_crr_b_ifu%s*' % ut_date))
     flist.extend(glob.glob(os.path.join(odir,
-                                        "fluxcal_crr_b_ifu%s*" % ut_date)))
+                                        "fluxcal_*crr_b_ifu%s*" % ut_date)))
     flist.extend(glob.glob(os.path.join(odir,
                                         '*notfluxcal*_crr_b_ifu%s*' % ut_date)))
     flist.extend(glob.glob(os.path.join(odir, 'report*.txt')))
@@ -677,6 +677,8 @@ def archive_old_pysedm_extractions(redd=None, ut_date=None):
             os.mkdir(archdir)
         nfilemv = 0
         for fl in flist:
+            if os.path.islink(fl):
+                continue
             rute = fl.split('/')[-1]
             if not os.path.exists(os.path.join(archdir, rute)):
                 shutil.move(fl, archdir)
