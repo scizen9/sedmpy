@@ -649,7 +649,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     # END: delete_old_pysedm_files
 
 
-def archive_old_pysedm_extractions(redd=None, ut_date=None):
+def archive_old_pysedm_extractions(redd=None, ut_date=None, skip_gunzip=False):
     """Move all the old pysedm extraction output files to ./pysedm/"""
     # Output dir
     odir = os.path.join(redd, ut_date)
@@ -690,6 +690,12 @@ def archive_old_pysedm_extractions(redd=None, ut_date=None):
                 subprocess.run(["gzip", os.path.join(archdir, fl)])
         logging.info("Archived %d old pysedm extraction files into %s" %
                      (nfilemv, archdir))
+        # Now gunzip the crr_b files
+        flist = glob.glob(os.path.join(odir, 'crr_b_ifu%s_*.fits.gz' % ut_date))
+        for fl in flist:
+            subprocess.run(["gunzip", fl])
+        logging.info("Gunzipped %d crr_b_ifu%s_*.fits.gz. files" % (len(flist),
+                                                                    ut_date))
     else:
         logging.warning("No pysedm extraction files found in %s" % odir)
     # END: archive_old_pysedm_files
