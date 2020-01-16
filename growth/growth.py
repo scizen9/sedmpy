@@ -433,6 +433,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     return_link = None
     spec_stat = ''
     phot_stat = ''
+    out_dir = ''
     # Look in the SEDM Db
     if search_db:
         if request_id:
@@ -464,7 +465,6 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                 return return_link, spec_ret, phot_ret, status_ret
             username = res[0]
             email = res[1]
-            out_dir = ''
         else:
             print("No request id provided")
     else:
@@ -487,7 +487,9 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             if (targ['sourcename'].lower() == objname.lower() and
                     targ['status'] != 'delete'):
                 match_list.append(targ)
-         
+
+        target = {'requestid': None, 'sourcename': None, 'username': None}
+        out_dir = 'targets/'
         if len(match_list) == 1:
             print(match_list)
             target = match_list[0]
@@ -520,7 +522,6 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             marshal_id = target['requestid']
             object_name = target['sourcename']
             username = target['username']
-            out_dir = 'targets/'
 
     # Did we get a marshal ID?
     if marshal_id is None:
@@ -529,6 +530,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         if sourceid:
             print("Using source id instead: %d" % sourceid)
             marshal_id = sourceid
+        else:
+            marshal_id = -1
     else:
         sourceid = None
     if marshal_id <= 0:
