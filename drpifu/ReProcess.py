@@ -898,11 +898,8 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
                         else:
                             logging.error("Not found: %s" % proced)
                         # Did we generate a flux calibration?
-                        if oldext:
-                            fcspec = "fluxcal_auto_robot_lstep1__%s_*.fits" % \
-                                     fn.split('.')[0]
-                        else:
-                            fcspec = "fluxcal_%s_*.fits" % fn.split('.')[0]
+                        fcspec = "fluxcal_auto_robot_lstep1__%s_*.fits" % \
+                                 fn.split('.')[0]
                         flxcal = glob.glob(os.path.join(destdir, fcspec))
                         if flxcal:
                             # Generate effective area and efficiency plots
