@@ -774,6 +774,100 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
+def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
+    """Handle A/B pairs"""
+    nextr = 0
+    if posdic:
+        # Get list of cubes
+        srcfiles = sorted(glob.glob(os.path.join(destdir,
+                                                 'e3d_crr_b_ifu%s_*.fits' %
+                                                 datestr)))
+        # Get list of single input files
+        rawfiles = sorted(glob.glob(os.path.join(destdir,
+                                                 'crr_b_ifu%s_*.fits' %
+                                                 datestr)))
+        for e3df in srcfiles:
+            # Get corresponding input filename
+            rawf = e3df.replace("e3d_", "")
+            # Skip single cubes
+            if rawf in rawfiles:
+                continue
+            # Must be an A/B cube
+            logging.info("extracting from %s" % e3df)
+            # Open A/B cube
+            ff = pf.open(e3df)
+            # Get A observation
+            abfila = ff[0].header['ABFILA']
+            rawfila = '_'.join(abfila.split('_')[1:7]) + '.fits'
+            poskeya = '_'.join(abfila.split('_')[3:7])
+            # Get B observation
+            abfilb = ff[0].header['ABFILB']
+            rawfilb = '_'.join(abfilb.split('_')[1:7]) + '.fits'
+            poskeyb = '_'.join(abfilb.split('_')[3:7])
+            # Check posdic for positions
+            if poskeya in posdic and poskeyb in posdic:
+                # A Position
+                xpos = posdic[poskeya][0]
+                ypos = posdic[poskeya][1]
+                ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
+                if oldext:
+                    cmd = ["extract_star.py", datestr, "--auto", rawfila,
+                           "--autobins", "6", "--tag", "robotA"]
+                else:
+                    cmd = ["extractstar.py", datestr, "--auto", rawfila,
+                           "--autobins", "6", "--tag", "robotA",
+                           "--seeing", "2.0"]  # "%.2f" % seeing]
+                # Add position parameters
+                cmd.extend(ccmd)
+                logging.info("Extracting object spectra for " + rawfila)
+                logging.info(" ".join(cmd))
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    logging.error("Error extracting object spectrum for "
+                                  + rawfila)
+                    badfn = "spec_auto_notfluxcal_" + rawfila.split('.')[0] + \
+                            "_failed.fits"
+                    cmd = ("touch", badfn)
+                    subprocess.call(cmd)
+                else:
+                    # B position
+                    xpos = posdic[poskeyb][0]
+                    ypos = posdic[poskeyb][1]
+                    ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
+                    if oldext:
+                        cmd = ["extract_star.py", datestr, "--auto", rawfilb,
+                               "--autobins", "6", "--tag", "robotB"]
+                    else:
+                        cmd = ["extractstar.py", datestr, "--auto", rawfilb,
+                               "--autobins", "6", "--tag", "robotB",
+                               "--seeing", "2.0"]  # "%.2f" % seeing]
+                    # Add position parameters
+                    cmd.extend(ccmd)
+                    logging.info("Extracting object spectra for " + rawfilb)
+                    logging.info(" ".join(cmd))
+                    retcode = subprocess.call(cmd)
+                    if retcode != 0:
+                        logging.error("Error extracting object spectrum for "
+                                      + rawfilb)
+                        badfn = "spec_auto_notfluxcal_" + rawfilb.split('.')[
+                            0] + "_failed.fits"
+                        cmd = ("touch", badfn)
+                        subprocess.call(cmd)
+                    else:
+                        continue
+                        # Invert B spec
+                        # Combine A & B
+                        # Write out results
+                nextr += 1
+            else:
+                logging.info("Missing from positions list: %s and/or %s" %
+                             (rawfila, rawfilb))
+    else:
+        logging.info("No pysedm positions found, use manual A/B extraction")
+    return nextr
+    # END: doab
+
+
 def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
           stds_only=False):
     """Copies new science ifu image files from srcdir to destdir.
@@ -1133,7 +1227,10 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         # Process observations
         nextr = dosci(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic,
                       oldext=oldext, stds_only=stds_only)
-        logging.info("%d spectra extracted." % nextr)
+        logging.info("%d single spectra extracted." % nextr)
+        # Check for A/B observations
+        nextrab = doab(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic)
+        logging.info("%d A/B spectra extracted" % nextrab)
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % ut_date]
         logging.info(cmd)
