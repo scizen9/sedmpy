@@ -788,7 +788,7 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                                                  datestr)))
         for e3df in srcfiles:
             # Get corresponding input filename
-            rawf = e3df.replace("e3d_", "")
+            rawf = "_".join(e3df.split('/')[-1].split('_')[1:7])
             # Skip single cubes
             if rawf in rawfiles:
                 continue
