@@ -854,11 +854,36 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
-                        continue
-                        # Invert B spec
-                        # Combine A & B
+                        # Output filename
+                        specfo = e3df.replace("e3d", "spec_auto_robot_lstep1_")
+                        # Open A spec
+                        specfa = e3df.replace("e3d", "spec_auto_robotA_lstep1_")
+                        ffa = pf.open(specfa)
+                        # Open B spec
+                        specfb = e3df.replace("e3d", "spec_auto_robotB_lstep1_")
+                        ffb = pf.open(specfb)
+                        # Read A data
+                        spec_a = ffa[0].data
+                        var_a = ffa[1].data
+                        # Read B data and invert spec
+                        spec_b = 0. - ffb[0].data
+                        var_b = ffb[1].data
+                        # Make output headers
+                        hdr_o = ffa[0].header
+                        hdr1_o = ffa[1].header
+                        # Add variance
+                        var_o = var_a + var_b
+                        # Average spectra
+                        spec_o = (spec_a + spec_b) / 2.
+                        # Close A/B spec files
+                        ffa.close()
+                        ffb.close()
+                        # Create output HDU list
+                        hdul_o = pf.HDUList(pf.PrimaryHDU(data=spec_o, header=hdr_o))
+                        hdul_o.append(pf.ImageHDU(var_o, header=hdr1_o))
                         # Write out results
-                nextr += 1
+                        hdul_o.writeto(specfo)
+                        nextr += 1
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
                              (rawfila, rawfilb))
