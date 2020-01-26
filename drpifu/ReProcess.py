@@ -788,22 +788,21 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                                                  datestr)))
         for e3df in srcfiles:
             # Get corresponding input filename
-            rawf = os.path.join(destdir,
+            crrf = os.path.join(destdir,
                                 '_'.join(e3df.split('/')[-1].split('_')[1:7]))
             # Skip single cubes
-            if rawf in rawfiles:
+            if crrf in rawfiles:
                 continue
+            rawf = crrf.split('/')[-1]
             # Must be an A/B cube
             logging.info("extracting from %s" % e3df)
             # Open A/B cube
             ff = pf.open(e3df)
             # Get A observation
             abfila = ff[0].header['ABFILA']
-            rawfila = '_'.join(abfila.split('_')[1:7]) + '.fits'
             poskeya = '_'.join(abfila.split('_')[3:7])
             # Get B observation
             abfilb = ff[0].header['ABFILB']
-            rawfilb = '_'.join(abfilb.split('_')[1:7]) + '.fits'
             poskeyb = '_'.join(abfilb.split('_')[3:7])
             # Check posdic for positions
             if poskeya in posdic and poskeyb in posdic:
@@ -848,8 +847,8 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
-                        logging.error("Error extracting object spectrum for "
-                                      + rawfilb)
+                        logging.error("Error extracting B object spectrum for "
+                                      + rawf)
                         badfn = "spec_auto_notfluxcalB_" + rawf.split('.')[
                             0] + "_failed.fits"
                         cmd = ("touch", badfn)
@@ -887,7 +886,7 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                         nextr += 1
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
-                             (rawfila, rawfilb))
+                             (poskeya, poskeyb))
     else:
         logging.info("No pysedm positions found, use manual A/B extraction")
     return nextr
