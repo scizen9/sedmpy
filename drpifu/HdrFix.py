@@ -91,7 +91,11 @@ def date_time_from_filename(fname):
 
 def sedm_fix_header(fname):
     """Make sure required keywords are present and correct"""
-    ff = pf.open(fname, 'update')
+    try:
+        ff = pf.open(fname, 'update')
+    except OSError:
+        logging.error("Unable to read %s" % fname)
+        return False
     # Get root filename
     rute = fname.split('/')[-1]
     # Make sure header is correct
