@@ -788,7 +788,8 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                                                  datestr)))
         for e3df in srcfiles:
             # Get corresponding input filename
-            rawf = "_".join(e3df.split('/')[-1].split('_')[1:7])
+            rawf = os.path.join(destdir,
+                                '_'.join(e3df.split('/')[-1].split('_')[1:7]))
             # Skip single cubes
             if rawf in rawfiles:
                 continue
@@ -811,21 +812,21 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                 ypos = posdic[poskeya][1]
                 ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
                 if oldext:
-                    cmd = ["extract_star.py", datestr, "--auto", rawfila,
+                    cmd = ["extract_star.py", datestr, "--auto", rawf,
                            "--autobins", "6", "--tag", "robotA"]
                 else:
-                    cmd = ["extractstar.py", datestr, "--auto", rawfila,
+                    cmd = ["extractstar.py", datestr, "--auto", rawf,
                            "--autobins", "6", "--tag", "robotA",
                            "--seeing", "2.0"]  # "%.2f" % seeing]
                 # Add position parameters
                 cmd.extend(ccmd)
-                logging.info("Extracting object spectra for " + rawfila)
+                logging.info("Extracting object A spectra for " + rawf)
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
-                    logging.error("Error extracting object spectrum for "
-                                  + rawfila)
-                    badfn = "spec_auto_notfluxcal_" + rawfila.split('.')[0] + \
+                    logging.error("Error extracting A object spectrum for "
+                                  + rawf)
+                    badfn = "spec_auto_notfluxcalA_" + rawf.split('.')[0] + \
                             "_failed.fits"
                     cmd = ("touch", badfn)
                     subprocess.call(cmd)
@@ -835,21 +836,21 @@ def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
                     ypos = posdic[poskeyb][1]
                     ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
                     if oldext:
-                        cmd = ["extract_star.py", datestr, "--auto", rawfilb,
+                        cmd = ["extract_star.py", datestr, "--auto", rawf,
                                "--autobins", "6", "--tag", "robotB"]
                     else:
-                        cmd = ["extractstar.py", datestr, "--auto", rawfilb,
+                        cmd = ["extractstar.py", datestr, "--auto", rawf,
                                "--autobins", "6", "--tag", "robotB",
                                "--seeing", "2.0"]  # "%.2f" % seeing]
                     # Add position parameters
                     cmd.extend(ccmd)
-                    logging.info("Extracting object spectra for " + rawfilb)
+                    logging.info("Extracting object B spectra for " + rawf)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
                         logging.error("Error extracting object spectrum for "
                                       + rawfilb)
-                        badfn = "spec_auto_notfluxcal_" + rawfilb.split('.')[
+                        badfn = "spec_auto_notfluxcalB_" + rawf.split('.')[
                             0] + "_failed.fits"
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
