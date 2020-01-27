@@ -779,7 +779,7 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
     nextr = 0
     if posdic:
         # Get list of A cubes
-        acubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_ifu%s_*_A.fits' %
+        acubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_Aifu%s_*.fits' %
                                         datestr))
         # Loop over A cubes
         for e3df_a in acubes:
