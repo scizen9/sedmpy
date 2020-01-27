@@ -774,89 +774,94 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
-def doab(destdir='./', abfile='abpairs.tab', datestr=None, nodb=False,
-         posdic=None, oldext=False):
+def doab(destdir='./', datestr=None, posdic=None, oldext=False):
     """Handle A/B pairs"""
     nextr = 0
     if posdic:
-        with open(os.path.join(abfile), 'r') as abf:
-            plines = abf.readlines()
-        for pl in plines:
-            # Get positions from posdic
-            poskeya = pl.split()[1].split('.fits')[0]
-            poskeyb = pl.split()[2].split('.fits')[0]
-            # Check posdic for positions
+        # Get list of A cubes
+        acubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_ifu%s_*_A.fits' %
+                                        datestr))
+        # Loop over A cubes
+        for e3df_a in acubes:
+            # Get position keys for posdic
+            ff = pf.open(e3df_a)
+            abfila = ff[0].header['ABFILA']
+            poskeya = '_'.join(abfila.split()[3:7])
+            abfilb = ff[0].header['ABFILB']
+            poskeyb = '_'.join(abfilb.split()[3:7])
+            ff.close()
+            # Are keys in position dictionary?
             if poskeya in posdic and poskeyb in posdic:
-                # Make A cube
-                e3df_a = make_abpair_cube(destdir=destdir, ab_rec=pl,
-                                          a_cube=True)
-                # Get corresponding input filename
-                crrf = os.path.join(
-                    destdir, '_'.join(
-                        e3df_a.split('/')[-1].split('_')[1:7]) + '.fits')
-                rawf = crrf.split('/')[-1]
+                # Get corresponding input crr_b_ filename
+                crrf = '_'.join(e3df_a.split('/')[-1].split('_')[1:7]) + '.fits'
+                # Get corresponding input e3d filename
+                e3df = e3df_a.replace("_A.fits", ".fits")
+                # Remove existing file
+                if os.path.exists(e3df):
+                    os.remove(e3df)
+                # Create link to A cube
+                os.symlink(e3df_a, e3df)
                 logging.info("extracting from %s" % e3df_a)
                 # A Extraction
                 xpos = posdic[poskeya][0]
                 ypos = posdic[poskeya][1]
                 ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
                 if oldext:
-                    cmd = ["extract_star.py", datestr, "--auto", rawf,
+                    cmd = ["extract_star.py", datestr, "--auto", crrf,
                            "--autobins", "6", "--tag", "robotA"]
                 else:
-                    cmd = ["extractstar.py", datestr, "--auto", rawf,
+                    cmd = ["extractstar.py", datestr, "--auto", crrf,
                            "--autobins", "6", "--tag", "robotA",
                            "--seeing", "2.0"]  # "%.2f" % seeing]
                 # Add position parameters
                 cmd.extend(ccmd)
-                logging.info("Extracting object A spectra for " + rawf)
+                logging.info("Extracting object A spectra for " + crrf)
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
                     logging.error("Error extracting A object spectrum for "
-                                  + rawf)
-                    badfn = "spec_auto_notfluxcalA_" + rawf.split('.')[0] + \
+                                  + crrf)
+                    badfn = "spec_auto_notfluxcalA_" + crrf.split('.')[0] + \
                             "_failed.fits"
                     cmd = ("touch", badfn)
                     subprocess.call(cmd)
                 else:
-                    # Make B cube
-                    e3df_b = make_abpair_cube(destdir=destdir, ab_rec=pl,
-                                              a_cube=False)
-                    # B position
+                    # Create link to B cube
+                    if os.path.exists(e3df):
+                        os.remove(e3df)
+                    e3df_b = e3df_a.replace("_A.fits", "_B.fits")
+                    os.symlink(e3df_b, e3df)
+                    # B extraction
                     xpos = posdic[poskeyb][0]
                     ypos = posdic[poskeyb][1]
                     ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
                     if oldext:
-                        cmd = ["extract_star.py", datestr, "--auto", rawf,
+                        cmd = ["extract_star.py", datestr, "--auto", crrf,
                                "--autobins", "6", "--tag", "robotB"]
                     else:
-                        cmd = ["extractstar.py", datestr, "--auto", rawf,
+                        cmd = ["extractstar.py", datestr, "--auto", crrf,
                                "--autobins", "6", "--tag", "robotB",
                                "--seeing", "2.0"]  # "%.2f" % seeing]
                     # Add position parameters
                     cmd.extend(ccmd)
-                    logging.info("Extracting object B spectra for " + rawf)
+                    logging.info("Extracting object B spectra for " + crrf)
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
                         logging.error("Error extracting B object spectrum for "
-                                      + rawf)
-                        badfn = "spec_auto_notfluxcalB_" + rawf.split('.')[
+                                      + crrf)
+                        badfn = "spec_auto_notfluxcalB_" + crrf.split('.')[
                             0] + "_failed.fits"
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
                         # Output filename
-                        specfo = e3df_a.replace("e3d",
-                                                "spec_auto_robot_lstep1_")
+                        specfo = e3df.replace("e3d", "spec_auto_robot_lstep1_")
                         # Open A spec
-                        specfa = e3df_a.replace("e3d",
-                                                "spec_auto_robotA_lstep1_")
+                        specfa = e3df.replace("e3d", "spec_auto_robotA_lstep1_")
                         ffa = pf.open(specfa)
                         # Open B spec
-                        specfb = e3df_b.replace("e3d",
-                                                "spec_auto_robotB_lstep1_")
+                        specfb = e3df.replace("e3d", "spec_auto_robotB_lstep1_")
                         ffb = pf.open(specfb)
                         # Read A data
                         spec_a = ffa[0].data
@@ -884,6 +889,7 @@ def doab(destdir='./', abfile='abpairs.tab', datestr=None, nodb=False,
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
                              (poskeya, poskeyb))
+        # END: for e3df_a in acubes:
     else:
         logging.info("No pysedm positions found, use manual A/B extraction")
     return nextr
@@ -1336,6 +1342,13 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
                     ncube += 1
         # END: for fl in srcfiles:
         logging.info("%d cubes made out of %d attempted" % (ncube, ntry))
+        # Look for A/B pairs
+        abfile = os.path.join(destdir, 'abpairs.tab')
+        if os.path.exists(abfile):
+            nab = make_abpair_cubes(destdir, abfile)
+            logging.info("%d A/B pair cubes made" % nab)
+        else:
+            logging.info("No A/B pairs found.")
 
     return ncube
     # END: re_cube
@@ -1366,59 +1379,65 @@ def get_mid_time(tstr_a, tstr_b):
     return ts_a + tdel / 2.
 
 
-def make_abpair_cube(destdir=None, obj=None, ab_rec=None, a_cube=True):
-    """Generate A/B pair cube"""
-    flout = ''
+def make_abpair_cubes(destdir=None, abfile=None):
+    """Generate A/B pair cubes"""
+    nab = 0
     pre = 'e3d_crr_b_'
-    # get time stamps for A/B
-    ts_a = ab_rec.split()[1].split('ifu')[-1].split('.fits')[0]
-    ts_b = ab_rec.split()[2].split('ifu')[-1].split('.fits')[0]
-    ts_ab = get_mid_time(ts_a, ts_b)
-    # get input cubes
-    fla = pre + ab_rec.split()[1].split('.fits')[0] + '_' + obj + '.fits'
-    flb = pre + ab_rec.split()[2].split('.fits')[0] + '_' + obj + '.fits'
-    # are they present?
-    fla_exists = os.path.exists(os.path.join(destdir, fla))
-    flb_exists = os.path.exists(os.path.join(destdir, flb))
-    if fla_exists and flb_exists:
-        hdu_a = pf.open(os.path.join(destdir, fla))
-        hdu_b = pf.open(os.path.join(destdir, flb))
-        # do the subtraction
-        ima = hdu_a[0].data
-        imb = hdu_b[0].data
-        difa = ima - imb
-        difb = imb - ima
-        hdu_a[0].data = difa
-        hdu_b[0].data = difb
-        # update header
-        mjd = ts_ab.jd - 2400000.5
-        hdu_a[0].header['MJD_OBS'] = mjd
-        hdu_b[0].header['MJD_OBS'] = mjd
-        aira = hdu_a[0].header['AIRMASS']
-        airb = hdu_b[0].header['AIRMASS']
-        hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
-        hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
-        hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
-        hdu_b[0].header['AIRMASS'] = (aira + airb) / 2.
-        hdu_b[0].header['ABFILA'] = (fla, 'A/B pair file A')
-        hdu_b[0].header['ABFILB'] = (flb, 'A/B pair file B')
-        # get output file name
+    with open(os.path.join(abfile), 'r') as abf:
+        ablines = abf.readlines()
+    for ab_rec in ablines:
+        # get object name
+        obj = ab_rec.split()[0]
+        # get time stamps for A/B
+        ts_a = ab_rec.split()[1].split('ifu')[-1].split('.fits')[0]
+        ts_b = ab_rec.split()[2].split('ifu')[-1].split('.fits')[0]
+        ts_ab = get_mid_time(ts_a, ts_b)
+        # create output file time stamp
         ots = str(ts_ab.value
-                  ).replace('-',
-                            '').replace(':',
-                                        '_').replace(' ',
-                                                     '_').split('.')[0]
-        flout = pre + 'ifu' + ots + '_' + obj + '.fits'
-        if a_cube:
-            with open(os.path.join(destdir, flout), 'bw') as ff:
+                  ).replace('-', '').replace(':', '_'
+                                             ).replace(' ', '_').split('.')[0]
+        # create output filenames
+        flout_a = pre + 'ifu' + ots + '_' + obj + '_A.fits'
+        flout_b = pre + 'ifu' + ots + '_' + obj + '_B.fits'
+        # get input cubes
+        fla = pre + ab_rec.split()[1].split('.fits')[0] + '_' + obj + '.fits'
+        flb = pre + ab_rec.split()[2].split('.fits')[0] + '_' + obj + '.fits'
+        # are they present?
+        fla_exists = os.path.exists(os.path.join(destdir, fla))
+        flb_exists = os.path.exists(os.path.join(destdir, flb))
+        if fla_exists and flb_exists:
+            hdu_a = pf.open(os.path.join(destdir, fla))
+            hdu_b = pf.open(os.path.join(destdir, flb))
+            # do the subtraction
+            ima = hdu_a[0].data
+            imb = hdu_b[0].data
+            difa = ima - imb
+            difb = imb - ima
+            # update data
+            hdu_a[0].data = difa
+            hdu_b[0].data = difb
+            # update header
+            mjd = ts_ab.jd - 2400000.5
+            hdu_a[0].header['MJD_OBS'] = mjd
+            hdu_b[0].header['MJD_OBS'] = mjd
+            aira = hdu_a[0].header['AIRMASS']
+            airb = hdu_b[0].header['AIRMASS']
+            hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
+            hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
+            hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
+            hdu_b[0].header['AIRMASS'] = (aira + airb) / 2.
+            hdu_b[0].header['ABFILA'] = (fla, 'A/B pair file A')
+            hdu_b[0].header['ABFILB'] = (flb, 'A/B pair file B')
+            # write out A/B cubes
+            with open(os.path.join(destdir, flout_a), 'bw') as ff:
                 hdu_a.writeto(ff)
-            logging.info("wrote A cube %s" % flout)
-        else:
-            with open(os.path.join(destdir, flout), 'bw') as ff:
+            logging.info("wrote A cube %s" % flout_a)
+            with open(os.path.join(destdir, flout_b), 'bw') as ff:
                 hdu_b.writeto(ff)
-            logging.info("wrote B cube %s" % flout)
-    return flout
-    # END: make_abpair_cube
+            logging.info("wrote B cube %s" % flout_b)
+            nab += 1
+    return nab
+    # END: make_abpair_cubes
 
 
 def re_calib(redd=None, ut_date=None, nodb=False):
