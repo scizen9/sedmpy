@@ -1396,8 +1396,8 @@ def make_abpair_cubes(destdir=None, abfile=None):
                   ).replace('-', '').replace(':', '_'
                                              ).replace(' ', '_').split('.')[0]
         # create output filenames
-        flout_a = pre + 'ifu' + ots + '_' + obj + '_A.fits'
-        flout_b = pre + 'ifu' + ots + '_' + obj + '_B.fits'
+        flout_a = pre + 'Aifu' + ots + '_' + obj + '.fits'
+        flout_b = pre + 'Bifu' + ots + '_' + obj + '.fits'
         # get input cubes
         fla = pre + ab_rec.split()[1].split('.fits')[0] + '_' + obj + '.fits'
         flb = pre + ab_rec.split()[2].split('.fits')[0] + '_' + obj + '.fits'
