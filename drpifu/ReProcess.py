@@ -1374,6 +1374,8 @@ def make_abpair_cubes(destdir=None):
     """Generate A/B pair cubes"""
     nab = 0
     pre = 'e3d_crr_b_'
+    prea = 'e3d_A_crr_b_'
+    preb = 'e3d_B_crr_b_'
     with open(os.path.join(destdir, 'abpairs.tab'), 'r') as abf:
         plines = abf.readlines()
     for pl in plines:
@@ -1395,26 +1397,36 @@ def make_abpair_cubes(destdir=None):
             # do the subtraction
             ima = hdu_a[0].data
             imb = hdu_b[0].data
-            dif = ima - imb
-            hdu_a[0].data = dif
+            difa = ima - imb
+            difb = imb - ima
+            hdu_a[0].data = difa
+            hdu_b[0].data = difb
             # update header
             mjd = ts_ab.jd - 2400000.5
             hdu_a[0].header['MJD_OBS'] = mjd
+            hdu_b[0].header['MJD_OBS'] = mjd
             aira = hdu_a[0].header['AIRMASS']
             airb = hdu_b[0].header['AIRMASS']
             hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
             hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
             hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
+            hdu_b[0].header['AIRMASS'] = (aira + airb) / 2.
+            hdu_b[0].header['ABFILA'] = (fla, 'A/B pair file A')
+            hdu_b[0].header['ABFILB'] = (flb, 'A/B pair file B')
             # get output file name
             ots = str(ts_ab.value
                       ).replace('-',
                                 '').replace(':',
                                             '_').replace(' ',
                                                          '_').split('.')[0]
-            flab = pre + 'ifu' + ots + '_' + obj + '.fits'
-            with open(os.path.join(destdir, flab), 'bw') as ff:
+            flaba = prea + 'ifu' + ots + '_' + obj + '.fits'
+            flabb = preb + 'ifu' + ots + '_' + obj + '.fits'
+            with open(os.path.join(destdir, flaba), 'bw') as ff:
                 hdu_a.writeto(ff)
-            logging.info("wrote A/B cube %s" % flab)
+            logging.info("wrote A/B cube %s" % flaba)
+            with open(os.path.join(destdir, flabb), 'bw') as ff:
+                hdu_b.writeto(ff)
+            logging.info("wrote A/B cube %s" % flabb)
             nab += 1
         else:
             logging.warning("Both input cubes not found for %s" % obj)
