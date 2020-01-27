@@ -1260,8 +1260,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         abp_file = os.path.join(outdir, 'abpairs.tab')
         if os.path.exists(abp_file):
             logging.info("Extracting A/B pairs...")
-            nab = doab(outdir, abp_file, datestr=ut_date, nodb=nodb,
-                       posdic=pos_dic)
+            nab = doab(outdir, datestr=ut_date, posdic=pos_dic)
             logging.info("%d A/B pair extractions made" % nab)
         else:
             logging.info("No A/B pairs found.")
