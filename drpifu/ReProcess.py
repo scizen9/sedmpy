@@ -886,6 +886,8 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         # Write out results
                         hdul_o.writeto(specfo)
                         nextr += 1
+                # remove link
+                os.remove(e3df)
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
                              (poskeya, poskeyb))
