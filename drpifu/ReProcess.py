@@ -792,10 +792,10 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
             ff.close()
             # Are keys in position dictionary?
             if poskeya in posdic and poskeyb in posdic:
-                # Get corresponding input crr_b_ filename
-                crrf = '_'.join(e3df_a.split('/')[-1].split('_')[1:7]) + '.fits'
                 # Get corresponding input e3d filename
                 e3df = e3df_a.replace("_Aifu", "_ifu")
+                # Get corresponding input crr_b_ filename
+                crrf = '_'.join(e3df.split('/')[-1].split('_')[1:7]) + '.fits'
                 # Remove existing file
                 if os.path.exists(e3df):
                     os.remove(e3df)
