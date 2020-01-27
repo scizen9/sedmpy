@@ -795,7 +795,7 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                 # Get corresponding input crr_b_ filename
                 crrf = '_'.join(e3df_a.split('/')[-1].split('_')[1:7]) + '.fits'
                 # Get corresponding input e3d filename
-                e3df = e3df_a.replace("_A.fits", ".fits")
+                e3df = e3df_a.replace("_Aifu", "_ifu")
                 # Remove existing file
                 if os.path.exists(e3df):
                     os.remove(e3df)
@@ -829,7 +829,7 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                     # Create link to B cube
                     if os.path.exists(e3df):
                         os.remove(e3df)
-                    e3df_b = e3df_a.replace("_A.fits", "_B.fits")
+                    e3df_b = e3df_a.replace("_Aifu", "_Bifu")
                     os.symlink(e3df_b, e3df)
                     # B extraction
                     xpos = posdic[poskeyb][0]
