@@ -786,9 +786,9 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
             # Get position keys for posdic
             ff = pf.open(e3df_a)
             abfila = ff[0].header['ABFILA']
-            poskeya = '_'.join(abfila.split()[3:7])
+            poskeya = '_'.join(abfila.split('_')[3:7])
             abfilb = ff[0].header['ABFILB']
-            poskeyb = '_'.join(abfilb.split()[3:7])
+            poskeyb = '_'.join(abfilb.split('_')[3:7])
             ff.close()
             # Are keys in position dictionary?
             if poskeya in posdic and poskeyb in posdic:
@@ -1260,7 +1260,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         abp_file = os.path.join(outdir, 'abpairs.tab')
         if os.path.exists(abp_file):
             logging.info("Extracting A/B pairs...")
-            nab = doab(outdir, datestr=ut_date, posdic=pos_dic)
+            nab = doab(outdir, datestr=ut_date, posdic=pos_dic, oldext=oldext)
             logging.info("%d A/B pair extractions made" % nab)
         else:
             logging.info("No A/B pairs found.")
