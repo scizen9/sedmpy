@@ -31,6 +31,7 @@ _reduxpath = cfg_parser.get('paths', 'reduxpath')
 def time_from_fspec(filespec=None, imtype="ifu"):
     """Return time in seconds based on filename"""
     fsec = -1
+    tstr = ''
     if filespec is not None:
         try:
             tstr = filespec.split(imtype)[-1].split('_')[1:4]
@@ -200,6 +201,9 @@ def build_image_report(indir=None, fspec=None):
     img_lower = pil.get_image_row([img_psf, img_spec])
 
     img_combined = pil.get_image_column([img_upper, img_lower, footer])
+
+    filesourcename = filesourcename.replace("_robotA_", "_robot_")
+    filesourcename = filesourcename.replace("_robotB_", "_robot_")
             
     return img_combined, "verify_"+filesourcename+".png"
         
