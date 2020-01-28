@@ -29,6 +29,7 @@ import argparse
 import datetime
 from astropy.io import fits as pf
 from astropy.time import Time, TimeDelta
+import numpy as np
 
 from configparser import ConfigParser
 import codecs
@@ -883,8 +884,11 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         hdul_o = pf.HDUList(pf.PrimaryHDU(data=spec_o,
                                                           header=hdr_o))
                         hdul_o.append(pf.ImageHDU(var_o, header=hdr1_o))
-                        # Write out results
+                        # Write out fits file
                         hdul_o.writeto(specfo)
+                        # Write ascii file
+                        specf = specfo.replace(".fits", ".txt")
+                        write_ab_spec(specf, spec_o, var_o, hdr_o)
                         nextr += 1
                 # remove link
                 os.remove(e3df)
@@ -896,6 +900,16 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
         logging.info("No pysedm positions found, use manual A/B extraction")
     return nextr
     # END: doab
+
+
+def write_ab_spec(specf, spec, var, hdr):
+    """Output an ascii spectrum"""
+    with open(specf, 'w') as ofl:
+        for key in hdr:
+            ofl.write("# %s: %s" % (key, str(hdr[key])))
+        wl = hdr['CRVAL1'] + np.arange(len(spec)) * hdr['CDELT1']
+        for iw in np.arange(len(spec)):
+            ofl.write("%.1f %.3e %.3e" % (wl[iw], spec[iw], var[iw]))
 
 
 def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
