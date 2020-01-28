@@ -138,20 +138,20 @@ def build_image_report(indir=None, fspec=None, doab=False):
     t_obs = time_from_fspec(specfile)
     try:
         if is_std:
-            fspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
-                                 % (indir, object_name.split("STD-")[-1]))
+            ffspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
+                                  % (indir, object_name.split("STD-")[-1]))
         else:
-            fspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
-                                 % (indir, object_name))
-        finder_file = glob.glob(fspec)
+            ffspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
+                                  % (indir, object_name))
+        finder_file = glob.glob(ffspec)
         if not finder_file:
             if is_std:
-                fspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
-                                     % (indir, object_name.split("STD-")[-1]))
+                ffspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
+                                      % (indir, object_name.split("STD-")[-1]))
             else:
-                fspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
-                                     % (indir, object_name))
-            finder_file = glob.glob(fspec)
+                ffspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
+                                      % (indir, object_name))
+            finder_file = glob.glob(ffspec)
         if finder_file:
             # Get delta time = (t_obs - t_acq)
             off_time_list = []
@@ -171,11 +171,11 @@ def build_image_report(indir=None, fspec=None, doab=False):
 
             img_find = pil.Image.open(finder_file)
         else:
-            print("Cannot find %s" % fspec)
+            print("Cannot find %s" % ffspec)
             img_find = pil.get_buffer([8, 7], "Finder image missing",
                                       **prop_missing)
     except IndexError:
-        print("Cannot find %s" % fspec)
+        print("Cannot find %s" % ffspec)
         img_find = pil.get_buffer([8, 7], "Finder image missing",
                                   **prop_missing)
 
@@ -185,7 +185,7 @@ def build_image_report(indir=None, fspec=None, doab=False):
     # PSF
     try:
         if doab:
-            psf_files = glob.glob("psfprofile_"+filesourcename + "*.png")
+            psf_files = glob.glob("psfprofile_*" + fspec + "*.png")
             psf_files.sort()
             psf_file = psf_files[0]
         else:
