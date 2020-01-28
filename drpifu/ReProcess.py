@@ -906,10 +906,10 @@ def write_ab_spec(specf, spec, var, hdr):
     """Output an ascii spectrum"""
     with open(specf, 'w') as ofl:
         for key in hdr:
-            ofl.write("# %s: %s" % (key, str(hdr[key])))
+            ofl.write("# %s: %s\n" % (key, str(hdr[key])))
         wl = hdr['CRVAL1'] + np.arange(len(spec)) * hdr['CDELT1']
         for iw in np.arange(len(spec)):
-            ofl.write("%.1f %.3e %.3e" % (wl[iw], spec[iw], var[iw]))
+            ofl.write("%.1f %.3e %.3e\n" % (wl[iw], spec[iw], var[iw]))
 
 
 def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
