@@ -833,6 +833,7 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         os.remove(e3df)
                     e3df_b = e3df_a.replace("_Aifu", "_Bifu")
                     os.symlink(e3df_b, e3df)
+                    logging.info("extracting from %s" % e3df_b)
                     # B extraction
                     xpos = posdic[poskeyb][0]
                     ypos = posdic[poskeyb][1]
