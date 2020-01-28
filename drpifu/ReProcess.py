@@ -877,8 +877,11 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         hdr1_o = ffa[1].header
                         # Add variance
                         var_o = var_a + var_b
-                        # Average spectra
-                        spec_o = (spec_a + spec_b) / 2.
+                        # Combine spectra
+                        spec_o = spec_a + spec_b
+                        # Update exposure time
+                        hdr_o['EXPTIME'] = hdr_o['EXPTIME'] + ffb[0].header[
+                            'EXPTIME']
                         # Close A/B spec files
                         ffa.close()
                         ffb.close()
