@@ -903,6 +903,10 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         if retcode != 0:
                             logging.error("Error running SNID")
                         # Add other plots: pysedm_report, verify, etc.
+                        # run Verify.py
+                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                              (datestr, crrf.split('.')[0])
+                        subprocess.call(cmd, shell=True)
                         nextr += 1
                 # remove link
                 os.remove(e3df)
