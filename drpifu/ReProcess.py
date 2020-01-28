@@ -30,6 +30,7 @@ import datetime
 from astropy.io import fits as pf
 from astropy.time import Time, TimeDelta
 import numpy as np
+import pylab as pl
 
 from configparser import ConfigParser
 import codecs
@@ -887,8 +888,21 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         # Write out fits file
                         hdul_o.writeto(specfo)
                         # Write ascii file
-                        specf = specfo.replace(".fits", ".txt")
-                        write_ab_spec(specf, spec_o, var_o, hdr_o)
+                        write_ab_spec(specfo.replace(".fits", ".txt"),
+                                      spec_o, var_o, hdr_o)
+                        # Make plot
+                        wl = hdr_o['CRVAL1'] + np.arange(len(spec_o)) * hdr_o['CDELT1']
+                        pl.plot(wl, spec_o)
+                        pl.xlabel("Wavelength")
+                        pl.ylabel("Flux")
+                        pl.savefig(specfo.replace(".fits", ".png"))
+                        logging.info("Running SNID for " + specfo)
+                        cmd = ("make", "classify")
+                        logging.info(" ".join(cmd))
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
+                            logging.error("Error running SNID")
+                        # Add other plots: pysedm_report, verify, etc.
                         nextr += 1
                 # remove link
                 os.remove(e3df)
