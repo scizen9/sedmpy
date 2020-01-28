@@ -908,7 +908,8 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                             logging.error("Error running SNID")
                         # Add other plots: pysedm_report, verify, etc.
                         # run Verify.py
-                        cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                        cmd = "~/sedmpy/drpifu/Verify.py %s " \
+                              "--contains %s --doab" % \
                               (datestr, crrf.split('.')[0])
                         subprocess.call(cmd, shell=True)
                         nextr += 1
