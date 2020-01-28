@@ -43,7 +43,7 @@ def time_from_fspec(filespec=None, imtype="ifu"):
     return fsec
 
 
-def build_image_report(indir=None, fspec=None):
+def build_image_report(indir=None, fspec=None, doab=False):
     """ """
     now = datetime.datetime.now()
     timestring = "made on %d-%02d-%02d at %02d:%02d:%02d" % (now.year,
@@ -57,7 +57,12 @@ def build_image_report(indir=None, fspec=None):
                             textprop=dict(color="0.5"), barcolor="k")
 
     try:
-        specfile = glob.glob("spec_*"+fspec+"*.fits")[0]
+        if doab:
+            specfiles = glob.glob("spec_*"+fspec+"*.fits")
+            specfiles.sort()
+            specfile = specfiles[-1]
+        else:
+            specfile = glob.glob("spec_*"+fspec+"*.fits")[0]
     except IndexError:
         print("No spec_*%s*.fits file found" % fspec)
         return None, None
@@ -91,7 +96,12 @@ def build_image_report(indir=None, fspec=None):
 
     # Spaxels used:
     try:
-        spaxel_file = glob.glob("ifu_spaxels*"+fspec+"*.png")[0]
+        if doab:
+            spaxel_files = glob.glob("ifu_spaxels*" + fspec + "*.png")
+            spaxel_files.sort()
+            spaxel_file = spaxel_files[0]
+        else:
+            spaxel_file = glob.glob("ifu_spaxels*"+fspec+"*.png")[0]
         img_spax = pil.Image.open(spaxel_file)
     except IndexError:
         print("Cannot find ifu spaxel file")
@@ -99,9 +109,9 @@ def build_image_report(indir=None, fspec=None):
                                   **prop_missing)
 
     # Output Spectra
-    all_spectra_files = glob.glob("spec*"+fspec+"*.png")
+    all_spectra_files = glob.glob("spec_auto_robot_*"+fspec+"*.png")
     extention = "%s.png" % object_name
-    pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)
+    pysedm_spec_file = glob.glob("spec_auto_robot_*"+fspec+"*"+extention)
     if pysedm_spec_file:
         pysedm_spec_file = pysedm_spec_file[0]
         if not is_std:
@@ -174,7 +184,12 @@ def build_image_report(indir=None, fspec=None):
     # ---------
     # PSF
     try:
-        psf_file = glob.glob("psfprofile_"+filesourcename + "*.png")[0]
+        if doab:
+            psf_files = glob.glob("psfprofile_"+filesourcename + "*.png")
+            psf_files.sort()
+            psf_file = psf_files[0]
+        else:
+            psf_file = glob.glob("psfprofile_"+filesourcename + "*.png")[0]
         img_psf = pil.Image.open(psf_file).crop((50, 0, 995, 500))
     except IndexError:
         print("Cannot find psfprofile image")
@@ -224,6 +239,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--contains',  type=str, default="*",
                         help='Provide here part of the filename.')
+    parser.add_argument('--doab', action="store_true", default=False,
+                        help='Verify an A/B extraction')
 
     # ================ #
     # END of Option    #
@@ -234,6 +251,7 @@ if __name__ == "__main__":
                                                         args.infile))
 
     img_report, report_filename = build_image_report(indir=args.infile,
-                                                     fspec=args.contains)
+                                                     fspec=args.contains,
+                                                     doab=args.doab)
     if img_report is not None and report_filename is not None:
         img_report.save(report_filename, dpi=(1000, 1000))
