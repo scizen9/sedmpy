@@ -897,8 +897,14 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                         # Make plot
                         wl = hdr_o['CRVAL1'] + np.arange(len(spec_o)) * hdr_o['CDELT1']
                         pl.plot(wl, spec_o)
+                        ylim = pl.gca().get_ylim()
+                        err = np.sqrt(var_o)
+                        pl.fill_between(wl, spec_o-err, spec_o+err,
+                                        facecolor='lightblue')
+                        pl.ylim(ylim)
                         pl.xlabel("Wavelength")
                         pl.ylabel("Flux")
+                        pl.title(specfo.replace(".fits", ""))
                         pl.savefig(specfo.replace(".fits", ".png"))
                         logging.info("Running SNID for " + specfo)
                         cmd = ("make", "classify")
