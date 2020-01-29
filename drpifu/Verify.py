@@ -109,9 +109,15 @@ def build_image_report(indir=None, fspec=None, doab=False):
                                   **prop_missing)
 
     # Output Spectra
-    all_spectra_files = glob.glob("spec_auto_robot_*"+fspec+"*.png")
+    if doab:
+        all_spectra_files = glob.glob("spec_auto_robot_*"+fspec+"*.png")
+    else:
+        all_spectra_files = glob.glob("spec*"+fspec+"*.png")
     extention = "%s.png" % object_name
-    pysedm_spec_file = glob.glob("spec_auto_robot_*"+fspec+"*"+extention)
+    if doab:
+        pysedm_spec_file = glob.glob("spec_auto_robot_*"+fspec+"*"+extention)
+    else:
+        pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)
     if pysedm_spec_file:
         pysedm_spec_file = pysedm_spec_file[0]
         if not is_std:
