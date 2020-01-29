@@ -918,6 +918,10 @@ def doab(destdir='./', datestr=None, posdic=None, oldext=False):
                               "--contains %s --doab" % \
                               (datestr, crrf.split('.')[0])
                         subprocess.call(cmd, shell=True)
+                        # run pysedm_report.py
+                        cmd = "pysedm_report.py %s --doab " \
+                              "--contains %s" % (datestr, crrf.split('.')[0])
+                        subprocess.call(cmd, shell=True)
                         nextr += 1
                 # remove link
                 os.remove(e3df)
