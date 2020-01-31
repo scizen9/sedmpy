@@ -43,7 +43,7 @@ def time_from_fspec(filespec=None, imtype="ifu"):
     return fsec
 
 
-def build_image_report(indir=None, fspec=None, doab=False):
+def build_image_report(indir=None, fspec=None):
     """ """
     now = datetime.datetime.now()
     timestring = "made on %d-%02d-%02d at %02d:%02d:%02d" % (now.year,
@@ -57,12 +57,7 @@ def build_image_report(indir=None, fspec=None, doab=False):
                             textprop=dict(color="0.5"), barcolor="k")
 
     try:
-        if doab:
-            specfiles = glob.glob("spec_*"+fspec+"*.fits")
-            specfiles.sort()
-            specfile = specfiles[-1]
-        else:
-            specfile = glob.glob("spec_*"+fspec+"*.fits")[0]
+        specfile = glob.glob("spec_*"+fspec+"*.fits")[0]
     except IndexError:
         print("No spec_*%s*.fits file found" % fspec)
         return None, None
@@ -96,12 +91,7 @@ def build_image_report(indir=None, fspec=None, doab=False):
 
     # Spaxels used:
     try:
-        if doab:
-            spaxel_files = glob.glob("ifu_spaxels*" + fspec + "*.png")
-            spaxel_files.sort()
-            spaxel_file = spaxel_files[0]
-        else:
-            spaxel_file = glob.glob("ifu_spaxels*"+fspec+"*.png")[0]
+        spaxel_file = glob.glob("ifu_spaxels*"+fspec+"*.png")[0]
         img_spax = pil.Image.open(spaxel_file)
     except IndexError:
         print("Cannot find ifu spaxel file")
@@ -109,15 +99,9 @@ def build_image_report(indir=None, fspec=None, doab=False):
                                   **prop_missing)
 
     # Output Spectra
-    if doab:
-        all_spectra_files = glob.glob("spec_auto_robot_*"+fspec+"*.png")
-    else:
-        all_spectra_files = glob.glob("spec*"+fspec+"*.png")
+    all_spectra_files = glob.glob("spec*"+fspec+"*.png")
     extention = "%s.png" % object_name
-    if doab:
-        pysedm_spec_file = glob.glob("spec_auto_robot_*"+fspec+"*"+extention)
-    else:
-        pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)
+    pysedm_spec_file = glob.glob("spec*"+fspec+"*"+extention)
     if pysedm_spec_file:
         pysedm_spec_file = pysedm_spec_file[0]
         if not is_std:
@@ -126,7 +110,8 @@ def build_image_report(indir=None, fspec=None, doab=False):
             used_spec_file = pysedm_spec_file if len(typed_spectra) == 0 \
                 else typed_spectra[0]
         else:
-            calib_spectra = glob.glob("calibcheck_spec_"+filesourcename + "*.png")
+            calib_spectra = glob.glob("calibcheck_spec_"+filesourcename +
+                                      "*.png")
             used_spec_file = pysedm_spec_file if len(calib_spectra) == 0 \
                 else calib_spectra[0]
         try:
@@ -142,6 +127,7 @@ def build_image_report(indir=None, fspec=None, doab=False):
 
     # Acquisition finder
     t_obs = time_from_fspec(specfile)
+    ffspec = None
     try:
         if is_std:
             ffspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
@@ -190,12 +176,7 @@ def build_image_report(indir=None, fspec=None, doab=False):
     # ---------
     # PSF
     try:
-        if doab:
-            psf_files = glob.glob("psfprofile_*" + fspec + "*.png")
-            psf_files.sort()
-            psf_file = psf_files[0]
-        else:
-            psf_file = glob.glob("psfprofile_"+filesourcename + "*.png")[0]
+        psf_file = glob.glob("psfprofile_"+filesourcename + "*.png")[0]
         img_psf = pil.Image.open(psf_file).crop((50, 0, 995, 500))
     except IndexError:
         print("Cannot find psfprofile image")
@@ -245,8 +226,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--contains',  type=str, default="*",
                         help='Provide here part of the filename.')
-    parser.add_argument('--doab', action="store_true", default=False,
-                        help='Verify an A/B extraction')
 
     # ================ #
     # END of Option    #
@@ -257,7 +236,6 @@ if __name__ == "__main__":
                                                         args.infile))
 
     img_report, report_filename = build_image_report(indir=args.infile,
-                                                     fspec=args.contains,
-                                                     doab=args.doab)
+                                                     fspec=args.contains)
     if img_report is not None and report_filename is not None:
         img_report.save(report_filename, dpi=(1000, 1000))
