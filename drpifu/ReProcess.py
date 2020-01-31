@@ -832,11 +832,11 @@ def doab(destdir='./', datestr=None, posdic=None):
                         logging.error("Error running SNID")
                     # run Verify.py
                     cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
-                          (datestr, crrf.split('.')[0])
+                          (datestr, rute)
                     subprocess.call(cmd, shell=True)
                     # run pysedm_report.py
                     cmd = "pysedm_report.py %s --contains %s" % \
-                          (datestr, crrf.split('.')[0])
+                          (datestr, rute)
                     subprocess.call(cmd, shell=True)
                     nextr += 1
             else:
@@ -1223,7 +1223,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         abp_file = os.path.join(outdir, 'abpairs.tab')
         if os.path.exists(abp_file):
             logging.info("Extracting A/B pairs...")
-            nab = doab(outdir, datestr=ut_date, posdic=pos_dic, oldext=oldext)
+            nab = doab(outdir, datestr=ut_date, posdic=pos_dic)
             logging.info("%d A/B pair extractions made" % nab)
         else:
             logging.info("No A/B pairs found.")
