@@ -1374,7 +1374,11 @@ def make_abpair_cubes(destdir=None):
     """Generate A/B pair cubes"""
     nab = 0
     pre = 'e3d_crr_b_'
-    with open(os.path.join(destdir, 'abpairs.tab'), 'r') as abf:
+    abfil = os.path.join(destdir, 'abpairs.tab')
+    if not os.path.exists(abfil):
+        logging.warning("%s does not exist" % abfil)
+        return nab
+    with open(abfil, 'r') as abf:
         plines = abf.readlines()
     for pl in plines:
         # parse line
@@ -1398,11 +1402,6 @@ def make_abpair_cubes(destdir=None):
             dif = ima - imb
             hdu_a[0].data = dif
             # update header
-            mjd = ts_ab.jd - 2400000.5
-            hdu_a[0].header['MJD_OBS'] = mjd
-            aira = hdu_a[0].header['AIRMASS']
-            airb = hdu_b[0].header['AIRMASS']
-            hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
             hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
             hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
             # get output file name
