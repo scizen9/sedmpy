@@ -31,6 +31,7 @@ _reduxpath = cfg_parser.get('paths', 'reduxpath')
 def time_from_fspec(filespec=None, imtype="ifu"):
     """Return time in seconds based on filename"""
     fsec = -1
+    tstr = ''
     if filespec is not None:
         try:
             tstr = filespec.split(imtype)[-1].split('_')[1:4]
@@ -109,7 +110,8 @@ def build_image_report(indir=None, fspec=None):
             used_spec_file = pysedm_spec_file if len(typed_spectra) == 0 \
                 else typed_spectra[0]
         else:
-            calib_spectra = glob.glob("calibcheck_spec_"+filesourcename + "*.png")
+            calib_spectra = glob.glob("calibcheck_spec_"+filesourcename +
+                                      "*.png")
             used_spec_file = pysedm_spec_file if len(calib_spectra) == 0 \
                 else calib_spectra[0]
         try:
@@ -125,22 +127,23 @@ def build_image_report(indir=None, fspec=None):
 
     # Acquisition finder
     t_obs = time_from_fspec(specfile)
+    ffspec = None
     try:
         if is_std:
-            fspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
-                                 % (indir, object_name.split("STD-")[-1]))
+            ffspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
+                                  % (indir, object_name.split("STD-")[-1]))
         else:
-            fspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
-                                 % (indir, object_name))
-        finder_file = glob.glob(fspec)
+            ffspec = os.path.join(_reduxpath, "%s/finders/finder_*ACQ-%s_*.png"
+                                  % (indir, object_name))
+        finder_file = glob.glob(ffspec)
         if not finder_file:
             if is_std:
-                fspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
-                                     % (indir, object_name.split("STD-")[-1]))
+                ffspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
+                                      % (indir, object_name.split("STD-")[-1]))
             else:
-                fspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
-                                     % (indir, object_name))
-            finder_file = glob.glob(fspec)
+                ffspec = os.path.join(_reduxpath, "%s/finders/finder_*_%s_*.png"
+                                      % (indir, object_name))
+            finder_file = glob.glob(ffspec)
         if finder_file:
             # Get delta time = (t_obs - t_acq)
             off_time_list = []
@@ -160,11 +163,11 @@ def build_image_report(indir=None, fspec=None):
 
             img_find = pil.Image.open(finder_file)
         else:
-            print("Cannot find %s" % fspec)
+            print("Cannot find %s" % ffspec)
             img_find = pil.get_buffer([8, 7], "Finder image missing",
                                       **prop_missing)
     except IndexError:
-        print("Cannot find %s" % fspec)
+        print("Cannot find %s" % ffspec)
         img_find = pil.get_buffer([8, 7], "Finder image missing",
                                   **prop_missing)
 
@@ -200,6 +203,9 @@ def build_image_report(indir=None, fspec=None):
     img_lower = pil.get_image_row([img_psf, img_spec])
 
     img_combined = pil.get_image_column([img_upper, img_lower, footer])
+
+    filesourcename = filesourcename.replace("_robotA_", "_robot_")
+    filesourcename = filesourcename.replace("_robotB_", "_robot_")
             
     return img_combined, "verify_"+filesourcename+".png"
         
