@@ -649,7 +649,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     # END: delete_old_pysedm_files
 
 
-def archive_old_pysedm_extractions(redd=None, ut_date=None, skip_gunzip=False):
+def archive_old_pysedm_extractions(redd=None, ut_date=None):
     """Move all the old pysedm extraction output files to ./pysedm/"""
     # Output dir
     odir = os.path.join(redd, ut_date)
@@ -774,119 +774,73 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
-def doab(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False):
+def doab(destdir='./', datestr=None, posdic=None):
     """Handle A/B pairs"""
     nextr = 0
     if posdic:
         # Get list of cubes
-        srcfiles = sorted(glob.glob(os.path.join(destdir,
-                                                 'e3d_crr_b_ifu%s_*.fits' %
-                                                 datestr)))
-        # Get list of single input files
-        rawfiles = sorted(glob.glob(os.path.join(destdir,
-                                                 'crr_b_ifu%s_*.fits' %
-                                                 datestr)))
-        for e3df in srcfiles:
-            # Get corresponding input filename
-            crrf = os.path.join(destdir,
-                                '_'.join(e3df.split('/')[-1].split('_')[1:7]) + '.fits')
-            # Skip single cubes
-            if crrf in rawfiles:
+        cubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_ifu%s_*.fits' %
+                                       datestr))
+        # Loop over cubes
+        for e3df in cubes:
+            # get root filename
+            rute = '_'.join(e3df.split('/')[-1].split('_')[1:7])
+            # is this a standard single cube?
+            crrf = glob.glob(os.path.join(destdir, rute+'.fit*'))
+            if len(crrf) > 0:
                 continue
-            rawf = crrf.split('/')[-1]
-            # Must be an A/B cube
-            logging.info("extracting from %s" % e3df)
-            # Open A/B cube
+            # Get position keys for posdic
             ff = pf.open(e3df)
-            # Get A observation
             abfila = ff[0].header['ABFILA']
             poskeya = '_'.join(abfila.split('_')[3:7])
-            # Get B observation
             abfilb = ff[0].header['ABFILB']
             poskeyb = '_'.join(abfilb.split('_')[3:7])
-            # Check posdic for positions
+            ff.close()
+            # Are keys in position dictionary?
             if poskeya in posdic and poskeyb in posdic:
-                # A Position
-                xpos = posdic[poskeya][0]
-                ypos = posdic[poskeya][1]
-                ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
-                if oldext:
-                    cmd = ["extract_star.py", datestr, "--auto", rawf,
-                           "--autobins", "6", "--tag", "robotA"]
-                else:
-                    cmd = ["extractstar.py", datestr, "--auto", rawf,
-                           "--autobins", "6", "--tag", "robotA",
-                           "--seeing", "2.0"]  # "%.2f" % seeing]
+                logging.info("extracting A/B pair from %s" % e3df)
+                # A Extraction
+                xpos_a = posdic[poskeya][0]
+                ypos_a = posdic[poskeya][1]
+                xpos_b = posdic[poskeyb][0]
+                ypos_b = posdic[poskeyb][1]
+                ccmd = ["--centroidA", "%.2f" % xpos_a, "%.2f" % ypos_a,
+                        "--centroidB", "%.2f" % xpos_b, "%.2f" % ypos_b]
+
+                cmd = ["extractstar_ab.py", datestr, "--auto", rute+'.fits',
+                       "--autobins", "6", "--tag", "ABext",
+                       "--seeing", "2.0"]  # "%.2f" % seeing]
                 # Add position parameters
                 cmd.extend(ccmd)
-                logging.info("Extracting object A spectra for " + rawf)
+                logging.info("Extracting object A/B spectra for " + e3df)
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
-                    logging.error("Error extracting A object spectrum for "
-                                  + rawf)
-                    badfn = "spec_auto_notfluxcalA_" + rawf.split('.')[0] + \
-                            "_failed.fits"
+                    logging.error("Error extracting A/B object spectrum for "
+                                  + e3df)
+                    badfn = "spec_auto_notfluxcal_" + rute + "_failed.fits"
                     cmd = ("touch", badfn)
                     subprocess.call(cmd)
                 else:
-                    # B position
-                    xpos = posdic[poskeyb][0]
-                    ypos = posdic[poskeyb][1]
-                    ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
-                    if oldext:
-                        cmd = ["extract_star.py", datestr, "--auto", rawf,
-                               "--autobins", "6", "--tag", "robotB"]
-                    else:
-                        cmd = ["extractstar.py", datestr, "--auto", rawf,
-                               "--autobins", "6", "--tag", "robotB",
-                               "--seeing", "2.0"]  # "%.2f" % seeing]
-                    # Add position parameters
-                    cmd.extend(ccmd)
-                    logging.info("Extracting object B spectra for " + rawf)
+                    logging.info("Running SNID for " + e3df)
+                    cmd = ("make", "classify")
                     logging.info(" ".join(cmd))
                     retcode = subprocess.call(cmd)
                     if retcode != 0:
-                        logging.error("Error extracting B object spectrum for "
-                                      + rawf)
-                        badfn = "spec_auto_notfluxcalB_" + rawf.split('.')[
-                            0] + "_failed.fits"
-                        cmd = ("touch", badfn)
-                        subprocess.call(cmd)
-                    else:
-                        # Output filename
-                        specfo = e3df.replace("e3d", "spec_auto_robot_lstep1_")
-                        # Open A spec
-                        specfa = e3df.replace("e3d", "spec_auto_robotA_lstep1_")
-                        ffa = pf.open(specfa)
-                        # Open B spec
-                        specfb = e3df.replace("e3d", "spec_auto_robotB_lstep1_")
-                        ffb = pf.open(specfb)
-                        # Read A data
-                        spec_a = ffa[0].data
-                        var_a = ffa[1].data
-                        # Read B data and invert spec
-                        spec_b = 0. - ffb[0].data
-                        var_b = ffb[1].data
-                        # Make output headers
-                        hdr_o = ffa[0].header
-                        hdr1_o = ffa[1].header
-                        # Add variance
-                        var_o = var_a + var_b
-                        # Average spectra
-                        spec_o = (spec_a + spec_b) / 2.
-                        # Close A/B spec files
-                        ffa.close()
-                        ffb.close()
-                        # Create output HDU list
-                        hdul_o = pf.HDUList(pf.PrimaryHDU(data=spec_o, header=hdr_o))
-                        hdul_o.append(pf.ImageHDU(var_o, header=hdr1_o))
-                        # Write out results
-                        hdul_o.writeto(specfo)
-                        nextr += 1
+                        logging.error("Error running SNID")
+                    # run Verify.py
+                    cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                          (datestr, rute)
+                    subprocess.call(cmd, shell=True)
+                    # run pysedm_report.py
+                    cmd = "pysedm_report.py %s --contains %s" % \
+                          (datestr, rute)
+                    subprocess.call(cmd, shell=True)
+                    nextr += 1
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
                              (poskeya, poskeyb))
+        # END: for e3df in cubes:
     else:
         logging.info("No pysedm positions found, use manual A/B extraction")
     return nextr
@@ -1224,7 +1178,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
 
     """
     # Default return value
-    ret = False
+    nextr = 0
     # Report extraction version
     if oldext:
         logging.info("Using old extract_star.py routine")
@@ -1254,14 +1208,19 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
                       oldext=oldext, stds_only=stds_only)
         logging.info("%d single spectra extracted." % nextr)
         # Check for A/B observations
-        nextrab = doab(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic)
-        logging.info("%d A/B spectra extracted" % nextrab)
+        abp_file = os.path.join(outdir, 'abpairs.tab')
+        if os.path.exists(abp_file):
+            nab = doab(outdir, datestr=ut_date, posdic=pos_dic)
+            logging.info("%d A/B pair extractions made" % nab)
+            nextr += nab
+        else:
+            logging.info("No A/B pairs found.")
         # Re-gzip input files
         cmd = ["gzip crr_b_ifu%s*.fits" % ut_date]
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
 
-    return ret
+    return nextr
     # END: re_extract
 
 
