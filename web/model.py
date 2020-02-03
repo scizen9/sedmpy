@@ -1327,6 +1327,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if os.path.exists(os.path.join(obsdir, 'abpairs.tab')):
         what_list.extend(get_ab_what(obsdir))
 
+    what_list.sort()
+
     science_list = []
     standard_list = []
     for targ in what_list:
