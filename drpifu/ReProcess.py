@@ -29,8 +29,6 @@ import argparse
 import datetime
 from astropy.io import fits as pf
 from astropy.time import Time, TimeDelta
-import numpy as np
-import pylab as pl
 
 from configparser import ConfigParser
 import codecs
@@ -651,7 +649,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     # END: delete_old_pysedm_files
 
 
-def archive_old_pysedm_extractions(redd=None, ut_date=None, skip_gunzip=False):
+def archive_old_pysedm_extractions(redd=None, ut_date=None):
     """Move all the old pysedm extraction output files to ./pysedm/"""
     # Output dir
     odir = os.path.join(redd, ut_date)
@@ -847,16 +845,6 @@ def doab(destdir='./', datestr=None, posdic=None):
         logging.info("No pysedm positions found, use manual A/B extraction")
     return nextr
     # END: doab
-
-
-def write_ab_spec(specf, spec, var, hdr):
-    """Output an ascii spectrum"""
-    with open(specf, 'w') as ofl:
-        for key in hdr:
-            ofl.write("# %s: %s\n" % (key, str(hdr[key])))
-        wl = hdr['CRVAL1'] + np.arange(len(spec)) * hdr['CDELT1']
-        for iw in np.arange(len(spec)):
-            ofl.write("%.1f %.3e %.3e\n" % (wl[iw], spec[iw], var[iw]))
 
 
 def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
@@ -1190,7 +1178,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
 
     """
     # Default return value
-    ret = False
+    nextr = 0
     # Report extraction version
     if oldext:
         logging.info("Using old extract_star.py routine")
@@ -1222,9 +1210,9 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         # Check for A/B observations
         abp_file = os.path.join(outdir, 'abpairs.tab')
         if os.path.exists(abp_file):
-            logging.info("Extracting A/B pairs...")
             nab = doab(outdir, datestr=ut_date, posdic=pos_dic)
             logging.info("%d A/B pair extractions made" % nab)
+            nextr += nab
         else:
             logging.info("No A/B pairs found.")
         # Re-gzip input files
@@ -1232,7 +1220,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
 
-    return ret
+    return nextr
     # END: re_extract
 
 
@@ -1304,10 +1292,10 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
                     ncube += 1
         # END: for fl in srcfiles:
         logging.info("%d cubes made out of %d attempted" % (ncube, ntry))
-        # Look for A/B pairs
-        abfile = os.path.join(destdir, 'abpairs.tab')
-        if os.path.exists(abfile):
-            nab = make_abpair_cubes(destdir, abfile)
+        logging.info("now looking for abpairs.tab")
+        if os.path.exists(os.path.join(destdir, 'abpairs.tab')):
+            logging.info("found it!")
+            nab = make_abpair_cubes(destdir)
             logging.info("%d A/B pair cubes made" % nab)
         else:
             logging.info("No A/B pairs found.")
@@ -1341,28 +1329,26 @@ def get_mid_time(tstr_a, tstr_b):
     return ts_a + tdel / 2.
 
 
-def make_abpair_cubes(destdir=None, abfile=None):
+def make_abpair_cubes(destdir=None):
     """Generate A/B pair cubes"""
     nab = 0
     pre = 'e3d_crr_b_'
-    with open(os.path.join(destdir, abfile), 'r') as abf:
-        ablines = abf.readlines()
-    for ab_rec in ablines:
-        # get object name
-        obj = ab_rec.split()[0]
+    abfil = os.path.join(destdir, 'abpairs.tab')
+    if not os.path.exists(abfil):
+        logging.warning("%s does not exist" % abfil)
+        return nab
+    with open(abfil, 'r') as abf:
+        plines = abf.readlines()
+    for pl in plines:
+        # parse line
+        obj = pl.split()[0]
         # get time stamps for A/B
-        ts_a = ab_rec.split()[1].split('ifu')[-1].split('.fits')[0]
-        ts_b = ab_rec.split()[2].split('ifu')[-1].split('.fits')[0]
+        ts_a = pl.split()[1].split('ifu')[-1].split('.fits')[0]
+        ts_b = pl.split()[2].split('ifu')[-1].split('.fits')[0]
         ts_ab = get_mid_time(ts_a, ts_b)
-        # create output file time stamp
-        ots = str(ts_ab.value
-                  ).replace('-', '').replace(':', '_'
-                                             ).replace(' ', '_').split('.')[0]
-        # create output filenames
-        flout = pre + 'ifu' + ots + '_' + obj + '.fits'
         # get input cubes
-        fla = pre + ab_rec.split()[1].split('.fits')[0] + '_' + obj + '.fits'
-        flb = pre + ab_rec.split()[2].split('.fits')[0] + '_' + obj + '.fits'
+        fla = pre + pl.split()[1].split('.fits')[0] + '_' + obj + '.fits'
+        flb = pre + pl.split()[2].split('.fits')[0] + '_' + obj + '.fits'
         # are they present?
         fla_exists = os.path.exists(os.path.join(destdir, fla))
         flb_exists = os.path.exists(os.path.join(destdir, flb))
@@ -1372,24 +1358,30 @@ def make_abpair_cubes(destdir=None, abfile=None):
             # do the subtraction
             ima = hdu_a[0].data
             imb = hdu_b[0].data
-            difa = ima - imb
-            # update data
-            hdu_a[0].data = difa
+            dif = ima - imb
+            hdu_a[0].data = dif
             # update header
-            mjd = ts_ab.jd - 2400000.5
-            hdu_a[0].header['MJD_OBS'] = mjd
-            aira = hdu_a[0].header['AIRMASS']
-            airb = hdu_b[0].header['AIRMASS']
-            hdu_a[0].header['AIRMASS'] = (aira + airb) / 2.
             hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
             hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
-            # write out A/B cube
-            with open(os.path.join(destdir, flout), 'bw') as ff:
+            # get output file name
+            ots = str(ts_ab.value
+                      ).replace('-',
+                                '').replace(':',
+                                            '_').replace(' ',
+                                                         '_').split('.')[0]
+            flab = pre + 'ifu' + ots + '_' + obj + '.fits'
+            with open(os.path.join(destdir, flab), 'bw') as ff:
                 hdu_a.writeto(ff)
-            logging.info("wrote A/B cube %s" % flout)
+            logging.info("wrote A/B cube %s" % flab)
             nab += 1
+        else:
+            logging.warning("Both input cubes not found for %s" % obj)
+            if not fla_exists:
+                logging.warning(fla + ' missing')
+            if not flb_exists:
+                logging.warning(flb + ' missing')
     return nab
-    # END: make_abpair_cube
+    # END: make_abpair_cubes
 
 
 def re_calib(redd=None, ut_date=None, nodb=False):
