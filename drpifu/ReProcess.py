@@ -810,9 +810,11 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
                              (poskeya, poskeyb))
-                ccmd = ["--centroid", "brightest", "--display"]
+                ccmd = ["--centroidA", "brightest",
+                        "--centroidB", "brightest", "--display"]
         else:
-            ccmd = ["--centroid", "brightest", "--display"]
+            ccmd = ["--centroidA", "brightest",
+                    "--centroidB", "brightest", "--display"]
 
         cmd = ["extractstar_ab.py", datestr, "--auto", rute+'.fits',
                "--autobins", "6", "--tag", "ABext",
