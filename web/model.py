@@ -1247,7 +1247,7 @@ def get_ab_what(obsdir):
         if len(crrf) > 0:
             continue
         fname = '_'.join(e3df.split('/')[-1].split('_')[3:7]) + '.fits'
-        targ = e3df.split('/')[-1].split('_')[7]
+        targ = e3df.split('/')[-1].split('_')[7].split('.fit')[0]
         ablist.append("   "+fname+" (1.000/0.1/1.0 s): " + targ + " [A]")
     return ablist
 
