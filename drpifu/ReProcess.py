@@ -779,6 +779,7 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
     # Get list of cubes
     cubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_ifu%s_*.fits' %
                                    datestr))
+    cubes.sort()
     # Loop over cubes
     for e3df in cubes:
         # get root filename

@@ -112,9 +112,13 @@ def report():
         for f in flist:
             tstr = ':'.join(f.split('ifu')[-1].split('_')[1:4])
             tok = f.split("_failed")[0].split("_ifu")[-1]
-            out = subprocess.check_output(('grep', tok, 'what.list'),
-                                          universal_newlines=True)
-            print("%8s %-25s FAILED" % (tstr, out.split()[3]))
+            try:
+                out = subprocess.check_output(('grep', tok, 'what.list'),
+                                              universal_newlines=True)
+                out = out.split()[3]
+            except subprocess.CalledProcessError:
+                out = tok
+            print("%8s %-25s FAILED" % (tstr, out))
     else:
         print("\nThere were no failed extractions")
 
