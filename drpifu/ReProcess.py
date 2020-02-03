@@ -773,21 +773,22 @@ def archive_old_kpy_files(odir):
     # END: archive_old_kpy_files
 
 
-def doab(destdir='./', datestr=None, posdic=None):
+def doab(destdir='./', datestr=None, posdic=None, manual=False):
     """Handle A/B pairs"""
     nextr = 0
-    if posdic:
-        # Get list of cubes
-        cubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_ifu%s_*.fits' %
-                                       datestr))
-        # Loop over cubes
-        for e3df in cubes:
-            # get root filename
-            rute = '_'.join(e3df.split('/')[-1].split('_')[1:7])
-            # is this a standard single cube?
-            crrf = glob.glob(os.path.join(destdir, rute+'.fit*'))
-            if len(crrf) > 0:
-                continue
+    # Get list of cubes
+    cubes = glob.glob(os.path.join(destdir, 'e3d_crr_b_ifu%s_*.fits' %
+                                   datestr))
+    # Loop over cubes
+    for e3df in cubes:
+        # get root filename
+        rute = '_'.join(e3df.split('/')[-1].split('_')[1:7])
+        # is this a standard single cube?
+        crrf = glob.glob(os.path.join(destdir, rute+'.fit*'))
+        if len(crrf) > 0:
+            continue
+        got_positions = False
+        if posdic:
             # Get position keys for posdic
             ff = pf.open(e3df)
             abfila = ff[0].header['ABFILA']
@@ -805,43 +806,48 @@ def doab(destdir='./', datestr=None, posdic=None):
                 ypos_b = posdic[poskeyb][1]
                 ccmd = ["--centroidA", "%.2f" % xpos_a, "%.2f" % ypos_a,
                         "--centroidB", "%.2f" % xpos_b, "%.2f" % ypos_b]
-
-                cmd = ["extractstar_ab.py", datestr, "--auto", rute+'.fits',
-                       "--autobins", "6", "--tag", "ABext",
-                       "--seeing", "2.0"]  # "%.2f" % seeing]
-                # Add position parameters
-                cmd.extend(ccmd)
-                logging.info("Extracting object A/B spectra for " + e3df)
-                logging.info(" ".join(cmd))
-                retcode = subprocess.call(cmd)
-                if retcode != 0:
-                    logging.error("Error extracting A/B object spectrum for "
-                                  + e3df)
-                    badfn = "spec_auto_notfluxcal_" + rute + "_failed.fits"
-                    cmd = ("touch", badfn)
-                    subprocess.call(cmd)
-                else:
-                    logging.info("Running SNID for " + e3df)
-                    cmd = ("make", "classify")
-                    logging.info(" ".join(cmd))
-                    retcode = subprocess.call(cmd)
-                    if retcode != 0:
-                        logging.error("Error running SNID")
-                    # run Verify.py
-                    cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
-                          (datestr, rute)
-                    subprocess.call(cmd, shell=True)
-                    # run pysedm_report.py
-                    cmd = "pysedm_report.py %s --contains %s" % \
-                          (datestr, rute)
-                    subprocess.call(cmd, shell=True)
-                    nextr += 1
+                got_positions = True
             else:
                 logging.info("Missing from positions list: %s and/or %s" %
                              (poskeya, poskeyb))
-        # END: for e3df in cubes:
-    else:
-        logging.info("No pysedm positions found, use manual A/B extraction")
+                ccmd = ["--centroid", "brightest", "--display"]
+        else:
+            ccmd = ["--centroid", "brightest", "--display"]
+
+        cmd = ["extractstar_ab.py", datestr, "--auto", rute+'.fits',
+               "--autobins", "6", "--tag", "ABext",
+               "--seeing", "2.0"]  # "%.2f" % seeing]
+        if got_positions or manual:
+            # Add position parameters
+            cmd.extend(ccmd)
+            logging.info("Extracting object A/B spectra for " + e3df)
+            logging.info(" ".join(cmd))
+            retcode = subprocess.call(cmd)
+            if retcode != 0:
+                logging.error("Error extracting A/B object spectrum for "
+                              + e3df)
+                badfn = "spec_auto_notfluxcal_" + rute + "_failed.fits"
+                cmd = ("touch", badfn)
+                subprocess.call(cmd)
+            else:
+                logging.info("Running SNID for " + e3df)
+                cmd = ("make", "classify")
+                logging.info(" ".join(cmd))
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    logging.error("Error running SNID")
+                # run Verify.py
+                cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
+                      (datestr, rute)
+                subprocess.call(cmd, shell=True)
+                # run pysedm_report.py
+                cmd = "pysedm_report.py %s --contains %s" % \
+                      (datestr, rute)
+                subprocess.call(cmd, shell=True)
+                nextr += 1
+        else:
+            logging.info("No pysedm positions found, use manual A/B extraction")
+    # END: for e3df in cubes:
     return nextr
     # END: doab
 
@@ -1161,7 +1167,7 @@ def get_extract_pos(indir, indate):
 
 
 def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
-               ignore_bad=False, stds_only=False):
+               ignore_bad=False, stds_only=False, manual=False):
     """Re-extract spectra from cube files for one night.
 
     Args:
@@ -1171,9 +1177,10 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         oldext (bool): True to use old extract_star instead of new extractstar
         ignore_bad (bool): extract in spite of bad cals?
         stds_only (bool): True to only extract standard stars
+        manual (bool): True to use manual extraction if no positions found
 
     Returns:
-        bool: True if cals completed normally, False otherwise
+        int: Number of extractions performed
 
     """
     # Default return value
@@ -1209,7 +1216,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         # Check for A/B observations
         abp_file = os.path.join(outdir, 'abpairs.tab')
         if os.path.exists(abp_file):
-            nab = doab(outdir, datestr=ut_date, posdic=pos_dic)
+            nab = doab(outdir, datestr=ut_date, posdic=pos_dic, manual=manual)
             logging.info("%d A/B pair extractions made" % nab)
             nextr += nab
         else:
@@ -1561,6 +1568,8 @@ if __name__ == '__main__':
                         help='Proceed in spite of bad calibration')
     parser.add_argument('--extract', action="store_true", default=False,
                         help='Re-extract targets')
+    parser.add_argument('--manual', action="store_true", default=False,
+                        help='Use manual extraction if no positions found')
     parser.add_argument('--stds_only', action="store_true", default=False,
                         help='Only extract standard stars')
 
@@ -1583,7 +1592,7 @@ if __name__ == '__main__':
         elif args.extract:
             re_extract(redd=args.reduxdir, ut_date=args.date, nodb=args.nodb,
                        oldext=args.oldext, ignore_bad=args.ignore_bad,
-                       stds_only=args.stds_only)
+                       stds_only=args.stds_only, manual=args.manual)
         else:
             logging.error("Must specify one of "
                           "--[reduce|calibrate|cube|extract|archive_pysedm]")
