@@ -600,10 +600,6 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
     flist.extend(glob.glob(os.path.join(odir, 'snid.param')))
     # Remove or move them
     if len(flist) > 0:
-        if keep_spec:
-            # Make archive directory
-            if not os.path.exists(archdir):
-                os.mkdir(archdir)
         for fl in flist:
             # Skip deleting linked fluxcal file
             if 'fluxcal_' in fl and os.path.islink(fl):
@@ -622,6 +618,9 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
                         '_ea.fit' not in fl and '_failed' not in fl and \
                         '.png' not in fl and '.pdf' not in fl or \
                         'report.txt' in fl:
+                    # Make archive directory
+                    if not os.path.exists(archdir):
+                        os.mkdir(archdir)
                     shutil.move(fl, archdir)
                     nkeepspec += 1
                 else:
@@ -631,7 +630,7 @@ def delete_old_pysedm_files(odir, ut_date, keep_spec=False, keep_cubes=False):
                 os.remove(fl)
                 ndelfile += 1
         # If we keep the spectra, gzip them
-        if keep_spec:
+        if keep_spec and os.path.exists(archdir):
             # Now gzip the files in the archive
             flist = os.listdir(archdir)
             for fl in flist:
