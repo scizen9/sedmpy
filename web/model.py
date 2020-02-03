@@ -1235,6 +1235,23 @@ def get_science_products(user_id="", obsdate="", camera_type=""):
         return get_rc_products(data_dir, user_id, obsdate)
 
 
+def get_ab_what(obsdir):
+    """get a pseudo what list for A/B cubes"""
+    ablist = []
+    cubes = glob.glob(os.path.join(obsdir, "e3d_crr_b_ifu*.fits"))
+    for e3df in cubes:
+        # get root filename
+        rute = '_'.join(e3df.split('/')[-1].split('_')[1:7])
+        # is this a standard single cube?
+        crrf = glob.glob(os.path.join(obsdir, rute + '.fit*'))
+        if len(crrf) > 0:
+            continue
+        fname = '_'.join(e3df.split('/')[-1].split('_')[3:7]) + '.fits'
+        targ = e3df.split('/')[-1].split('_')[7]
+        ablist.append("   "+fname+" (1.000/0.1/1.0 s): " + targ + " [A]")
+    return ablist
+
+
 def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                      product_type='all'):
     """
@@ -1303,9 +1320,12 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         return {'message': 'Could not find summary file (what.list) for %s UT' %
                            os.path.basename(os.path.normpath(obsdir))}
 
-    # Go throught the what list and return all non-calibration entries
+    # Go through the what list and return all non-calibration entries
     with open(os.path.join(obsdir, 'what.list')) as f:
         what_list = f.read().splitlines()
+
+    if os.path.exists(os.path.join(obsdir, 'abpairs.tab')):
+        what_list.extend(get_ab_what(obsdir))
 
     science_list = []
     standard_list = []
