@@ -15,6 +15,8 @@ if __name__ == '__main__':
             help='ending date for fixing headers')
     parser.add_argument('--extract', action="store_true", default=False,
             help='Perform extraction as well')
+    parser.add_argument('--manual', action="store_true", default=False,
+                        help='Allow manual extraction')
 
     args = parser.parse_args()
 
@@ -48,7 +50,10 @@ if __name__ == '__main__':
                 os.system("mv rp_cube.log %s" % fdate)
                 # extract?
                 if args.extract:
-                    cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --extract --date %s >& rp_extract.log" % fdate
+                    if args.manual:
+                        cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --extract --manual --date %s >& rp_extract.log" % fdate
+                    else:
+                        cmd = "~/spy ~/sedmpy/drpifu/ReProcess.py --nodb --extract --date %s >& rp_extract.log" % fdate
                     print(cmd)
                     os.system(cmd)
                     os.system("mv rp_extract.log %s" % fdate)
