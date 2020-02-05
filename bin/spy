@@ -19,6 +19,7 @@ else
     case $1 in
         what) python $SEDMPATH/drpifu/What.py "$@";;
         plan) shift 1; python $SEDMPATH/drpifu/Plan.py "$@";;
+        imgplan) shift 1; python $SEDMPATH/drpimg/ImgPlan.py "$@";;
         redex) shift 1; python $SEDMPATH/drpifu/RedEx.py "$@";;
         report) python $SEDMPATH/drpifu/DrpReport.py;;
         update) shift 1; python $SEDMPATH/drpifu/AutoReduce.py --update "$@";;
