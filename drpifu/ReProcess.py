@@ -792,11 +792,16 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
         if posdic:
             # Get position keys for posdic
             ff = pf.open(e3df)
-            abfila = ff[0].header['ABFILA']
-            poskeya = '_'.join(abfila.split('_')[3:7])
-            abfilb = ff[0].header['ABFILB']
-            poskeyb = '_'.join(abfilb.split('_')[3:7])
-            ff.close()
+            try:
+                abfila = ff[0].header['ABFILA']
+                poskeya = '_'.join(abfila.split('_')[3:7])
+                abfilb = ff[0].header['ABFILB']
+                poskeyb = '_'.join(abfilb.split('_')[3:7])
+                ff.close()
+            except KeyError:
+                logging.warning("Mal-formed A/B cube: %s" % e3df)
+                ff.close()
+                continue
             # Are keys in position dictionary?
             if poskeya in posdic and poskeyb in posdic:
                 logging.info("extracting A/B pair from %s" % e3df)
