@@ -23,10 +23,6 @@ import datetime
 import argparse
 import logging
 
-import matplotlib
-
-matplotlib.use("Agg")
-
 # Log into a file
 log_format = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 root_dir = "/tmp/"

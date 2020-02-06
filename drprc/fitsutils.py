@@ -74,7 +74,7 @@ if __name__ == '__main__':
                     target_pix = wcs.wcs_sky2pix([(np.array([ra,dec], np.float_))], 1)[0]
                 except:
                     print("ERROR when converting sky to wcs. Is astrometry in "
-                           "place? Default coordinates assigned.")
+                          "place? Default coordinates assigned.")
                     target_pix = [+nx/2., ny/2.]
     
                 print(target_pix)

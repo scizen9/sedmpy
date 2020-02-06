@@ -22,7 +22,6 @@ try:
     from pyraf import IrafError
 except ImportError:
     pass
-from astropy.io import fits
 from astropy.wcs import WCS
 
 from matplotlib import pylab as plt
@@ -52,11 +51,9 @@ import codecs
 
 import matplotlib
 
-matplotlib.use('Agg')
-
 parser = ConfigParser()
 
-configfile = '/scr7/rsw/sedmpy/drprc/config/sedmconfig.cfg'
+configfile = os.environ['SEDMCONFIG']
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
