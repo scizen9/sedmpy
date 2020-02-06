@@ -139,11 +139,9 @@ if __name__ == '__main__':
     timestamp = timestamp.split("T")[0].replace("-", "")
 
     if args.raw is None:
-        raw = os.path.join("/scr2/sedm/raw/", timestamp)
+        raw = os.path.join("/scr2/sedmdrp/redux/", timestamp)
     else:
         raw = args.raw
-
-    phot = os.path.join("/scr2/sedmdrp/phot/", timestamp)
 
     # Get the files from the same day directory.
     files = glob.glob(os.path.join(raw, "ifu*fits"))
@@ -153,7 +151,7 @@ if __name__ == '__main__':
     daybefore = datetime.datetime.isoformat(
         datetime.datetime.utcnow() - datetime.timedelta(1))
     daybefore = daybefore.split("T")[0].replace("-", "")
-    daybefore = os.path.join("/scr2/sedm/raw/", daybefore)
+    daybefore = os.path.join("/scr2/sedmdrp/redux/", daybefore)
 
     if os.path.isdir(daybefore):
         filesold = glob.glob(os.path.join(daybefore, "ifu*fits"))
@@ -168,7 +166,7 @@ if __name__ == '__main__':
         files_hg.sort()
         sexlist = sextractor.run_sex(files_hg, mask=False)
 
-        plot_dir = os.path.join(phot, "stats")
+        plot_dir = os.path.join(raw, "stats")
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
