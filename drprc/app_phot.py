@@ -7,7 +7,6 @@ Created on Sat May 23 18:23:02 2015
 """
 
 import matplotlib
-matplotlib.use("Agg", warn=False)
 from matplotlib import pylab as plt
 
 import numpy as np
@@ -16,7 +15,7 @@ import datetime
 try:
     from pyraf import iraf 
 except:
-    print ("Not loading iraf") 
+    print("Not loading iraf")
 import os, sys, math
 from astropy.io import fits as pf
 import zscale
@@ -29,16 +28,16 @@ import matplotlib.lines as mlines
 import subprocess
 import warnings
 
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 import codecs
 
-parser = SafeConfigParser()
+parser = ConfigParser()
 
-configfile = '/scr7/rsw/sedmpy/drprc/config/sedmconfig.cfg'
+configfile = os.environ['SEDMCONFIG']
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
-    parser.readfp(f)
+    parser.read_file(f)
 
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
