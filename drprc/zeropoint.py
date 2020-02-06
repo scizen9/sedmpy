@@ -7,12 +7,12 @@ Created on Thu Dec  3 14:57:05 2015
 from __future__ import print_function
 
 import matplotlib
-matplotlib.use("Agg")
 import zscale
 from astropy.io import fits as pf
 import numpy as np
 import matplotlib.pyplot as plt
-import math, glob
+import math
+import glob
 from astropy.wcs import WCS
 from astropy.io.votable import parse_single_table
 import coordinates_conversor
@@ -20,7 +20,8 @@ import app_phot
 from numpy.lib import recfunctions as rfn
 import scipy.optimize as opt
 import fitsutils
-import os, shutil
+import os
+import shutil
 from astropy import stats
 import argparse
 import logging
@@ -30,16 +31,16 @@ import rcred
 import time_utils
 import matplotlib.dates as md
 
-from configparser import SafeConfigParser
+from configparser import ConfigParser
 import codecs
 
-parser = SafeConfigParser()
+parser = ConfigParser()
 
-configfile = '/scr7/rsw/sedmpy/drprc/config/sedmconfig.cfg'
+configfile = os.environ['SEDMCONFIG']
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
-    parser.readfp(f)
+    parser.read_file(f)
 
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
@@ -47,89 +48,105 @@ _photpath = parser.get('paths', 'photpath')
 
 FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 now = datetime.datetime.utcnow()
-timestamp=datetime.datetime.isoformat(now)
+timestamp = datetime.datetime.isoformat(now)
 creationdate = timestamp
-timestamp=timestamp.split("T")[0]
+timestamp = timestamp.split("T")[0]
 
 try:
-    #Log into a file
+    # Log into a file
     root_dir = _logpath
-    logging.basicConfig(format=FORMAT, filename=os.path.join(root_dir, "rcred_{0}.log".format(timestamp)), level=logging.INFO)
+    logging.basicConfig(
+        format=FORMAT,
+        filename=os.path.join(root_dir, "rcred_{0}.log".format(timestamp)),
+        level=logging.INFO)
     logger = logging.getLogger('zeropoint')
 except:
-    logging.basicConfig(format=FORMAT, filename=os.path.join("/tmp", "rcred_{0}.log".format(timestamp)), level=logging.INFO)
-    logger= logging.getLogger("zeropoint")
-    
-
-
+    logging.basicConfig(
+        format=FORMAT,
+        filename=os.path.join("/tmp", "rcred_{0}.log".format(timestamp)),
+        level=logging.INFO)
+    logger = logging.getLogger("zeropoint")
 
 
 def are_isolated(rav, decv, r):
-    '''
-    Returns a mask saying whether the stars with coordinates rav, decv are isolated in a radius of r arcsec.
-    '''
+    """
+    Returns a mask saying whether the stars with coordinates rav, decv
+    are isolated in a radius of r arcsec.
+    """
     
     index = np.arange(len(rav))
     mask = []
     
     for i in np.arange(len(rav)):
-        d = coordinates_conversor.get_distance(rav[i], decv[i], rav[index!=i], decv[index!=i])
-        mask.append(~ np.any(d*3600<r))
+        d = coordinates_conversor.get_distance(rav[i], decv[i], rav[index != i],
+                                               decv[index != i])
+        mask.append(~ np.any(d*3600 < r))
     
     return np.array(mask)
 
-def twoD_Gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
-    '''
+
+def twoD_Gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta,
+                  offset):
+    """
     Produces a 2D gaussian centered in xo, yo with the parameters specified.
     xdata_tuple: coordinates of the points where the 2D Gaussian is computed.
-    
-    '''
+
+    """
     (x, y) = xdata_tuple                                                        
     xo = float(xo)                                                              
     yo = float(yo)                                                              
     a = (np.cos(theta)**2)/(2*sigma_x**2) + (np.sin(theta)**2)/(2*sigma_y**2)   
     b = -(np.sin(2*theta))/(4*sigma_x**2) + (np.sin(2*theta))/(4*sigma_y**2)    
     c = (np.sin(theta)**2)/(2*sigma_x**2) + (np.cos(theta)**2)/(2*sigma_y**2)   
-    g = offset + amplitude*np.exp( - (a*((x-xo)**2) + 2*b*(x-xo)*(y-yo) + c*((y-yo)**2)))                                   
+    g = offset + amplitude*np.exp(- (a*((x-xo)**2) + 2*b*(x-xo)*(y-yo) +
+                                     c*((y-yo)**2)))
     return g.ravel()
-    
+
+
 def twoD_Gauss_test(theta=0):
-    '''
-    Generates a test Gaussian and fits it using the scisoft optimization software.
-    '''
+    """
+    Generates a test Gaussian and fits it using the scisoft
+    optimization software.
+    """
     # Create x and y indices
     x = np.linspace(0, 200, 201)
     y = np.linspace(0, 200, 201)
     x, y = np.meshgrid(x, y)
     
-    #create data
+    # create data
     data = twoD_Gaussian((x, y), 3, 100, 100, 20, 40, theta, 10)
     
     # plot twoD_Gaussian data generated above
     plt.figure()
-    plt.imshow(data.reshape(201, 201), origin="bottom", extent=(x.min(), x.max(), y.min(), y.max()))
+    plt.imshow(data.reshape(201, 201), origin="bottom", extent=(x.min(),
+                                                                x.max(),
+                                                                y.min(),
+                                                                y.max()))
     plt.colorbar()
     
     # add some noise to the data and try to fit the data generated beforehand
-    initial_guess = (3,100,100,20,40,0,10)
+    initial_guess = (3, 100, 100, 20, 40, 0, 10)
     
     data_noisy = data + 0.2*np.random.normal(size=data.shape)
     
-    popt, pcov = opt.curve_fit(twoD_Gaussian, (x, y), data_noisy, p0=initial_guess)
+    popt, pcov = opt.curve_fit(twoD_Gaussian, (x, y), data_noisy,
+                               p0=initial_guess)
     
     data_fitted = twoD_Gaussian((x, y), *popt)
     
     fig, ax = plt.subplots(1, 1)
     ax.hold(True)
     ax.imshow(data_noisy.reshape(201, 201), cmap=plt.cm.jet, origin='bottom',
-        extent=(x.min(), x.max(), y.min(), y.max()))
+              extent=(x.min(), x.max(), y.min(), y.max()))
     ax.contour(x, y, data_fitted.reshape(201, 201), 8, colors='w')
     plt.show()
 
+
 def find_fwhm(imfile, xpos, ypos, plot=True):
-    '''
-    Finds and returns the best parameters for the FWHM in arcsec for the stars marked with X, Y
-    '''
+    """
+    Finds and returns the best parameters for the FWHM in arcsec
+    for the stars marked with X, Y
+    """
     
     f = pf.open(imfile)
     img = f[0].data
@@ -137,9 +154,10 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
     def_fwhm = 2./pix2ang
     rad = math.ceil(30./pix2ang)
     
-    out = np.zeros(len(xpos), dtype=[('detected', np.bool), ('fwhm', np.float), ('e', np.float)])
+    out = np.zeros(len(xpos), dtype=[('detected', np.bool), ('fwhm', np.float),
+                                     ('e', np.float)])
     
-    for i, (x_i,y_i) in enumerate(zip(xpos, ypos)):
+    for i, (x_i, y_i) in enumerate(zip(xpos, ypos)):
 
         x_i = int(x_i)
         y_i = int(y_i)
@@ -149,80 +167,104 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
         y = np.linspace(0, len(sub), len(sub))
         X, Y = np.meshgrid(x, y)
     
-        #(xdata_tuple, amplitude, xo, yo, def_fwhm, def_fwhm, theta, offset):
+        # (xdata_tuple, amplitude, xo, yo, def_fwhm, def_fwhm, theta, offset):
         def_x = np.argmax(np.sum(sub, axis=0))
         def_y = np.argmax(np.sum(sub, axis=1))
 
-        initial_guess = (100, def_x, def_y, def_fwhm, def_fwhm, 0, np.percentile(sub, 40))
+        initial_guess = (100, def_x, def_y, def_fwhm, def_fwhm, 0,
+                         np.percentile(sub, 40))
         detected = True
         try:
-            popt, pcov = opt.curve_fit(twoD_Gaussian, (X, Y), sub.flatten(), p0=initial_guess)
+            popt, pcov = opt.curve_fit(twoD_Gaussian, (X, Y), sub.flatten(),
+                                       p0=initial_guess)
             fwhm_x = np.abs(popt[3])*2*np.sqrt(2*np.log(2))
             fwhm_y = np.abs(popt[4])*2*np.sqrt(2*np.log(2))
-            amplitude=popt[0]
-            background=popt[-1]
+            amplitude = popt[0]
+            background = popt[-1]
         except:
             detected = False
             fwhm_x = 0
             fwhm_y = 0
             amplitude = 0
             background = 0
-        
-        
+
         detected = detected * (amplitude> 0)
-        
-        if (not detected):
+
+        if not detected:
             fwhm_x = 0
             fwhm_y = 0     
+
+        logger.info("%s %s Amplitude %.3f\t BG %.3f\t BG_stats %.3f\t  "
+                    "FWHM_x,FWHM_y=(%.3f, %.3f)" %
+                    (i, detected, amplitude, background,
+                     np.percentile(sub, 50), fwhm_x, fwhm_y))
         
-        
-        logger.info("%s %s Amplitude %.3f\t BG %.3f\t BG_stats %.3f\t  FWHM_x,FWHM_y=(%.3f, %.3f)"%(i, detected, amplitude, background, np.percentile(sub, 50), fwhm_x, fwhm_y))
-        
-        out[i] = (detected, np.average([fwhm_x, fwhm_y]), np.minimum(fwhm_x, fwhm_y) / np.maximum(fwhm_x, fwhm_y))
-        
-        if (detected & plot):
+        out[i] = (detected, np.average([fwhm_x, fwhm_y]),
+                  np.minimum(fwhm_x, fwhm_y) / np.maximum(fwhm_x, fwhm_y))
+
+        if detected & plot:
             data_fitted = twoD_Gaussian((X, Y), *popt)
             
             fig, (ax, ax2) = plt.subplots(1, 2)
             ax.hold(True)
-            ax.imshow(sub, cmap=plt.cm.jet, origin='bottom', extent=(x.min(), x.max(), y.min(), y.max()))
-            ax.contour(X, Y, data_fitted.reshape(sub.shape[0], sub.shape[1]), 5, colors='w')
-            ax2.imshow(sub-data_fitted.reshape(sub.shape[0], sub.shape[1]), cmap=plt.cm.jet, origin='bottom', extent=(x.min(), x.max(), y.min(), y.max()))
-            ax2.contour(X, Y, data_fitted.reshape(sub.shape[0], sub.shape[1]), 5, colors='w')
+            ax.imshow(sub, cmap=plt.cm.jet, origin='bottom', extent=(x.min(),
+                                                                     x.max(),
+                                                                     y.min(),
+                                                                     y.max()))
+            ax.contour(X, Y, data_fitted.reshape(sub.shape[0], sub.shape[1]), 5,
+                       colors='w')
+            ax2.imshow(sub-data_fitted.reshape(sub.shape[0], sub.shape[1]),
+                       cmap=plt.cm.jet, origin='bottom', extent=(x.min(),
+                                                                 x.max(),
+                                                                 y.min(),
+                                                                 y.max()))
+            ax2.contour(X, Y, data_fitted.reshape(sub.shape[0], sub.shape[1]),
+                        5, colors='w')
             ax.scatter(def_x, def_y, marker="*", s=100, color="yellow")
-            plt.title("DETECTED for Position X,Y = %d,%d"%(x_i,y_i))
-            plt.savefig(os.path.join(os.path.dirname(imfile), "gauss_%d"%i))
+            plt.title("DETECTED for Position X,Y = %d,%d" % (x_i, y_i))
+            plt.savefig(os.path.join(os.path.dirname(imfile), "gauss_%d" % i))
             plt.clf()
-        if ((not detected) & plot):           
+        if (not detected) & plot:
             fig, ax = plt.subplots(1)
             ax.hold(True)
-            ax.imshow(sub, cmap=plt.cm.jet, origin='bottom', extent=(x.min(), x.max(), y.min(), y.max()))
-            plt.title("NOT DETECTED for Position X,Y = %d,%d"%(x_i,y_i))
-            plt.savefig(os.path.join(os.path.dirname(imfile), "gauss_%d"%i))
+            ax.imshow(sub, cmap=plt.cm.jet, origin='bottom', extent=(x.min(),
+                                                                     x.max(),
+                                                                     y.min(),
+                                                                     y.max()))
+            plt.title("NOT DETECTED for Position X,Y = %d,%d"%(x_i, y_i))
+            plt.savefig(os.path.join(os.path.dirname(imfile), "gauss_%d" % i))
             plt.clf()
-            #plt.show()
+            # plt.show()
             
     return out
-    
+
+
 def clean_tmp_files():
     
-    files = ["/tmp/tmp_sdss_%s.cat"%creationdate, '/tmp/tmp_%s.cat'%creationdate, '/tmp/tmp_apass_%s.cat'%creationdate, '/tmp/tmp_sdss_%s.cat'%creationdate, '/tmp/sdss_cat_det_%s.txt'%creationdate]
+    files = ["/tmp/tmp_sdss_%s.cat" % creationdate,
+             '/tmp/tmp_%s.cat' % creationdate,
+             '/tmp/tmp_apass_%s.cat' % creationdate,
+             '/tmp/tmp_sdss_%s.cat' % creationdate,
+             '/tmp/sdss_cat_det_%s.txt' % creationdate]
     
-    for f in files:
-        if os.path.isfile(f):
-            os.remove(f)
-    
-def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False, refstars=None, plotdir=".", pix2ang = 0.394):
-    '''
-    Given a fits image: imfile and a the name of the band which we want to extract the sources from,
-    it saves the extracted sources into  '/tmp/sdss_cat_det.txt' file.
-    If the band does not match the bands in the survey, a change is performed to adapt to the new band.
-    
-    If plotting activated, plots the USNOB1 field of stars on top of the star field image.
-    Red circles are stars identified from the catalogue in the correct magnitude range.
-    Yellow circles are stars that are isolated.
-    
-    '''
+    for ff in files:
+        if os.path.isfile(ff):
+            os.remove(ff)
+
+
+def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
+                          refstars=None, plotdir=".", pix2ang=0.394):
+    """
+    Given a fits image: imfile and a the name of the band which we want to
+    extract the sources from, it saves the extracted sources into
+    '/tmp/sdss_cat_det.txt' file. If the band does not match the bands in
+    the survey, a change is performed to adapt to the new band.
+
+    If plotting activated, plots the USNOB1 field of stars on top of
+    the star field image. Red circles are stars identified from the catalogue
+    in the correct magnitude range. Yellow circles are stars that are isolated.
+
+    """
     
     survey = str.lower(survey)
     minmag = 13.5
@@ -234,229 +276,279 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False, re
     img = f[0].data
     img[img<0] = 0
     
-    ra, dec = wcs.wcs_pix2world(np.array([img.shape[0]/2, img.shape[1]/2], ndmin=2), 1)[0]
-    ra0, dec0 = wcs.wcs_pix2world(np.array([img.shape[0], img.shape[1]], ndmin=2), 1)[0]
-
+    ra, dec = wcs.wcs_pix2world(np.array([img.shape[0]/2, img.shape[1]/2],
+                                         ndmin=2), 1)[0]
+    ra0, dec0 = wcs.wcs_pix2world(np.array([img.shape[0], img.shape[1]],
+                                           ndmin=2), 1)[0]
 
     sr = 2*np.abs(dec-dec0)
-    logger.info("%.4f %.4f %.4f"%( ra,dec, sr))
+    logger.info("%.4f %.4f %.4f" % (ra, dec, sr))
     
     qc = QueryCatalogue.QueryCatalogue(ra, dec, sr/1.8, minmag, maxmag, logger)
     
-    if not refstars is None:
-        shutil.copy(refstars, "/tmp/tmp_sdss_%s.cat"%creationdate)
-        catalog = np.genfromtxt("/tmp/tmp_sdss_%s.cat"%creationdate, names=True, dtype=None, delimiter=",")
+    if refstars:
+        shutil.copy(refstars, "/tmp/tmp_sdss_%s.cat" % creationdate)
+        catalog = np.genfromtxt("/tmp/tmp_sdss_%s.cat" % creationdate,
+                                names=True, dtype=None, delimiter=",")
         cat_ra = catalog["ra"]
         cat_dec = catalog["dec"]
         try:
             mag = catalog["R"]
         except:
             mag = catalog["r"]
-        
-    elif (survey=='sdss'):
+
+    elif survey == 'sdss':
 
         catalog = qc.query_sdss()
 
-        if (np.ndim(catalog)==0 or len(catalog)<2):
+        if np.ndim(catalog) == 0 or len(catalog) < 2:
             return False
             
         try:
             cat_ra = np.array(catalog['ra'], ndmin=1)
             cat_dec = np.array(catalog['dec'], ndmin=1)
-            if (band in catalog.dtype.names):
-                print ( "SDSS filter detected")
+            if band in catalog.dtype.names:
+                print("SDSS filter detected")
                 mag = np.array(catalog[band], ndmin=1)
             else:
-                print ("Unknown band!! %s"%band)
+                print("Unknown band!! %s" % band)
         except IOError:
-            logger.error( "Problems with SDSS image %s"% band)
+            logger.error("Problems with SDSS image %s" % band)
             return False
         except ValueError:
-            logger.error( "Problems with the catalogue for the image")
+            logger.error("Problems with the catalogue for the image")
             return False
             
-    elif (survey=='ps1'):
+    elif survey == 'ps1':
 
         catalog = qc.query_catalogue(filtered=True)
 
-        if (np.ndim(catalog)==0 or catalog is None):
+        if np.ndim(catalog) == 0 or catalog is None:
             return False
             
         try:
             cat_ra = np.array(catalog['ra'], ndmin=1)
             cat_dec = np.array(catalog['dec'], ndmin=1)
-            if (band in catalog.dtype.names):
+            if band in catalog.dtype.names:
                 mag = np.array(catalog[band], ndmin=1)
-                print ( "SDSS filter detected %s"%band)
+                print("SDSS filter detected %s" % band)
             else:
-                print ("Unknown band!! %s"%band)
+                print("Unknown band!! %s" % band)
         except IOError:
-            logger.error( "Problems with SDSS image %s"% band)
+            logger.error("Problems with SDSS image %s" % band)
             return False
         except ValueError:
-            logger.error( "Problems with the catalogue for the image")
+            logger.error("Problems with the catalogue for the image")
             return False
 
-
-    print ("Catalogue has %d entries"%len(cat_ra))
-    #Convert ra, dec position of all stars to pixels.
-    star_pix = np.array([0,0])
+    print("Catalogue has %d entries" % len(cat_ra))
+    # Convert ra, dec position of all stars to pixels.
+    star_pix = np.array([0, 0])
     for i in range(len(cat_ra)):
         # Get pixel coordinates of reference stars
         ra, dec = rcred.get_xy_coords(imfile, cat_ra[i], cat_dec[i])
-        #s = wcs.wcs_sky2pix(np.array([cat_ra[i], cat_dec[i]], ndmin=2), 1)[0]
+        # s = wcs.wcs_sky2pix(np.array([cat_ra[i], cat_dec[i]], ndmin=2), 1)[0]
         star_pix = np.row_stack((star_pix, np.array([ra, dec])))
     star_pix = star_pix[1:]
 
     rad = math.ceil(25./pix2ang)
     
-    #Select only the stars within the image.
-    mask = (star_pix[:,0]>-rad) * (star_pix[:,0]<img.shape[1]+rad)*(star_pix[:,1]>-rad) * (star_pix[:,1]<img.shape[0]+rad)
-    if (band == 'u'):    
+    # Select only the stars within the image.
+    mask = (star_pix[:, 0] > -rad) * (star_pix[:, 0] < img.shape[1]+rad) * \
+           (star_pix[:, 1] > -rad) * (star_pix[:, 1] < img.shape[0]+rad)
+    if band == 'u':
         mask = mask * (mag < 20)
         
-    #Select only stars isolated in a radius of ~12 arcsec.
+    # Select only stars isolated in a radius of ~12 arcsec.
     mask2 = np.array(are_isolated(cat_ra[mask], cat_dec[mask], 10.))
-    if (len(mask2)==0):
+    if len(mask2)==0:
         logger.error("No good stars left")
         return False   
  
-    #Select only stars that are within the proper magnitude range
+    # Select only stars that are within the proper magnitude range
     mask3 = (mag[mask][mask2] < maxmag) * (mag[mask][mask2] > minmag) 
     
     
-    #Combine all masks
-    mask3 = mask3 * (star_pix[:,0][mask][mask2]>rad) * (star_pix[:,0][mask][mask2]<img.shape[1]-rad)*(star_pix[:,1][mask][mask2]>rad) * (star_pix[:,1][mask][mask2]<img.shape[0]-rad)
+    # Combine all masks
+    mask3 = mask3 * (star_pix[:, 0][mask][mask2] > rad) * \
+            (star_pix[:, 0][mask][mask2] < img.shape[1]-rad) * \
+            (star_pix[:, 1][mask][mask2] > rad) * \
+            (star_pix[:, 1][mask][mask2] < img.shape[0]-rad)
 
-        
-    if (not np.any(mask) and not np.any(mask2) and not np.any(mask3)) or len(catalog[mask][mask2][mask3])==0:
-        logger.debug (star_pix)
-        print ( "No stars left...", mask, mask2, mask3)
+    if (not np.any(mask) and not np.any(mask2) and
+        not np.any(mask3)) or len(catalog[mask][mask2][mask3]) == 0:
+        logger.debug(star_pix)
+        print("No stars left...", mask, mask2, mask3)
         return False
     else:
         catalog = catalog[mask][mask2][mask3]
         s = star_pix[mask][mask2][mask3]
 
-        print ("left %d stars"%(len(catalog)), catalog.dtype.names)
+        print("left %d stars" % (len(catalog)), catalog.dtype.names)
 
-        z = np.zeros(len(s), dtype=[('x','f8'), ('y', 'f8')])
-        z['x'] = s[:,0]
-        z['y'] = s[:,1]
+        z = np.zeros(len(s), dtype=[('x', 'f8'), ('y', 'f8')])
+        z['x'] = s[:, 0]
+        z['y'] = s[:, 1]
                 
-        header='x y '
-        for n  in catalog.dtype.names:
-            if n in ["objid", "ra", "dec", "u", "g", "r", "i", "z", "Err_u", "Err_g", "Err_r", "Err_i", "Err_z"] or\
-                n in ['id', 'ra', 'dec', 'U', 'B', 'V', 'R', 'I', 'dU', 'dB', 'dV', 'dR', 'dI']:
-                z = rfn.append_fields(z, names=n, data=catalog[n], usemask=False)
+        header = 'x y '
+        for n in catalog.dtype.names:
+            if n in ["objid", "ra", "dec", "u", "g", "r", "i", "z",
+                     "Err_u", "Err_g", "Err_r", "Err_i", "Err_z"] or \
+                    n in ['id', 'ra', 'dec', 'U', 'B', 'V', 'R', 'I',
+                          'dU', 'dB', 'dV', 'dR', 'dI']:
+                z = rfn.append_fields(z, names=n, data=catalog[n],
+                                      usemask=False)
                 header += n.replace("Err_", "d") + " "
            
         fmt = "%.5f"
         for i in range(len(z[0])-1):
-            fmt +=  " %.5f"
+            fmt += " %.5f"
 
-        np.savetxt('/tmp/sdss_cat_%s.txt'%creationdate, z, fmt=fmt, header = header)
-        logger.info( "Saved catalogue stars to %s"% ('/tmp/sdss_cat_%s.txt'%creationdate))
-        
-        #Find FWHM for this image            
-        out = find_fwhm(imfile, star_pix[:,1][mask][mask2][mask3], star_pix[:,0][mask][mask2][mask3], plot=debug)
-        mask_valid_fwhm = (out['detected']) * (out['e']>0.6) * ~np.isnan(out['fwhm']* (out['fwhm'] < 30))            
+        np.savetxt('/tmp/sdss_cat_%s.txt' % creationdate, z, fmt=fmt,
+                   header=header)
+        logger.info("Saved catalogue stars to %s" %
+                    ('/tmp/sdss_cat_%s.txt' % creationdate))
 
-        if ((np.count_nonzero(mask_valid_fwhm) < 3) and (fitsutils.get_par(imfile, "FILTER")!="u")) or ( (np.count_nonzero(mask_valid_fwhm) < 2) and (fitsutils.get_par(imfile, "FILTER")=="u")):
-            logger.error( "ERROR with FWHM!! Too few points for a valid estimation. %d"% np.count_nonzero(mask_valid_fwhm)+ ") points")
-            logger.error( "%s %s"%(out["detected"], out["fwhm"]))
+        # Find FWHM for this image
+        out = find_fwhm(imfile, star_pix[:, 1][mask][mask2][mask3],
+                        star_pix[:, 0][mask][mask2][mask3], plot=debug)
+        mask_valid_fwhm = (out['detected']) * (out['e'] > 0.6) * \
+            ~np.isnan(out['fwhm'] * (out['fwhm'] < 30))
+
+        if ((np.count_nonzero(mask_valid_fwhm) < 3) and
+            (fitsutils.get_par(imfile, "FILTER") != "u")) or \
+                ((np.count_nonzero(mask_valid_fwhm) < 2) and
+                 (fitsutils.get_par(imfile, "FILTER") == "u")):
+            logger.error("ERROR with FWHM!! "
+                         "Too few points for a valid estimation. %d" %
+                         np.count_nonzero(mask_valid_fwhm) + ") points")
+            logger.error("%s %s" % (out["detected"], out["fwhm"]))
             return False
 
         outd = out[mask_valid_fwhm]
 
-        logger.info( 'Average FWHM %.3f arcsec, %.3f pixels'%(np.median(outd['fwhm']),  np.median(outd['fwhm'])*pix2ang))
-        
+        logger.info('Average FWHM %.3f arcsec, %.3f pixels' %
+                    (np.median(outd['fwhm']),  np.median(outd['fwhm'])*pix2ang))
 
-
-        if (band in 'ugriz' and survey=='sdss'):
+        if band in 'ugriz' and survey == 'sdss':
             header='x y objid ra dec u g r i z du dg dr di dz'
-        if (band in 'grizy' and survey=='ps1'):
+        if band in 'grizy' and survey == 'ps1':
             header='x y objid ra dec g r i z dg dr di dz'
         elif band in 'UBVRI':
             header='x y objid ra dec U B V R I dU dB dV dR dI'
-        np.savetxt('/tmp/sdss_cat_det_%s.txt'%creationdate, z[mask_valid_fwhm], fmt=fmt, \
-        header=header)
-        
-            
-        
-    #Plot results
+        np.savetxt('/tmp/sdss_cat_det_%s.txt'%creationdate, z[mask_valid_fwhm],
+                   fmt=fmt, header=header)
+
+    # Plot results
     img = img - np.nanmin(img)
     zmin, zmax = zscale.zscale(img)
         
-    logger.info( "Found %d stars in %s. "%(len(cat_dec), survey)+\
-	     "%d of them within the FoV. "%len(cat_ra[mask]) +\
-            "%d of them are isolated."%len(cat_ra[mask][mask2])+\
-            "%d of them with suitable magnitudes. "%len(cat_ra[mask][mask2][mask3]) +\
-            "%d of them with detected stars."%np.count_nonzero(mask_valid_fwhm)) 
-    
-    
-    if (plot):
-        im = plt.imshow(img, aspect="equal", origin="lower", cmap=matplotlib.cm.gray_r, interpolation="none", vmin=zmin, vmax=zmax)
+    logger.info("Found %d stars in %s. " % (len(cat_dec), survey) +
+                "%d of them within the FoV. " % len(cat_ra[mask]) +
+                "%d of them are isolated." % len(cat_ra[mask][mask2]) +
+                "%d of them with suitable magnitudes. " %
+                len(cat_ra[mask][mask2][mask3]) +
+                "%d of them with detected stars." %
+                np.count_nonzero(mask_valid_fwhm))
 
+    if plot:
+        im = plt.imshow(img, aspect="equal", origin="lower",
+                        cmap=matplotlib.cm.gray_r, interpolation="none",
+                        vmin=zmin, vmax=zmax)
+
+        if len(star_pix[:, 0][mask]) > 0:
+            plt.scatter(star_pix[:, 0][mask], star_pix[:, 1][mask], marker="o",
+                        s=np.minimum(150, 10000*(10./mag[mask][mask2])**9),
+                        edgecolor="red", facecolor="none", label="catalogue")
         
-        if (len(star_pix[:,0][mask]) >0):        
-            plt.scatter(star_pix[:,0][mask], star_pix[:,1][mask], marker="o", s=np.minimum(150, 10000*(10./mag[mask][mask2])**9), edgecolor="red", facecolor="none", label="catalogue")
-        
-        if (len(star_pix[:,0][mask][mask2]) >0):        
-            plt.scatter(star_pix[:,0][mask][mask2], star_pix[:,1][mask][mask2], marker="o", s=20, edgecolor="yellow", facecolor="none", label="isolated")
+        if len(star_pix[:, 0][mask][mask2]) > 0:
+            plt.scatter(star_pix[:, 0][mask][mask2],
+                        star_pix[:, 1][mask][mask2], marker="o", s=20,
+                        edgecolor="yellow", facecolor="none", label="isolated")
 
-        if (len(star_pix[:,0][mask][mask2][mask3]) >0):        
-            plt.scatter(star_pix[:,0][mask][mask2][mask3], star_pix[:,1][mask][mask2][mask3], marker="o", s=200, edgecolor="green", facecolor="none", label="wihtin farme and mag")
-
+        if len(star_pix[:, 0][mask][mask2][mask3]) > 0:
+            plt.scatter(star_pix[:, 0][mask][mask2][mask3],
+                        star_pix[:, 1][mask][mask2][mask3], marker="o", s=200,
+                        edgecolor="green", facecolor="none",
+                        label="wihtin farme and mag")
 
         selected = star_pix[:,:][mask][mask2][mask3][mask_valid_fwhm]
-        if (len(selected) >0):        
-            plt.scatter(selected[:,0], selected[:,1], marker="o", \
-                s=400, edgecolor="blue", facecolor="none")
+        if len(selected) > 0:
+            plt.scatter(selected[:, 0], selected[:, 1], marker="o", s=400,
+                        edgecolor="blue", facecolor="none")
             for i in np.arange(len(selected)):
-                plt.text(selected[i,0]+10, selected[i,1]+10, i+1)
+                plt.text(selected[i, 0]+10, selected[i, 1]+10, i+1)
         
         plt.legend(loc="best", frameon=False, framealpha=0.9)
-        figname = os.path.join( plotdir, os.path.basename(imfile).replace('.fits', '.seqstars.png').replace('.new', '.seqstars.png'))
-        plt.savefig( figname)
-        logger.info( "Saved stars to %s"%figname)        
+        figname = os.path.join(
+            plotdir,
+            os.path.basename(imfile).replace(
+                '.fits', '.seqstars.png').replace('.new', '.seqstars.png'))
+        plt.savefig(figname)
+        logger.info("Saved stars to %s" % figname)
         plt.clf()
         
     return True
-        
+
+
 def add_to_zp_cal(ref_stars, image, logname):
-    '''
-    Records the parameters and instrumental and standard star magnitudes needed for zeropoint calibration.
-    ref_stars: name of the file that contains the reference stars that are present in the image.
+    """
+    Records the parameters and instrumental and standard star magnitudes
+    needed for zeropoint calibration. ref_stars: name of the file that contains
+    the reference stars that are present in the image.
+
     image: fits image with the sources in them.
-    logname: name of the file where the information on reference and measurements are logged.
-    
-    minst = M + c0 + c1(AIRMASS) + c2(color) + c3(UT)    
-    '''
+    logname: name of the file where the information on reference and
+    measurements are logged.
+
+    minst = M + c0 + c1(AIRMASS) + c2(color) + c3(UT)
+    """
    
-    coldic = {'u':'g', 'g':'r', 'r':'i', 'i':'r', 'z':'i', 'U':'B', 'B':'V', 'V':'R', 'R':'I', 'I':'R'}
+    coldic = {'u': 'g', 'g': 'r', 'r': 'i', 'i': 'r', 'z': 'i',
+              'U': 'B', 'B': 'V', 'V': 'R', 'R': 'I', 'I': 'R'}
 
     r = np.genfromtxt(ref_stars, delimiter=" ", dtype=None, names=True)
-    imapp = os.path.join(os.path.join(os.path.dirname(image), "zeropoint"), os.path.basename(image) + ".app.mag")
-    #imapp = os.path.join(os.path.dirname(image), os.path.basename(image) + ".app.mag")
+    imapp = os.path.join(os.path.join(
+        os.path.dirname(image), "zeropoint"),
+        os.path.basename(image) + ".app.mag")
 
-    my = np.genfromtxt(imapp, comments="#", dtype=[("id","<f4"),  ("image","|S20"), ("X","<f4"), ("Y","<f4"), ("Xshift","<f4"), ("Yshift","<f4"),("fwhm","<f4"), ("msky","<f4"), ("stdev","<f4"),\
-        ("flags", np.int), ("rapert", "<f4"), ("sum", "<f4"), ("area", "<f4"), ("nsky","<f4") , ("flux", "<f4"), ("itime", "<f4"), ("fit_mag","<f4"), ("fiterr","<f4")])
+    my = np.genfromtxt(imapp, comments="#", dtype=[("id", "<f4"),
+                                                   ("image", "|S20"),
+                                                   ("X", "<f4"),
+                                                   ("Y", "<f4"),
+                                                   ("Xshift", "<f4"),
+                                                   ("Yshift", "<f4"),
+                                                   ("fwhm", "<f4"),
+                                                   ("msky", "<f4"),
+                                                   ("stdev", "<f4"),
+                                                   ("flags", np.int),
+                                                   ("rapert", "<f4"),
+                                                   ("sum", "<f4"),
+                                                   ("area", "<f4"),
+                                                   ("nsky", "<f4"),
+                                                   ("flux", "<f4"),
+                                                   ("itime", "<f4"),
+                                                   ("fit_mag", "<f4"),
+                                                   ("fiterr", "<f4")])
 
-    if (my.size < 2):
+    if my.size < 2:
         my = np.array([my])
-    if (r.size < 2):
+    if r.size < 2:
         r = np.array([r])
     
     band = fitsutils.get_par(image, 'filter')
-    mask_valid1 = np.array(my["fwhm"]<9000) * np.array(~ np.isnan(r[band])) * np.array(~ np.isnan(my["fit_mag"])) * np.array(my["fit_mag"]<9000)
+    mask_valid1 = np.array(my["fwhm"] < 9000) * \
+                  np.array(~ np.isnan(r[band])) * \
+                  np.array(~ np.isnan(my["fit_mag"])) * \
+                  np.array(my["fit_mag"] < 9000)
     
     r = r[mask_valid1]
     my = my[mask_valid1]
     N = len(r)
     
-    logger.info("Adding %d stars to the ZP calibration file %s"%(N, logname)) 
+    logger.info("Adding %d stars to the ZP calibration file %s" % (N, logname))
 
-    my["fiterr"][np.isnan( my["fiterr"])] = 100
+    my["fiterr"][np.isnan(my["fiterr"])] = 100
 
     col_band = coldic[band]
     exptime = fitsutils.get_par(image, "exptime")
@@ -465,26 +557,34 @@ def add_to_zp_cal(ref_stars, image, logname):
         fwhm = 0
     airmass = 1.3
     name = "object"
-    if (fitsutils.has_par(image, "NAME")):
+    if fitsutils.has_par(image, "NAME"):
         name = fitsutils.get_par(image, "NAME")
-    if (fitsutils.has_par(image, "AIRMASS")):
+    if fitsutils.has_par(image, "AIRMASS"):
         airmass = fitsutils.get_par(image, "AIRMASS")
-    if (fitsutils.has_par(image, "JD")):
+    if fitsutils.has_par(image, "JD"):
         date = fitsutils.get_par(image, "JD")
-    elif (fitsutils.has_par(image, "MJD")):
+    elif fitsutils.has_par(image, "MJD"):
         date = fitsutils.get_par(image, "MJD")
-    elif (fitsutils.has_par(image, "MJD-OBS")):
+    elif fitsutils.has_par(image, "MJD-OBS"):
         date = fitsutils.get_par(image, "MJD-OBS")
     else:
         date = 0
     
-    if (not os.path.isfile(logname)):
-            with open( logname, "a") as f:
-                f.write("#object,filename,filter,std,stderr,inst,insterr,jd,airmass,color,exptime,x,y,dx,dy,fwhm\n")
-    with open( logname, "a") as f:
+    if not os.path.isfile(logname):
+            with open(logname, "a") as f:
+                f.write(
+                    "#object,filename,filter,std,stderr,inst,insterr,jd,"
+                    "airmass,color,exptime,x,y,dx,dy,fwhm\n")
+    with open(logname, "a") as f:
         for i in range(N):
-            f.write("%s,%s,%s,%.3f,%.3f,%3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f,%.2f\n"%
-            (name, image, band, r[i][band], r[i]["d"+band], my[i]['fit_mag'], my[i]['fiterr'], date, airmass, r[i][band]-r[i][col_band],exptime,my[i]['X'],my[i]['Y'],my[i]['Xshift'],my[i]['Yshift'], fwhm))
+            f.write(
+                "%s,%s,%s,%.3f,%.3f,%3f,%.3f,%.3f,"
+                "%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f,%.2f\n" %
+                (name, image, band, r[i][band], r[i]["d"+band],
+                 my[i]['fit_mag'], my[i]['fiterr'], date, airmass,
+                 r[i][band]-r[i][col_band], exptime, my[i]['X'], my[i]['Y'],
+                 my[i]['Xshift'], my[i]['Yshift'], fwhm))
+
 
 def lsq_test():
 
