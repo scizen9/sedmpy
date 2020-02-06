@@ -147,7 +147,7 @@ if __name__ == '__main__':
     else:
         raw = args.raw
 
-    phot = os.path.join("/scr2/sedm/phot/", timestamp)
+    phot = os.path.join("/scr2/sedmdrp/phot/", timestamp)
 
     # Get the files from the same day directory.
     files = glob.glob(os.path.join(raw, "ifu*fits"))
