@@ -9,7 +9,7 @@ KREJ = 2.5
 MAX_ITERATIONS = 5
 
 
-def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
+def zscale(image, nsamples=1000, contrast=0.25):
     """Implement IRAF zscale algorithm
     nsamples=1000 and contrast=0.25 are the IRAF display task defaults
     bpmask and zmask not implemented yet
@@ -18,7 +18,7 @@ def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
     """
 
     # Sample the image
-    samples = zsc_sample(image, nsamples, bpmask, zmask)
+    samples = zsc_sample(image, nsamples)
     npix = len(samples)
     samples.sort()
     zmin = samples[0]
@@ -48,7 +48,7 @@ def zscale(image, nsamples=1000, contrast=0.25, bpmask=None, zmask=None):
     return z1, z2
 
 
-def zsc_sample(image, maxpix, bpmask=None, zmask=None):
+def zsc_sample(image, maxpix):
     
     # Figure out which pixels to use for the zscale algorithm
     # Returns the 1-d array samples
@@ -79,6 +79,8 @@ def zsc_fit_line(samples, npix, krej, ngrow, maxiter):
 
     #
     #  Iterate
+    intercept = 0.
+    slope = 0.
 
     for niter in range(maxiter):
 
@@ -91,19 +93,19 @@ def zsc_fit_line(samples, npix, krej, ngrow, maxiter):
         sumxx = (xnorm[goodpixels]*xnorm[goodpixels]).sum()
         sumxy = (xnorm[goodpixels]*samples[goodpixels]).sum()
         sumy = samples[goodpixels].sum()
-        sum = len(goodpixels[0])
+        sumn = len(goodpixels[0])
 
-        delta = sum * sumxx - sumx * sumx
+        delta = sumn * sumxx - sumx * sumx
         # Slope and intercept
         intercept = (sumxx * sumy - sumx * sumxy) / delta
-        slope = (sum * sumxy - sumx * sumy) / delta
+        slope = (sumn * sumxy - sumx * sumy) / delta
         
         # Subtract fitted line from the data array
         fitted = xnorm*slope + intercept
         flat = samples - fitted
 
         # Compute the k-sigma rejection threshold
-        ngoodpix, mean, sigma = zsc_compute_sigma(flat, badpix, npix)
+        ngoodpix, mean, sigma = zsc_compute_sigma(flat, badpix)
 
         threshold = sigma * krej
 
@@ -131,7 +133,7 @@ def zsc_fit_line(samples, npix, krej, ngrow, maxiter):
     return ngoodpix, zstart, zslope
 
 
-def zsc_compute_sigma(flat, badpix, npix):
+def zsc_compute_sigma(flat, badpix):
 
     # Compute the rms deviation from the mean of a flattened array.
     # Ignore rejected pixels
