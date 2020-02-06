@@ -52,78 +52,6 @@ _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
 
 
-def compile_stats_pointing():
-    
-    out = open("/tmp/pointing", "w")
-    out.write("#f, imtype, obj, jd, filter, radeg, decdeg, dra, ddec\n")
-    myfiles = glob.glob(_photpath + "/20160616/a_*[0-9].fits")
-    myfiles.sort()
-    for ff in myfiles:
-        # try:
-        imtype = fitsutils.get_par(ff, "IMGTYPE")
-        imtype = imtype.upper()
-        newra = fitsutils.get_par(ff, "OBJRA")
-        newdec = fitsutils.get_par(ff, "OBJDEC")
-        newra, newdec = cc.hour2deg(newra, newdec)        
-        myfilter = fitsutils.get_par(ff, "FILTER")
-        if "ACQU" in imtype or imtype == "SCIENCE":
-            #: and np.round(ra, 2) != np.round(newra, 2)
-            # and np.round(dec, 2) != np.round(newdec, 2):
-            obj = fitsutils.get_par(ff, "OBJECT")
-            jd = fitsutils.get_par(ff, "JD")
-            status, dra, ddec = recenter_ifu.get_offset_center(
-                ff, doplot=False, interactive=False)
-        
-            print(ff, newra, imtype, jd, dra, ddec)
-            out.write("%s,%s,%s,%.2f,%s,%.5f,%.5f,%.2f,%.2f\n" %
-                      (ff, imtype, obj, jd, myfilter, newra, newdec, dra, ddec))
-        # except:
-        #    pass
-    out.close()
-
-
-def plot_stats_pointing():
-    
-    from matplotlib import pylab as plt
-    
-    d = np.genfromtxt("/tmp/pointing", dtype=None, delimiter=",", names=True)    
-
-    plt.scatter(d["dra"], d["ddec"], c=d["jd"]-np.min(d["jd"]))
-    cb = plt.colorbar()
-    cb.set_label("JD- MIN(JD)")
-    plt.xlabel("dRA [arcsec]")
-    plt.ylabel("dDEC [arcsec]")
-    plt.savefig("/tmp/pointing_errors.png")
-    
-    plt.xlim(-60, 60)
-    plt.ylim(-60, 60)
-    plt.savefig("/tmp/pointing_errors_60.png")
-    plt.clf()
-    
-    d1 = d[d["imtype"] != "SCIENCE"]
-    d = d[d["imtype"] == "SCIENCE"]
-    dr = d[d["filter"] == "r"]
-    dg = d[d["filter"] == "g"]
-    di = d[d["filter"] == "i"]
-    du = d[d["filter"] == "u"]
-    
-    filters = ["ACQ", "r", "g", "i", "u"]
-    
-    dar = np.array([dr, dg, di, du, d1])
-    for i in np.arange(len(filters)):
-        plt.figure(i+1)
-        plt.scatter(dar[i]["dra"], dar[i]["ddec"],
-                    c=dar[i]["jd"]-np.min(d["jd"]))
-        cb = plt.colorbar()
-        plt.title(filters[i])
-        cb.set_label("JD- MIN(JD)")
-        plt.xlabel("dRA [arcsec]")
-        plt.ylabel("dDEC [arcsec]")
-        plt.savefig("/tmp/pointing_errors_%s.png" % filters[i])
-        plt.clf()
-    plt.close("all")
-
-
 def get_sextractor_stats(files):
     
     files.sort()
@@ -253,9 +181,8 @@ def plot_stats(statfile):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""
 
-        Runs astrometry.net on the image specified as a parameter and returns 
-        the offset needed to be applied in order to center the object
-        coordinates in the reference pixel.
+        Runs sextractor on the rc images in the specified directory and
+        plots image quality statistics
             
         """, formatter_class=argparse.RawTextHelpFormatter)
 
@@ -264,19 +191,18 @@ if __name__ == '__main__':
                         default=None)
 
     args = parser.parse_args()
-    
-    photdir = args.photdir
-    print("Parameter directory where stats are run : %s." % photdir)
-    
-    if photdir is None:
+
+    if args.photdir is None:
         timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
         timestamp = timestamp.split("T")[0].replace("-", "")
         photdir = os.path.join(_photpath, timestamp)
-        print("New directory %s" % photdir)
+        print("Auto directory %s" % photdir)
     else:
+        photdir = args.photdir
         timestamp = os.path.basename(os.path.abspath(photdir))
-    print("Running stats on",
-          glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits")))
-    get_sextractor_stats(glob.glob(os.path.join(os.path.abspath(photdir),
-                                                "rc*[0-9].fits")))
+        print("Input directory %s" % photdir)
+
+    rclist = glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits"))
+    print("Running stats on %d rc images in %s", (len(rclist), photdir))
+    get_sextractor_stats(rclist)
     plot_stats(os.path.join(os.path.abspath(photdir), "stats/stats.log")) 
