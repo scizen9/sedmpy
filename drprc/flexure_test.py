@@ -96,7 +96,7 @@ def plot_flexure(flexfile, plotdir):
 
     xfmt = md.DateFormatter('%d %b %H h')
 
-    flexure = np.genfromtxt(flexfile, dtype=None, delimiter=",")
+    flexure = np.genfromtxt(flexfile, dtype=None, delimiter=",", encoding=None)
 
     dateflex = []
     for fl in flexure:
