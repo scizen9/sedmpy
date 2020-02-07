@@ -7,28 +7,48 @@ Created on Thu Dec  3 14:57:05 2015
 from __future__ import print_function
 
 import matplotlib
-import zscale
+try:
+    import zscale
+except ImportError:
+    import drprc.zscale as zscale
 from astropy.io import fits as pf
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import glob
 from astropy.wcs import WCS
-from astropy.io.votable import parse_single_table
-import coordinates_conversor
-import app_phot
+try:
+    import coordinates_conversor
+except ImportError:
+    import drprc.coordinates_conversor as coordinates_conversor
+try:
+    import app_phot
+except ImportError:
+    import drprc.app_phot as app_phot
 from numpy.lib import recfunctions as rfn
 import scipy.optimize as opt
-import fitsutils
+try:
+    import fitsutils
+except ImportError:
+    import drprc.fitsutils as fitsutils
 import os
 import shutil
 from astropy import stats
 import argparse
 import logging
 import datetime
-import QueryCatalogue
-import rcred
-import time_utils
+try:
+    import QueryCatalogue
+except ImportError:
+    import drprc.QueryCatalogue as QueryCatalogue
+try:
+    import rcred
+except ImportError:
+    import drprc.rcred as rcred
+try:
+    import time_utils
+except ImportError:
+    import drprc.time_utils as time_utils
 import matplotlib.dates as md
 
 from configparser import ConfigParser
@@ -46,7 +66,7 @@ _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
 
 
-FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
+log_format = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 now = datetime.datetime.utcnow()
 timestamp = datetime.datetime.isoformat(now)
 creationdate = timestamp
@@ -56,13 +76,13 @@ try:
     # Log into a file
     root_dir = _logpath
     logging.basicConfig(
-        format=FORMAT,
+        format=log_format,
         filename=os.path.join(root_dir, "rcred_{0}.log".format(timestamp)),
         level=logging.INFO)
     logger = logging.getLogger('zeropoint')
-except:
+except OSError:
     logging.basicConfig(
-        format=FORMAT,
+        format=log_format,
         filename=os.path.join("/tmp", "rcred_{0}.log".format(timestamp)),
         level=logging.INFO)
     logger = logging.getLogger("zeropoint")
@@ -136,8 +156,8 @@ def twoD_Gauss_test(theta=0):
     
     fig, ax = plt.subplots(1, 1)
     ax.hold(True)
-    ax.imshow(data_noisy.reshape(201, 201), cmap=plt.cm.jet, origin='bottom',
-              extent=(x.min(), x.max(), y.min(), y.max()))
+    ax.imshow(data_noisy.reshape(201, 201), cmap=plt.get_cmap('jet'),
+              origin='bottom', extent=(x.min(), x.max(), y.min(), y.max()))
     ax.contour(x, y, data_fitted.reshape(201, 201), 8, colors='w')
     plt.show()
 
@@ -148,8 +168,8 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
     for the stars marked with X, Y
     """
     
-    f = pf.open(imfile)
-    img = f[0].data
+    ff = pf.open(imfile)
+    img = ff[0].data
     pix2ang = 0.394
     def_fwhm = 2./pix2ang
     rad = math.ceil(30./pix2ang)
@@ -165,7 +185,7 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
         sub = img[x_i-hrad:x_i+hrad, y_i-hrad:y_i+hrad]
         x = np.linspace(0, len(sub), len(sub))
         y = np.linspace(0, len(sub), len(sub))
-        X, Y = np.meshgrid(x, y)
+        xx, yy = np.meshgrid(x, y)
     
         # (xdata_tuple, amplitude, xo, yo, def_fwhm, def_fwhm, theta, offset):
         def_x = np.argmax(np.sum(sub, axis=0))
@@ -175,7 +195,7 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
                          np.percentile(sub, 40))
         detected = True
         try:
-            popt, pcov = opt.curve_fit(twoD_Gaussian, (X, Y), sub.flatten(),
+            popt, pcov = opt.curve_fit(twoD_Gaussian, (xx, yy), sub.flatten(),
                                        p0=initial_guess)
             fwhm_x = np.abs(popt[3])*2*np.sqrt(2*np.log(2))
             fwhm_y = np.abs(popt[4])*2*np.sqrt(2*np.log(2))
@@ -187,8 +207,9 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
             fwhm_y = 0
             amplitude = 0
             background = 0
+            popt = None
 
-        detected = detected * (amplitude> 0)
+        detected = detected * (amplitude > 0)
 
         if not detected:
             fwhm_x = 0
@@ -203,22 +224,24 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
                   np.minimum(fwhm_x, fwhm_y) / np.maximum(fwhm_x, fwhm_y))
 
         if detected & plot:
-            data_fitted = twoD_Gaussian((X, Y), *popt)
+            data_fitted = twoD_Gaussian((xx, yy), *popt)
             
             fig, (ax, ax2) = plt.subplots(1, 2)
             ax.hold(True)
-            ax.imshow(sub, cmap=plt.cm.jet, origin='bottom', extent=(x.min(),
-                                                                     x.max(),
-                                                                     y.min(),
-                                                                     y.max()))
-            ax.contour(X, Y, data_fitted.reshape(sub.shape[0], sub.shape[1]), 5,
-                       colors='w')
+            ax.imshow(sub, cmap=plt.get_cmap('jet'),
+                      origin='bottom', extent=(x.min(),
+                                               x.max(),
+                                               y.min(),
+                                               y.max()))
+            ax.contour(xx, yy, data_fitted.reshape(sub.shape[0], sub.shape[1]),
+                       5, colors='w')
             ax2.imshow(sub-data_fitted.reshape(sub.shape[0], sub.shape[1]),
-                       cmap=plt.cm.jet, origin='bottom', extent=(x.min(),
-                                                                 x.max(),
-                                                                 y.min(),
-                                                                 y.max()))
-            ax2.contour(X, Y, data_fitted.reshape(sub.shape[0], sub.shape[1]),
+                       cmap=plt.get_cmap('jet'),
+                       origin='bottom', extent=(x.min(),
+                                                x.max(),
+                                                y.min(),
+                                                y.max()))
+            ax2.contour(xx, yy, data_fitted.reshape(sub.shape[0], sub.shape[1]),
                         5, colors='w')
             ax.scatter(def_x, def_y, marker="*", s=100, color="yellow")
             plt.title("DETECTED for Position X,Y = %d,%d" % (x_i, y_i))
@@ -227,15 +250,15 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
         if (not detected) & plot:
             fig, ax = plt.subplots(1)
             ax.hold(True)
-            ax.imshow(sub, cmap=plt.cm.jet, origin='bottom', extent=(x.min(),
-                                                                     x.max(),
-                                                                     y.min(),
-                                                                     y.max()))
-            plt.title("NOT DETECTED for Position X,Y = %d,%d"%(x_i, y_i))
+            ax.imshow(sub, cmap=plt.get_cmap('jet'),
+                      origin='bottom', extent=(x.min(),
+                                               x.max(),
+                                               y.min(),
+                                               y.max()))
+            plt.title("NOT DETECTED for Position X,Y = %d,%d" % (x_i, y_i))
             plt.savefig(os.path.join(os.path.dirname(imfile), "gauss_%d" % i))
             plt.clf()
-            # plt.show()
-            
+
     return out
 
 
@@ -270,11 +293,11 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
     minmag = 13.5
     maxmag = 20.0
         
-    f = pf.open(imfile)
-    wcs = WCS(f[0].header)
+    ff = pf.open(imfile)
+    wcs = WCS(ff[0].header)
 
     img = f[0].data
-    img[img<0] = 0
+    img[img < 0] = 0
     
     ra, dec = wcs.wcs_pix2world(np.array([img.shape[0]/2, img.shape[1]/2],
                                          ndmin=2), 1)[0]
@@ -285,6 +308,10 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
     logger.info("%.4f %.4f %.4f" % (ra, dec, sr))
     
     qc = QueryCatalogue.QueryCatalogue(ra, dec, sr/1.8, minmag, maxmag, logger)
+    cat_ra = []
+    cat_dec = []
+    catalog = []
+    mag = 99.0
     
     if refstars:
         shutil.copy(refstars, "/tmp/tmp_sdss_%s.cat" % creationdate)
@@ -294,7 +321,7 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
         cat_dec = catalog["dec"]
         try:
             mag = catalog["R"]
-        except:
+        except KeyError:
             mag = catalog["r"]
 
     elif survey == 'sdss':
@@ -361,19 +388,18 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
         
     # Select only stars isolated in a radius of ~12 arcsec.
     mask2 = np.array(are_isolated(cat_ra[mask], cat_dec[mask], 10.))
-    if len(mask2)==0:
+    if len(mask2) == 0:
         logger.error("No good stars left")
         return False   
  
     # Select only stars that are within the proper magnitude range
     mask3 = (mag[mask][mask2] < maxmag) * (mag[mask][mask2] > minmag) 
-    
-    
+
     # Combine all masks
     mask3 = mask3 * (star_pix[:, 0][mask][mask2] > rad) * \
-            (star_pix[:, 0][mask][mask2] < img.shape[1]-rad) * \
-            (star_pix[:, 1][mask][mask2] > rad) * \
-            (star_pix[:, 1][mask][mask2] < img.shape[0]-rad)
+        (star_pix[:, 0][mask][mask2] < img.shape[1]-rad) * \
+        (star_pix[:, 1][mask][mask2] > rad) * \
+        (star_pix[:, 1][mask][mask2] < img.shape[0]-rad)
 
     if (not np.any(mask) and not np.any(mask2) and
         not np.any(mask3)) or len(catalog[mask][mask2][mask3]) == 0:
@@ -428,21 +454,19 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
         outd = out[mask_valid_fwhm]
 
         logger.info('Average FWHM %.3f arcsec, %.3f pixels' %
-                    (np.median(outd['fwhm']),  np.median(outd['fwhm'])*pix2ang))
+                    (float(np.median(outd['fwhm'])),
+                     float(np.median(outd['fwhm'])*pix2ang)))
 
         if band in 'ugriz' and survey == 'sdss':
-            header='x y objid ra dec u g r i z du dg dr di dz'
+            header = 'x y objid ra dec u g r i z du dg dr di dz'
         if band in 'grizy' and survey == 'ps1':
-            header='x y objid ra dec g r i z dg dr di dz'
+            header = 'x y objid ra dec g r i z dg dr di dz'
         elif band in 'UBVRI':
-            header='x y objid ra dec U B V R I dU dB dV dR dI'
-        np.savetxt('/tmp/sdss_cat_det_%s.txt'%creationdate, z[mask_valid_fwhm],
-                   fmt=fmt, header=header)
+            header = 'x y objid ra dec U B V R I dU dB dV dR dI'
+        np.savetxt('/tmp/sdss_cat_det_%s.txt' %
+                   creationdate, z[mask_valid_fwhm], fmt=fmt, header=header)
 
     # Plot results
-    img = img - np.nanmin(img)
-    zmin, zmax = zscale.zscale(img)
-        
     logger.info("Found %d stars in %s. " % (len(cat_dec), survey) +
                 "%d of them within the FoV. " % len(cat_ra[mask]) +
                 "%d of them are isolated." % len(cat_ra[mask][mask2]) +
@@ -452,9 +476,6 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
                 np.count_nonzero(mask_valid_fwhm))
 
     if plot:
-        im = plt.imshow(img, aspect="equal", origin="lower",
-                        cmap=matplotlib.cm.gray_r, interpolation="none",
-                        vmin=zmin, vmax=zmax)
 
         if len(star_pix[:, 0][mask]) > 0:
             plt.scatter(star_pix[:, 0][mask], star_pix[:, 1][mask], marker="o",
@@ -470,9 +491,9 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
             plt.scatter(star_pix[:, 0][mask][mask2][mask3],
                         star_pix[:, 1][mask][mask2][mask3], marker="o", s=200,
                         edgecolor="green", facecolor="none",
-                        label="wihtin farme and mag")
+                        label="within frame and mag")
 
-        selected = star_pix[:,:][mask][mask2][mask3][mask_valid_fwhm]
+        selected = star_pix[:, :][mask][mask2][mask3][mask_valid_fwhm]
         if len(selected) > 0:
             plt.scatter(selected[:, 0], selected[:, 1], marker="o", s=400,
                         edgecolor="blue", facecolor="none")
@@ -538,15 +559,14 @@ def add_to_zp_cal(ref_stars, image, logname):
     
     band = fitsutils.get_par(image, 'filter')
     mask_valid1 = np.array(my["fwhm"] < 9000) * \
-                  np.array(~ np.isnan(r[band])) * \
-                  np.array(~ np.isnan(my["fit_mag"])) * \
-                  np.array(my["fit_mag"] < 9000)
+        np.array(~ np.isnan(r[band])) * np.array(~ np.isnan(my["fit_mag"])) * \
+        np.array(my["fit_mag"] < 9000)
     
     r = r[mask_valid1]
     my = my[mask_valid1]
-    N = len(r)
+    nr = len(r)
     
-    logger.info("Adding %d stars to the ZP calibration file %s" % (N, logname))
+    logger.info("Adding %d stars to the ZP calibration file %s" % (nr, logname))
 
     my["fiterr"][np.isnan(my["fiterr"])] = 100
 
@@ -571,13 +591,12 @@ def add_to_zp_cal(ref_stars, image, logname):
         date = 0
     
     if not os.path.isfile(logname):
-            with open(logname, "a") as f:
-                f.write(
-                    "#object,filename,filter,std,stderr,inst,insterr,jd,"
-                    "airmass,color,exptime,x,y,dx,dy,fwhm\n")
-    with open(logname, "a") as f:
-        for i in range(N):
-            f.write(
+        with open(logname, "a") as ff:
+            ff.write("#object,filename,filter,std,stderr,inst,insterr,jd,"
+                     "airmass,color,exptime,x,y,dx,dy,fwhm\n")
+    with open(logname, "a") as ff:
+        for i in range(nr):
+            ff.write(
                 "%s,%s,%s,%.3f,%.3f,%3f,%.3f,%.3f,"
                 "%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f,%.2f\n" %
                 (name, image, band, r[i][band], r[i]["d"+band],
@@ -591,103 +610,120 @@ def lsq_test():
     x = np.random.normal(0, 1, 100)
     y = np.random.normal(0, 1, 100)
     
-    X, Y = np.meshgrid(x, y)
+    xx, yy = np.meshgrid(x, y)
     
-    D = 23 + 2*X + 4*Y + np.random.rand(100, 100)*1
-    O = np.zeros_like(D)
+    d = 23 + 2*xx + 4*yy + np.random.rand(100, 100)*1
+    o = np.zeros_like(d)
     
-    M = np.zeros((len(X.flatten()), 3))
-    M[:,0] = 1 
-    M[:,1] = X.flatten()
-    M[:,2] = Y.flatten()
+    m = np.zeros((len(xx.flatten()), 3))
+    m[:, 0] = 1
+    m[:, 1] = xx.flatten()
+    m[:, 2] = yy.flatten()
     
-    depend = D.flatten() - O.flatten()
+    depend = d.flatten() - o.flatten()
         
-    lsq_result = np.linalg.lstsq(M, depend)
+    lsq_result = np.linalg.lstsq(m, depend)
     coef = lsq_result[0]
-    res = lsq_result[1]
     
-    f, (ax1, ax2) = plt.subplots(2, 1)
-    ax1.plot(X.flatten(), depend -coef[0] -Y.flatten()*coef[2] , ".")
-    ax1.plot(X.flatten(),  X.flatten()*coef[1])
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    ax1.plot(xx.flatten(), depend - coef[0] - yy.flatten()*coef[2], ".")
+    ax1.plot(xx.flatten(), xx.flatten()*coef[1])
     ax1.set_xlabel("X")
 
-    ax2.plot(Y.flatten(), depend -coef[0] -X.flatten()*coef[1] , ".")
-    ax2.plot(Y.flatten(),  Y.flatten()*coef[2])
+    ax2.plot(yy.flatten(), depend - coef[0] - xx.flatten()*coef[1], ".")
+    ax2.plot(yy.flatten(), yy.flatten()*coef[2])
     ax2.set_xlabel("Y")
     
     plt.show()
        
        
 def calibrate_zp_fourshot(logfile, plot=True):
-    '''
-    The field of view is quite small, therefore, all rc shots are used to calibrate the zeropoint.
-    This routine retrieves all the stars taken with the same filter when pointing to the science object.
-    '''
+    """
+    The field of view is quite small, therefore, all rc shots are used
+    to calibrate the zeropoint. This routine retrieves all the stars taken
+    with the same filter when pointing to the science object.
+    """
 
     a = np.genfromtxt(logfile, dtype=None, names=True, delimiter=",")
     a.sort(order=['jd'], axis=0)
-    a = a[a['inst']!=0]
+    a = a[a['inst'] != 0]
 
-    plotdir = os.path.join(os.path.dirname(os.path.abspath(logfile)), "zeropoint")
+    plotdir = os.path.join(os.path.dirname(os.path.abspath(logfile)),
+                           "zeropoint")
 
     for name in set(a['object']):    
         for b in set(a['filter']):
-            aib = a[(a["filter"]==b)*(a["object"]==name)*(np.abs(a["color"])<1)]
+            aib = a[(a["filter"] == b) * (a["object"] == name) *
+                    (np.abs(a["color"]) < 1)]
             
             if len(aib) < 3:
-                print ("Less than 3 stars found with %s %s"%(name,b))
+                print("Less than 3 stars found with %s %s" % (name, b))
                 continue
-            
-            #First fit for the linear and detect the deviations
-            coefs, residuals, rank, singular_values, rcond = np.polyfit(aib["std"], aib["inst"], w=1./np.maximum(0.3, np.sqrt(aib["stderr"]**2 + aib["insterr"]**2)), deg=1, full=True)
+
+            # First fit for the linear and detect the deviations
+            coefs = np.polyfit(aib["std"], aib["inst"], 1,
+                               w=1./np.maximum(0.3, np.sqrt(
+                                   aib["stderr"]**2 + aib["insterr"]**2)))
             p = np.poly1d(coefs)
             
-            if (plot):
+            if plot:
                 plt.figure()
-                plt.title("%s Filter %s"%(name, b))
-                plt.errorbar(aib["std"], aib["inst"], yerr=np.sqrt(aib["stderr"]**2 + aib["insterr"]**2), fmt="o")
+                plt.title("%s Filter %s" % (name, b))
+                plt.errorbar(aib["std"], aib["inst"],
+                             yerr=np.sqrt(aib["stderr"]**2 + aib["insterr"]**2),
+                             fmt="o")
                 plt.plot(aib["std"], p(aib["std"]))
                 
             diff = np.abs(aib["inst"] - p(aib["std"]))
             mad = stats.funcs.median_absolute_deviation(diff)
-            aib = aib[diff<mad*5]
+            aib = aib[diff < mad*5]
             
-            if (plot):
-                plt.errorbar(aib["std"], aib["inst"], yerr=np.sqrt(aib["stderr"]**2 + aib["insterr"]**2), fmt="o")
+            if plot:
+                plt.errorbar(aib["std"], aib["inst"],
+                             yerr=np.sqrt(aib["stderr"]**2 + aib["insterr"]**2),
+                             fmt="o")
                 plt.plot(aib["std"], p(aib["std"]))
-                plt.savefig(os.path.join(plotdir, "zp_mag_mag_%s_%s.png"%(name, b)))
+                plt.savefig(os.path.join(plotdir,
+                                         "zp_mag_mag_%s_%s.png" % (name, b)))
                 plt.close()
-            
 
-            #Then fit for the colour
-            coefs, residuals, rank, singular_values, rcond = np.polyfit(aib["color"], aib["std"] - aib["inst"], w=1./np.maximum(0.15, np.sqrt(aib["stderr"]**2 + aib["insterr"]**2)), deg=1, full=True)
+            # Then fit for the colour
+            coefs = np.polyfit(aib["color"], aib["std"] - aib["inst"], 1,
+                               w=1./np.maximum(0.15,
+                                               np.sqrt(aib["stderr"]**2 +
+                                                       aib["insterr"]**2)))
             p = np.poly1d(coefs)
             
-            color, zp = coefs
+            color = coefs[0]
+            zp = coefs[1]
             
-            mad = stats.funcs.median_absolute_deviation(p(aib["color"]) - (aib["std"] - aib["inst"]))
-             
-            
-            for f in aib["filename"]:
-                #Add these values to the header.
-                pardic = {"IQZEROPT" : 1,\
-                        "ZPCAT" : "SDSS4shot",\
-                        "ZEROPTU" : float("%.3f"%mad),\
-                        "ZEROPT" : float("%.3f"%zp),\
-                        "ZP": float("%.3f"%zp),\
-                        "ZPERR": float("%.3f"%mad)}
-                fitsutils.update_pars(f, pardic)
+            mad = stats.funcs.median_absolute_deviation(
+                p(aib["color"]) - (aib["std"] - aib["inst"]))
 
-            if (plot):
+            for ff in aib["filename"]:
+                # Add these values to the header.
+                pardic = {"IQZEROPT": 1,
+                          "ZPCAT": "SDSS4shot",
+                          "ZEROPTU": float("%.3f" % mad),
+                          "ZEROPT": float("%.3f" % zp),
+                          "ZP": float("%.3f" % zp),
+                          "ZPERR": float("%.3f" % mad)}
+                fitsutils.update_pars(ff, pardic)
+
+            if plot:
                 plt.figure()
-                plt.title("%s Filter %s"%(name, b))
-                plt.errorbar(aib["color"], aib["std"] - aib["inst"], yerr=np.sqrt(aib["stderr"]**2 + aib["insterr"]**2), fmt="o")
+                plt.title("%s Filter %s" % (name, b))
+                plt.errorbar(aib["color"],
+                             aib["std"] - aib["inst"],
+                             yerr=np.sqrt(aib["stderr"]**2 + aib["insterr"]**2),
+                             fmt="o")
                 plt.plot(aib["color"], p(aib["color"]))
-                plt.savefig(os.path.join(plotdir, "zp_col_mag_%s_%s.png"%(name, b)))
+                plt.savefig(os.path.join(plotdir,
+                                         "zp_col_mag_%s_%s.png" % (name, b)))
                 plt.close()
     return
-    
+
+
 def lsq_zeropoint(logfile, plotdir=".", plot=True):
     '''
     Uses least squares approach to compute the optimum coefficients for ZP, colour term, airmass and time.
