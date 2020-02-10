@@ -102,7 +102,7 @@ def are_isolated(rav, decv, r):
     return np.array(mask)
 
 
-def twoD_Gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta,
+def twod_gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta,
                   offset):
     """
     Produces a 2D gaussian centered in xo, yo with the parameters specified.
@@ -120,7 +120,7 @@ def twoD_Gaussian(xdata_tuple, amplitude, xo, yo, sigma_x, sigma_y, theta,
     return g.ravel()
 
 
-def twoD_Gauss_test(theta=0):
+def twod_gauss_test(theta=0):
     """
     Generates a test Gaussian and fits it using the scisoft
     optimization software.
@@ -131,7 +131,7 @@ def twoD_Gauss_test(theta=0):
     x, y = np.meshgrid(x, y)
     
     # create data
-    data = twoD_Gaussian((x, y), 3, 100, 100, 20, 40, theta, 10)
+    data = twod_gaussian((x, y), 3, 100, 100, 20, 40, theta, 10)
     
     # plot twoD_Gaussian data generated above
     plt.figure()
@@ -146,10 +146,10 @@ def twoD_Gauss_test(theta=0):
     
     data_noisy = data + 0.2*np.random.normal(size=data.shape)
     
-    popt, pcov = opt.curve_fit(twoD_Gaussian, (x, y), data_noisy,
+    popt, pcov = opt.curve_fit(twod_gaussian, (x, y), data_noisy,
                                p0=initial_guess)
     
-    data_fitted = twoD_Gaussian((x, y), *popt)
+    data_fitted = twod_gaussian((x, y), *popt)
     
     fig, ax = plt.subplots(1, 1)
     ax.hold(True)
@@ -192,7 +192,7 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
                          np.percentile(sub, 40))
         detected = True
         try:
-            popt, pcov = opt.curve_fit(twoD_Gaussian, (xx, yy), sub.flatten(),
+            popt, pcov = opt.curve_fit(twod_gaussian, (xx, yy), sub.flatten(),
                                        p0=initial_guess)
             fwhm_x = np.abs(popt[3])*2*np.sqrt(2*np.log(2))
             fwhm_y = np.abs(popt[4])*2*np.sqrt(2*np.log(2))
@@ -221,7 +221,7 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
                   np.minimum(fwhm_x, fwhm_y) / np.maximum(fwhm_x, fwhm_y))
 
         if detected & plot:
-            data_fitted = twoD_Gaussian((xx, yy), *popt)
+            data_fitted = twod_gaussian((xx, yy), *popt)
             
             fig, (ax, ax2) = plt.subplots(1, 2)
             ax.hold(True)
@@ -714,7 +714,8 @@ def calibrate_zp_fourshot(logfile, plot=True):
 
 def lsq_zeropoint(logfile, plotdir=".", plot=True):
     """
-    Uses least squares approach to compute the optimum coefficients for ZP, colour term, airmass and time.
+    Uses least squares approach to compute the optimum coefficients for ZP,
+    colour term, airmass and time.
     Check this one:
     https://docs.scipy.org/doc/scipy/reference/odr.html
 
@@ -798,7 +799,8 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
         # pred_airmass = (ab['airmass']-1.3)*coef[2]
         
         # emp_jd = depend - (est_zp - (coef[3]*ab['jd'] + coef[4]*ab['jd']**2))
-        # pred_jd = coef[3]*ab['jd'] + coef[4]*ab['jd']**2  # + coef[5]*ab['jd']**3
+        # pred_jd = coef[3]*ab['jd'] + coef[4]*ab['jd']**2
+        # + coef[5]*ab['jd']**3
                 
         # rms = np.sqrt(np.sum((depend-est_zp)**2)/(len(depend)-1))
         mad = stats.funcs.median_absolute_deviation(depend-est_zp)
@@ -858,7 +860,8 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
         emp_col = depend - (est_zp - coefs_map['color']*ab['color'])
         pred_col = ab['color']*coef[1]
 
-        emp_airmass = depend - (est_zp - coefs_map['airmass']*(ab['airmass']-1.3))
+        emp_airmass = depend - (est_zp - coefs_map['airmass']*(
+                ab['airmass']-1.3))
         pred_airmass = (ab['airmass']-1.3)*coef[2]
         
         emp_jd = depend - (est_zp - (coefs_map['jd']*ab['jd'] +
@@ -880,13 +883,15 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
             fig.set_figheight(12)
             fig.set_figwidth(10)
             ax1.plot(ab['color'], emp_col, "o", color=cols[b], ms=4, alpha=0.4)
-            # ax1.plot(ab['color'], depend - est_zp, "o", color=cols[b], ms=4, alpha=0.4)
+            # ax1.plot(ab['color'], depend - est_zp, "o", color=cols[b],
+            # ms=4, alpha=0.4)
             ax1.plot(ab['color'],  pred_col, color=cols[b])
             ax1.set_title("colour")
 
             ax2.plot(ab['airmass'], emp_airmass, "o", color=cols[b], ms=4,
                      alpha=0.4)
-            # ax2.plot(ab['airmass'], depend - est_zp, "o", color=cols[b], ms=4, alpha=0.4)
+            # ax2.plot(ab['airmass'], depend - est_zp, "o", color=cols[b],
+            # ms=4, alpha=0.4)
 
             ax2.plot(ab['airmass'], pred_airmass, color=cols[b])
             ax2.set_title("airmass")
@@ -926,7 +931,8 @@ def lsq_zeropoint(logfile, plotdir=".", plot=True):
             ax5.set_title("Obs. Time")
 
             # ax4.plot(ab['jd'], depend, "*", color=cols[b], alpha=0.4)
-            # ax4.errorbar(ab['jd'], est_zp, yerr=ab['insterr'], marker="o", c=cols[b], ls="none")
+            # ax4.errorbar(ab['jd'], est_zp, yerr=ab['insterr'], marker="o",
+            # c=cols[b], ls="none")
             ax6.errorbar(ab['jd']*24,
                          depend - est_zp, yerr=np.minimum(0, ab['insterr']),
                          fmt="o", c=cols[b], alpha=0.4, ms=3)
@@ -1092,7 +1098,8 @@ def interpolate_zp(reduced, logfile):
     
 def lsq_zeropoint_partial(logfile, plot=True):
     """
-    Uses least squares approach to compute the optimum coefficients for ZP, colour term, airmass and time.
+    Uses least squares approach to compute the optimum coefficients for ZP,
+    colour term, airmass and time.
 
     """
     a = np.genfromtxt(logfile, dtype=None, names=True, delimiter=",")
@@ -1129,8 +1136,9 @@ def lsq_zeropoint_partial(logfile, plot=True):
 
 def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
     """
-    Finds the zeropoint by comparig the magnitude of the stars measured in the image,
-    vs. the magnitude of the stars from the reference catalogue.
+    Finds the zeropoint by comparig the magnitude of the stars measured in
+    the image, vs. the magnitude of the stars from the reference catalogue.
+
     band: band for which we want to measure the zeropoint.
     col_band: band for the colour term we want to use.
 
@@ -1270,7 +1278,7 @@ def find_zeropoint_noid(ref_stars, image, plot=True, plotdir="."):
 
     fitsutils.update_par(image, "ZP", np.round(p[0], 3))
     fitsutils.update_par(image, "COLTERM", np.round(p[1], 3))
-    fitsutils.update_par(image, "ZPERR", np.round(mad, 3))  # np.std(pred - measured))
+    fitsutils.update_par(image, "ZPERR", np.round(mad, 3))
 
     return np.round(p[0], 3), np.round(p[1], 3), np.round(mad, 3)
 
@@ -1469,7 +1477,8 @@ def reset_zp(directory):
 
 def main(reduced):
     """
-    Performs the main zeropoint calculations for the folder and plots the results.
+    Performs the main zeropoint calculations for the folder and
+    plots the results.
 
     """
     os.chdir(reduced)

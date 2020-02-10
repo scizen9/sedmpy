@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 # -*- coding: utf-8 -*-
 """
 Created on Sun Jun 14 13:11:52 2015
@@ -78,7 +76,7 @@ try:
                               "rcred_{0}.log".format(timestamp)),
         level=logging.INFO)
     logger = logging.getLogger('rcred')
-except:
+except OSError:
     logging.basicConfig(
         format=FORMAT,
         filename=os.path.join("/tmp", "rcred_{0}.log".format(timestamp)),
@@ -98,11 +96,11 @@ def get_xy_coords(image, ra, dec):
     cmd = "wcs-rd2xy -w %s -r %.5f -d %.5f" % (image, ra, dec)
     proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
     output = proc.stdout.read()
-    output = output.split("->")[1]
+    output = output.split(b"->")[1]
 
     coords = []
-    for s in output.split(","):
-        coords.append(float(re.findall("[-+]?\d+[\.]?\d*", s)[0]))
+    for ss in output.split(b","):
+        coords.append(float(re.findall("[-+]?\d+[\.]?\d*", ss)[0]))
 
     return coords
 
@@ -119,7 +117,7 @@ def get_rd_coords(image, x, y):
     cmd = "wcs-xy2rd -w %s -x %.5f -y %.5f" % (image, x, y)
     proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
     output = proc.stdout.read()
-    output = output.split("->")[1]
+    output = output.split(b"->")[1]
 
     numbers = re.findall("[-+]?\d+[\.]?\d*", output)
     coords = []
@@ -138,7 +136,8 @@ def create_masterbias(biasdir=None, channel='rc'):
     iraf.imred(_doprint=0)
     iraf.ccdred(_doprint=0)
 
-    if (biasdir is None) or biasdir == "": biasdir = "."
+    if (biasdir is None) or biasdir == "":
+        biasdir = "."
 
     outs = "Bias_%s_slow.fits" % channel
     outf = "Bias_%s_fast.fits" % channel
@@ -146,10 +145,10 @@ def create_masterbias(biasdir=None, channel='rc'):
     doslow = True
     dofast = True
     if os.path.isfile(os.path.join(biasdir, outs)):
-        logger.warn("%s master Bias exists!" % outs)
+        logger.warning("%s master Bias exists!" % outs)
         doslow = False
     if os.path.isfile(os.path.join(biasdir, outf)):
-        logger.warn("%s master Bias exists!" % outs)
+        logger.warning("%s master Bias exists!" % outs)
         dofast = False
     if doslow or dofast:
         logger.info("Starting the Master Bias creation!")
@@ -162,14 +161,14 @@ def create_masterbias(biasdir=None, channel='rc'):
     lslowbias = []
 
     # Select all filts that are Bias with same instrument
-    for f in glob.glob("rc*fits"):
+    for ff in glob.glob("rc*fits"):
         try:
-            if "BIAS" in str.upper(fitsutils.get_par(f, "IMGTYPE").upper()):
-                if fitsutils.get_par(f, "ADCSPEED") == 2:
-                    lfastbias.append(f)
+            if "BIAS" in str.upper(fitsutils.get_par(ff, "IMGTYPE").upper()):
+                if fitsutils.get_par(ff, "ADCSPEED") == 2:
+                    lfastbias.append(ff)
                 else:
-                    lslowbias.append(f)
-        except:
+                    lslowbias.append(ff)
+        except (KeyError, OSError):
             pass
 
     logger.info("Files for bias SLOW mode: %s" % lslowbias)
@@ -257,19 +256,11 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
     lsflat = []
     lfflat = []
 
-    obj = ""
-    imtype = ""
-
     # Select all filts that are Flats with same instrument
-    for f in glob.glob(channel + "*fits"):
+    for ff in glob.glob(channel + "*fits"):
         try:
-            if fitsutils.has_par(f, "OBJECT"):
-                obj = str.upper(fitsutils.get_par(f, "OBJECT"))
-            else:
-                continue
-
-            if fitsutils.has_par(f, "IMGTYPE"):
-                imtype = str.upper(fitsutils.get_par(f, "IMGTYPE"))
+            if fitsutils.has_par(ff, "IMGTYPE"):
+                imtype = str.upper(fitsutils.get_par(ff, "IMGTYPE"))
             else:
                 continue
 
@@ -278,12 +269,12 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             # "TWILIGHT" in imtype or "DOME" in imtype)):
             if "twilight" in imtype.lower():
 
-                if fitsutils.get_par(f, "ADCSPEED") == 2:
-                    lfflat.append(f)
+                if fitsutils.get_par(ff, "ADCSPEED") == 2:
+                    lfflat.append(ff)
                 else:
-                    lsflat.append(f)
-        except:
-            logger.error("Error with retrieving parameters for file %s" % f)
+                    lsflat.append(ff)
+        except (OSError, KeyError):
+            logger.error("Error with retrieving parameters for file %s" % ff)
             pass
 
     logger.info("Files for slow flat %s" % lsflat)
@@ -312,15 +303,15 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
 
     # Slices the flats.
     debiased_flats = glob.glob("b_*.fits")
-    for f in debiased_flats:
-        logger.info("Slicing file %s" % f)
+    for ff in debiased_flats:
+        logger.info("Slicing file %s" % ff)
         try:
-            slice_rc(f)
+            slice_rc(ff)
         except:
             logger.error("Error when slicing file, "
                          "deleting the unsliced one...")
         # Remove the un-sliced file
-        os.remove(f)
+        os.remove(ff)
 
     # Selects the ones that are suitable given
     # the number of counts and combines them.
@@ -334,24 +325,24 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             continue
 
         lfiles = []
-        for f in glob.glob('b_*_%s.fits' % b):
-            fi = fits.open(f)
+        for ff in glob.glob('b_*_%s.fits' % b):
+            fi = fits.open(ff)
             d = fi[0].data
             status = "rejected"
             if 4000 < np.percentile(d, 90) < 45000:
-                lfiles.append(f)
+                lfiles.append(ff)
                 mymode = 1. * np.median(d.flatten())
-        d[d > 45000] = mymode
-        fi[0].data = d
-        fi.writeto(f, clobber=True)
-        status = "accepted"
+                d[d > 45000] = mymode
+                fi[0].data = d
+                fi.writeto(ff, clobber=True)
+                status = "accepted"
 
         if plot:
             plt.title("Flat filter %s. %s" % (b, status))
             plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
-        plt.colorbar()
-        plt.savefig("reduced/flats/%s" % (f.replace(".fits", ".png")))
-        plt.close()
+            plt.colorbar()
+            plt.savefig("reduced/flats/%s" % (f.replace(".fits", ".png")))
+            plt.close()
         # Make sure that the optimum number of counts
         # is not too low and not saturated.
         if len(lfiles) == 0:
@@ -385,8 +376,8 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
 
         # Do some cleaning
         logger.info('Removing from lfiles')
-        for f in glob.glob('b_*_%s.fits' % b):
-            os.remove(f)
+        for ff in glob.glob('b_*_%s.fits' % b):
+            os.remove(ff)
 
         os.remove(ffile)
 
@@ -405,11 +396,12 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
 
 
 def create_masterguide(lfiles, out=None):
-    '''
+    """
     Receives a list of guider images for the same object.
-    It will remove the bias from it, combine them using the median, and comput the astrometry for the image.
-    
-    '''
+    It will remove the bias from it, combine them using the median, and compute
+    the astrometry for the image.
+
+    """
 
     curdir = os.getcwd()
 
@@ -430,7 +422,7 @@ def create_masterguide(lfiles, out=None):
         bffile = "/tmp/lb_guider"
         np.savetxt(bffile, np.array(debiased), fmt="%s")
 
-    if (out is None):
+    if out is None:
         obj = fitsutils.get_par(img, "OBJECT")
         out = os.path.join(os.path.dirname(img), obj.replace(" ", "").replace(":", "") + ".fits")
 
@@ -474,12 +466,13 @@ def create_masterguide(lfiles, out=None):
 
 
 def __fill_ifu_dic(ifu_img, ifu_dic={}):
-    '''
-    Fills some of the parameters for the IFU image that will be used to gather its guider images later.
-    
-    '''
+    """
+    Fills some of the parameters for the IFU image that will be used to gather
+    its guider images later.
+
+    """
     imgtype = fitsutils.get_par(ifu_img, "IMGTYPE")
-    if not imgtype is None:
+    if imgtype is not None:
         imgtype = imgtype.upper()
 
     # In Richard's pipeline, the JD is the beginning of the exposure,
@@ -488,13 +481,16 @@ def __fill_ifu_dic(ifu_img, ifu_dic={}):
 
     if imgtype == "SCIENCE" or imgtype == "STANDARD":
         if pipeline_jd_end:
-            jd_ini = fitsutils.get_par(ifu_img, "JD") - fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
+            jd_ini = fitsutils.get_par(ifu_img, "JD") - \
+                     fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
             jd_end = fitsutils.get_par(ifu_img, "JD")
         else:
             jd_ini = fitsutils.get_par(ifu_img, "JD")
-            jd_end = fitsutils.get_par(ifu_img, "JD") + fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
+            jd_end = fitsutils.get_par(ifu_img, "JD") + \
+                     fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
 
-        # We only fill the dictionary if the exposure is a valid science or standard image.
+        # We only fill the dictionary if the exposure is a valid science or
+        # standard image.
         name = fitsutils.get_par(ifu_img, "OBJECT")
         ra = fitsutils.get_par(ifu_img, "RA")
         dec = fitsutils.get_par(ifu_img, "DEC")
@@ -502,42 +498,49 @@ def __fill_ifu_dic(ifu_img, ifu_dic={}):
         exptime = fitsutils.get_par(ifu_img, "EXPTIME")
         ifu_dic[ifu_img] = (name, jd_ini, jd_end, rad, decd, exptime)
     else:
-        logger.warn("Image %s is not SCIENCE or STANDARD." % ifu_img)
+        logger.warning("Image %s is not SCIENCE or STANDARD." % ifu_img)
 
 
 def __combine_guiders(ifu_dic, abspath):
-    '''
+    """
     Receives an IFU dictionary with the images that need a solved guider.
-    '''
+    """
     rc = np.array(glob.glob(abspath + "/rc*fits"))
 
     rcjd = np.array([fitsutils.get_par(r, "JD") for r in rc])
     imtypes = np.array([fitsutils.get_par(r, "IMGTYPE").upper() for r in rc])
     objnames = np.array([fitsutils.get_par(r, "OBJECT").upper() for r in rc])
     ras = np.array([cc.getDegRaString(fitsutils.get_par(r, "RA")) for r in rc])
-    decs = np.array([cc.getDegDecString(fitsutils.get_par(r, "DEC")) for r in rc])
+    decs = np.array([cc.getDegDecString(fitsutils.get_par(r,
+                                                          "DEC")) for r in rc])
 
     for ifu_i in ifu_dic.keys():
         name, jd_ini, jd_end, rad, decd, exptime = ifu_dic[ifu_i]
-        # guiders = rc[(imtypes=="GUIDER") * (rcjd >= ifu_dic[ifu_i][1]) * (rcjd <= ifu_dic[ifu_i][2]) ]
+        # guiders = rc[(imtypes=="GUIDER") * (rcjd >= ifu_dic[ifu_i][1]) *
+        # (rcjd <= ifu_dic[ifu_i][2]) ]
         mymask = (rcjd >= jd_ini) * (rcjd <= jd_end) * \
-                 (np.abs(ras - rad) * np.cos(np.deg2rad(decd)) < 1. / 60) * (np.abs(decs - decd) < 1. / 60)
+                 (np.abs(ras - rad) * np.cos(np.deg2rad(decd)) < 1. / 60) * \
+                 (np.abs(decs - decd) < 1. / 60)
         guiders = rc[mymask]
         im = imtypes[mymask]
         names = objnames[mymask]
         logger.info(
-            "For image %s on object %s with exptime %d found guiders:\n %s" % (ifu_i, name, exptime, zip(names, im)))
-        out = os.path.join(os.path.dirname(ifu_i), "guider_" + os.path.basename(ifu_i))
+            "For image %s on object %s with exptime %d found guiders:\n %s" %
+            (ifu_i, name, exptime, zip(names, im)))
+        out = os.path.join(os.path.dirname(ifu_i), "guider_" +
+                           os.path.basename(ifu_i))
         create_masterguide(guiders, out=out)
         fitsutils.update_par(out, "IFU_IMG", os.path.basename(ifu_i))
 
 
 def make_guider(ifu_img):
-    '''
-    Creates the stacked and astrometry solved RC image for the IFU image passed as a parameter.
-    
-    ifu_img: string which is the path to the IFU image we want to get the guiders for.
-    '''
+    """
+    Creates the stacked and astrometry solved RC image for the IFU image
+    passed as a parameter.
+
+    ifu_img: string which is the path to the IFU image we want to get the
+             guiders for.
+    """
     ifu_dic = {}
     myabspath = os.path.dirname(os.path.abspath(ifu_img))
     __fill_ifu_dic(ifu_img, ifu_dic)
@@ -545,12 +548,14 @@ def make_guider(ifu_img):
 
 
 def make_guiders(ifu_dir):
-    '''
-    Looks for all the IFU images in the directory and assembles all the guider images taken with RC for that time interval
+    """
+    Looks for all the IFU images in the directory and assembles all the guider
+    images taken with RC for that time interval
     at around the coordinates of the IFU.
-    
-    ifu_dir: directory where the IFU images are that we want to greated the guiders for.
-    '''
+
+    ifu_dir: directory where the IFU images are that we want to greated the
+             guiders for.
+    """
 
     abspath = os.path.abspath(ifu_dir)
 
@@ -564,18 +569,20 @@ def make_guiders(ifu_dir):
 
 
 def mask_stars(image, sexfile, plot=False, overwrite=False):
-    ''' 
+    """
     Finds the stars in the sextrated file and creates a mask file.
-    '''
+    """
 
     maskdir = os.path.join(os.path.abspath(os.path.dirname(image)), "masks")
 
     if not os.path.isdir(maskdir):
         os.makedirs(maskdir)
 
-    maskname = os.path.join(maskdir, os.path.basename(image).replace(".fits", ".im.fits"))
+    maskname = os.path.join(maskdir,
+                            os.path.basename(image).replace(".fits",
+                                                            ".im.fits"))
 
-    if (os.path.isfile(maskname) and not overwrite):
+    if os.path.isfile(maskname) and not overwrite:
         return maskname
 
     print("Creating mask %s" % maskname)
@@ -589,7 +596,8 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
     mag = stars[:, 4]
     flags = np.array(stars[:, 10], dtype=np.int)
 
-    starmask = (mag < np.percentile(mag, 90)) | (np.bitwise_and(flags, np.repeat(0x004, len(flags))) > 1)
+    starmask = (mag < np.percentile(mag, 90)) | (
+            np.bitwise_and(flags, np.repeat(0x004, len(flags))) > 1)
     stars = stars[starmask]
 
     fwhm = stars[:, 7]
@@ -604,7 +612,7 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
     for i in range(len(stars)):
         data[np.sqrt((X - x[i]) ** 2 + (Y - y[i]) ** 2) < fwhm[i] * 5] = 0
 
-    if (plot):
+    if plot:
         print(image)
         plt.imshow(np.log10(np.abs(hdulist[0].data)), alpha=0.9)
         plt.imshow(data, alpha=0.5)
@@ -634,8 +642,10 @@ def create_superflat(imdir, filters=["u", "g", "r", "i"]):
         fitsutils.update_par(im, "BPM", os.path.relpath(maskfile))
 
     for filt in filters:
-        fimlist = [im for im in imlist if fitsutils.get_par(im, "FILTER") == filt]
-        fmasklist = [im for im in maskfiles if fitsutils.get_par(im, "FILTER") == filt]
+        fimlist = [im for im in imlist if
+                   fitsutils.get_par(im, "FILTER") == filt]
+        fmasklist = [im for im in maskfiles if
+                     fitsutils.get_par(im, "FILTER") == filt]
 
         if len(fimlist) == 0:
             continue
@@ -645,20 +655,6 @@ def create_superflat(imdir, filters=["u", "g", "r", "i"]):
         np.savetxt(fsfile, np.array(fimlist), fmt="%s")
         np.savetxt(msfile, np.array(fmasklist), fmt="%s")
 
-        '''masklist = []
-        
-        for m in fmasklist:
-            hdulist = fits.open(m)
-            data = hdulist[0].data
-            masklist.append(data)
-            
-            
-        masklist = np.array(masklist)
-        
-        hdu = fits.PrimaryHDU(masklist)
-        hdulist = fits.HDUList([hdu])
-        hdulist.writeto("mastermask_%s.fits"%filt)'''
-
         # Running IRAF
         iraf.noao(_doprint=0)
         iraf.imred(_doprint=0)
@@ -667,24 +663,27 @@ def create_superflat(imdir, filters=["u", "g", "r", "i"]):
         iraf.imarith("@" + fsfile, "*", "@" + msfile, "m_@" + fsfile)
 
         # Combine flats
-        iraf.imcombine(input="m_@" + fsfile, \
-                       output="superflat_%s.fits" % filt, \
-                       combine="median", \
-                       scale="mode", \
-                       masktype="badvalue", \
+        iraf.imcombine(input="m_@" + fsfile,
+                       output="superflat_%s.fits" % filt,
+                       combine="median",
+                       scale="mode",
+                       masktype="badvalue",
                        maskvalue=0)
 
-        iraf.imstat("superflat_%s.fits" % filt, fields="image,npix,mean,stddev,min,max,mode", Stdout="Flat_stats")
+        iraf.imstat("superflat_%s.fits" % filt,
+                    fields="image,npix,mean,stddev,min,max,mode",
+                    Stdout="Flat_stats")
         time.sleep(0.1)
         st = np.genfromtxt("Flat_stats", names=True, dtype=None)
         # Normalize flats
-        iraf.imarith("superflat_%s.fits" % filt, "/", st["MODE"], "superflat_%s_norm.fits" % filt)
+        iraf.imarith("superflat_%s.fits" % filt, "/", st["MODE"],
+                     "superflat_%s_norm.fits" % filt)
 
 
 def get_median_bkg(img):
-    '''
+    """
     Computes the median background.
-    '''
+    """
     hdu = fits.open(img)
     header = hdu[0].header
     bkg = np.median(hdu[0].data[hdu[0].data > 0])
@@ -692,18 +691,20 @@ def get_median_bkg(img):
 
 
 def solve_edges(flat, band):
-    '''
-    Finds the edges of the flat, and extends the respons of the average to the edges.
-    '''
+    """
+    Finds the edges of the flat, and extends the respons of the
+    average to the edges.
+    """
 
     edgedic = {"u": [], "g": [], "i": [], "r": []}
 
 
 def copy_ref_calib(curdir, calib="Flat"):
-    '''
+    """
     Reference master Bias and master Flat are stored in the refphot folder.
-    The files are copied if they are not found in the folder where the photometry is being reduced.
-    '''
+    The files are copied if they are not found in the folder where the
+    photometry is being reduced.
+    """
 
     if calib == "Bias":
         calib_dic = {"Bias_rc_fast.fits": False, "Bias_rc_slow.fits": False}
@@ -727,21 +728,21 @@ def copy_ref_calib(curdir, calib="Flat"):
     # Check which dates have the calibration files that we need.
     listcalib = glob.glob(os.path.join(curdir, "../../refphot/*/", calib + "*"))
     # Obtain the folder name
-    listdirs = [os.path.dirname(l) for l in listcalib]
+    listdirs = [os.path.dirname(fl) for fl in listcalib]
     # Unique name
     calibdates = np.array(list(set(listdirs)))
 
     # compile the dates in datetime format
     dates = []
-    for f in calibdates:
-        dateobs = os.path.basename(f)
+    for ff in calibdates:
+        dateobs = os.path.basename(ff)
         dates.append(datetime.datetime.strptime(dateobs, "%Y%m%d"))
 
     dates = np.array(dates)
     curdate = datetime.datetime.strptime(os.path.basename(curdir), "%Y%m%d")
 
     # Select the folder that is closer to the date of the current directory
-    lastdir = np.array(calibdates)[np.argmin(np.abs(curdate - dates))]
+    # lastdir = np.array(calibdates)[np.argmin(np.abs(curdate - dates))]
 
     # Try to go 100 days before the data was taken.
     i = 0
@@ -1267,35 +1268,43 @@ def log_db_phot(myfile):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description= \
-                                         '''
+    parser = argparse.ArgumentParser(description="""
 
         Reduces the photometric images from SEDM Rainbow Camera.
-        Requires either a list of images to be reduced, or a directory name where the night photometry is.
-        As an option, can run lacosmic to remove cosmic rays.
-        By default it invokes astrometry.net before the reduction.
+        Requires either a list of images to be reduced, or a directory name
+        where the night photometry is. As an option, can run lacosmic to remove
+        cosmic rays. By default it invokes astrometry.net before the reduction.
         
         %run rcred.py -d PHOTDIR 
                 
-        Reduced images are stored in directory called "reduced", within the main directory.
+        Reduced images are stored in directory called "reduced", within the 
+        main directory.
         
-        Optionally, it can be used to clean the reduction products generated by this pipeline within PHOTDIR diretory using -c option (clean).
+        Optionally, it can be used to clean the reduction products generated 
+        by this pipeline within PHOTDIR diretory using -c option (clean).
         
         %run rcred.py -d PHOTDIR -c
             
-        ''', formatter_class=argparse.RawTextHelpFormatter)
+        """, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-l', '--filelist', type=str, help='File containing the list of fits for the night.',
+    parser.add_argument('-l', '--filelist', type=str,
+                        help='File containing the list of fits for the night.',
                         default=None)
-    parser.add_argument('-d', '--photdir', type=str, help='Directory containing the science fits for the night.',
+    parser.add_argument('-d', '--photdir', type=str,
+                        help='Directory containing the science fits '
+                             'for the night.',
                         default=None)
-    parser.add_argument('-c', '--clean', action="store_true", help='Clean the reduced images?', default=False)
-    parser.add_argument('-o', '--overwrite', action="store_true", help='re-reduce and overwrite the reduced images?',
+    parser.add_argument('-c', '--clean', action="store_true",
+                        help='Clean the reduced images?', default=False)
+    parser.add_argument('-o', '--overwrite', action="store_true",
+                        help='re-reduce and overwrite the reduced images?',
                         default=False)
-    parser.add_argument('-p', '--copy', action="store_false", help='disable the copy the reduced folder to transient',
+    parser.add_argument('-p', '--copy', action="store_false",
+                        help='disable the copy the reduced folder to transient',
                         default=True)
 
-    parser.add_argument('--cosmic', action="store_true", default=False, help='Whether cosmic rays should be removed.')
+    parser.add_argument('--cosmic', action="store_true", default=False,
+                        help='Whether cosmic rays should be removed.')
 
     args = parser.parse_args()
 
@@ -1308,19 +1317,19 @@ if __name__ == '__main__':
 
     myfiles = []
 
-    if (not photdir is None and clean):
+    if photdir is not None and clean:
         for f in glob.glob("Flat*"):
             os.remove(f)
         for f in glob.glob("Bias*"):
             os.remove(f)
         for f in glob.glob("a_*fits"):
             os.remove(f)
-        if (os.path.isdir(os.path.join(photdir, "reduced"))):
+        if os.path.isdir(os.path.join(photdir, "reduced")):
             shutil.rmtree(os.path.join(photdir, "reduced"))
 
-    if (not filelist is None):
+    if filelist is not None:
         mydir = os.path.dirname(filelist)
-        if (mydir == ""):
+        if mydir == "":
             mydir = "."
         os.chdir(mydir)
 
@@ -1331,7 +1340,7 @@ if __name__ == '__main__':
 
     else:
 
-        if (photdir is None):
+        if photdir is None:
             timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
             timestamp = timestamp.split("T")[0].replace("-", "")
             photdir = os.path.join(_photpath, timestamp)
@@ -1340,58 +1349,65 @@ if __name__ == '__main__':
                  "- A filelist name with the images you want to reduce [-l] OR",
                  "- The name of the directory which you want to reduce [-d].",
                  "",
-                 "A default name for the directory will be assumed on today s date: %s" % photdir)
+                 "A default name for the directory will be assumed on today's "
+                 "date: %s" % photdir)
 
     mydir = os.path.abspath(photdir)
     # Gather all RC fits files in the folder with the keyword IMGTYPE=SCIENCE
     for f in glob.glob(os.path.join(mydir, "rc*fits")):
         try:
-            if (fitsutils.has_par(f, "IMGTYPE") and ((fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE") or (
+            if (fitsutils.has_par(f, "IMGTYPE") and
+                    ((fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE") or (
                         "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()))):
                 myfiles.append(f)
-        except:
+        except (OSError, KeyError):
             print("problems opening file %s" % f)
 
     create_masterbias(mydir)
     print("Create masterflat", mydir)
     create_masterflat(mydir)
 
-    if (len(myfiles) == 0):
+    if len(myfiles) == 0:
         print("Found no files to process")
         sys.exit()
     else:
         print("Found %d files to process" % len(myfiles))
 
-
-        # Reduce them
+    # Reduce them
     reducedfiles = []
     for f in myfiles:
         print(f)
         # make_mask_cross(f)
-        if (fitsutils.has_par(f, "IMGTYPE") and (fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE" or (
+        if (fitsutils.has_par(f, "IMGTYPE") and
+                (fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE" or (
                     "ACQUI" in fitsutils.get_par(f, "IMGTYPE").upper()))):
             try:
                 reduced = reduce_image(f, cosmic=cosmic, overwrite=overwrite)
                 reducedfiles.extend(reduced)
-            except:
+            except OSError:
                 print("Error when reducing image %s" % f)
                 pass
 
-    # If copy is requested, then we copy the whole folder or just the missing files to transient.
+    # If copy is requested, then we copy the whole folder or just the
+    # missing files to transient.
     try:
         zeropoint.lsq_zeropoint(os.path.join(mydir, "reduced/allstars_zp.log"),
                                 os.path.join(mydir, "reduced/zeropoint"))
     except ValueError:
-        print("Could not calibrate zeropoint for file %s" % (os.path.join(mydir, "reduced/allstars_zp.log")))
+        print("Could not calibrate zeropoint for file %s" %
+              (os.path.join(mydir, "reduced/allstars_zp.log")))
 
     dayname = os.path.basename(os.path.dirname(os.path.abspath(myfiles[0])))
-    reducedname = os.path.join(os.path.dirname(os.path.abspath(myfiles[0])), "reduced")
-    if (not photdir is None and copy):
-        cmd = "rcp -r %s grbuser@transient.caltech.edu:/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % (
-            reducedname, dayname)
-        subprocess.call(cmd, shell=True)
-    elif (not filelist is None and copy):
+    reducedname = os.path.join(os.path.dirname(os.path.abspath(myfiles[0])),
+                               "reduced")
+    if photdir is not None and copy:
+        com = "rcp -r %s grbuser@transient.caltech.edu:" \
+              "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
+              (reducedname, dayname)
+        subprocess.call(com, shell=True)
+    elif filelist is not None and copy:
         for f in reducedfiles:
-            cmd = "rcp %s grbuser@transient.caltech.edu:/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s/." % (
-                f, dayname)
-            subprocess.call(cmd, shell=True)
+            com = "rcp %s grbuser@transient.caltech.edu:" \
+                  "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s/."\
+                  % (f, dayname)
+            subprocess.call(com, shell=True)
