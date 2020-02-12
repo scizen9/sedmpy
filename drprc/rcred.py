@@ -20,7 +20,6 @@ try:
     from pyraf import IrafError
 except ImportError:
     pass
-from astropy.wcs import WCS
 
 from matplotlib import pylab as plt
 import subprocess
@@ -44,10 +43,13 @@ try:
 except ImportError:
     import drprc.coordinates_conversor as cc
 
+try:
+    import cosmics
+except ImportError:
+    import drprc.cosmics as cosmics
+
 from configparser import ConfigParser
 import codecs
-
-import matplotlib
 
 parser = ConfigParser()
 
@@ -103,6 +105,12 @@ def get_xy_coords(image, ra, dec):
         coords.append(float(re.findall("[-+]?\d+[\.]?\d*", ss)[0]))
 
     return coords
+
+
+def save_list(flist, fname):
+    """Save a list of files to given filename"""
+    with open(fname) as ff:
+        ff.writelines("%s\n" % fl for fl in flist)
 
 
 def get_rd_coords(image, x, y):
@@ -176,7 +184,7 @@ def create_masterbias(biasdir=None, channel='rc'):
 
     if len(lfastbias) > 0 and dofast:
         bfile_fast = "lbias_fast_" + channel
-        np.savetxt(bfile_fast, np.array(lfastbias), fmt="%s")
+        save_list(lfastbias, bfile_fast)
         if os.path.isfile("Bias_stats_fast"):
             os.remove("Bias_stats_fast")
         iraf.imstat("@" + bfile_fast, Stdout="Bias_stats_fast")
@@ -200,7 +208,7 @@ def create_masterbias(biasdir=None, channel='rc'):
     if len(lslowbias) > 0 and doslow:
 
         bfile_slow = "lbias_slow_" + channel
-        np.savetxt(bfile_slow, np.array(lslowbias), fmt="%s")
+        save_list(lslowbias, bfile_slow)
         if os.path.isfile("Bias_stats_slow"):
             os.remove("Bias_stats_slow")
         iraf.imstat("@" + bfile_slow, Stdout="Bias_stats_slow")
@@ -281,9 +289,10 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
     logger.info("Files for fast flat %s" % lfflat)
 
     fsfile = "lflat_slow_" + channel
-    np.savetxt(fsfile, np.array(lsflat), fmt="%s")
+    save_list(lsflat, fsfile)
+
     fffile = "lflat_fast_" + channel
-    np.savetxt(fffile, np.array(lfflat), fmt="%s")
+    save_list(lfflat, fffile)
 
     # Running IRAF
     iraf.noao(_doprint=0)
@@ -325,6 +334,8 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             continue
 
         lfiles = []
+        status = "none"
+        d = None
         for ff in glob.glob('b_*_%s.fits' % b):
             fi = fits.open(ff)
             d = fi[0].data
@@ -354,7 +365,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
                          "Skipping, as it is not reliable..." % b)
             continue
         ffile = "lflat_" + b
-        np.savetxt(ffile, np.array(lfiles), fmt="%s")
+        save_list(lfiles, ffile)
 
         # Cleaning of old files
         if os.path.isfile(out):
@@ -411,7 +422,7 @@ def create_masterguide(lfiles, out=None):
         os.chdir(os.path.abspath(os.path.dirname(lfiles[0])))
 
     fffile = "/tmp/l_guide"
-    np.savetxt(fffile, np.array(lfiles), fmt="%s")
+    save_list(lfiles, fffile)
 
     # If the bias file exists in the directory, we use it, otherwise we pass
     bias_fast = "Bias_rc_fast.fits"
@@ -420,11 +431,15 @@ def create_masterguide(lfiles, out=None):
     if debias:
         debiased = ["b_" + os.path.basename(img) for img in lfiles]
         bffile = "/tmp/lb_guider"
-        np.savetxt(bffile, np.array(debiased), fmt="%s")
+        save_list(debiased, bffile)
+    else:
+        debiased = []
+        bffile = ""
 
     if out is None:
-        obj = fitsutils.get_par(img, "OBJECT")
-        out = os.path.join(os.path.dirname(img), obj.replace(" ", "").replace(":", "") + ".fits")
+        obj = fitsutils.get_par(lfiles[0], "OBJECT")
+        out = os.path.join(os.path.dirname(lfiles[0]),
+                           obj.replace(" ", "").replace(":", "") + ".fits")
 
     # Running IRAF
     iraf.noao(_doprint=0)
@@ -446,14 +461,16 @@ def create_masterguide(lfiles, out=None):
                    combine="median",
                    scale="mode",
                    reject="sigclip", lsigma=2., hsigma=2, gain=1.7, rdnoise=4.)
-    iraf.imstat(out, fields="image,npix,mean,stddev,min,max,mode", Stdout="guide_stats")
+    iraf.imstat(out, fields="image,npix,mean,stddev,min,max,mode",
+                Stdout="guide_stats")
     # st = np.genfromtxt("guide_stats", names=True, dtype=None)
 
     # Do some cleaning
     if debias:
         logger.info('Removing from lfiles')
-        for f in debiased:
-            if os.path.isfile(f): os.remove(f)
+        for ff in debiased:
+            if os.path.isfile(ff):
+                os.remove(ff)
 
     if os.path.isfile(fffile):
         os.remove(fffile)
@@ -465,7 +482,7 @@ def create_masterguide(lfiles, out=None):
     os.chdir(curdir)
 
 
-def __fill_ifu_dic(ifu_img, ifu_dic={}):
+def __fill_ifu_dic(ifu_img, ifu_dic=None):
     """
     Fills some of the parameters for the IFU image that will be used to gather
     its guider images later.
@@ -474,6 +491,8 @@ def __fill_ifu_dic(ifu_img, ifu_dic={}):
     imgtype = fitsutils.get_par(ifu_img, "IMGTYPE")
     if imgtype is not None:
         imgtype = imgtype.upper()
+    if ifu_dic is None:
+        ifu_dic = {}
 
     # In Richard's pipeline, the JD is the beginning of the exposure,
     # in Nick's one is the end.
@@ -482,12 +501,12 @@ def __fill_ifu_dic(ifu_img, ifu_dic={}):
     if imgtype == "SCIENCE" or imgtype == "STANDARD":
         if pipeline_jd_end:
             jd_ini = fitsutils.get_par(ifu_img, "JD") - \
-                     fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
+                fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
             jd_end = fitsutils.get_par(ifu_img, "JD")
         else:
             jd_ini = fitsutils.get_par(ifu_img, "JD")
             jd_end = fitsutils.get_par(ifu_img, "JD") + \
-                     fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
+                fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
 
         # We only fill the dictionary if the exposure is a valid science or
         # standard image.
@@ -592,7 +611,7 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
     data = np.ones_like(hdulist[0].data)
 
     stars = np.genfromtxt(sexfile)
-    fwhm = stars[:, 7]
+    # fwhm = stars[:, 7]
     mag = stars[:, 4]
     flags = np.array(stars[:, 10], dtype=np.int)
 
@@ -607,10 +626,10 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
 
     lenx = data.shape[0]
     leny = data.shape[1]
-    X, Y = np.meshgrid(np.arange(leny), np.arange(lenx))
+    xx, yy = np.meshgrid(np.arange(leny), np.arange(lenx))
 
     for i in range(len(stars)):
-        data[np.sqrt((X - x[i]) ** 2 + (Y - y[i]) ** 2) < fwhm[i] * 5] = 0
+        data[np.sqrt((xx - x[i]) ** 2 + (yy - y[i]) ** 2) < fwhm[i] * 5] = 0
 
     if plot:
         print(image)
@@ -626,7 +645,7 @@ def mask_stars(image, sexfile, plot=False, overwrite=False):
     return maskname
 
 
-def create_superflat(imdir, filters=["u", "g", "r", "i"]):
+def create_superflat(filters=("u", "g", "r", "i")):
     # Locate images for each filter
     imlist = glob.glob("rc*fits")
 
@@ -652,8 +671,8 @@ def create_superflat(imdir, filters=["u", "g", "r", "i"]):
 
         fsfile = "lflat_%s" % filt
         msfile = "lmask_%s" % filt
-        np.savetxt(fsfile, np.array(fimlist), fmt="%s")
-        np.savetxt(msfile, np.array(fmasklist), fmt="%s")
+        save_list(fimlist, fsfile)
+        save_list(fmasklist, msfile)
 
         # Running IRAF
         iraf.noao(_doprint=0)
@@ -685,18 +704,9 @@ def get_median_bkg(img):
     Computes the median background.
     """
     hdu = fits.open(img)
-    header = hdu[0].header
+    # header = hdu[0].header
     bkg = np.median(hdu[0].data[hdu[0].data > 0])
     return bkg
-
-
-def solve_edges(flat, band):
-    """
-    Finds the edges of the flat, and extends the respons of the
-    average to the edges.
-    """
-
-    edgedic = {"u": [], "g": [], "i": [], "r": []}
 
 
 def copy_ref_calib(curdir, calib="Flat"):
@@ -738,7 +748,7 @@ def copy_ref_calib(curdir, calib="Flat"):
         dateobs = os.path.basename(ff)
         dates.append(datetime.datetime.strptime(dateobs, "%Y%m%d"))
 
-    dates = np.array(dates)
+    # dates = np.array(dates)
     curdate = datetime.datetime.strptime(os.path.basename(curdir), "%Y%m%d")
 
     # Select the folder that is closer to the date of the current directory
@@ -755,20 +765,23 @@ def copy_ref_calib(curdir, calib="Flat"):
             c = os.path.join(curdir, "../../refphot/", newdatedir, cal)
 
             if os.path.isfile(c):
-                print("Copying calibration file %s to directory %s" % (c, curdir))
+                print("Copying calibration file %s to directory %s" % (c,
+                                                                       curdir))
                 shutil.copy(c, os.path.join(curdir, os.path.basename(c)))
                 calib_dic[cal] = True
 
 
-def solve_astrometry(img, outimage=None, radius=3, with_pix=True, overwrite=False, tweak=3):
-    '''
+def solve_astrometry(img, outimage=None, radius=3, with_pix=True,
+                     overwrite=False, tweak=3):
+    """
     img: fits image where astrometry should be solved.
-    outimage: name for the astrometry solved image. If none is provided, the name will be "a_"img.
+    outimage: name for the astrometry solved image. Defaults to "a_"img.
     radius: radius of uncertainty on astrometric position in image.
-    with_pix: if we want to include the constraint on the pixel size for the RCCam.
-    overwrite: wether the astrometrically solved image should go on top of the old one.
-    tewak: parameter for astrometry.net
-    '''
+    with_pix: if we want to include the constraint on the pixel size
+                for the RCCam.
+    overwrite: if the astrometrically solved image should overwrite the old one.
+    tweak: parameter for astrometry.net
+    """
 
     from astropy.wcs import InconsistentAxisTypesError
 
@@ -781,26 +794,28 @@ def solve_astrometry(img, outimage=None, radius=3, with_pix=True, overwrite=Fals
     astro = os.path.join(os.path.dirname(img), "a_" + os.path.basename(img))
 
     # If astrometry exists, we don't run it again.
-    if (os.path.isfile(astro) and not overwrite):
+    if os.path.isfile(astro) and not overwrite:
         return astro
 
     # Store a temporary file with the multiplication of the mask
-    mask = "mask.fits"
+    # mask = "mask.fits"
 
     cmd = "solve-field --ra %s --dec %s --radius %.4f -p --new-fits %s \
-      -W none -B none -P none -M none -R none -S none -t %d --overwrite %s " % (ra, dec, radius, astro, tweak, img)
-    if (with_pix):
-        cmd = cmd + " --scale-units arcsecperpix  --scale-low 0.375 --scale-high 0.4"
-    # logger.info( cmd)
+      -W none -B none -P none -M none -R none -S none -t %d --overwrite %s " %\
+          (ra, dec, radius, astro, tweak, img)
+    if with_pix:
+        cmd = cmd + \
+              " --scale-units arcsecperpix  --scale-low 0.375 --scale-high 0.4"
+    # logger.info(cmd)
 
     subprocess.call(cmd, shell=True)
 
     # Cleaning after astrometry.net
-    if (os.path.isfile(img.replace(".fits", ".axy"))):
+    if os.path.isfile(img.replace(".fits", ".axy")):
         os.remove(img.replace(".fits", ".axy"))
-    if (os.path.isfile(img.replace(".fits", "-indx.xyls"))):
+    if os.path.isfile(img.replace(".fits", "-indx.xyls")):
         os.remove(img.replace(".fits", "-indx.xyls"))
-    if (os.path.isfile("none")):
+    if os.path.isfile("none"):
         os.remove("none")
 
     if os.path.isfile(astro):
@@ -808,14 +823,15 @@ def solve_astrometry(img, outimage=None, radius=3, with_pix=True, overwrite=Fals
             is_on_target(img)
         except InconsistentAxisTypesError as e:
             fitsutils.update_par(img, "ONTARGET", 0)
-            print("Error detected with WCS when reading file %s. \n %s" % (img, e))
-
-            # If no name is provided, and overwrite si tru, we move the astrometry solved file into the image with name outimage.
-    if (not outimage is None and overwrite and os.path.isfile(astro)):
+            print("Error detected with WCS when reading file %s. \n %s" % (img,
+                                                                           e))
+            # If no name is provided, and overwrite is true, we move the
+            # astrometry solved file into the image with name outimage.
+    if outimage is not None and overwrite and os.path.isfile(astro):
         shutil.move(astro, outimage)
         return outimage
     # If ther is no name, we overwrite the old file.
-    elif (outimage is None and overwrite and os.path.isfile(astro)):
+    elif outimage is None and overwrite and os.path.isfile(astro):
         shutil.move(astro, img)
         return img
     # Otherwise, we just return the name of the astrometry sovled image
@@ -826,11 +842,11 @@ def solve_astrometry(img, outimage=None, radius=3, with_pix=True, overwrite=Fals
 def make_mask_cross(img):
     maskname = os.path.join(os.path.dirname(img), "mask.fits")
 
-    if (os.path.isfile(maskname)):
+    if os.path.isfile(maskname):
         return maskname
 
-    f = fits.open(img)
-    data = f[0].data
+    ff = fits.open(img)
+    data = ff[0].data
 
     corners = {
         "g": [1, 850, 1, 850],
@@ -845,8 +861,8 @@ def make_mask_cross(img):
         ix = corners[band]
         newdata[ix[0]:ix[1], ix[2]: ix[3]] = 1
 
-    f[0].data = newdata
-    f.writeto(maskname, clobber=True)
+    ff[0].data = newdata
+    ff.writeto(maskname, clobber=True)
 
     return maskname
 
@@ -857,7 +873,7 @@ def get_masked_image(img):
     mask = make_mask_cross(img)
     masked = img.replace(".fits", "_masked.fits")
 
-    if (os.path.isfile(masked)):
+    if os.path.isfile(masked):
         os.remove(masked)
     iraf.imarith(img, "*", mask, masked)
 
@@ -865,11 +881,12 @@ def get_masked_image(img):
 
 
 def slice_rc(img):
-    '''
-    Slices the Rainbow Camera into 4 different images and adds the 'filter' keyword in the fits file.
-    '''
+    """
+    Slices the Rainbow Camera into 4 different images and adds the 'filter'
+    keyword in the fits file.
+    """
     fname = os.path.basename(img)
-    fdir = os.path.dirname(img)
+    # fdir = os.path.dirname(img)
 
     # Running IRAF
     iraf.noao(_doprint=0)
@@ -888,10 +905,11 @@ def slice_rc(img):
         name = fname.replace(".fits", "_%s.fits" % b)
 
         # Clean first
-        if (os.path.isfile(name)):
+        if os.path.isfile(name):
             os.remove(name)
 
-        iraf.imcopy("%s[%d:%d,%d:%d]" % (img, corners[b][0], corners[b][1], corners[b][2], corners[b][3]), name)
+        iraf.imcopy("%s[%d:%d,%d:%d]" % (img, corners[b][0], corners[b][1],
+                                         corners[b][2], corners[b][3]), name)
 
         fitsutils.update_par(name, 'filter', b)
         is_on_target(name)
@@ -902,18 +920,17 @@ def slice_rc(img):
 
 
 def is_on_target(image):
-    '''
+    """
     Add as a parameter whether the image is on target or not.
-    
-    '''
-    import coordinates_conversor as cc
 
-    ra, dec = cc.hour2deg(fitsutils.get_par(image, 'OBJRA'), fitsutils.get_par(image, 'OBJDEC'))
+    """
+    ra, dec = cc.hour2deg(fitsutils.get_par(image, 'OBJRA'),
+                          fitsutils.get_par(image, 'OBJDEC'))
 
     impf = fits.open(image)
-    w = WCS(impf[0].header)
+    # w = WCS(impf[0].header)
 
-    filt = fitsutils.get_par(image, "FILTER")
+    # filt = fitsutils.get_par(image, "FILTER")
     pra, pdec = get_xy_coords(image, ra, dec)
 
     shape = impf[0].data.shape
@@ -926,35 +943,34 @@ def is_on_target(image):
         return False
 
 
-def clean_cosmic(f):
-    '''
+def clean_cosmic(fl):
+    """
     From lacosmic.
-    '''
-    import cosmics
-
-    out = f.replace('.fits', '_clean.fits')
+    """
+    out = fl.replace('.fits', '_clean.fits')
 
     # If it does already exist, just return the name.
-    if (os.path.isfile(out)):
+    if os.path.isfile(out):
         return out
 
     # Otherwise, run the cosmic ray rejection based on LA Cosmic.
-    g = fitsutils.get_par(f, "GAIN")
-    if (fitsutils.has_par(f, "RDNOISE")):
-        rn = fitsutils.get_par(f, "RDNOISE")
+    g = fitsutils.get_par(fl, "GAIN")
+    if fitsutils.has_par(fl, "RDNOISE"):
+        rn = fitsutils.get_par(fl, "RDNOISE")
     else:
         rn = 20
-    array, header = cosmics.fromfits(f)
+    array, header = cosmics.fromfits(fl)
 
     try:
-        c = cosmics.cosmicsimage(array, gain=g, readnoise=rn, sigclip=8.0, sigfrac=0.3, satlevel=64000.0)
+        c = cosmics.cosmicsimage(array, gain=g, readnoise=rn, sigclip=8.0,
+                                 sigfrac=0.3, satlevel=64000.0)
         c.run(maxiter=3)
-        out = f.replace('.fits', '_clean.fits')
+        out = fl.replace('.fits', '_clean.fits')
 
         cosmics.tofits(out, c.cleanarray, header)
         fitsutils.update_par(out, "CRREJ", 1)
 
-        # os.remove(f)
+        # os.remove(fl)
     except:
         pass
 
@@ -962,26 +978,29 @@ def clean_cosmic(f):
 
 
 def get_overscan_bias_rc(img):
-    '''
+    """
     Bias from overscan region.
-    '''
-    f = fits.open(img)
-    bias = np.nanmedian(f[0].data[990 - 100:990 + 100, 970 - 100:970 + 100].flatten())
+    """
+    ff = fits.open(img)
+    bias = np.nanmedian(ff[0].data[990 - 100:990 + 100,
+                        970 - 100:970 + 100].flatten())
 
     return bias
 
 
 def get_sequential_name(target_dir, name, i=0):
-    '''
-        Gets a sequential name if we have a file with the same object name imaged several times.
-        '''
+    """
+    Gets a sequential name if we have a file with the same object name
+    imaged several times.
+    """
     newname = os.path.join(target_dir, name).replace(".fits", "_%d.fits" % i)
     # If the destination file does not exist...
-    if (os.path.isfile(name) and not os.path.isfile(newname)):
+    if os.path.isfile(name) and not os.path.isfile(newname):
         return newname
     # If it does exist, but it is another exposure
-    elif (os.path.isfile(name) and os.path.isfile(newname)):
-        # If it is not the same exposure, add with different name. Otherwise, replace.
+    elif os.path.isfile(name) and os.path.isfile(newname):
+        # If it is not the same exposure, add with different name.
+        # Otherwise, replace.
         if fitsutils.get_par(name, "JD") != fitsutils.get_par(newname, "JD"):
             newname = get_sequential_name(target_dir, name, i=i + 1)
 
@@ -989,32 +1008,32 @@ def get_sequential_name(target_dir, name, i=0):
 
 
 def init_header_reduced(image):
-    '''
+    """
     IQWCS = 1 or 0 / Indicates astrometry has been solved for the field
-    IQZEROPT =  1 or 0 /indicates if the zero point was calculated for the image    
-    SKYBKG = FLOAT / Average sky background given in counts    
-    SEEPIX = FLOAT  / Seeing expressed in pixels    
-    ZPCAT = 'String' / Catalog used to calculate zero point    
-    ZEROPTU = FLOAT  / Zero point uncertainty    
+    IQZEROPT =  1 or 0 /indicates if the zero point was calculated for the image
+    SKYBKG = FLOAT / Average sky background given in counts
+    SEEPIX = FLOAT  / Seeing expressed in pixels
+    ZPCAT = 'String' / Catalog used to calculate zero point
+    ZEROPTU = FLOAT  / Zero point uncertainty
     ZEROPT  = 'FLOAT'  / Zero point by comparison to catalog
-    '''
+    """
 
-    pardic = {"IQWCS": 0, \
-              "IQZEROPT": 0, \
-              "SKYBKG": 0, \
-              "SEEPIX": 0, \
-              "ZPCAT": "none", \
-              "ZEROPTU": 0., \
-              "ZEROPT": 0., \
+    pardic = {"IQWCS": 0,
+              "IQZEROPT": 0,
+              "SKYBKG": 0,
+              "SEEPIX": 0,
+              "ZPCAT": "none",
+              "ZEROPTU": 0.,
+              "ZEROPT": 0.,
               "CRREJ": 0}
     fitsutils.update_pars(image, pardic)
 
 
 def plot_image(image):
-    '''
+    """
     Plots the reduced image into the png folder.
 
-    '''
+    """
     logger.info("Plotting image %s" % image)
 
     print("Plotting image ", image)
@@ -1028,39 +1047,42 @@ def plot_image(image):
 
     png_dir = os.path.join(imdir, "png")
 
-    if (not os.path.isdir(png_dir)):
+    if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
 
-    f = fits.open(image)[0]
-    d = f.data
-    h = f.header
+    ff = fits.open(image)[0]
+    d = ff.data
+    h = ff.header
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
     ontarget = h.get('ONTARGET', False)
 
-    plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5), vmax=np.percentile(d, 95),
-               cmap=matplotlib.cm.cubehelix)
-    plt.title("%s %s-band [%ds]. On target=%s" % (name, filt, exptime, ontarget))
+    plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
+               vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
+    plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
+                                                  exptime, ontarget))
     plt.savefig(os.path.join(png_dir, imname.replace(".fits", ".png")))
     plt.close()
 
 
-def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=True, channel='rc', target_dir='reduced',
+def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
+                 astrometry=True, channel='rc', target_dir='reduced',
                  overwrite=False):
-    '''
+    """
     Applies Flat field and bias calibrations to the image.
-    
+
     Steps:
-    
+
     1. - Solve astrometry on the entire image.
     2. - Computes cosmic ray rejectionon the entire image.
     3. - Compute master bias (if it does not exist) and de-bias the image.
     4. - Separate the image into 4 filters.
-    5. - Compute flat field for each filter (if it does not exist) and apply flat fielding on the image.
+    5. - Compute flat field for each filter (if it does not exist) and apply
+            flat fielding on the image.
     6. - Compute the image zeropoint.
 
-    '''
+    """
 
     logger.info("Reducing image %s" % image)
 
@@ -1069,30 +1091,35 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
     image = os.path.abspath(image)
     imname = os.path.basename(image).replace(".fits", "")
     try:
-        objectname = fitsutils.get_par(image, "NAME").replace(" ", "") + "_" + fitsutils.get_par(image, "FILTER")
-    except:
-        logger.error("ERROR, image " + image + " does not have a NAME or a FILTER!!!")
+        objectname = fitsutils.get_par(image, "NAME").replace(" ", "") + "_" + \
+                     fitsutils.get_par(image, "FILTER")
+    except KeyError:
+        logger.error("ERROR, image " + image +
+                     " does not have a NAME or a FILTER!!!")
         return
 
     print("For object", objectname)
     logger.info("For object %s" % objectname)
 
     # Change to image directory
-    mydir = os.path.dirname(image)
-    if mydir == "": mydir = "."
-    mydir = os.path.abspath(mydir)
-    os.chdir(mydir)
+    curdir = os.path.dirname(image)
+    if curdir == "":
+        curdir = "."
+    curdir = os.path.abspath(curdir)
+    os.chdir(curdir)
     # Create destination directory
-    if (not os.path.isdir(target_dir)):
+    if not os.path.isdir(target_dir):
         os.makedirs(target_dir)
 
-    # If we don't want to overwrite the already extracted images, we check wether they exist.
-    if (not overwrite):
+    # If we don't want to overwrite the already extracted images,
+    # we check wether they exist.
+    if not overwrite:
         existing = True
         for band in ['u', 'g', 'r', 'i']:
-            destfile = os.path.join(target_dir, imname + "_f_b_a_%s_%s_0.fits" % (objectname, band))
-            logger.info("Looking if file %s exists: %s" % (destfile, \
-                                                           (os.path.isfile(destfile))))
+            destfile = os.path.join(target_dir, imname + "_f_b_a_%s_%s_0.fits" %
+                                    (objectname, band))
+            logger.info("Looking if file %s exists: %s" %
+                        (destfile, (os.path.isfile(destfile))))
             existing = existing and (os.path.isfile(destfile))
         if existing:
             return []
@@ -1101,30 +1128,33 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
     init_header_reduced(image)
 
     astro = ""
-    if (astrometry):
+    if astrometry:
         logger.info("Solving astometry for the whole image...")
         img = solve_astrometry(image)
-        if (os.path.isfile(img)):
+        if os.path.isfile(img):
             astro = "a_"
             fitsutils.update_par(img, "IQWCS", 1)
         else:
             logger.error("ASTROMETRY DID NOT SOLVE ON IMAGE %s" % image)
             img = image
+    else:
+        img = image
 
     # Update noise parameters needed for cosmic reection
-    if (fitsutils.get_par(img, "ADCSPEED") == 2):
+    if fitsutils.get_par(img, "ADCSPEED") == 2:
         fitsutils.update_par(img, "RDNOISE", 20.)
     else:
         fitsutils.update_par(img, "RDNOISE", 4.)
 
-    if (cosmic):
+    if cosmic:
         logger.info("Correcting for cosmic rays...")
         # Correct for cosmics each filter
-        cleanimg = clean_cosmic(os.path.join(os.path.abspath(mydir), img))
+        cleanimg = clean_cosmic(os.path.join(os.path.abspath(curdir), img))
         img = cleanimg
 
     # Compute BIAS
-    if (biasdir is None or biasdir == ""): biasdir = "."
+    if biasdir is None or biasdir == "":
+        biasdir = "."
     create_masterbias(biasdir)
 
     bias_slow = os.path.join(biasdir, "Bias_%s_%s.fits" % (channel, 'slow'))
@@ -1136,28 +1166,34 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
     iraf.ccdred(_doprint=0)
 
     # Compute flat field
-    if (flatdir is None or flatdir == ""): flatdir = "."
+    if flatdir is None or flatdir == "":
+        flatdir = "."
     create_masterflat(flatdir, biasdir)
 
     # New names for the object.
     debiased = os.path.join(os.path.dirname(img), "b_" + os.path.basename(img))
     logger.info("Creating debiased file, %s" % debiased)
 
-    if ((fitsutils.get_par(img, "ADCSPEED") == 0.1 and not os.path.isfile(bias_slow)) \
-                or (fitsutils.get_par(img, "ADCSPEED") == 2 and not os.path.isfile(bias_fast))):
-        logger.warn("Master bias not found! Tryting to copy from reference folder...")
-        copy_ref_calib(mydir, "Bias")
-        if ((fitsutils.get_par(img, "ADCSPEED") == 0.1 and not os.path.isfile(bias_slow)) \
-                    or (fitsutils.get_par(img, "ADCSPEED") == 2 and not os.path.isfile(bias_fast))):
+    if ((fitsutils.get_par(img, "ADCSPEED") == 0.1 and
+         not os.path.isfile(bias_slow)) or
+            (fitsutils.get_par(img, "ADCSPEED") == 2 and
+             not os.path.isfile(bias_fast))):
+        logger.warning(
+            "Master bias not found! Tryting to copy from reference folder...")
+        copy_ref_calib(curdir, "Bias")
+        if ((fitsutils.get_par(img, "ADCSPEED") == 0.1 and
+             not os.path.isfile(bias_slow)) or
+                (fitsutils.get_par(img, "ADCSPEED") == 2 and
+                 not os.path.isfile(bias_fast))):
             logger.error("Bias not found in reference folder")
             return
 
     # Clean first
-    if (os.path.isfile(debiased)):
+    if os.path.isfile(debiased):
         os.remove(debiased)
 
     # Debias
-    if (fitsutils.get_par(img, "ADCSPEED") == 2):
+    if fitsutils.get_par(img, "ADCSPEED") == 2:
         iraf.imarith(img, "-", bias_fast, debiased)
         fitsutils.update_par(debiased, "BIASFILE", bias_fast)
         fitsutils.update_par(debiased, "RDNOISE", 20.)
@@ -1169,7 +1205,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
 
     # Set negative counts to zero
     hdu = fits.open(debiased)
-    header = hdu[0].header
+    # header = hdu[0].header
     hdu[0].data[hdu[0].data < 0] = 0
     hdu.writeto(debiased, clobber=True)
 
@@ -1184,34 +1220,37 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
     for i, debiased_f in enumerate(slice_names):
         b = fitsutils.get_par(debiased_f, 'filter')
 
-        deflatted = os.path.join(os.path.dirname(image), target_dir,
-                                 imname + "_f_b_" + astro + objectname + "_%s.fits" % b)
+        deflatted = os.path.join(
+            os.path.dirname(image), target_dir,
+            imname + "_f_b_" + astro + objectname + "_%s.fits" % b)
 
         # Flat to be used for that filter
         flat = os.path.join(flatdir, "Flat_%s_%s_norm.fits" % (channel, b))
 
-        if (not os.path.isfile(flat)):
-            logger.warn("Master flat not found in %s" % flat)
-            copy_ref_calib(mydir, "Flat")
+        if not os.path.isfile(flat):
+            logger.warning("Master flat not found in %s" % flat)
+            copy_ref_calib(curdir, "Flat")
             continue
         else:
             logger.info("Using flat %s" % flat)
 
         # Cleans the deflatted file if exists
-        if (os.path.isfile(deflatted)):
+        if os.path.isfile(deflatted):
             os.remove(deflatted)
 
-        if (os.path.isfile(debiased_f) and os.path.isfile(flat)):
+        if os.path.isfile(debiased_f) and os.path.isfile(flat):
             logger.info("Storing de-flatted %s as %s" % (debiased_f, deflatted))
             time.sleep(1)
             iraf.imarith(debiased_f, "/", flat, deflatted)
         else:
-            logger.error("SOMETHING IS WRONG. Error when dividing %s by the flat field %s!" % (debiased_f, flat))
+            logger.error("SOMETHING IS WRONG. Error when dividing %s by "
+                         "the flat field %s!" % (debiased_f, flat))
 
         # Removes the de-biased file
         os.remove(debiased_f)
 
-        logger.info("Updating header with original filename and flat field used.")
+        logger.info(
+            "Updating header with original filename and flat field used.")
         fitsutils.update_par(deflatted, "ORIGFILE", os.path.basename(image))
         fitsutils.update_par(deflatted, "FLATFILE", flat)
 
@@ -1226,10 +1265,14 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
         nsrc, fwhm, ellip, bkg = sextractor.get_image_pars(image)
         plot_image(image)
 
-        logger.info("Sextractor statistics: nscr %d, fwhm (arcsec) %.2f, ellipticity %.2f" % (nsrc, fwhm, ellip))
-        print("Sextractor statistics: nscr %d, fwhm (arcsec) %.2f, ellipticity %.2f" % (nsrc, fwhm, ellip))
+        logger.info("Sextractor statistics: nscr %d, fwhm (arcsec) "
+                    "%.2f, ellipticity %.2f" % (nsrc, fwhm, ellip))
+        print("Sextractor statistics: nscr %d, fwhm (arcsec) %.2f, "
+              "ellipticity %.2f" % (nsrc, fwhm, ellip))
 
-        dic = {"FWHM": np.round(fwhm, 3), "FWHMPIX": np.round(fwhm / 0.394, 3), "NSRC": nsrc,
+        dic = {"FWHM": np.round(fwhm, 3),
+               "FWHMPIX": np.round(fwhm / 0.394, 3),
+               "NSRC": nsrc,
                "ELLIP": np.round(ellip, 3)}
         # Update the seeing information from sextractor
         fitsutils.update_pars(image, dic)
@@ -1239,32 +1282,6 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False, astrometry=Tru
         zeropoint.calibrate_zeropoint(image)
 
     return slice_names
-
-
-def log_db_phot(myfile):
-    '''
-    Logs the science files.
-    '''
-    import archive_mod_sedmdb  # this file requires being able to submit observations with pre-determined id values, which isn't allowed in the original
-
-    sdb = archive_mod_sedmdb.SedmDB(dbname='sedmdbtest', host='localhost')
-
-    cmd = "git version %s" % __file__
-    p = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-    version = p.communicate()[0].replace('\n', "")
-
-    pardic = {"id": sdb._id_from_time(),
-              "phot_calib_id": "",
-              "observation_id": fitsutils.get_par(myfile, "OBS_ID"),
-              "astrometry": bool(fitsutils.get_par(myfile, "IQWCS")),
-              "filter": fitsutils.get_par(myfile, "FILTER").strip(),
-              "reducedfile": os.path.abspath(myfile),
-              "sexfile": sextractor.run_sex([myfile])[0],
-              "maskfile": "",
-              "pipeline": version,
-              "marshal_phot_id": ""}
-
-    sdb.add_phot(pardic)
 
 
 if __name__ == '__main__':
@@ -1310,9 +1327,7 @@ if __name__ == '__main__':
 
     filelist = args.filelist
     photdir = args.photdir
-    cosmic = args.cosmic
     clean = args.clean
-    overwrite = args.overwrite
     copy = args.copy
 
     myfiles = []
@@ -1382,7 +1397,8 @@ if __name__ == '__main__':
                 (fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE" or (
                     "ACQUI" in fitsutils.get_par(f, "IMGTYPE").upper()))):
             try:
-                reduced = reduce_image(f, cosmic=cosmic, overwrite=overwrite)
+                reduced = reduce_image(f, cosmic=args.cosmic,
+                                       overwrite=args.overwrite)
                 reducedfiles.extend(reduced)
             except OSError:
                 print("Error when reducing image %s" % f)
