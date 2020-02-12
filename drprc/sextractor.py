@@ -594,17 +594,6 @@ def get_focus_ifu(lfiles, plot=True, debug=False, interactive=False):
     return focus, sigma
 
 
-def get_focus_ifu_spectrograph(lfiles, plot=True, debug=False):
-    """
-    Receives a list of focus ifu files and returns the best focus.
-    """
-    sexfiles = run_sex(lfiles)
-    focus, sigma = analyse_sex_ifu_spectrograph(sexfiles, plot=plot,
-                                                debug=debug)
-    
-    return focus, sigma
-
-
 def get_image_pars(image, arcsecpix=0.394):
     """
     Returns a set of statistics for a given image.
@@ -613,35 +602,3 @@ def get_image_pars(image, arcsecpix=0.394):
     pars = analyse_image(sexfiles[0], arcsecpix=arcsecpix)
     
     return pars[0], pars[1], pars[2], pars[3]
-
-
-def plot_quadrants(lfiles, quadsize=125):
-    
-    for myfile in lfiles:
-        hdulist = pf.open(myfile)[0]
-        img = hdulist.data * 1.            
-
-        x, y = img.shape
-
-        dx = x / 3
-        dy = y / 3
-
-        pos = float(hdulist.header['ifufocus'])
-        plt.suptitle('Focus %.2f' %
-                     pos, fontsize=10, horizontalalignment="right")
-
-        for i in range(3):
-            for j in range(3):
-                plt.subplot(3, 3, i*3+j+1)
-                imgslice = img[i*dx:i*dx+quadsize, j*dy:j*dy+quadsize].T
-                zmin = np.percentile(imgslice.flatten(), 5)
-                zmax = np.percentile(imgslice.flatten(), 98)
-
-            plt.imshow(imgslice.T, vmin=zmin, vmax=zmax)
-
-        findername = os.path.join(
-            os.path.dirname(myfile), 'sextractor',
-            os.path.basename(myfile).replace(".fits", "_corners.png"))
-
-        plt.savefig(findername)
-        plt.close()
