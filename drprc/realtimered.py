@@ -79,7 +79,9 @@ def reduce_all_dir(photdir, overwrite=False):
     logger.info("zeropoint for all dir: %s" % cmd)
     
     if os.path.isdir(reducedname):
-        cmd = "rcp -r %s grbuser@transient.caltech.edu:/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % (reducedname, dayname)
+        cmd = "rcp -r %s grbuser@transient.caltech.edu:" \
+              "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
+              (reducedname, dayname)
         subprocess.call(cmd, shell=True)
     else:
         os.makedirs(reducedname)
@@ -116,7 +118,7 @@ def plot_image(image):
     filt = h.get('FILTER', 'NA')
 
     plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
-               vmax=np.percentile(d, 95), cmap=matplotlib.cm.cubehelix)
+               vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
     plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
     plt.colorbar()
     logger.info("As %s", os.path.join(png_dir, imname.replace(".fits",
@@ -158,7 +160,7 @@ def reduce_on_the_fly(photdir):
                     print("Image", n, "Does not have an IMGTYPE")
                     time.sleep(0.5)
                     if not fitsutils.has_par(n, "IMGTYPE"):
-                        print ("Image", n, "STILL Does not have an IMGTYPE")
+                        print("Image", n, "STILL Does not have an IMGTYPE")
                         continue
 
                 plot_image(n)
@@ -173,7 +175,9 @@ def reduce_on_the_fly(photdir):
                             reduced)
                     # C opy them to transient
                     for r in reduced:
-                        cmd = "rcp %s grbuser@transient.caltech.edu:/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s/." % (r, dayname)
+                        cmd = "rcp %s grbuser@transient.caltech.edu:" \
+                              "/scr3/mansi/ptf/p60phot/fremling_pipeline/" \
+                              "sedm/reduced/%s/." % (r, dayname)
                         subprocess.call(cmd, shell=True)
                         logger.info(cmd)
                         logger.info("Successfully copied the image: %s" % cmd)
@@ -183,11 +187,11 @@ def reduce_on_the_fly(photdir):
         
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='''
+    parser = argparse.ArgumentParser(description="""
         Runs astrometry.net on the image specified as a parameter and returns 
         the offset needed to be applied in order to center the object
         coordinates in the reference pixel.
-        ''', formatter_class=argparse.RawTextHelpFormatter)
+        """, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-d', '--photdir', type=str, dest="photdir",
                         help='Fits directory file with tonight images.',
