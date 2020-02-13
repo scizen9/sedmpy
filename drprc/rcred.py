@@ -369,17 +369,18 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
         hdulist = stacked.to_hdu()
         hdulist.writeto(out_norm)
 
-        # Do some cleaning
-        logger.info('Removing from lfiles')
-        for ff in glob.glob('b_*_%s.fits' % b):
-            os.remove(ff)
-
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
                               os.path.basename(os.path.abspath(flatdir)))
         if not os.path.isdir(newdir):
             os.makedirs(newdir)
         shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)))
+    for b in bands:
+        # Do some cleaning
+        logger.info('Removing from lfiles')
+        for ff in glob.glob('b_*_%s.fits' % b):
+            os.remove(ff)
+    # Ensure we have all the flats
     copy_ref_calib(flatdir, "Flat")
 
 
