@@ -89,11 +89,11 @@ def get_xy_coords(image, ra, dec):
     import subprocess
     cmd = "wcs-rd2xy -w %s -r %.5f -d %.5f" % (image, ra, dec)
     proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-    output = proc.stdout.read()
-    output = output.split(b"->")[1]
+    output = str(proc.stdout.read())
+    output = output.split("->")[1]
 
     coords = []
-    for ss in output.split(b","):
+    for ss in output.split(","):
         coords.append(float(re.findall("[-+]?\d+[\.]?\d*", ss)[0]))
 
     return coords
@@ -279,8 +279,8 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
     for ff in debiased_flats:
         logger.info("Slicing file %s" % ff)
         try:
-            slice_rc(ff)
-        except:
+            slice_rc(ff, calib=True)
+        except OSError:
             logger.error("Error when slicing file, "
                          "deleting the unsliced one...")
         # Remove the un-sliced file
@@ -310,15 +310,16 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
                 d[d > 45000] = mymode
                 fi[0].header['FLMODE'] = (mymode, 'median of flat level')
                 fi[0].data = d
-                fi.writeto(ff, clobber=True)
+                fi.writeto(ff, overwrite=True)
                 status = "accepted"
 
-        if plot:
-            plt.title("Flat filter %s. %s" % (b, status))
-            plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
-            plt.colorbar()
-            plt.savefig("reduced/flats/%s" % (f.replace(".fits", ".png")))
-            plt.close()
+            if plot:
+                plt.title("Flat filter %s. %s" % (b, status))
+                plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
+                plt.colorbar()
+                plt.savefig("reduced/flats/%s" % (ff.replace(".fits",
+                                                             ".png")))
+                plt.close()
         # Make sure that the optimum number of counts
         # is not too low and not saturated.
         if len(lfiles) == 0:
@@ -545,12 +546,12 @@ def make_mask_cross(img):
         newdata[ix[0]:ix[1], ix[2]: ix[3]] = 1
 
     ff[0].data = newdata
-    ff.writeto(maskname, clobber=True)
+    ff.writeto(maskname, overwrite=True)
 
     return maskname
 
 
-def slice_rc(img):
+def slice_rc(img, calib=False):
     """
     Slices the Rainbow Camera into 4 different images and adds the 'filter'
     keyword in the fits file.
@@ -586,7 +587,8 @@ def slice_rc(img):
         hdul.writeto(name)
 
         fitsutils.update_par(name, 'filter', b)
-        is_on_target(name)
+        if not calib:
+            is_on_target(name)
 
         filenames.append(name)
 
