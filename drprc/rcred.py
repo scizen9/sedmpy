@@ -27,10 +27,7 @@ try:
     import sextractor
 except ImportError:
     import drprc.sextractor as sextractor
-try:
-    import zeropoint
-except ImportError:
-    import drprc.zeropoint as zeropoint
+
 from astropy.io import fits
 
 try:
@@ -951,10 +948,6 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
                "ELLIP": np.round(ellip, 3)}
         # Update the seeing information from sextractor
         fitsutils.update_pars(image, dic)
-
-    # Compute the zeropoints
-    for image in slice_names:
-        zeropoint.calibrate_zeropoint(image)
 
     return slice_names
 
