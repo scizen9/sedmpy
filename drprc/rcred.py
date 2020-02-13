@@ -162,9 +162,9 @@ def create_masterbias(biasdir=None, channel='rc'):
                               os.path.basename(os.path.abspath(biasdir)))
         if not os.path.isdir(newdir):
             os.makedirs(newdir)
-            shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
-        else:
-            copy_ref_calib(biasdir, outf)
+        shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
+    else:
+        copy_ref_calib(biasdir, outf)
 
     if len(lslowbias) > 0 and doslow:
 
