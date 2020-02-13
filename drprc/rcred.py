@@ -15,6 +15,8 @@ import shutil
 import sys
 import numpy as np
 
+import ccdproc
+
 try:
     from pyraf import iraf
     from pyraf import IrafError
@@ -107,42 +109,10 @@ def get_xy_coords(image, ra, dec):
     return coords
 
 
-def save_list(flist, fname):
-    """Save a list of files to given filename"""
-    with open(fname) as ff:
-        ff.writelines("%s\n" % fl for fl in flist)
-
-
-def get_rd_coords(image, x, y):
-    """
-    Uses the wcs-xy2rd routine to compute the ra, dec where the target is for
-    a given pixel.  Sometime the wcs module does not seem to be providing the
-    correct answer, as it does not seem to be using the SIP extension.
-
-    """
-    import re
-    import subprocess
-    cmd = "wcs-xy2rd -w %s -x %.5f -y %.5f" % (image, x, y)
-    proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-    output = proc.stdout.read()
-    output = output.split(b"->")[1]
-
-    numbers = re.findall("[-+]?\d+[\.]?\d*", output)
-    coords = []
-    for n in numbers:
-        coords.append(float(n))
-
-    return coords
-
-
 def create_masterbias(biasdir=None, channel='rc'):
     """
     Combines slow and fast readout mode biases for the specified channel.
     """
-
-    iraf.noao(_doprint=0)
-    iraf.imred(_doprint=0)
-    iraf.ccdred(_doprint=0)
 
     if (biasdir is None) or biasdir == "":
         biasdir = "."
@@ -158,6 +128,7 @@ def create_masterbias(biasdir=None, channel='rc'):
     if os.path.isfile(os.path.join(biasdir, outf)):
         logger.warning("%s master Bias exists!" % outs)
         dofast = False
+
     if doslow or dofast:
         logger.info("Starting the Master Bias creation!")
     else:
@@ -183,18 +154,18 @@ def create_masterbias(biasdir=None, channel='rc'):
     logger.info("Files for bias FAST mode: %s" % lfastbias)
 
     if len(lfastbias) > 0 and dofast:
-        bfile_fast = "lbias_fast_" + channel
-        save_list(lfastbias, bfile_fast)
-        if os.path.isfile("Bias_stats_fast"):
-            os.remove("Bias_stats_fast")
-        iraf.imstat("@" + bfile_fast, Stdout="Bias_stats_fast")
 
-        st = np.genfromtxt("Bias_stats_fast", names=True, dtype=None)
-        logger.info("%s" % st)
-
-        iraf.imcombine(input="@" + bfile_fast, output=outf, combine="median",
-                       scale="mode")
-        os.remove(bfile_fast)
+        fstacked = ccdproc.combine(lfastbias, method="median",
+                                   sigma_clip=True,
+                                   sigma_clip_low_thresh=None,
+                                   sigma_clip_high_thresh=2.0, unit='adu')
+        fstacked.header['HISTORY'] = 'Master Bias stacked'
+        fstacked.header['NSTACK'] = (len(lfastbias), 'number of images stacked')
+        fstacked.header['STCKMETH'] = ("median", 'method used for stacking')
+        for ii, fname in enumerate(lfastbias):
+            fstacked.header['STACKF%d' % (ii+1)] = (fname, 'stack input file')
+        hdulist = fstacked.to_hdu()
+        hdulist.writeto(outf)
 
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
@@ -207,18 +178,18 @@ def create_masterbias(biasdir=None, channel='rc'):
 
     if len(lslowbias) > 0 and doslow:
 
-        bfile_slow = "lbias_slow_" + channel
-        save_list(lslowbias, bfile_slow)
-        if os.path.isfile("Bias_stats_slow"):
-            os.remove("Bias_stats_slow")
-        iraf.imstat("@" + bfile_slow, Stdout="Bias_stats_slow")
+        sstacked = ccdproc.combine(lslowbias, method="median",
+                                   sigma_clip=True,
+                                   sigma_clip_low_thresh=None,
+                                   sigma_clip_high_thresh=2.0, unit='adu')
 
-        st = np.genfromtxt("Bias_stats_slow", names=True, dtype=None)
-        logger.info("%s" % st)
-
-        iraf.imcombine(input="@" + bfile_slow, output=outs, combine="median",
-                       scale="mode")
-        os.remove(bfile_slow)
+        sstacked.header['HISTORY'] = 'Master Bias stacked'
+        sstacked.header['NSTACK'] = (len(lslowbias), 'number of images stacked')
+        sstacked.header['STCKMETH'] = ("median", 'method used for stacking')
+        for ii, fname in enumerate(lslowbias):
+            sstacked.header['STACKF%d' % (ii + 1)] = (fname, 'stack input file')
+        hdulist = sstacked.to_hdu()
+        hdulist.writeto(outf)
 
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
@@ -288,30 +259,33 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
     logger.info("Files for slow flat %s" % lsflat)
     logger.info("Files for fast flat %s" % lfflat)
 
-    fsfile = "lflat_slow_" + channel
-    save_list(lsflat, fsfile)
-
-    fffile = "lflat_fast_" + channel
-    save_list(lfflat, fffile)
-
-    # Running IRAF
-    iraf.noao(_doprint=0)
-    iraf.imred(_doprint=0)
-    iraf.ccdred(_doprint=0)
-
     # Remove bias from the flat
+    debiased_flats = []
     if len(lsflat) > 0:
-        iraf.imarith("@" + fsfile, "-", bias_slow, "b_@" + fsfile)
+        sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
+        for sfl in lsflat:
+            rawf = ccdproc.fits_ccddata_reader(filename=sfl, unit='adu')
+            rawf.data = rawf.data.astype(np.float64)
+            rawf.data -= sbias.data
+            rawf.header['HISTORY'] = 'Bias subtracted'
+            rawf.header['MBIAS'] = (bias_slow, 'master bias file')
+            redhdul = rawf.to_hdu()
+            redhdul.writeto('b_'+sfl)
+            debiased_flats.append('b_'+sfl)
 
     if len(lfflat) > 0:
-        iraf.imarith("@" + fffile, "-", bias_fast, "b_@" + fffile)
-
-        # Remove the list files
-    os.remove(fsfile)
-    os.remove(fffile)
+        fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
+        for ffl in lfflat:
+            rawf = ccdproc.fits_ccddata_reader(filename=ffl, unit='adu')
+            rawf.data = rawf.data.astype(np.float64)
+            rawf.data -= fbias.data
+            rawf.header['HISTORY'] = 'Bias subtracted'
+            rawf.header['MBIAS'] = (bias_fast, 'master bias file')
+            redhdul = rawf.to_hdu()
+            redhdul.writeto('b_' + ffl)
+            debiased_flats.append('b_'+ffl)
 
     # Slices the flats.
-    debiased_flats = glob.glob("b_*.fits")
     for ff in debiased_flats:
         logger.info("Slicing file %s" % ff)
         try:
@@ -344,6 +318,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
                 lfiles.append(ff)
                 mymode = 1. * np.median(d.flatten())
                 d[d > 45000] = mymode
+                fi[0].header['FLMODE'] = (mymode, 'median of flat level')
                 fi[0].data = d
                 fi.writeto(ff, clobber=True)
                 status = "accepted"
@@ -364,8 +339,6 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             logger.error("WARNING!!! Could find less than 3 flats for band %s."
                          "Skipping, as it is not reliable..." % b)
             continue
-        ffile = "lflat_" + b
-        save_list(lfiles, ffile)
 
         # Cleaning of old files
         if os.path.isfile(out):
@@ -375,27 +348,40 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
         if os.path.isfile("Flat_stats"):
             os.remove("Flat_stats")
 
-        # Combine flats
-        iraf.imcombine(input="@" + ffile, output=out, combine="median",
-                       scale="mode", reject="sigclip", lsigma=2., hsigma=2,
-                       gain=1.7, rdnoise=4.)
-        iraf.imstat(out, fields="image,npix,mean,stddev,min,max,mode",
-                    Stdout="Flat_stats")
-        st = np.genfromtxt("Flat_stats", names=True, dtype=None)
-        # Normalize flats
-        iraf.imarith(out, "/", st["MODE"], out_norm)
+        # read in flats
+        scales = []
+        stack = []
+        ref_mode = 1.
+        for ffl in lfiles:
+            ccdd = ccdproc.fits_ccddata_reader(ffl)
+            stack.append(ccdd)
+            if len(stack) == 1:
+                ref_mode = ccdd.header['FLMODE']
+            scales.append(ccdd.header['FLMODE'] / ref_mode)
+
+        stacked = ccdproc.combine(stack, method="median", sigma_clip=True,
+                                  sigma_clip_low_thresh=2.,
+                                  sigma_clip_high_thresh=2., scale=scales)
+        stacked.header['HISTORY'] = 'Master Flat combined'
+        stacked.header['NSTACK'] = (len(lfiles), 'number of images stacked')
+        stacked.header['STCKMETH'] = ("median", 'method used for stacking')
+        for ii, fname in enumerate(lfiles):
+            stacked.header['STACKF%d' % (ii + 1)] = (fname, 'stack input file')
+        hdulist = stacked.to_hdu()
+        hdulist.writeto(out)
+
+        # Normalize flat
+        mymode = np.nanmedian(stacked.data[100:-100, 100:-100])
+        stacked.data /= mymode
+        stacked.header['HISTORY'] = 'Master Flat normalized'
+        stacked.header['FLSCALE'] = (mymode, 'Divided by this to normalize')
+        hdulist = stacked.to_hdu()
+        hdulist.writeto(out_norm)
 
         # Do some cleaning
         logger.info('Removing from lfiles')
         for ff in glob.glob('b_*_%s.fits' % b):
             os.remove(ff)
-
-        os.remove(ffile)
-
-        if os.path.isfile(fsfile):
-            os.remove(fsfile)
-        if os.path.isfile(fffile):
-            os.remove(fffile)
 
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
@@ -404,299 +390,6 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             os.makedirs(newdir)
         shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)))
     copy_ref_calib(flatdir, "Flat")
-
-
-def create_masterguide(lfiles, out=None):
-    """
-    Receives a list of guider images for the same object.
-    It will remove the bias from it, combine them using the median, and compute
-    the astrometry for the image.
-
-    """
-
-    curdir = os.getcwd()
-
-    if len(lfiles) == 0:
-        return
-    else:
-        os.chdir(os.path.abspath(os.path.dirname(lfiles[0])))
-
-    fffile = "/tmp/l_guide"
-    save_list(lfiles, fffile)
-
-    # If the bias file exists in the directory, we use it, otherwise we pass
-    bias_fast = "Bias_rc_fast.fits"
-    debias = os.path.isfile(bias_fast)
-
-    if debias:
-        debiased = ["b_" + os.path.basename(img) for img in lfiles]
-        bffile = "/tmp/lb_guider"
-        save_list(debiased, bffile)
-    else:
-        debiased = []
-        bffile = ""
-
-    if out is None:
-        obj = fitsutils.get_par(lfiles[0], "OBJECT")
-        out = os.path.join(os.path.dirname(lfiles[0]),
-                           obj.replace(" ", "").replace(":", "") + ".fits")
-
-    # Running IRAF
-    iraf.noao(_doprint=0)
-    iraf.imred(_doprint=0)
-    iraf.ccdred(_doprint=0)
-
-    # Remove bias from the guider images
-    if debias:
-        try:
-            iraf.imarith("@" + fffile, "-", bias_fast, "@" + bffile)
-        except IrafError:
-            iraf.imarith("@" + fffile, "-", bias_fast, "@" + bffile)
-    else:
-        bffile = fffile
-
-    # Combine flats
-    iraf.imcombine(input="@" + bffile,
-                   output=out,
-                   combine="median",
-                   scale="mode",
-                   reject="sigclip", lsigma=2., hsigma=2, gain=1.7, rdnoise=4.)
-    iraf.imstat(out, fields="image,npix,mean,stddev,min,max,mode",
-                Stdout="guide_stats")
-    # st = np.genfromtxt("guide_stats", names=True, dtype=None)
-
-    # Do some cleaning
-    if debias:
-        logger.info('Removing from lfiles')
-        for ff in debiased:
-            if os.path.isfile(ff):
-                os.remove(ff)
-
-    if os.path.isfile(fffile):
-        os.remove(fffile)
-    if os.path.isfile(bffile):
-        os.remove(bffile)
-
-    solve_astrometry(out, overwrite=False)
-
-    os.chdir(curdir)
-
-
-def __fill_ifu_dic(ifu_img, ifu_dic=None):
-    """
-    Fills some of the parameters for the IFU image that will be used to gather
-    its guider images later.
-
-    """
-    imgtype = fitsutils.get_par(ifu_img, "IMGTYPE")
-    if imgtype is not None:
-        imgtype = imgtype.upper()
-    if ifu_dic is None:
-        ifu_dic = {}
-
-    # In Richard's pipeline, the JD is the beginning of the exposure,
-    # in Nick's one is the end.
-    pipeline_jd_end = fitsutils.get_par(ifu_img, "TELESCOP") == '60'
-
-    if imgtype == "SCIENCE" or imgtype == "STANDARD":
-        if pipeline_jd_end:
-            jd_ini = fitsutils.get_par(ifu_img, "JD") - \
-                fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
-            jd_end = fitsutils.get_par(ifu_img, "JD")
-        else:
-            jd_ini = fitsutils.get_par(ifu_img, "JD")
-            jd_end = fitsutils.get_par(ifu_img, "JD") + \
-                fitsutils.get_par(ifu_img, "EXPTIME") / (24 * 3600.)
-
-        # We only fill the dictionary if the exposure is a valid science or
-        # standard image.
-        name = fitsutils.get_par(ifu_img, "OBJECT")
-        ra = fitsutils.get_par(ifu_img, "RA")
-        dec = fitsutils.get_par(ifu_img, "DEC")
-        rad, decd = cc.hour2deg(ra, dec)
-        exptime = fitsutils.get_par(ifu_img, "EXPTIME")
-        ifu_dic[ifu_img] = (name, jd_ini, jd_end, rad, decd, exptime)
-    else:
-        logger.warning("Image %s is not SCIENCE or STANDARD." % ifu_img)
-
-
-def __combine_guiders(ifu_dic, abspath):
-    """
-    Receives an IFU dictionary with the images that need a solved guider.
-    """
-    rc = np.array(glob.glob(abspath + "/rc*fits"))
-
-    rcjd = np.array([fitsutils.get_par(r, "JD") for r in rc])
-    imtypes = np.array([fitsutils.get_par(r, "IMGTYPE").upper() for r in rc])
-    objnames = np.array([fitsutils.get_par(r, "OBJECT").upper() for r in rc])
-    ras = np.array([cc.getDegRaString(fitsutils.get_par(r, "RA")) for r in rc])
-    decs = np.array([cc.getDegDecString(fitsutils.get_par(r,
-                                                          "DEC")) for r in rc])
-
-    for ifu_i in ifu_dic.keys():
-        name, jd_ini, jd_end, rad, decd, exptime = ifu_dic[ifu_i]
-        # guiders = rc[(imtypes=="GUIDER") * (rcjd >= ifu_dic[ifu_i][1]) *
-        # (rcjd <= ifu_dic[ifu_i][2]) ]
-        mymask = (rcjd >= jd_ini) * (rcjd <= jd_end) * \
-                 (np.abs(ras - rad) * np.cos(np.deg2rad(decd)) < 1. / 60) * \
-                 (np.abs(decs - decd) < 1. / 60)
-        guiders = rc[mymask]
-        im = imtypes[mymask]
-        names = objnames[mymask]
-        logger.info(
-            "For image %s on object %s with exptime %d found guiders:\n %s" %
-            (ifu_i, name, exptime, zip(names, im)))
-        out = os.path.join(os.path.dirname(ifu_i), "guider_" +
-                           os.path.basename(ifu_i))
-        create_masterguide(guiders, out=out)
-        fitsutils.update_par(out, "IFU_IMG", os.path.basename(ifu_i))
-
-
-def make_guider(ifu_img):
-    """
-    Creates the stacked and astrometry solved RC image for the IFU image
-    passed as a parameter.
-
-    ifu_img: string which is the path to the IFU image we want to get the
-             guiders for.
-    """
-    ifu_dic = {}
-    myabspath = os.path.dirname(os.path.abspath(ifu_img))
-    __fill_ifu_dic(ifu_img, ifu_dic)
-    __combine_guiders(ifu_dic, myabspath)
-
-
-def make_guiders(ifu_dir):
-    """
-    Looks for all the IFU images in the directory and assembles all the guider
-    images taken with RC for that time interval
-    at around the coordinates of the IFU.
-
-    ifu_dir: directory where the IFU images are that we want to greated the
-             guiders for.
-    """
-
-    abspath = os.path.abspath(ifu_dir)
-
-    ifu = np.array(glob.glob(abspath + "/ifu*fits"))
-
-    ifu_dic = {}
-    for i in ifu:
-        __fill_ifu_dic(i, ifu_dic)
-
-    __combine_guiders(ifu_dic, abspath)
-
-
-def mask_stars(image, sexfile, plot=False, overwrite=False):
-    """
-    Finds the stars in the sextrated file and creates a mask file.
-    """
-
-    maskdir = os.path.join(os.path.abspath(os.path.dirname(image)), "masks")
-
-    if not os.path.isdir(maskdir):
-        os.makedirs(maskdir)
-
-    maskname = os.path.join(maskdir,
-                            os.path.basename(image).replace(".fits",
-                                                            ".im.fits"))
-
-    if os.path.isfile(maskname) and not overwrite:
-        return maskname
-
-    print("Creating mask %s" % maskname)
-
-    hdulist = fits.open(image)
-    header = hdulist[0].header
-    data = np.ones_like(hdulist[0].data)
-
-    stars = np.genfromtxt(sexfile)
-    # fwhm = stars[:, 7]
-    mag = stars[:, 4]
-    flags = np.array(stars[:, 10], dtype=np.int)
-
-    starmask = (mag < np.percentile(mag, 90)) | (
-            np.bitwise_and(flags, np.repeat(0x004, len(flags))) > 1)
-    stars = stars[starmask]
-
-    fwhm = stars[:, 7]
-
-    x = stars[:, 0]
-    y = stars[:, 1]
-
-    lenx = data.shape[0]
-    leny = data.shape[1]
-    xx, yy = np.meshgrid(np.arange(leny), np.arange(lenx))
-
-    for i in range(len(stars)):
-        data[np.sqrt((xx - x[i]) ** 2 + (yy - y[i]) ** 2) < fwhm[i] * 5] = 0
-
-    if plot:
-        print(image)
-        plt.imshow(np.log10(np.abs(hdulist[0].data)), alpha=0.9)
-        plt.imshow(data, alpha=0.5)
-        plt.show()
-
-    hdu = fits.PrimaryHDU(data)
-    hdu.header = header
-    newhdulist = fits.HDUList([hdu])
-    newhdulist.writeto(maskname)
-
-    return maskname
-
-
-def create_superflat(filters=("u", "g", "r", "i")):
-    # Locate images for each filter
-    imlist = glob.glob("rc*fits")
-
-    # Run sextractor to locate bright sources
-
-    sexfiles = sextractor.run_sex(imlist, overwrite=False)
-    maskfiles = []
-
-    for i, im in enumerate(imlist):
-        # Create a mask and store it int he mask directory
-        maskfile = mask_stars(im, sexfiles[i])
-        maskfiles.append(maskfile)
-        fitsutils.update_par(im, "BPM", os.path.relpath(maskfile))
-
-    for filt in filters:
-        fimlist = [im for im in imlist if
-                   fitsutils.get_par(im, "FILTER") == filt]
-        fmasklist = [im for im in maskfiles if
-                     fitsutils.get_par(im, "FILTER") == filt]
-
-        if len(fimlist) == 0:
-            continue
-
-        fsfile = "lflat_%s" % filt
-        msfile = "lmask_%s" % filt
-        save_list(fimlist, fsfile)
-        save_list(fmasklist, msfile)
-
-        # Running IRAF
-        iraf.noao(_doprint=0)
-        iraf.imred(_doprint=0)
-        iraf.ccdred(_doprint=0)
-
-        iraf.imarith("@" + fsfile, "*", "@" + msfile, "m_@" + fsfile)
-
-        # Combine flats
-        iraf.imcombine(input="m_@" + fsfile,
-                       output="superflat_%s.fits" % filt,
-                       combine="median",
-                       scale="mode",
-                       masktype="badvalue",
-                       maskvalue=0)
-
-        iraf.imstat("superflat_%s.fits" % filt,
-                    fields="image,npix,mean,stddev,min,max,mode",
-                    Stdout="Flat_stats")
-        time.sleep(0.1)
-        st = np.genfromtxt("Flat_stats", names=True, dtype=None)
-        # Normalize flats
-        iraf.imarith("superflat_%s.fits" % filt, "/", st["MODE"],
-                     "superflat_%s_norm.fits" % filt)
 
 
 def get_median_bkg(img):
@@ -728,7 +421,7 @@ def copy_ref_calib(curdir, calib="Flat"):
     curdir = os.path.abspath(curdir)
 
     # Check if we have all the calibrations we need.
-    for cal in calib_dic.keys():
+    for cal in calib_dic:
         calib_dic[cal] = os.path.isfile(os.path.join(curdir, cal))
 
     # If all the calibration files are in place, nothing to do.
