@@ -164,7 +164,7 @@ def create_masterbias(biasdir=None, channel='rc'):
             os.makedirs(newdir)
             shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
         else:
-            copy_ref_calib(biasdir, "Bias")
+            copy_ref_calib(biasdir, outf)
 
     if len(lslowbias) > 0 and doslow:
 
@@ -377,7 +377,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
         shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)))
     for b in bands:
         # Do some cleaning
-        logger.info('Removing from lfiles')
+        logger.info('Removing bias-stubtracted %s files' % b)
         for ff in glob.glob('b_*_%s.fits' % b):
             os.remove(ff)
     # Ensure we have all the flats
