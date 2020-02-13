@@ -114,7 +114,7 @@ def update_par(myfits, par, value):
     hdu = pf.open(myfits, ignore_missing_end=True)
     header = hdu[0].header
     header.set(par, value)
-    hdu.writeto(myfits, clobber=True)
+    hdu.writeto(myfits, overwrite=True)
 
 
 def update_pars(myfits, pardic):
@@ -126,7 +126,7 @@ def update_pars(myfits, pardic):
     
     for key, value in pardic.iteritems():
         header.set(key, value)
-        hdu.writeto(myfits, clobber=True)
+        hdu.writeto(myfits, overwrite=True)
 
 
 def has_par(myfits, par):
