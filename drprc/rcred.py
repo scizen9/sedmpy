@@ -348,7 +348,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             stack.append(ccdd)
             if len(stack) == 1:
                 ref_mode = ccdd.header['FLMODE']
-            scales.append(ccdd.header['FLMODE'] / ref_mode)
+            scales.append(ref_mode / ccdd.header['FLMODE'])
 
         stacked = ccdproc.combine(stack, method="median", sigma_clip=True,
                                   sigma_clip_low_thresh=2.,
@@ -566,7 +566,7 @@ def slice_rc(img, calib=False):
         "u": [1030, 2045, 1, 900]
     }
 
-    frame = ccdproc.fits_ccddata_reader(img, unit='adu')
+    frame = ccdproc.fits_ccddata_reader(img)
 
     filenames = []
 
