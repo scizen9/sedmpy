@@ -67,7 +67,8 @@ def run_sex(flist, mask=False, cosmics=False, overwrite=False):
             try:
                 ff = os.path.abspath(ff)
                 if mask:
-                    out = rcred.get_masked_image(ff)
+                    print("Mask no longer implemented.")
+                    out = ff
                 else:
                     out = ff
                     

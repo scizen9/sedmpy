@@ -17,16 +17,9 @@ import numpy as np
 
 import ccdproc
 
-try:
-    from pyraf import iraf
-    from pyraf import IrafError
-except ImportError:
-    pass
-
 from matplotlib import pylab as plt
 import subprocess
 import argparse
-import time
 import datetime
 import logging
 
@@ -560,19 +553,6 @@ def make_mask_cross(img):
     return maskname
 
 
-def get_masked_image(img):
-    # Running IRAF
-    iraf.noao(_doprint=0)
-    mask = make_mask_cross(img)
-    masked = img.replace(".fits", "_masked.fits")
-
-    if os.path.isfile(masked):
-        os.remove(masked)
-    iraf.imarith(img, "*", mask, masked)
-
-    return masked
-
-
 def slice_rc(img):
     """
     Slices the Rainbow Camera into 4 different images and adds the 'filter'
@@ -581,15 +561,14 @@ def slice_rc(img):
     fname = os.path.basename(img)
     # fdir = os.path.dirname(img)
 
-    # Running IRAF
-    iraf.noao(_doprint=0)
-
     corners = {
         "g": [1, 910, 1, 900],
         "i": [1, 910, 1060, 2045],
         "r": [1040, 2045, 1015, 2045],
         "u": [1030, 2045, 1, 900]
     }
+
+    frame = ccdproc.fits_ccddata_reader(img, unit='adu')
 
     filenames = []
 
@@ -601,8 +580,13 @@ def slice_rc(img):
         if os.path.isfile(name):
             os.remove(name)
 
-        iraf.imcopy("%s[%d:%d,%d:%d]" % (img, corners[b][0], corners[b][1],
-                                         corners[b][2], corners[b][3]), name)
+        f_frame = frame.copy()
+
+        f_frame.data = f_frame.data[corners[b][2]:corners[b][3],
+                                    corners[b][0]:corners[b][1]]
+        f_frame.header['FILTER'] = (b, 'RC filter')
+        hdul = f_frame.to_hdu()
+        hdul.writeto(name)
 
         fitsutils.update_par(name, 'filter', b)
         is_on_target(name)
@@ -853,11 +837,6 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     bias_slow = os.path.join(biasdir, "Bias_%s_%s.fits" % (channel, 'slow'))
     bias_fast = os.path.join(biasdir, "Bias_%s_%s.fits" % (channel, 'fast'))
 
-    # Running IRAF to DE-BIAS
-    iraf.noao(_doprint=0)
-    iraf.imred(_doprint=0)
-    iraf.ccdred(_doprint=0)
-
     # Compute flat field
     if flatdir is None or flatdir == "":
         flatdir = "."
@@ -886,21 +865,22 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         os.remove(debiased)
 
     # Debias
-    if fitsutils.get_par(img, "ADCSPEED") == 2:
-        iraf.imarith(img, "-", bias_fast, debiased)
-        fitsutils.update_par(debiased, "BIASFILE", bias_fast)
-        fitsutils.update_par(debiased, "RDNOISE", 20.)
-
+    rawf = ccdproc.fits_ccddata_reader(filename=img, unit='adu')
+    rawf.data = rawf.data.astype(np.float64)
+    if rawf.header["ADCSPEED"] == 2:
+        fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
+        rawf.data -= fbias.data
+        rawf.header['BIASFILE'] = (bias_fast, 'Master bias')
+        rawf.header['RDNOISE'] = (20., 'Read noise in electrons')
     else:
-        iraf.imarith(img, "-", bias_slow, debiased)
-        fitsutils.update_par(debiased, "BIASFILE", bias_slow)
-        fitsutils.update_par(debiased, "RDNOISE", 4.)
-
+        sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
+        rawf.data -= sbias.data
+        rawf.header['BIASFILE'] = (bias_slow, 'Master bias')
+        rawf.header['RDNOISE'] = (20., 'Read noise in electrons')
     # Set negative counts to zero
-    hdu = fits.open(debiased)
-    # header = hdu[0].header
-    hdu[0].data[hdu[0].data < 0] = 0
-    hdu.writeto(debiased, clobber=True)
+    rawf.data[rawf.data < 0] = 0
+    hdul = rawf.to_hdu()
+    hdul.writeto(debiased)
 
     # Slicing the image for flats
     slice_names = slice_rc(debiased)
@@ -933,19 +913,21 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         if os.path.isfile(debiased_f) and os.path.isfile(flat):
             logger.info("Storing de-flatted %s as %s" % (debiased_f, deflatted))
-            time.sleep(1)
-            iraf.imarith(debiased_f, "/", flat, deflatted)
+            flatf = ccdproc.fits_ccddata_reader(flat)
+            debif = ccdproc.fits_ccddata_reader(debiased_f)
+            debif.data /= flatf.data
+            debif.header['HISTORY'] = 'Flat-field corrected'
+            debif.header['FLATFILE'] = (flat, 'Master flat file')
+            debif.header['ORIGFILE'] = (os.path.basename(image),
+                                        'Original filename')
+            hdul = debif.to_hdu()
+            hdul.writeto(deflatted)
         else:
             logger.error("SOMETHING IS WRONG. Error when dividing %s by "
                          "the flat field %s!" % (debiased_f, flat))
 
         # Removes the de-biased file
         os.remove(debiased_f)
-
-        logger.info(
-            "Updating header with original filename and flat field used.")
-        fitsutils.update_par(deflatted, "ORIGFILE", os.path.basename(image))
-        fitsutils.update_par(deflatted, "FLATFILE", flat)
 
         slice_names[i] = deflatted
 
@@ -1009,46 +991,40 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--overwrite', action="store_true",
                         help='re-reduce and overwrite the reduced images?',
                         default=False)
-    parser.add_argument('-p', '--copy', action="store_false",
+    parser.add_argument('-p', '--nocopy', action="store_true",
                         help='disable the copy the reduced folder to transient',
-                        default=True)
-
+                        default=False)
     parser.add_argument('--cosmic', action="store_true", default=False,
                         help='Whether cosmic rays should be removed.')
 
     args = parser.parse_args()
 
-    filelist = args.filelist
-    photdir = args.photdir
-    clean = args.clean
-    copy = args.copy
-
     myfiles = []
 
-    if photdir is not None and clean:
+    if args.photdir is not None and args.clean:
         for f in glob.glob("Flat*"):
             os.remove(f)
         for f in glob.glob("Bias*"):
             os.remove(f)
         for f in glob.glob("a_*fits"):
             os.remove(f)
-        if os.path.isdir(os.path.join(photdir, "reduced")):
-            shutil.rmtree(os.path.join(photdir, "reduced"))
+        if os.path.isdir(os.path.join(args.photdir, "reduced")):
+            shutil.rmtree(os.path.join(args.photdir, "reduced"))
 
-    if filelist is not None:
-        mydir = os.path.dirname(filelist)
+    if args.filelist is not None:
+        mydir = os.path.dirname(args.filelist)
         if mydir == "":
             mydir = "."
         os.chdir(mydir)
 
         photdir = mydir
 
-        myfiles = np.genfromtxt(filelist, dtype=None)
+        myfiles = np.genfromtxt(args.filelist, dtype=None)
         myfiles = [os.path.abspath(f) for f in myfiles]
 
     else:
 
-        if photdir is None:
+        if args.photdir is None:
             timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
             timestamp = timestamp.split("T")[0].replace("-", "")
             photdir = os.path.join(_photpath, timestamp)
@@ -1060,7 +1036,7 @@ if __name__ == '__main__':
                  "A default name for the directory will be assumed on today's "
                  "date: %s" % photdir)
 
-    mydir = os.path.abspath(photdir)
+    mydir = os.path.abspath(args.photdir)
     # Gather all RC fits files in the folder with the keyword IMGTYPE=SCIENCE
     for f in glob.glob(os.path.join(mydir, "rc*fits")):
         try:
@@ -1099,22 +1075,16 @@ if __name__ == '__main__':
 
     # If copy is requested, then we copy the whole folder or just the
     # missing files to transient.
-    try:
-        zeropoint.lsq_zeropoint(os.path.join(mydir, "reduced/allstars_zp.log"),
-                                os.path.join(mydir, "reduced/zeropoint"))
-    except ValueError:
-        print("Could not calibrate zeropoint for file %s" %
-              (os.path.join(mydir, "reduced/allstars_zp.log")))
 
     dayname = os.path.basename(os.path.dirname(os.path.abspath(myfiles[0])))
     reducedname = os.path.join(os.path.dirname(os.path.abspath(myfiles[0])),
                                "reduced")
-    if photdir is not None and copy:
+    if args.photdir is not None and not args.nocopy:
         com = "rcp -r %s grbuser@transient.caltech.edu:" \
               "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
               (reducedname, dayname)
         subprocess.call(com, shell=True)
-    elif filelist is not None and copy:
+    elif args.filelist is not None and not args.nocopy:
         for f in reducedfiles:
             com = "rcp %s grbuser@transient.caltech.edu:" \
                   "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s/."\
