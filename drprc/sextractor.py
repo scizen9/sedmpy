@@ -12,10 +12,7 @@ import shutil
 import subprocess
 import numpy as np
 from astropy.io import fits as pf
-try:
-    import rcred
-except ImportError:
-    import drprc.rcred as rcred
+
 import datetime
 try:
     import fitsutils
@@ -74,7 +71,8 @@ def run_sex(flist, mask=False, cosmics=False, overwrite=False):
                     
                 if cosmics and (not fitsutils.has_par(out, "CRREJ") or
                                 fitsutils.get_par(out, "CRREJ") == 0):
-                    out = rcred.clean_cosmic(out)
+                    print("sextractor cosmic ray cleaning not implemented")
+                    out = ff
     
                 cmd = "sex -c %s/config/daofind.sex %s" % (os.environ["SEDMPY"],
                                                            out)

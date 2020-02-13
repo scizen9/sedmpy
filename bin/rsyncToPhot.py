@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-links raw rc images into appropriate /scr2/sedm/phot directory
+links raw rc images into appropriate /scr2/sedmdrp/phot directory
 
 Created on Fri Mar  4 23:31:27 2016
-Updated on Thu Feb  6 by neill
+Updated on Thu Feb 13 by neill
 
 @author: nadiablago
 """
