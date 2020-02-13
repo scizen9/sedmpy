@@ -137,7 +137,7 @@ def create_masterbias(biasdir=None, channel='rc'):
                     lfastbias.append(ff)
                 else:
                     lslowbias.append(ff)
-        except (KeyError, OSError):
+        except (KeyError, OSError, AttributeError):
             pass
 
     logger.info("Files for bias SLOW mode: %s" % lslowbias)
@@ -179,7 +179,7 @@ def create_masterbias(biasdir=None, channel='rc'):
         for ii, fname in enumerate(lslowbias):
             sstacked.header['STACKF%d' % (ii + 1)] = (fname, 'stack input file')
         hdulist = sstacked.to_hdu()
-        hdulist.writeto(outf)
+        hdulist.writeto(outs)
 
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
