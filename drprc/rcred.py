@@ -336,8 +336,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                                 (fff, speed, kind, level, status))
 
                     if plot:
-                        plt.title("%s %s Flat filter %s. %s" %
-                                  (speed, kind, b, status))
+                        plt.title("%s %s %s Flat. %s at level=%.1f" %
+                                  (speed, kind, b, status, level))
                         plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
                         plt.colorbar()
                         plt.savefig("reduced/flats/%s" % (fff.replace(".fits",
