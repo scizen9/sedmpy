@@ -191,7 +191,8 @@ def create_masterbias(biasdir=None, channel='rc'):
         copy_ref_calib(biasdir, outs)
 
 
-def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
+def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True,
+                      dome=False):
     """
     Creates a masterflat from both dome flats and sky flats if the number of
     counts in the given filter is not saturated and not too low
@@ -212,7 +213,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
         logger.info("Master Flat exists!")
         return
     if len(glob.glob("Flat_%s*norm.fits" % channel)) > 0:
-        logger.info("Some Master Flat exist!")
+        logger.info("Some Master Flats exist!")
     else:
         logger.info("Starting the Master Flat creation!")
 
@@ -226,18 +227,17 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
     lfflat = []
 
     # Select all filts that are Flats with same instrument
+    if dome:
+        key = "dome"
+    else:
+        key = "twilight"
     for ff in glob.glob(channel + "*fits"):
         try:
             if fitsutils.has_par(ff, "IMGTYPE"):
                 imtype = str.upper(fitsutils.get_par(ff, "IMGTYPE"))
             else:
                 continue
-
-            # if ("RAINBOW CAM" in str.upper(fitsutils.get_par(f, "CAM_NAME"))
-            # and  ("DOME" in  obj or "FLAT" in obj or "Twilight" in obj or
-            # "TWILIGHT" in imtype or "DOME" in imtype)):
-            if "twilight" in imtype.lower():
-
+            if key in imtype.lower():
                 if fitsutils.get_par(ff, "ADCSPEED") == 2:
                     lfflat.append(ff)
                 else:
@@ -246,8 +246,8 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             logger.error("Error with retrieving parameters for file %s" % ff)
             pass
 
-    logger.info("Files for slow flat %s" % lsflat)
-    logger.info("Files for fast flat %s" % lfflat)
+    logger.info("Files for slow %s flat %s" % (key, lsflat))
+    logger.info("Files for fast %s flat %s" % (key, lfflat))
 
     # Remove bias from the flat
     debiased_flats = []
@@ -298,8 +298,6 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
             continue
 
         lfiles = []
-        status = "none"
-        d = None
         for ff in glob.glob('b_*_%s.fits' % b):
             fi = fits.open(ff)
             d = fi[0].data
@@ -375,6 +373,8 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True):
         if not os.path.isdir(newdir):
             os.makedirs(newdir)
         shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)))
+    # END: for b in bands
+
     for b in bands:
         # Do some cleaning
         logger.info('Removing bias-stubtracted %s files' % b)
