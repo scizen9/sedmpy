@@ -191,8 +191,7 @@ def create_masterbias(biasdir=None, channel='rc'):
         copy_ref_calib(biasdir, outs)
 
 
-def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True,
-                      dome=False):
+def create_masterflat(flatdir=None, biasdir=None, plot=True):
     """
     Creates a masterflat from both dome flats and sky flats if the number of
     counts in the given filter is not saturated and not too low
@@ -209,51 +208,62 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True,
     if plot and not os.path.isdir("reduced/flats"):
         os.makedirs("reduced/flats")
 
-    if len(glob.glob("Flat_%s*norm.fits" % channel)) == 4:
+    if len(glob.glob("Flat_rc*norm.fits")) == 8:
         logger.info("Master Flat exists!")
         return
-    if len(glob.glob("Flat_%s*norm.fits" % channel)) > 0:
+    if len(glob.glob("Flat_rc*norm.fits")) > 0:
         logger.info("Some Master Flats exist!")
     else:
         logger.info("Starting the Master Flat creation!")
 
-    bias_slow = "Bias_%s_slow.fits" % channel
-    bias_fast = "Bias_%s_fast.fits" % channel
+    bias_slow = "Bias_rc_slow.fits"
+    bias_fast = "Bias_rc_fast.fits"
 
     if not os.path.isfile(bias_slow) and not os.path.isfile(bias_fast):
         create_masterbias(biasdir)
 
-    lsflat = []
-    lfflat = []
+    lstflat = []
+    lftflat = []
+    lsdflat = []
+    lfdflat = []
 
-    # Select all filts that are Flats with same instrument
-    if dome:
-        key = "dome"
-    else:
-        key = "twilight"
-    for ff in glob.glob(channel + "*fits"):
+    for ff in glob.glob("rc*fits"):
         try:
             if fitsutils.has_par(ff, "IMGTYPE"):
                 imtype = str.upper(fitsutils.get_par(ff, "IMGTYPE"))
             else:
                 continue
-            if key in imtype.lower():
+            if "twilight" in imtype.lower():
                 if fitsutils.get_par(ff, "ADCSPEED") == 2:
-                    lfflat.append(ff)
+                    lftflat.append(ff)
                 else:
-                    lsflat.append(ff)
+                    lstflat.append(ff)
+            if "dome" in imtype.lower():
+                if fitsutils.get_par(ff, "ADCSPEED") == 2:
+                    lfdflat.append(ff)
+                else:
+                    lsdflat.append(ff)
         except (OSError, KeyError):
             logger.error("Error with retrieving parameters for file %s" % ff)
             pass
 
-    logger.info("Files for slow %s flat %s" % (key, lsflat))
-    logger.info("Files for fast %s flat %s" % (key, lfflat))
+    logger.info("Files for slow twilight flat %s" % lstflat)
+    logger.info("Files for fast twilight flat %s" % lftflat)
+    logger.info("Files for slow dome flat %s" % lsdflat)
+    logger.info("Files for fast dome flat %s" % lfdflat)
 
-    # Remove bias from the flat
+    # Create dictionaries
+    tdic = {"fast": lftflat, "slow": lstflat}
+    ddic = {"fast": lfdflat, "slow": lsdflat}
+    fdic = {"twilight": tdic, "dome": ddic}
+
+    # Remove bias from the flats
     debiased_flats = []
-    if len(lsflat) > 0:
+
+    slow_flats = lstflat + lsdflat
+    if len(slow_flats) > 0:
         sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
-        for sfl in lsflat:
+        for sfl in slow_flats:
             rawf = ccdproc.fits_ccddata_reader(filename=sfl, unit='adu')
             rawf.data = rawf.data.astype(np.float64)
             rawf.data -= sbias.data
@@ -263,9 +273,10 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True,
             redhdul.writeto('b_'+sfl)
             debiased_flats.append('b_'+sfl)
 
-    if len(lfflat) > 0:
+    fast_flats = lftflat + lfdflat
+    if len(fast_flats) > 0:
         fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
-        for ffl in lfflat:
+        for ffl in fast_flats:
             rawf = ccdproc.fits_ccddata_reader(filename=ffl, unit='adu')
             rawf.data = rawf.data.astype(np.float64)
             rawf.data -= fbias.data
@@ -275,7 +286,7 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True,
             redhdul.writeto('b_' + ffl)
             debiased_flats.append('b_'+ffl)
 
-    # Slices the flats.
+    # Slice the flats.
     for ff in debiased_flats:
         logger.info("Slicing file %s" % ff)
         try:
@@ -289,91 +300,110 @@ def create_masterflat(flatdir=None, biasdir=None, channel='rc', plot=True,
     # Selects the ones that are suitable given
     # the number of counts and combines them.
     bands = ['u', 'g', 'r', 'i']
-    for b in bands:
-        out = "Flat_%s_%s.fits" % (channel, b)
-        out_norm = out.replace(".fits", "_norm.fits")
+    speeds = ['slow', 'fast']
+    kinds = ['dome', 'twilight']
+    for kind in kinds:
+        for speed in speeds:
+            # Input file list
+            flist = fdic[kind][speed]
 
-        if os.path.isfile(out_norm):
-            logger.error("Master Flat for filter %s exists. Skipping..." % b)
-            continue
+            for b in bands:
+                out = "Flat_rc_%s_%s_%s.fits" % (kind, speed, b)
+                out_norm = out.replace(".fits", "_norm.fits")
 
-        lfiles = []
-        for ff in glob.glob('b_*_%s.fits' % b):
-            fi = fits.open(ff)
-            d = fi[0].data
-            status = "rejected"
-            if 4000 < np.percentile(d, 90) < 45000:
-                lfiles.append(ff)
-                mymode = 1. * np.median(d.flatten())
-                d[d > 45000] = mymode
-                fi[0].header['FLMODE'] = (mymode, 'median of flat level')
-                fi[0].data = d
-                fi.writeto(ff, overwrite=True)
-                status = "accepted"
+                if os.path.isfile(out_norm):
+                    logger.error("Master Flat for filter %s exists. "
+                                 "Skipping..." % b)
+                    continue
 
-            if plot:
-                plt.title("Flat filter %s. %s" % (b, status))
-                plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
-                plt.colorbar()
-                plt.savefig("reduced/flats/%s" % (ff.replace(".fits",
-                                                             ".png")))
-                plt.close()
-        # Make sure that the optimum number of counts
-        # is not too low and not saturated.
-        if len(lfiles) == 0:
-            logger.error("WARNING!!! Could not find suitable flats for band %s"
-                         % b)
-            continue
-        if len(lfiles) < 3:
-            logger.error("WARNING!!! Could find less than 3 flats for band %s."
-                         "Skipping, as it is not reliable..." % b)
-            continue
+                lfiles = []
+                for ff in flist:
+                    fff = 'b_' + ff.replace(".fits", "_%s.fits" % b)
+                    fi = fits.open(fff)
+                    d = fi[0].data
+                    status = "rejected"
+                    if 4000 < np.percentile(d, 90) < 45000:
+                        lfiles.append(fff)
+                        mymode = 1. * np.median(d.flatten())
+                        d[d > 45000] = mymode
+                        fi[0].header['FLMODE'] = (mymode,
+                                                  'median of flat level')
+                        fi[0].data = d
+                        fi.writeto(ff, overwrite=True)
+                        status = "accepted"
 
-        # Cleaning of old files
-        if os.path.isfile(out):
-            os.remove(out)
-        if os.path.isfile(out_norm):
-            os.remove(out_norm)
-        if os.path.isfile("Flat_stats"):
-            os.remove("Flat_stats")
+                    if plot:
+                        plt.title("Flat filter %s. %s" % (b, status))
+                        plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
+                        plt.colorbar()
+                        plt.savefig("reduced/flats/%s" % (ff.replace(".fits",
+                                                                     ".png")))
+                        plt.close()
+                # Make sure that the optimum number of counts
+                # is not too low and not saturated.
+                if len(lfiles) == 0:
+                    logger.error("WARNING!!! Could not find suitable flats "
+                                 "for band %s" % b)
+                    continue
+                if len(lfiles) < 3:
+                    logger.error("WARNING!!! Found less than 3 flats "
+                                 "for band %s.  Skipping, as it is not "
+                                 "reliable..." % b)
+                    continue
 
-        # read in flats
-        scales = []
-        stack = []
-        ref_mode = 1.
-        for ffl in lfiles:
-            ccdd = ccdproc.fits_ccddata_reader(ffl)
-            stack.append(ccdd)
-            if len(stack) == 1:
-                ref_mode = ccdd.header['FLMODE']
-            scales.append(ref_mode / ccdd.header['FLMODE'])
+                # Cleaning of old files
+                if os.path.isfile(out):
+                    os.remove(out)
+                if os.path.isfile(out_norm):
+                    os.remove(out_norm)
 
-        stacked = ccdproc.combine(stack, method="median", sigma_clip=True,
-                                  sigma_clip_low_thresh=2.,
-                                  sigma_clip_high_thresh=2., scale=scales)
-        stacked.header['HISTORY'] = 'Master Flat combined'
-        stacked.header['NSTACK'] = (len(lfiles), 'number of images stacked')
-        stacked.header['STCKMETH'] = ("median", 'method used for stacking')
-        for ii, fname in enumerate(lfiles):
-            stacked.header['STACKF%d' % (ii + 1)] = (fname, 'stack input file')
-        hdulist = stacked.to_hdu()
-        hdulist.writeto(out)
+                # read in flats
+                scales = []
+                stack = []
+                ref_mode = 1.
+                for ffl in lfiles:
+                    ccdd = ccdproc.fits_ccddata_reader(ffl)
+                    stack.append(ccdd)
+                    if len(stack) == 1:
+                        ref_mode = ccdd.header['FLMODE']
+                    scales.append(ref_mode / ccdd.header['FLMODE'])
 
-        # Normalize flat
-        mymode = np.nanmedian(stacked.data[100:-100, 100:-100])
-        stacked.data /= mymode
-        stacked.header['HISTORY'] = 'Master Flat normalized'
-        stacked.header['FLSCALE'] = (mymode, 'Divided by this to normalize')
-        hdulist = stacked.to_hdu()
-        hdulist.writeto(out_norm)
+                stacked = ccdproc.combine(stack, method="median",
+                                          sigma_clip=True,
+                                          sigma_clip_low_thresh=2.,
+                                          sigma_clip_high_thresh=2.,
+                                          scale=scales)
+                stacked.header['HISTORY'] = 'Master Flat combined'
+                stacked.header['NSTACK'] = (len(lfiles),
+                                            'number of images stacked')
+                stacked.header['STCKMETH'] = ("median",
+                                              'method used for stacking')
+                for ii, fname in enumerate(lfiles):
+                    stacked.header['STACKF%d' % (ii + 1)] = (fname,
+                                                             'stack input file')
+                hdulist = stacked.to_hdu()
+                hdulist.writeto(out)
 
-        # copy into the reference folder with current date
-        newdir = os.path.join("../../refphot/",
-                              os.path.basename(os.path.abspath(flatdir)))
-        if not os.path.isdir(newdir):
-            os.makedirs(newdir)
-        shutil.copy(out_norm, os.path.join(newdir, os.path.basename(out_norm)))
-    # END: for b in bands
+                # Normalize flat
+                mymode = np.nanmedian(stacked.data[100:-100, 100:-100])
+                stacked.data /= mymode
+                stacked.header['HISTORY'] = 'Master Flat normalized'
+                stacked.header['FLSCALE'] = (mymode,
+                                             'Divided by this to normalize')
+                hdulist = stacked.to_hdu()
+                hdulist.writeto(out_norm)
+
+                # copy into the reference folder with current date
+                newdir = os.path.join("../../refphot/",
+                                      os.path.basename(
+                                          os.path.abspath(flatdir)))
+                if not os.path.isdir(newdir):
+                    os.makedirs(newdir)
+                shutil.copy(out_norm, os.path.join(newdir,
+                                                   os.path.basename(out_norm)))
+            # END: for b in bands
+        # END: for speed in speeds
+    # END: for kind in kinds
 
     for b in bands:
         # Do some cleaning
@@ -639,7 +669,7 @@ def clean_cosmic(fl):
     array, header = cosmics.fromfits(fl)
 
     try:
-        c = cosmics.cosmicsimage(array, gain=g, readnoise=rn, sigclip=8.0,
+        c = cosmics.CosmicsImage(array, gain=g, readnoise=rn, sigclip=8.0,
                                  sigfrac=0.3, satlevel=64000.0)
         c.run(maxiter=3)
         out = fl.replace('.fits', '_clean.fits')
