@@ -312,8 +312,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                 out_norm = out.replace(".fits", "_norm.fits")
 
                 if os.path.isfile(out_norm):
-                    logger.error("Master Flat for filter %s exists. "
-                                 "Skipping..." % b)
+                    logger.error("Master %s %s Flat for filter %s exists. "
+                                 "Skipping..." % (speed, kind, b))
                     continue
 
                 lfiles = []
@@ -332,11 +332,12 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                         fi[0].data = d
                         fi.writeto(fff, overwrite=True)
                         status = "accepted"
-                    logger.info("%s with level %.2f is %s" % (fff, level,
-                                                              status))
+                    logger.info("%s %s %s flat with level %.2f is %s" %
+                                (fff, speed, kind, level, status))
 
                     if plot:
-                        plt.title("Flat filter %s. %s" % (b, status))
+                        plt.title("%s %s Flat filter %s. %s" %
+                                  (speed, kind, b, status))
                         plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
                         plt.colorbar()
                         plt.savefig("reduced/flats/%s" % (fff.replace(".fits",
@@ -345,13 +346,13 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                 # Make sure that the optimum number of counts
                 # is not too low and not saturated.
                 if len(lfiles) == 0:
-                    logger.error("WARNING!!! Could not find suitable %s flats "
-                                 "for band %s" % (kind, b))
+                    logger.error("WARNING!!! Could not find suitable %s %s "
+                                 "flats for band %s" % (speed, kind, b))
                     continue
                 if len(lfiles) < 3:
-                    logger.error("WARNING!!! Found less than 3 %s flats "
+                    logger.error("WARNING!!! Found less than 3 %s %s flats "
                                  "for band %s.  Skipping, as it is not "
-                                 "reliable..." % (kind, b))
+                                 "reliable..." % (speed, kind, b))
                     continue
 
                 # Cleaning of old files
