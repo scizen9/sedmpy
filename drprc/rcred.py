@@ -343,7 +343,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                         plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
                         plt.colorbar()
                         plt.savefig("reduced/flats/%s" %
-                                    (fff.replace(".fits", "_%s.png" % status)))
+                                    (fff.replace(".fits", "_%s_%s_%s.png" %
+                                                 (speed, kind, status))))
                         plt.close()
                 # Make sure that the optimum number of counts
                 # is not too low and not saturated.
