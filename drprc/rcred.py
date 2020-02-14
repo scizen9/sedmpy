@@ -254,6 +254,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
 
     # Create dictionaries
     tdic = {"fast": lftflat, "slow": lstflat}
+    ldic = {"u": [1200, 45000], "g": [10000, 45000],
+            "r": [5000, 50000], "i": [5000, 45000]}
     ddic = {"fast": lfdflat, "slow": lsdflat}
     fdic = {"twilight": tdic, "dome": ddic}
 
@@ -323,7 +325,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                     d = fi[0].data
                     status = "rejected"
                     level = np.percentile(d, 90)
-                    if 4000 < level < 45000:
+                    if ldic[b][0] < level < ldic[b][1]:
                         lfiles.append(fff)
                         mymode = 1. * np.median(d.flatten())
                         d[d > 45000] = mymode
