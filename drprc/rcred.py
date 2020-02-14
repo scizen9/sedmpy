@@ -322,7 +322,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                     fi = fits.open(fff)
                     d = fi[0].data
                     status = "rejected"
-                    if 4000 < np.percentile(d, 90) < 45000:
+                    level = np.percentile(d, 90)
+                    if 4000 < level < 45000:
                         lfiles.append(fff)
                         mymode = 1. * np.median(d.flatten())
                         d[d > 45000] = mymode
@@ -331,6 +332,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                         fi[0].data = d
                         fi.writeto(fff, overwrite=True)
                         status = "accepted"
+                    logger.info("%s with level %.2f is %s" % (fff, level,
+                                                              status))
 
                     if plot:
                         plt.title("Flat filter %s. %s" % (b, status))
@@ -342,13 +345,13 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                 # Make sure that the optimum number of counts
                 # is not too low and not saturated.
                 if len(lfiles) == 0:
-                    logger.error("WARNING!!! Could not find suitable flats "
-                                 "for band %s" % b)
+                    logger.error("WARNING!!! Could not find suitable %s flats "
+                                 "for band %s" % (kind, b))
                     continue
                 if len(lfiles) < 3:
-                    logger.error("WARNING!!! Found less than 3 flats "
+                    logger.error("WARNING!!! Found less than 3 %s flats "
                                  "for band %s.  Skipping, as it is not "
-                                 "reliable..." % b)
+                                 "reliable..." % (kind, b))
                     continue
 
                 # Cleaning of old files
@@ -373,7 +376,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                                           sigma_clip_low_thresh=2.,
                                           sigma_clip_high_thresh=2.,
                                           scale=scales)
-                stacked.header['HISTORY'] = 'Master Flat combined'
+                stacked.header['HISTORY'] = 'Master %s %s flat combined' % \
+                                            (speed, kind)
                 stacked.header['NSTACK'] = (len(lfiles),
                                             'number of images stacked')
                 stacked.header['STCKMETH'] = ("median",
@@ -387,7 +391,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                 # Normalize flat
                 mymode = np.nanmedian(stacked.data[100:-100, 100:-100])
                 stacked.data /= mymode
-                stacked.header['HISTORY'] = 'Master Flat normalized'
+                stacked.header['HISTORY'] = 'Master %s %s flat normalized' % \
+                                            (speed, kind)
                 stacked.header['FLSCALE'] = (mymode,
                                              'Divided by this to normalize')
                 hdulist = stacked.to_hdu()
