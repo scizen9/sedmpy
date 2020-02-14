@@ -329,7 +329,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                         fi[0].header['FLMODE'] = (mymode,
                                                   'median of flat level')
                         fi[0].data = d
-                        fi.writeto(ff, overwrite=True)
+                        fi.writeto(fff, overwrite=True)
                         status = "accepted"
 
                     if plot:
