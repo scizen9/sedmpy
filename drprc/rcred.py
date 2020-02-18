@@ -213,6 +213,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
         return
     if len(glob.glob("Flat_rc*norm.fits")) > 0:
         logger.info("Some Master Flats exist!")
+        return
     else:
         logger.info("Starting the Master Flat creation!")
 
@@ -605,9 +606,15 @@ def slice_rc(img, calib=False):
     }
 
     frame = ccdproc.fits_ccddata_reader(img)
-    if 'CRPIX1' in frame.header and 'CRPIX2' in frame.header:
-        crpix1_full = frame.header['CRPIX1']
-        crpix2_full = frame.header['CRPIX2']
+
+    if not calib:
+        if 'CRPIX1' in frame.header and 'CRPIX2' in frame.header:
+            crpix1_full = frame.header['CRPIX1']
+            crpix2_full = frame.header['CRPIX2']
+        else:
+            logger.warning("No CRPIX keywords found for %s" % img)
+            crpix1_full = None
+            crpix2_full = None
     else:
         crpix1_full = None
         crpix2_full = None
@@ -934,8 +941,9 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     hdul.writeto(debiased)
 
     # Slicing the image for flats
+    print("Creating sliced files...")
     slice_names = slice_rc(debiased)
-    print("Creating sliced files, ", slice_names)
+    print("Created: ", slice_names)
 
     # Remove un-sliced image
     os.remove(debiased)
