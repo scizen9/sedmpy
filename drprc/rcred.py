@@ -495,7 +495,7 @@ def copy_ref_calib(curdir, calib="Flat"):
                 calib_dic[cal] = True
 
 
-def solve_astrometry(img, outimage=None, radius=3, with_pix=True,
+def solve_astrometry(img, outimage=None, radius=0.2, with_pix=True,
                      overwrite=False, tweak=3):
     """
     img: fits image where astrometry should be solved.
@@ -521,16 +521,14 @@ def solve_astrometry(img, outimage=None, radius=3, with_pix=True,
     if os.path.isfile(astro) and not overwrite:
         return astro
 
-    # Store a temporary file with the multiplication of the mask
-    # mask = "mask.fits"
-
-    cmd = "solve-field --ra %s --dec %s --radius %.4f -p --new-fits %s \
-      -W none -B none -P none -M none -R none -S none -t %d --overwrite %s " %\
+    cmd = "solve-field --ra %s --dec %s --radius %.4f -p --new-fits %s " \
+        "-W none -B none -M none -R none -S none -t %d --overwrite " \
+          "--crpix-center --cpulimit 5 --parity neg %s " % \
           (ra, dec, radius, astro, tweak, img)
     if with_pix:
         cmd = cmd + \
-              " --scale-units arcsecperpix  --scale-low 0.375 --scale-high 0.4"
-    # logger.info(cmd)
+              " --scale-units arcsecperpix  --scale-low 0.35 --scale-high 0.41"
+    logger.info(cmd)
 
     subprocess.call(cmd, shell=True)
 
@@ -918,6 +916,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         rawf.data -= sbias.data
         rawf.header['BIASFILE'] = (bias_slow, 'Master bias')
         rawf.header['RDNOISE'] = (20., 'Read noise in electrons')
+    rawf.header['HISTORY'] = 'Bias subtracted'
     # Set negative counts to zero
     rawf.data[rawf.data < 0] = 0
     hdul = rawf.to_hdu()
@@ -934,9 +933,11 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     for i, debiased_f in enumerate(slice_names):
         b = fitsutils.get_par(debiased_f, 'filter')
 
-        kind = 'dome'
-        if 'slow' in speed and ('u' in b or 'g' in b):
+        # Which kind of flat to use?
+        if 'slow' in speed:
             kind = 'twilight'
+        else:
+            kind = 'dome'
 
         deflatted = os.path.join(
             os.path.dirname(image), target_dir,
