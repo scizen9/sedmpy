@@ -552,11 +552,11 @@ def solve_astrometry(img, outimage=None, radius=0.2, with_pix=True,
     if outimage is not None and overwrite and os.path.isfile(astro):
         shutil.move(astro, outimage)
         return outimage
-    # If ther is no name, we overwrite the old file.
+    # If there is no name, we overwrite the old file.
     elif outimage is None and overwrite and os.path.isfile(astro):
         shutil.move(astro, img)
         return img
-    # Otherwise, we just return the name of the astrometry sovled image
+    # Otherwise, we just return the name of the astrometry solved image
     else:
         return astro
 
@@ -605,6 +605,12 @@ def slice_rc(img, calib=False):
     }
 
     frame = ccdproc.fits_ccddata_reader(img)
+    if 'CRPIX1' in frame.header and 'CRPIX2' in frame.header:
+        crpix1_full = frame.header['CRPIX1']
+        crpix2_full = frame.header['CRPIX2']
+    else:
+        crpix1_full = None
+        crpix2_full = None
 
     filenames = []
 
@@ -621,6 +627,11 @@ def slice_rc(img, calib=False):
         f_frame.data = f_frame.data[corners[b][2]:corners[b][3],
                                     corners[b][0]:corners[b][1]]
         f_frame.header['FILTER'] = (b, 'RC filter')
+        if crpix1_full is not None and crpix2_full is not None:
+            crpix1 = crpix1_full - corners[b][0]
+            crpix2 = crpix2_full - corners[b][2]
+            f_frame.header['CRPIX1'] = crpix1
+            f_frame.header['CRPIX2'] = crpix2
         hdul = f_frame.to_hdu()
         hdul.writeto(name)
 
@@ -805,7 +816,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     image = os.path.abspath(image)
     imname = os.path.basename(image).replace(".fits", "")
     try:
-        objectname = fitsutils.get_par(image, "NAME").replace(" ", "") + "_" + \
+        objectname = fitsutils.get_par(image, "NAME").split()[0] + "_" + \
                      fitsutils.get_par(image, "FILTER")
     except KeyError:
         logger.error("ERROR, image " + image +
