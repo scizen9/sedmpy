@@ -828,7 +828,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         os.makedirs(target_dir)
 
     # If we don't want to overwrite the already extracted images,
-    # we check wether they exist.
+    # we check whether they exist.
     if not overwrite:
         existing = True
         for band in ['u', 'g', 'r', 'i']:
@@ -856,8 +856,14 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     else:
         img = image
 
-    # Update noise parameters needed for cosmic reection
+    # Are we a fast or slow readout image?
     if fitsutils.get_par(img, "ADCSPEED") == 2:
+        speed = 'fast'
+    else:
+        speed = 'slow'
+
+    # Update noise parameters needed for cosmic reection
+    if 'fast' in speed:
         fitsutils.update_par(img, "RDNOISE", 20.)
     else:
         fitsutils.update_par(img, "RDNOISE", 4.)
@@ -873,8 +879,8 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         biasdir = "."
     create_masterbias(biasdir)
 
-    bias_slow = os.path.join(biasdir, "Bias_%s_%s.fits" % (channel, 'slow'))
-    bias_fast = os.path.join(biasdir, "Bias_%s_%s.fits" % (channel, 'fast'))
+    bias_slow = os.path.join(biasdir, "Bias_rc_slow.fits")
+    bias_fast = os.path.join(biasdir, "Bias_rc_fast.fits")
 
     # Compute flat field
     if flatdir is None or flatdir == "":
@@ -885,17 +891,13 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     debiased = os.path.join(os.path.dirname(img), "b_" + os.path.basename(img))
     logger.info("Creating debiased file, %s" % debiased)
 
-    if ((fitsutils.get_par(img, "ADCSPEED") == 0.1 and
-         not os.path.isfile(bias_slow)) or
-            (fitsutils.get_par(img, "ADCSPEED") == 2 and
-             not os.path.isfile(bias_fast))):
+    if (('slow' in speed and not os.path.isfile(bias_slow)) or
+            ('fast' in speed and not os.path.isfile(bias_fast))):
         logger.warning(
-            "Master bias not found! Tryting to copy from reference folder...")
+            "Master bias not found! Trying to copy from reference folder...")
         copy_ref_calib(curdir, "Bias")
-        if ((fitsutils.get_par(img, "ADCSPEED") == 0.1 and
-             not os.path.isfile(bias_slow)) or
-                (fitsutils.get_par(img, "ADCSPEED") == 2 and
-                 not os.path.isfile(bias_fast))):
+        if (('slow' in speed and not os.path.isfile(bias_slow)) or
+                ('fast' in speed and not os.path.isfile(bias_fast))):
             logger.error("Bias not found in reference folder")
             return
 
@@ -906,7 +908,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     # Debias
     rawf = ccdproc.fits_ccddata_reader(filename=img, unit='adu')
     rawf.data = rawf.data.astype(np.float64)
-    if rawf.header["ADCSPEED"] == 2:
+    if 'fast' in speed:
         fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
         rawf.data -= fbias.data
         rawf.header['BIASFILE'] = (bias_fast, 'Master bias')
@@ -932,12 +934,17 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     for i, debiased_f in enumerate(slice_names):
         b = fitsutils.get_par(debiased_f, 'filter')
 
+        kind = 'dome'
+        if 'slow' in speed and ('u' in b or 'g' in b):
+            kind = 'twilight'
+
         deflatted = os.path.join(
             os.path.dirname(image), target_dir,
             imname + "_f_b_" + astro + objectname + "_%s.fits" % b)
 
         # Flat to be used for that filter
-        flat = os.path.join(flatdir, "Flat_%s_%s_norm.fits" % (channel, b))
+        flat = os.path.join(flatdir, "Flat_rc_%s_%s_%s_norm.fits" % (kind,
+                                                                     speed, b))
 
         if not os.path.isfile(flat):
             logger.warning("Master flat not found in %s" % flat)
