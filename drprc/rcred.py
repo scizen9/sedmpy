@@ -388,7 +388,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                 hdulist.writeto(out)
 
                 # Normalize flat
-                mymode = np.nanmedian(stacked.data[100:-100, 100:-100])
+                mymode = np.nanmedian(stacked.data[150:-150, 150:-150])
                 stacked.data /= mymode
                 stacked.header['HISTORY'] = 'Master %s %s flat normalized' % \
                                             (speed, kind)
