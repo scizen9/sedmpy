@@ -1106,8 +1106,15 @@ if __name__ == '__main__':
         if (fitsutils.has_par(f, "IMGTYPE") and
                 (fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE" or (
                     "ACQUI" in fitsutils.get_par(f, "IMGTYPE").upper()))):
+            if args.cosmic:
+                if fitsutils.get_par(f, "EXPTIME") > 30.:
+                    do_cosmic = True
+                else:
+                    do_cosmic = False
+            else:
+                do_cosmic = False
             try:
-                reduced = reduce_image(f, cosmic=args.cosmic,
+                reduced = reduce_image(f, cosmic=do_cosmic,
                                        overwrite=args.overwrite)
                 reducedfiles.extend(reduced)
             except OSError:
