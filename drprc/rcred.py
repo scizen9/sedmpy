@@ -496,8 +496,7 @@ def copy_ref_calib(curdir, calib="Flat"):
                 calib_dic[cal] = True
 
 
-def solve_astrometry(img, outimage=None, radius=0.2, with_pix=True,
-                     overwrite=False, tweak=3):
+def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
     """
     img: fits image where astrometry should be solved.
     outimage: name for the astrometry solved image. Defaults to "a_"img.
@@ -548,18 +547,8 @@ def solve_astrometry(img, outimage=None, radius=0.2, with_pix=True,
             fitsutils.update_par(img, "ONTARGET", 0)
             print("Error detected with WCS when reading file %s. \n %s" % (img,
                                                                            e))
-            # If no name is provided, and overwrite is true, we move the
-            # astrometry solved file into the image with name outimage.
-    if outimage is not None and overwrite and os.path.isfile(astro):
-        shutil.move(astro, outimage)
-        return outimage
-    # If there is no name, we overwrite the old file.
-    elif outimage is None and overwrite and os.path.isfile(astro):
-        shutil.move(astro, img)
-        return img
-    # Otherwise, we just return the name of the astrometry solved image
-    else:
-        return astro
+    # return the name of the astrometry solved image
+    return astro
 
 
 def make_mask_cross(img):
@@ -933,7 +922,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
         rawf.data -= sbias.data
         rawf.header['BIASFILE'] = (bias_slow, 'Master bias')
-        rawf.header['RDNOISE'] = (20., 'Read noise in electrons')
+        rawf.header['RDNOISE'] = (4., 'Read noise in electrons')
     rawf.header['HISTORY'] = 'Bias subtracted'
     # Set negative counts to zero
     rawf.data[rawf.data < 0] = 0
