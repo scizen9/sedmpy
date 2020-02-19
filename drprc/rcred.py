@@ -594,19 +594,10 @@ def slice_rc(img, calib=False):
         "u": [1030, 2045, 1, 900]
     }
 
-    frame = ccdproc.fits_ccddata_reader(img)
+    crpix1_full = fitsutils.get_par(img, 'CRPIX1')
+    crpix2_full = fitsutils.get_par(img, 'CRPIX2')
 
-    if not calib:
-        if 'CRPIX1' in frame.header and 'CRPIX2' in frame.header:
-            crpix1_full = frame.header['CRPIX1']
-            crpix2_full = frame.header['CRPIX2']
-        else:
-            logger.warning("No CRPIX keywords found for %s" % img)
-            crpix1_full = None
-            crpix2_full = None
-    else:
-        crpix1_full = None
-        crpix2_full = None
+    frame = ccdproc.fits_ccddata_reader(img)
 
     filenames = []
 
