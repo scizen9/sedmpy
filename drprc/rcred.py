@@ -29,6 +29,7 @@ except ImportError:
     import drprc.sextractor as sextractor
 
 from astropy.io import fits
+from astropy.wcs import WCS
 
 try:
     import coordinates_conversor as cc
@@ -85,16 +86,9 @@ def get_xy_coords(image, ra, dec):
     correct answer, as it does not seem to be using the SIP extension.
 
     """
-    import re
-    import subprocess
-    cmd = "wcs-rd2xy -w %s -r %.5f -d %.5f" % (image, ra, dec)
-    proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-    output = str(proc.stdout.read())
-    output = output.split("->")[1]
-
-    coords = []
-    for ss in output.split(","):
-        coords.append(float(re.findall("[-+]?\d+[\.]?\d*", ss)[0]))
+    w = WCS(image)
+    pix_all = w.all_world2pix(ra, dec, 0)
+    coords = [float(pix_all[0]), float(pix_all[1])]
 
     return coords
 
