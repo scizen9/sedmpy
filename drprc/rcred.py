@@ -614,13 +614,18 @@ def slice_rc(img, calib=False):
         f_frame.data = f_frame.data[corners[b][2]:corners[b][3],
                                     corners[b][0]:corners[b][1]]
         f_frame.header['FILTER'] = (b, 'RC filter')
+
+        hdul = f_frame.to_hdu()
+        hdul.writeto(name)
+
         if crpix1_full is not None and crpix2_full is not None:
             crpix1 = crpix1_full - corners[b][0]
             crpix2 = crpix2_full - corners[b][2]
-            f_frame.header['CRPIX1'] = crpix1
-            f_frame.header['CRPIX2'] = crpix2
-        hdul = f_frame.to_hdu()
-        hdul.writeto(name)
+            fitsutils.update_par(name, 'crpix1', crpix1)
+            fitsutils.update_par(name, 'crpix2', crpix2)
+        else:
+            if not calib:
+                logger.warning("No CRPIX keywords found!")
 
         fitsutils.update_par(name, 'filter', b)
         if not calib:
