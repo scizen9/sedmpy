@@ -709,7 +709,7 @@ def subsample(a):  # this is more a generic function then a method ...
     return a[tuple(indices)]
 
 
-def rebin(a, newshape):
+def rebin(a, inewshape):
     """
     Auxiliary function to rebin an ndarray a.
 
@@ -718,7 +718,8 @@ def rebin(a, newshape):
 
     shape = a.shape
     lenshape = len(shape)
-    factor = np.asarray(shape) / np.asarray(newshape)
+    factor = [int(shape[0]/inewshape[0]), int(shape[1]/inewshape[1])]
+    newshape = [int(inewshape[0]), int(inewshape[1])]
     # print (factor)
     evlist = ['a.reshape('] + \
              ['newshape[%d],factor[%d],' % (i, i) for i in range(lenshape)] + \

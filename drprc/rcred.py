@@ -683,7 +683,8 @@ def clean_cosmic(fl):
 
         # os.remove(fl)
     except:
-        pass
+        logger.warning("Error removing cosmic rays!")
+        out = fl
 
     return out
 
@@ -778,8 +779,7 @@ def plot_image(image):
 
 
 def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
-                 astrometry=True, channel='rc', target_dir='reduced',
-                 overwrite=False):
+                 astrometry=True, target_dir='reduced', overwrite=False):
     """
     Applies Flat field and bias calibrations to the image.
 
@@ -827,7 +827,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     if not overwrite:
         existing = True
         for band in ['u', 'g', 'r', 'i']:
-            destfile = os.path.join(target_dir, imname + "_f_b_a_%s_%s_0.fits" %
+            destfile = os.path.join(target_dir, imname + "_f_b_a_%s_%s.fits" %
                                     (objectname, band))
             logger.info("Looking if file %s exists: %s" %
                         (destfile, (os.path.isfile(destfile))))
