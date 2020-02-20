@@ -48,6 +48,8 @@ with codecs.open(configfile, 'r') as f:
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
 
+plt.switch_backend('Agg')
+
 
 def get_sextractor_stats(files):
     
