@@ -1092,7 +1092,7 @@ if __name__ == '__main__':
     mydir = os.path.abspath(photdir)
     timestamp = os.path.basename(mydir)
     # Gather all RC fits files in the folder with the keyword IMGTYPE=SCIENCE
-    for f in glob.glob(os.path.join(mydir, "rc%s_??_??_??fits" % timestamp)):
+    for f in glob.glob(os.path.join(mydir, "rc%s_??_??_??.fits" % timestamp)):
         try:
             if (fitsutils.has_par(f, "IMGTYPE") and
                     ((fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE") or (
