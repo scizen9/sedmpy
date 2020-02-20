@@ -75,6 +75,7 @@ def get_sextractor_stats(files):
                         imtype == "FOCUS" or imtype == "GUIDER"):
                     continue 
 
+                sflist = []
                 if not os.path.isfile(sexfiles[i]):
                     sflist = sextractor.run_sex([ff])
                 if sflist and len(sflist) > 0:
@@ -200,6 +201,6 @@ if __name__ == '__main__':
         print("Input directory %s" % photdir)
 
     rclist = glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits"))
-    print("Running stats on %d rc images in %s", (len(rclist), photdir))
+    print("Running stats on %d rc images in %s" % (len(rclist), photdir))
     get_sextractor_stats(rclist)
     plot_stats(os.path.join(os.path.abspath(photdir), "stats/stats.log")) 
