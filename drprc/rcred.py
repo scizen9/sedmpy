@@ -832,14 +832,15 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
                                     (objectname, band))
             logger.info("Looking if file %s exists: %s" %
                         (destfile, (os.path.isfile(destfile))))
-            existing = existing and (os.path.isfile(destfile))
+            file_exists = (os.path.isfile(destfile))
             # Filename if astrometry failed
-            if not existing:
+            if not file_exists:
                 destfile = os.path.join(target_dir, imname + "_f_b_%s_%s.fits" %
                                         (objectname, band))
                 logger.info("Looking if file %s exists: %s" %
                             (destfile, (os.path.isfile(destfile))))
-                existing = existing and (os.path.isfile(destfile))
+                file_exists = (os.path.isfile(destfile))
+            existing = existing and file_exists
         if existing:
             return []
 
