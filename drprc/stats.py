@@ -37,9 +37,6 @@ import argparse
 from configparser import ConfigParser
 import codecs
 
-import matplotlib
-matplotlib.use("Agg")
-
 parser = ConfigParser()
 
 configfile = os.environ["SEDMCONFIG"]
