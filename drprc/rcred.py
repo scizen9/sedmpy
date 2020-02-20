@@ -678,8 +678,9 @@ def clean_cosmic(fl):
         c.run(maxiter=3)
         out = fl.replace('.fits', '_clean.fits')
 
+        header["CRREJ"] = (True, "Were cosmic rays cleaned?")
+        header["HISTORY"] = "L.A. Cosmic cleaned"
         cosmics.tofits(out, c.cleanarray, header)
-        fitsutils.update_par(out, "CRREJ", 1)
 
         # os.remove(fl)
     except:
@@ -1085,10 +1086,13 @@ if __name__ == '__main__':
                  "",
                  "A default name for the directory will be assumed on today's "
                  "date: %s" % photdir)
+        else:
+            photdir = args.photdir
 
-    mydir = os.path.abspath(args.photdir)
+    mydir = os.path.abspath(photdir)
+    timestamp = os.path.basename(mydir)
     # Gather all RC fits files in the folder with the keyword IMGTYPE=SCIENCE
-    for f in glob.glob(os.path.join(mydir, "rc*fits")):
+    for f in glob.glob(os.path.join(mydir, "rc%s_??_??_??fits" % timestamp)):
         try:
             if (fitsutils.has_par(f, "IMGTYPE") and
                     ((fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE") or (
