@@ -140,8 +140,13 @@ def plot_stats(statfile):
     ax3.set_title('Background')
     ax4.plot(datestat, s["f7"], ".-")
     ax4.set_title('Airmass')
-    ax5.plot(datestat, s["f8"], ".-", label="Inside")
-    ax5.plot(datestat, s["f10"], ".-", label="Outside")
+    # get rid of bad values
+    tin = s["f8"]
+    tout = s["f10"]
+    tin[tin < -100] = np.nan
+    tout[tout < -100] = np.nan
+    ax5.plot(datestat, tin, ".-", label="Inside")
+    ax5.plot(datestat, tout, ".-", label="Outside")
     # ax5.plot(datestat, s["f11"], ".-")
     ax5.set_title('Temperature')
     ax6.plot(datestat, s["f5"], ".-")
