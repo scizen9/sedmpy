@@ -11,10 +11,25 @@ import datetime
 import subprocess
 import os
 import glob
+import argparse
 
 if __name__ == '__main__':
 
-    directory = datetime.datetime.strftime(datetime.datetime.utcnow(), "%Y%m%d")
+    parser = argparse.ArgumentParser(description="""
+        link rc files into phot directory
+        """, formatter_class=argparse.RawTextHelpFormatter)
+
+    parser.add_argument('-d', '--utdate', type=str, default=None,
+                        help='UT date string: YYYYMMDD')
+
+    args = parser.parse_args()
+
+    if args.utdate:
+        directory = args.utdate
+    else:
+        directory = datetime.datetime.strftime(datetime.datetime.utcnow(),
+                                               "%Y%m%d")
+
     if not os.path.isdir("/scr2/sedmdrp/phot/%s" % directory):
         os.makedirs("/scr2/sedmdrp/phot/%s" % directory)
     fls = glob.glob("/scr2/sedm/raw/%s/rc*" % directory)
