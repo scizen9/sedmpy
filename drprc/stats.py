@@ -1,4 +1,3 @@
-from __future__ import print_function
 # :4-*- coding: utf-8 -*-
 """
 Created on Sat May 21 10:26:37 2016
@@ -8,10 +7,7 @@ Created on Sat May 21 10:26:37 2016
 import datetime
 import glob
 import os
-try:
-    import recenter_ifu
-except ImportError:
-    import drprc.recenter_ifu as recenter_ifu
+
 try:
     import fitsutils
 except ImportError:
