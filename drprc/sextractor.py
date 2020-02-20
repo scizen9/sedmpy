@@ -1,4 +1,3 @@
-from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar  1 20:19:04 2016
@@ -563,6 +562,10 @@ def analyse_image(sexfile, arcsecpix=0.394, is_rccam=True):
 
     # Select bright magnitudes
     s = s[s["mag"] < np.percentile(s["mag"], 20)]
+
+    nsources = len(s)
+    if nsources == 0:
+        return 0, 0, 0, 0
        
     fwhm = np.nanmedian(s["fwhm_image"]*arcsecpix)
     bkg = np.nanmedian(s["background"])
