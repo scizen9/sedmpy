@@ -109,7 +109,7 @@ def plot_stats(statfile):
     
     colors = {"ACQUISITION": "b", "SCIENCE": "r", "FOCUS": "g", "GUIDER": "k"}
     
-    s = np.genfromtxt(statfile, delimiter=",", dtype=None)
+    s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
     s.sort(order="f2")
     s = s[s["f3"] > 1]
 
