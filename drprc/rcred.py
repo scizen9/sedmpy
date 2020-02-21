@@ -474,6 +474,7 @@ def copy_ref_calib(curdir, calib="Flat"):
     for srcdir in srtlist:
         print("Checking %s" % srcdir)
         for cal in np.array(calib_dic.keys())[not np.array(calib_dic.values())]:
+            print("Checking for %s" % cal)
             c = os.path.join(srcdir, cal)
             if os.path.isfile(c):
                 print("Copying calibration file %s to directory %s" % (c,
@@ -482,6 +483,9 @@ def copy_ref_calib(curdir, calib="Flat"):
                 calib_dic[cal] = True
         if all(calib_dic.values()):
             break
+    if not all(calib_dic.values()):
+        for cal in np.array(calib_dic.keys())[not np.array(calib_dic.values())]:
+            print("Still missing: %s" % cal)
 
 
 def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
