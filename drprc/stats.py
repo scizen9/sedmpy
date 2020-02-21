@@ -169,11 +169,11 @@ def plot_stats(statfile):
     plt.setp(labels, rotation=30, fontsize=10)
 
     ax2.legend(labelspacing=0.3, loc="upper right", fontsize=11, numpoints=1,
-               frameon=False, ncol=1, fancybox=False, shadow=True,
+               frameon=True, ncol=1, fancybox=False, shadow=True,
                bbox_to_anchor=(1., 1.))
 
     ax5.legend(labelspacing=0.3, loc="upper left", fontsize=11, numpoints=1,
-               frameon=False, ncol=1, fancybox=False, shadow=True,
+               frameon=True, ncol=1, fancybox=False, shadow=True,
                bbox_to_anchor=(0., 1.))
     
     plt.savefig(statfile.replace(".log", "%s.png" % day), bbox="tight")
