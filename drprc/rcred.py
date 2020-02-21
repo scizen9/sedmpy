@@ -55,6 +55,7 @@ with codecs.open(configfile, 'r') as f:
 
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
+_reduxpath = parser.get('paths', 'reduxpath')
 _db = parser.get('persistence', 'db')
 
 FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
@@ -462,43 +463,25 @@ def copy_ref_calib(curdir, calib="Flat"):
         calib_dic[cal] = os.path.isfile(os.path.join(curdir, cal))
 
     # If all the calibration files are in place, nothing to do.
-    if np.all(calib_dic.values()):
+    if all(calib_dic.values()):
         return
 
-    # Check which dates have the calibration files that we need.
-    listcalib = glob.glob(os.path.join(curdir, "../../refphot/*/", calib + "*"))
-    # Obtain the folder name
-    listdirs = [os.path.dirname(fl) for fl in listcalib]
-    # Unique name
-    calibdates = np.array(list(set(listdirs)))
-
-    # compile the dates in datetime format
-    dates = []
-    for ff in calibdates:
-        dateobs = os.path.basename(ff)
-        dates.append(datetime.datetime.strptime(dateobs, "%Y%m%d"))
-
-    # dates = np.array(dates)
-    curdate = datetime.datetime.strptime(os.path.basename(curdir), "%Y%m%d")
-
-    # Select the folder that is closer to the date of the current directory
-    # lastdir = np.array(calibdates)[np.argmin(np.abs(curdate - dates))]
-
-    # Try to go 100 days before the data was taken.
-    i = 0
-    while i < 1000 and not np.all(calib_dic.values()):
-        i = i + 1
-        newdate = curdate - datetime.timedelta(i)
-        newdatedir = "%d%02d%02d" % (newdate.year, newdate.month, newdate.day)
-        print("Checking day %s" % newdatedir)
-        for cal in np.array(calib_dic.keys())[~np.array(calib_dic.values())]:
-            c = os.path.join(curdir, "../../refphot/", newdatedir, cal)
-
+    # get a list of potential calibration file directories
+    fspec = os.path.join(_reduxpath, 'refphot/20??????')
+    srtlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])
+    srtlist.reverse()
+    # Loop over list and find cals we need
+    for srcdir in srtlist:
+        print("Checking %s" % srcdir)
+        for cal in np.array(calib_dic.keys())[not np.array(calib_dic.values())]:
+            c = os.path.join(srcdir, cal)
             if os.path.isfile(c):
                 print("Copying calibration file %s to directory %s" % (c,
                                                                        curdir))
                 shutil.copy(c, os.path.join(curdir, os.path.basename(c)))
                 calib_dic[cal] = True
+        if all(calib_dic.values()):
+            break
 
 
 def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
