@@ -253,7 +253,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
 
     # Create dictionaries
     tdic = {"fast": lftflat, "slow": lstflat}
-    ldic = {"u": [1200, 45000], "g": [10000, 55000],
+    ldic = {"u": [1200, 45000], "g": [10000, 50000],
             "r": [7000, 50000], "i": [5000, 50000]}
     ddic = {"fast": lfdflat, "slow": lsdflat}
     fdic = {"twilight": tdic, "dome": ddic}
