@@ -62,6 +62,8 @@ timestamp = datetime.datetime.isoformat(now)
 creationdate = timestamp
 timestamp = timestamp.split("T")[0]
 
+plt.switch_backend('Agg')
+
 try:
     # Log into a file
     root_dir = _logpath
