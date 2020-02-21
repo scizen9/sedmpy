@@ -1013,12 +1013,11 @@ if __name__ == '__main__':
         """, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-l', '--filelist', type=str,
-                        help='File containing the list of fits for the night.',
-                        default=None)
+                        help='File containing the list of fits files '
+                             'for the night.', default=None)
     parser.add_argument('-d', '--photdir', type=str,
-                        help='Directory containing the science fits '
-                             'for the night.',
-                        default=None)
+                        help='Directory containing the science fits files '
+                             'for the night.', default=None)
     parser.add_argument('-c', '--clean', action="store_true",
                         help='Clean the reduced images?', default=False)
     parser.add_argument('-o', '--overwrite', action="store_true",
