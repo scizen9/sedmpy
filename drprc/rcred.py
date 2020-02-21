@@ -327,7 +327,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                     if ldic[b][0] < level < ldic[b][1]:
                         lfiles.append(fff)
                         mymode = 1. * np.median(d.flatten())
-                        d[d > 45000] = mymode
+                        d[d > max(ldic[b])] = mymode
                         fi[0].header['FLMODE'] = (mymode,
                                                   'median of flat level')
                         fi[0].data = d
@@ -478,8 +478,9 @@ def copy_ref_calib(curdir, calib="Flat"):
                 print("Checking for %s" % cal)
                 c = os.path.join(srcdir, cal)
                 if os.path.isfile(c):
-                    print("Copying calibration file %s to directory %s" %
-                          (c, curdir))
+                    logger.info("Copying calibration file %s to from "
+                                "directory %s to directory %s" %
+                                (srcdir, c, curdir))
                     shutil.copy(c, os.path.join(curdir, os.path.basename(c)))
                     calib_dic[cal] = True
         if all(calib_dic.values()):
@@ -487,7 +488,7 @@ def copy_ref_calib(curdir, calib="Flat"):
     if not all(calib_dic.values()):
         for cal in calib_dic:
             if not calib_dic[cal]:
-                print("Still missing: %s" % cal)
+                logger.warning("Still missing: %s" % cal)
 
 
 def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
