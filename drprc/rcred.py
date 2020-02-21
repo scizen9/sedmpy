@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Jun 14 13:11:52 2015
+Updated on Fri Feb 21 2020 by neill
 
 @author: nadiablago
 """
@@ -251,8 +252,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
 
     # Create dictionaries
     tdic = {"fast": lftflat, "slow": lstflat}
-    ldic = {"u": [1200, 45000], "g": [10000, 45000],
-            "r": [5000, 50000], "i": [5000, 45000]}
+    ldic = {"u": [1200, 45000], "g": [10000, 55000],
+            "r": [7000, 50000], "i": [5000, 50000]}
     ddic = {"fast": lfdflat, "slow": lsdflat}
     fdic = {"twilight": tdic, "dome": ddic}
 
@@ -440,10 +441,18 @@ def copy_ref_calib(curdir, calib="Flat"):
     if calib == "Bias":
         calib_dic = {"Bias_rc_fast.fits": False, "Bias_rc_slow.fits": False}
     else:
-        calib_dic = {"Flat_rc_u_norm.fits": False,
-                     "Flat_rc_g_norm.fits": False,
-                     "Flat_rc_r_norm.fits": False,
-                     "Flat_rc_i_norm.fits": False}
+        calib_dic = {"Flat_rc_dome_fast_u_norm.fits": False,
+                     "Flat_rc_dome_fast_g_norm.fits": False,
+                     "Flat_rc_dome_fast_r_norm.fits": False,
+                     "Flat_rc_dome_fast_i_norm.fits": False,
+                     "Flat_rc_dome_slow_u_norm.fits": False,
+                     "Flat_rc_dome_slow_g_norm.fits": False,
+                     "Flat_rc_dome_slow_r_norm.fits": False,
+                     "Flat_rc_dome_slow_i_norm.fits": False,
+                     "Flat_rc_twilight_slow_u_norm.fits": False,
+                     "Flat_rc_twilight_slow_g_norm.fits": False,
+                     "Flat_rc_twilight_slow_r_norm.fits": False,
+                     "Flat_rc_twilight_slow_i_norm.fits": False}
 
     # Get the date of the current directory
     curdir = os.path.abspath(curdir)
