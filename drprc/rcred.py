@@ -546,34 +546,6 @@ def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
     return astro
 
 
-def make_mask_cross(img):
-    maskname = os.path.join(os.path.dirname(img), "mask.fits")
-
-    if os.path.isfile(maskname):
-        return maskname
-
-    ff = fits.open(img)
-    data = ff[0].data
-
-    corners = {
-        "g": [1, 850, 1, 850],
-        "i": [1, 850, 110, 2045],
-        "r": [1150, 2045, 1150, 2045],
-        "u": [1130, 2045, 1, 850]
-    }
-
-    newdata = np.ones_like(data) * np.nan
-
-    for band in corners.keys():
-        ix = corners[band]
-        newdata[ix[0]:ix[1], ix[2]: ix[3]] = 1
-
-    ff[0].data = newdata
-    ff.writeto(maskname, overwrite=True)
-
-    return maskname
-
-
 def slice_rc(img, calib=False):
     """
     Slices the Rainbow Camera into 4 different images and adds the 'filter'
@@ -781,7 +753,8 @@ def plot_image(image):
 
 
 def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
-                 astrometry=True, target_dir='reduced', overwrite=False):
+                 astrometry=True, target_dir='reduced', overwrite=False,
+                 kind_use=None, speed_use=None):
     """
     Applies Flat field and bias calibrations to the image.
 
@@ -944,9 +917,17 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         # Which kind of flat to use?
         if 'slow' in speed:
+            # twilights for slow (science) images
             kind = 'twilight'
         else:
+            # domes for fast (ACQ) images
             kind = 'dome'
+
+        # Unless directed by the user to some other kind/speed
+        if kind_use:
+            kind = kind_use
+        if speed_use:
+            speed = speed_use
 
         deflatted = os.path.join(
             os.path.dirname(image), target_dir,
@@ -1129,6 +1110,7 @@ if __name__ == '__main__':
                 do_cosmic = False
             try:
                 reduced = reduce_image(f, cosmic=do_cosmic,
+                                       kind_use='twilight', speed_use='slow',
                                        overwrite=args.overwrite)
                 reducedfiles.extend(reduced)
             except OSError:
