@@ -38,5 +38,9 @@ if __name__ == '__main__':
         cmd = "ln -s /scr2/sedm/raw/%s/rc* /scr2/sedmdrp/redux/phot/%s/"\
               % (directory, directory)
         subprocess.call(cmd, shell=True)
+        os.chdir("/scr2/sedmdrp/redux/phot/%s" % directory)
+        cmd = "python /scr2/sedmdrp/sedmpy/drpifu/What.py rc%s_*.fits > " \
+              "rcwhat.list" % directory
+        subprocess.call(cmd, shell=True)
 
 
