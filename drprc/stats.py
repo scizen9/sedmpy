@@ -205,5 +205,6 @@ if __name__ == '__main__':
 
     rclist = glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits"))
     print("Running stats on %d rc images in %s" % (len(rclist), photdir))
-    get_sextractor_stats(rclist)
-    plot_stats(os.path.join(os.path.abspath(photdir), "stats/stats.log")) 
+    if len(rclist) > 0:
+        get_sextractor_stats(rclist)
+        plot_stats(os.path.join(os.path.abspath(photdir), "stats/stats.log"))
