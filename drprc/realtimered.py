@@ -1,4 +1,3 @@
-from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar  3 19:23:29 2016
@@ -19,10 +18,6 @@ try:
 except ImportError:
     import drprc.fitsutils as fitsutils
 import datetime
-try:
-    import zeropoint
-except ImportError:
-    import drprc.zeropoint as zeropoint
 import logging
 from astropy.io import fits
 from matplotlib import pylab as plt
@@ -31,9 +26,6 @@ import numpy as np
 from configparser import ConfigParser
 
 import codecs
-
-import matplotlib
-matplotlib.use("Agg")
 
 parser = ConfigParser()
 
@@ -46,6 +38,8 @@ with codecs.open(configfile, 'r') as f:
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
 
+plt.switch_backend('Agg')
+
 # Log into a file
 log_format = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 root_dir = _logpath
@@ -57,34 +51,6 @@ logging.basicConfig(format=log_format,
                                           "rcred_{0}.log".format(timestamp)),
                     level=logging.INFO)
 logger = logging.getLogger('realtimered')
-
-
-def reduce_all_dir(photdir, overwrite=False):
-    
-    # Reduce the data that is already in the directory.
-    cmd = "/scr7/rsw/anaconda3/bin/python rcred.py -d %s" % photdir
-    if overwrite:
-        cmd = cmd + " -o"
-    subprocess.call(cmd, shell=True)
-    logger.info("Reduce all dir: %s" % cmd)
-
-    # Copy the content of the reduced directory into a new directory
-    # with the date of the observations.
-    dayname = os.path.basename(photdir)
-    reducedname = os.path.join(photdir, "reduced")
-
-    # Reduce the data that is already in the directory.
-    cmd = "/scr7/rsw/anaconda3/bin/python zeropoint.py  %s" % reducedname
-    subprocess.call(cmd, shell=True)
-    logger.info("zeropoint for all dir: %s" % cmd)
-    
-    if os.path.isdir(reducedname):
-        cmd = "rcp -r %s grbuser@transient.caltech.edu:" \
-              "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
-              (reducedname, dayname)
-        subprocess.call(cmd, shell=True)
-    else:
-        os.makedirs(reducedname)
 
 
 def plot_image(image):
@@ -127,7 +93,7 @@ def plot_image(image):
     plt.close()
 
 
-def reduce_on_the_fly(photdir):
+def reduce_on_the_fly(photdir, nocopy=False):
     """
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
@@ -148,11 +114,11 @@ def reduce_on_the_fly(photdir):
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
         if len(nfilesnew) == len(nfiles):
-            time.sleep(10)
+            time.sleep(30)
         else:
             new = [ff for ff in nfilesnew if ff not in nfiles]
             new.sort()
-            logger.info("Detected new %d incoming files in the last 10s." %
+            logger.info("Detected new %d incoming files in the last 30s." %
                         len(new))
             for n in new:
 
@@ -165,32 +131,28 @@ def reduce_on_the_fly(photdir):
 
                 plot_image(n)
                 imtype = fitsutils.get_par(n, "IMGTYPE")
-                if imtype.upper() == "SCIENCE":
+                if imtype.upper() == "SCIENCE" or 'ACQ' in imtype:
                     reduced = rcred.reduce_image(n)
-                    try:
-                        zeropoint.calibrate_zeropoint(reduced)
-                    except:
-                        logger.error(
-                            "Could not calibrate zeropoint for image %s" %
-                            reduced)
-                    # C opy them to transient
-                    for r in reduced:
-                        cmd = "rcp %s grbuser@transient.caltech.edu:" \
-                              "/scr3/mansi/ptf/p60phot/fremling_pipeline/" \
-                              "sedm/reduced/%s/." % (r, dayname)
-                        subprocess.call(cmd, shell=True)
-                        logger.info(cmd)
-                        logger.info("Successfully copied the image: %s" % cmd)
+                    if not nocopy:
+                        # Copy them to transient
+                        for r in reduced:
+                            cmd = "rcp %s grbuser@transient.caltech.edu:" \
+                                  "/scr3/mansi/ptf/p60phot/fremling_pipeline/" \
+                                  "sedm/reduced/%s/." % (r, dayname)
+                            subprocess.call(cmd, shell=True)
+                            logger.info(cmd)
+                            logger.info("Successfully copied the image: %s" %
+                                        cmd)
 
         time_curr = datetime.datetime.now()
-        nfiles = nfilesnew  
-        
+        nfiles = nfilesnew
+    logger.info("Concluding the night's RC image processing.")
+
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description="""
-        Runs astrometry.net on the image specified as a parameter and returns 
-        the offset needed to be applied in order to center the object
-        coordinates in the reference pixel.
+        Performs on-the-fly RC reduction
         """, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-d', '--photdir', type=str, dest="photdir",
@@ -202,6 +164,8 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--overwrite', action="store_true",
                         help='re-reduce and overwrite the reduced images?',
                         default=False)
+    parser.add_argument('-p', '--nocopy', action="store_true",
+                        help='do not copy to transient', default=False)
 
     args = parser.parse_args()
 
@@ -212,10 +176,4 @@ if __name__ == '__main__':
     else:
         pdir = args.photdir
 
-    if args.fullred:
-        reduce_all_dir(os.path.abspath(pdir), overwrite=args.overwrite)
-
-    reduce_on_the_fly(os.path.abspath(pdir))
-    
-    # After 12h, invoke the zeropoint calibration.
-    zeropoint.main(os.path.join(os.path.abspath(pdir), "reduced"))
+    reduce_on_the_fly(os.path.abspath(pdir), nocopy=args.nocopy)
