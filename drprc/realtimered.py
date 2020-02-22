@@ -98,6 +98,25 @@ def reduce_on_the_fly(photdir, nocopy=False):
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
     """
+    # Do we have files yet?
+    whatf = os.path.join(photdir, 'rcwhat.list')
+    while not os.path.isfile(whatf):
+        # Wait 10 minutes
+        logger.info("No rcwhat.list file yet, waiting 10 min...")
+        time.sleep(600)
+
+    # Wait for an acquisition
+    with open(whatf, 'r') as wtf:
+        whatl = wtf.readlines()
+    acqs = [wl for wl in whatl if 'ACQ' in wl]
+    # Do we have an acquisition?
+    while len(acqs) <= 0:
+        logger.info("No acquisition yet (bright), waiting 10 min...")
+        time.sleep(600)
+        with open(whatf, 'r') as wtf:
+            whatl = wtf.readlines()
+        acqs = [wl for wl in whatl if 'ACQ' in wl]
+    logger.info("It's dark now, so let's reduce some data!")
     # Get the current the number of files
 
     nfiles = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
@@ -109,7 +128,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
     time_ini = datetime.datetime.now()
     time_curr = datetime.datetime.now()
     
-    # Run this loop for 10h since the start.
+    # Run this loop for 10h after the start.
     while (time_curr-time_ini).total_seconds() < 10.*3600:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
