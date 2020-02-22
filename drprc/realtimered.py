@@ -109,8 +109,8 @@ def reduce_on_the_fly(photdir, nocopy=False):
     time_ini = datetime.datetime.now()
     time_curr = datetime.datetime.now()
     
-    # Run this loop for 12h since the start.
-    while (time_curr-time_ini).total_seconds() < 12.*3600:
+    # Run this loop for 10h since the start.
+    while (time_curr-time_ini).total_seconds() < 10.*3600:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
         if len(nfilesnew) == len(nfiles):
