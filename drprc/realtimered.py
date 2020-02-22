@@ -98,24 +98,43 @@ def reduce_on_the_fly(photdir, nocopy=False):
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
     """
+    # Starting time of this run
+    time_ini = datetime.datetime.now()
+    # Current time to check against starting time
+    time_curr = datetime.datetime.now()
+    # Delta time
+    deltime = time_curr - time_ini
+    # Don't wait longer than this (12hr)
+    total_wait = 12.*3600.
+
     # Do we have files yet?
     whatf = os.path.join(photdir, 'rcwhat.list')
-    while not os.path.isfile(whatf):
+    while not os.path.isfile(whatf) and deltime.total_seconds() < total_wait:
         # Wait 10 minutes
         logger.info("No rcwhat.list file yet, waiting 10 min...")
         time.sleep(600)
+        # Check our wait time
+        time_curr = datetime.datetime.now()
+        deltime = time_curr - time_ini
+        if deltime.total_seconds() > total_wait:
+            logger.warning("Waited 12hr and no rcwhat file appeared!")
+            return
 
     # Wait for an acquisition
-    with open(whatf, 'r') as wtf:
-        whatl = wtf.readlines()
-    acqs = [wl for wl in whatl if 'ACQ' in wl]
-    # Do we have an acquisition?
-    while len(acqs) <= 0:
+    acqs = []
+    while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
         logger.info("No acquisition yet (bright), waiting 10 min...")
         time.sleep(600)
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
         acqs = [wl for wl in whatl if 'ACQ' in wl]
+        # Check our wait time
+        time_curr = datetime.datetime.now()
+        deltime = time_curr - time_ini
+        if deltime.total_seconds() > total_wait:
+            logger.warning("Waited 12hr and no ACQ appeared!")
+            return
+
     logger.info("It's dark now, so let's reduce some data!")
     # Get the current the number of files
 
@@ -124,12 +143,12 @@ def reduce_on_the_fly(photdir, nocopy=False):
                 "Found %d files to process." % (photdir, len(nfiles)))
     
     dayname = os.path.basename(photdir)
-    
-    time_ini = datetime.datetime.now()
+
     time_curr = datetime.datetime.now()
+    deltime = time_curr - time_ini
     
-    # Run this loop for 10h after the start.
-    while (time_curr-time_ini).total_seconds() < 10.*3600:
+    # Run this loop for 12h after the start.
+    while deltime.total_seconds() < total_wait:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
         if len(nfilesnew) == len(nfiles):
@@ -137,20 +156,20 @@ def reduce_on_the_fly(photdir, nocopy=False):
         else:
             new = [ff for ff in nfilesnew if ff not in nfiles]
             new.sort()
-            logger.info("Detected new %d incoming files in the last 30s." %
+            logger.info("Detected %d new incoming files in the last 30s." %
                         len(new))
             for n in new:
-
+                # Make sure imgtype is available
                 if not fitsutils.has_par(n, "IMGTYPE"):
                     print("Image", n, "Does not have an IMGTYPE")
                     time.sleep(0.5)
                     if not fitsutils.has_par(n, "IMGTYPE"):
                         print("Image", n, "STILL Does not have an IMGTYPE")
                         continue
-
+                # Make a plot of image
                 plot_image(n)
                 imtype = fitsutils.get_par(n, "IMGTYPE")
-                if imtype.upper() == "SCIENCE" or 'ACQ' in imtype:
+                if "SCIENCE" in imtype.upper() or 'ACQ' in imtype.upper():
                     reduced = rcred.reduce_image(n)
                     if not nocopy:
                         # Copy them to transient
@@ -162,10 +181,12 @@ def reduce_on_the_fly(photdir, nocopy=False):
                             logger.info(cmd)
                             logger.info("Successfully copied the image: %s" %
                                         cmd)
-
+        # Get new delta time
         time_curr = datetime.datetime.now()
+        deltime = time_curr - time_ini
+        # Update file count
         nfiles = nfilesnew
-    logger.info("Concluding the night's RC image processing.")
+    logger.info("Concluding RC image processing for %s." % dayname)
 
 
 if __name__ == '__main__':
