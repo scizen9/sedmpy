@@ -97,7 +97,7 @@ def get_xy_coords(image, ra, dec):
     return coords
 
 
-def create_masterbias(biasdir=None, channel='rc'):
+def create_masterbias(biasdir=None):
     """
     Combines slow and fast readout mode biases for the specified channel.
     """
@@ -105,8 +105,8 @@ def create_masterbias(biasdir=None, channel='rc'):
     if (biasdir is None) or biasdir == "":
         biasdir = "."
 
-    outs = "Bias_%s_slow.fits" % channel
-    outf = "Bias_%s_fast.fits" % channel
+    outs = "Bias_rc_slow.fits"
+    outf = "Bias_rc_fast.fits"
 
     doslow = True
     dofast = True
