@@ -170,7 +170,11 @@ def reduce_on_the_fly(photdir, nocopy=False):
                 plot_image(n)
                 imtype = fitsutils.get_par(n, "IMGTYPE")
                 if "SCIENCE" in imtype.upper() or 'ACQ' in imtype.upper():
-                    reduced = rcred.reduce_image(n)
+                    if fitsutils.get_par(n, "EXPTIME") > 30.:
+                        do_cosmic = True
+                    else:
+                        do_cosmic = False
+                    reduced = rcred.reduce_image(n, cosmic=do_cosmic)
                     if not nocopy:
                         # Copy them to transient
                         for r in reduced:
