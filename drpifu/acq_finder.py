@@ -27,9 +27,8 @@ import argparse
 from configparser import ConfigParser
 import codecs
 
-# import matplotlib
-# matplotlib.use("Agg")
 from matplotlib import pylab as plt
+plt.switch_backend('Agg')
 
 cfg_parser = ConfigParser()
 
@@ -43,7 +42,8 @@ except KeyError:
 with codecs.open(configfile, 'r') as f:
     cfg_parser.read_file(f)
 
-_rawpath = cfg_parser.get('paths', 'rawpath')
+# Default paths
+_rcpath = cfg_parser.get('paths', 'rcpath')
 _reduxpath = cfg_parser.get('paths', 'reduxpath')
 _srcpath = cfg_parser.get('paths', 'srcpath')
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
 
     if imfile:
         timestamp = imfile.split('/')[-2]
-        rcdir = os.path.join(_rawpath, timestamp)
+        rcdir = os.path.join(_rcpath, timestamp)
         reduxdir = '/'.join(imfile.split('/')[0:-1])
         objnam = fitsutils.get_par(imfile, "OBJECT").split()[0]
         if 'STD' in objnam:
@@ -276,7 +276,7 @@ if __name__ == "__main__":
         if rcdir is None:
             timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
             timestamp = timestamp.split("T")[0].replace("-", "")
-            rcdir = os.path.join(_rawpath, timestamp)
+            rcdir = os.path.join(_rcpath, timestamp)
         else:
             timestamp = os.path.basename(os.path.abspath(rcdir))
 
