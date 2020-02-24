@@ -138,9 +138,8 @@ def reduce_on_the_fly(photdir, nocopy=False):
     logger.info("It's dark now, so let's reduce some data!")
     # Get the current the number of files
 
-    nfiles = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
-    logger.info("Starting the on-the-fly reduction for directory %s. "
-                "Found %d files to process." % (photdir, len(nfiles)))
+    nfiles = []
+    logger.info("Starting the on-the-fly reduction for directory %s." % photdir)
     
     dayname = os.path.basename(photdir)
 
