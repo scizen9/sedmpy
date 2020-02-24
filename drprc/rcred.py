@@ -6,10 +6,6 @@ Updated on Fri Feb 21 2020 by neill
 @author: nadiablago
 """
 
-try:
-    import fitsutils
-except ImportError:
-    import drprc.fitsutils as fitsutils
 import os
 import glob
 import shutil
@@ -23,6 +19,11 @@ import subprocess
 import argparse
 import datetime
 import logging
+
+try:
+    import fitsutils
+except ImportError:
+    import drprc.fitsutils as fitsutils
 
 try:
     import sextractor
@@ -754,7 +755,7 @@ def plot_image(image):
 
 def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
                  astrometry=True, target_dir='reduced', overwrite=False,
-                 kind_use=None, speed_use=None):
+                 kind_use=None, speed_use=None, save_int=False):
     """
     Applies Flat field and bias calibrations to the image.
 
@@ -909,7 +910,8 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     print("Created: ", slice_names)
 
     # Remove un-sliced image
-    os.remove(debiased)
+    if not save_int:
+        os.remove(debiased)
 
     # DE-flat each filter and store under object name
     for i, debiased_f in enumerate(slice_names):
@@ -964,7 +966,8 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
                          "the flat field %s!" % (debiased_f, flat))
 
         # Removes the de-biased file
-        os.remove(debiased_f)
+        if not save_int:
+            os.remove(debiased_f)
 
         slice_names[i] = deflatted
 
