@@ -43,7 +43,7 @@ with codecs.open(configfile, 'r') as f:
     cfg_parser.read_file(f)
 
 # Default paths
-_rcpath = cfg_parser.get('paths', 'rcpath')
+_rcpath = cfg_parser.get('paths', 'photpath')
 _reduxpath = cfg_parser.get('paths', 'reduxpath')
 _srcpath = cfg_parser.get('paths', 'srcpath')
 
