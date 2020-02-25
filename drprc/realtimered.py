@@ -121,7 +121,9 @@ def reduce_on_the_fly(photdir, nocopy=False):
             return
 
     # Wait for an acquisition
-    acqs = []
+    with open(whatf, 'r') as wtf:
+        whatl = wtf.readlines()
+    acqs = [wl for wl in whatl if 'ACQ' in wl]
     while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
         logger.info("No acquisition yet (bright), waiting 10 min...")
         time.sleep(600)
@@ -166,9 +168,11 @@ def reduce_on_the_fly(photdir, nocopy=False):
                         print("Image", n, "STILL Does not have an IMGTYPE")
                         continue
                 # Make a plot of image
-                plot_image(n)
                 imtype = fitsutils.get_par(n, "IMGTYPE")
-                if "SCIENCE" in imtype.upper() or 'ACQ' in imtype.upper():
+                if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper() or \
+                        "FOCUS" in imtype.upper():
+                    plot_image(n)
+                if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:
                         do_cosmic = True
                     else:
