@@ -61,15 +61,6 @@ def plot_image(image):
     logger.info("Plotting raw image %s" % image)
     
     image = os.path.abspath(image)
-    
-    # Change to image directory
-    imdir, imname = os.path.split(image)
-
-    # Create destination directory
-    png_dir = os.path.join(imdir, "pngraw")
-
-    if not os.path.isdir(png_dir):
-        os.makedirs(png_dir)
 
     try:
         ff = fits.open(image)[0]
@@ -78,10 +69,25 @@ def plot_image(image):
         return
     d = ff.data
     h = ff.header
-    imtype = h.get('IMGTYPE', 0)
+    imtype = h.get('IMGTYPE', 'None')
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
+
+    # Sub-dir
+    subdir = imtype.lower().strip()
+    
+    # Change to image directory
+    imdir, imname = os.path.split(image)
+
+    # Create destination directory
+    png_dir = os.path.join(imdir, "pngraw")
+    if not os.path.isdir(png_dir):
+        os.makedirs(png_dir)
+
+    png_dir = os.path.join(png_dir, subdir)
+    if not os.path.isdir(png_dir):
+        os.makedirs(png_dir)
 
     plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
                vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
@@ -169,9 +175,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
                         continue
                 # Make a plot of image
                 imtype = fitsutils.get_par(n, "IMGTYPE")
-                if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper() or \
-                        "FOCUS" in imtype.upper():
-                    plot_image(n)
+                plot_image(n)
                 if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:
                         do_cosmic = True
