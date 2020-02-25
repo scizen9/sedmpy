@@ -46,6 +46,7 @@ with codecs.open(configfile, 'r') as f:
 _rcpath = cfg_parser.get('paths', 'photpath')
 _reduxpath = cfg_parser.get('paths', 'reduxpath')
 _srcpath = cfg_parser.get('paths', 'srcpath')
+_altrcpath = cfg_parser.get('paths', 'rawpath')
 
 
 def finder(myfile, findername, searchrad=0.2/60.):
@@ -265,6 +266,8 @@ if __name__ == "__main__":
     if imfile:
         timestamp = imfile.split('/')[-2]
         rcdir = os.path.join(_rcpath, timestamp)
+        if not os.path.isdir(rcdir):
+            rcdir = os.path.join(_altrcpath, timestamp)
         reduxdir = '/'.join(imfile.split('/')[0:-1])
         objnam = fitsutils.get_par(imfile, "OBJECT").split()[0]
         if 'STD' in objnam:
@@ -277,6 +280,8 @@ if __name__ == "__main__":
             timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
             timestamp = timestamp.split("T")[0].replace("-", "")
             rcdir = os.path.join(_rcpath, timestamp)
+            if not os.path.isdir(rcdir):
+                rcdir = os.path.join(_altrcpath, timestamp)
         else:
             timestamp = os.path.basename(os.path.abspath(rcdir))
 
