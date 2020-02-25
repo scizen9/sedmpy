@@ -34,10 +34,10 @@ from configparser import ConfigParser
 import codecs
 try:
     from AutoReduce import update_spec, make_e3d, update_calibration, \
-        proc_bias_crrs, find_recent
+        proc_bias_crrs, find_recent, make_finder
 except ImportError:
     from drpifu.AutoReduce import update_spec, make_e3d, update_calibration, \
-        proc_bias_crrs, find_recent
+        proc_bias_crrs, find_recent, make_finder
 
 try:
     import rcimg
@@ -1294,6 +1294,8 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
                 continue
             # Now we try for a cube
             ntry += 1
+            # Make finder if needed
+            make_finder(fl)
             # are we a standard star?
             if 'STD-' in obj:
                 if make_e3d(fnam=fl, destdir=destdir, datestr=ut_date,
