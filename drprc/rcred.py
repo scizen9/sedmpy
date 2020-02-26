@@ -825,7 +825,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
     astro = ""
     if astrometry:
-        logger.info("Solving astometry for the whole image...")
+        logger.info("Solving astrometry for the whole image...")
         img = solve_astrometry(image)
         if os.path.isfile(img):
             astro = "a_"
