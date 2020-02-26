@@ -1133,6 +1133,6 @@ if __name__ == '__main__':
     elif args.filelist is not None and not args.nocopy:
         for f in reducedfiles:
             com = "rcp %s grbuser@transient.caltech.edu:" \
-                  "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s/."\
+                  "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s"\
                   % (f, dayname)
             subprocess.call(com, shell=True)
