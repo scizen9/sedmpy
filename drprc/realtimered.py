@@ -89,14 +89,18 @@ def plot_image(image):
     if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
 
-    plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
-               vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
-    plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
-    plt.colorbar()
-    logger.info("As %s", os.path.join(png_dir, imname.replace(".fits",
-                                                              "_all.png")))
-    plt.savefig(os.path.join(png_dir, imname.replace(".fits", "_all.png")))
-    plt.close()
+    outfig = os.path.join(png_dir, imname.replace(".fits", "_all.png"))
+
+    if not os.path.isfile(outfig):
+        plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
+                   vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
+        plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
+        plt.colorbar()
+        logger.info("As %s", outfig)
+        plt.savefig(outfig)
+        plt.close()
+    else:
+        logger.info("Exists: %s", outfig)
 
 
 def reduce_on_the_fly(photdir, nocopy=False):
