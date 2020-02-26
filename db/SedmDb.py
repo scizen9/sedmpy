@@ -28,7 +28,7 @@ json_url = os.path.join(SITE_ROOT, 'config.json')
 
 class SedmDB:
     class __SedmDB:
-        def __init__(self, dbname, host, port=5432):
+        def __init__(self, dbname, host, port=5432, supply_pass=False, passwd=None):
             """
             Creates the instance of db connections.
             Needs the username as a parameter.
@@ -41,6 +41,8 @@ class SedmDB:
             self.dbname = dbname
             self.host = host
             self.port = port
+            self.supply_pass = supply_pass
+            self.passwd = passwd
             self.pool_sedmdb = pool.QueuePool(self.__getSedmDBConn__, max_overflow=10, pool_size=2, recycle=True)
 
         def __str__(self):
@@ -50,18 +52,23 @@ class SedmDB:
             """
             Creates the connection to SedmDB.
             """
-            sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
-                                         user=self.user_sedmdb)
+            if not self.supply_pass:
+                sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
+                                             user=self.user_sedmdb)
+            else:
+                sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
+                                             user=self.user_sedmdb, password=self.passwd)
+
             return sedmdbcon
 
     instance = None
 
-    def __init__(self, dbname='sedmdb', host='localhost', port=5432):
+    def __init__(self, dbname='sedmdb', host='localhost', port=5432, supply_pass=False, passwd=None):
         """
         Makes sure only one instance is created.
         """
         if not SedmDB.instance:
-            SedmDB.instance = SedmDB.__SedmDB(dbname, host, port)
+            SedmDB.instance = SedmDB.__SedmDB(dbname, host, port, supply_pass, passwd)
 
         self.sso_objects = None
         # Email templates
@@ -3732,16 +3739,14 @@ def _id_from_time():
 if __name__ == "__main__":
     import datetime
     x = SedmDB(host="pharos.caltech.edu")
-    print(x.expire_requests(send_alerts=False))
+    print(x.expire_requests())
     
-    """d = {'username': 'tassilo',
-    'name': 'Tassilo Schweyer',
-    'email': 'tassilo.schweyer@astro.su.se',
-    'password': 'pass4sedm'}
 
-    print(x.add_user(d))
-    """
+    #print(x.add_user(d))
 
+    #(20191015210231397, 'cbarbarino')
+    #(20191015210513512, 'tleonardo')
+    #20170826174800000
     """obsdict = {
         'object_id': 20190811030012746,
         'user_id': 189,
