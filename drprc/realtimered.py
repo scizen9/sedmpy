@@ -22,6 +22,7 @@ import logging
 from astropy.io import fits
 from matplotlib import pylab as plt
 import numpy as np
+from scipy.stats import sigmaclip
 
 from configparser import ConfigParser
 
@@ -53,7 +54,7 @@ logging.basicConfig(format=log_format,
 logger = logging.getLogger('realtimered')
 
 
-def plot_image(image):
+def plot_image(image, verbose=False):
     """
     Plots the reduced image into the png folder.
 
@@ -99,17 +100,27 @@ def plot_image(image):
             "u": [1024, 2045, 1, 1023]
         }
 
-        pltstd = 50.
+        pltstd = 100.
         for b in corners:
-            std = float(np.nanstd(d[corners[b][2]:corners[b][3],
-                                    corners[b][0]:corners[b][1]]))
-            if 'r' in b:
-                pltstd = std
-            mid = float(np.nanmedian(d[corners[b][2]:corners[b][3],
-                                       corners[b][0]:corners[b][1]]))
+            c, lo, hi = sigmaclip(d[corners[b][2]+150:corners[b][3]-150,
+                                    corners[b][0]+150:corners[b][1]-150],
+                                  low=2.5, high=2.5)
+            std = c.std()
+            mid = c.mean()
             d[corners[b][2]:corners[b][3], corners[b][0]:corners[b][1]] -= mid
+            if 'bias' in subdir and 'r' in b:
+                pltstd = std
+            elif 'dome' in subdir or 'twilight' in subdir:
+                if std > pltstd:
+                    pltstd = std
+            else:
+                if 'r' in b:
+                    if std > pltstd:
+                        pltstd = std
+            if verbose:
+                print("%s %.2f %.2f %.2f" % (b, mid, std, pltstd))
 
-        plt.imshow(d, origin="lower", vmin=-pltstd, vmax=2*pltstd,
+        plt.imshow(d, origin="lower", vmin=-pltstd, vmax=2.*pltstd,
                    cmap=plt.get_cmap('Greys_r'))
         plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
         plt.colorbar()
