@@ -72,6 +72,7 @@ if computer == 'pele':
 elif computer == 'pharos':
     raw_dir = '/scr2/sedm/raw/'
     phot_dir = '/scr2/sedm/phot/'
+    new_phot_dir = '/scr2/sedmdrp/redux/phot/'
     redux_dir = '/scr2/sedmdrp/redux/'
     status_dir = '/scr2/sedm/raw/telstatus/'
     host = 'localhost'
@@ -235,6 +236,7 @@ def fancy_request_table(df):
                           'title="red if peaks >8h from midnight">RA</a></th>')\
                  .replace('DEC</th>', '<a href="#" data-toggle="tooltip" '\
                           'title="red if peaks below 40deg">dec</a></th>')
+
 
 def get_homepage(userid, username):
     sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
@@ -1833,7 +1835,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     else: # past observations on a particular night
         time = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]), int(obsdate[6:8])))
         all_requests = all_requests[all_requests['status'] == 'COMPLETED']
-        all_requests = all_requests[time - 12 * u.hour <= all_requests['lastmodified'] < time + 12 * u.hour]
+        all_requests = all_requests[time - 12 * u.hour <= all_requests['startdate'] < time + 12 * u.hour]
     midnight = time - utcoffset # 7am local time of correct date, midnight UTC
 
     delta_midnight = np.linspace(-8, 8, 500) * u.hour
@@ -2009,6 +2011,9 @@ def search_stats_file(mydate=None):
         if os.path.isfile(s) and os.path.getsize(s) > 0:
             return s, mydate
         else:
+            s = os.path.join(new_phot_dir, mydate, "stats/stats.log")
+            if os.path.isfile(s) and os.path.getsize(s) > 0:
+                return s, mydate
             return None, None
 
     else:
@@ -2019,9 +2024,11 @@ def search_stats_file(mydate=None):
             newdate = curdate
             newdatedir = "%d%02d%02d" % (newdate.year, newdate.month, newdate.day)
             s = os.path.join(phot_dir, newdatedir, "stats/stats.log")
-
+            s_new = os.path.join(new_phot_dir, newdatedir, "stats/stats.log")
             if os.path.isfile(s) and os.path.getsize(s) > 0:
                 return s, newdatedir
+            elif os.path.isfile(s_new) and os.path.getsize(s) > 0:
+                return s_new, newdatedir
             i = i + 1
             curdate -= datetime.timedelta(days=1)
         return None, None
@@ -2211,7 +2218,6 @@ def get_marshal_id(marshal='growth', request_id=None):
             return {'error': ret['marshal_id']}
         else:
             return ret
-
 
 
 def get_user_observations(username, password, obsdate):
