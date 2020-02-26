@@ -67,7 +67,7 @@ def plot_image(image):
     except OSError:
         logger.error("FATAL! Could not open image %s." % image)
         return
-    d = ff.data
+    d = ff.data.astype(np.float64)
     h = ff.header
     imtype = h.get('IMGTYPE', 'None')
     exptime = h.get('EXPTIME', 0)
@@ -92,8 +92,25 @@ def plot_image(image):
     outfig = os.path.join(png_dir, imname.replace(".fits", "_all.png"))
 
     if not os.path.isfile(outfig):
-        plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
-                   vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
+        corners = {
+            "g": [1, 1023, 1, 1023],
+            "i": [1, 1023, 1024, 2045],
+            "r": [1024, 2045, 1024, 2045],
+            "u": [1024, 2045, 1, 1023]
+        }
+
+        pltstd = 50.
+        for b in corners:
+            std = float(np.nanstd(d[corners[b][2]:corners[b][3],
+                                    corners[b][0]:corners[b][1]]))
+            if 'r' in b:
+                pltstd = std
+            mid = float(np.nanmedian(d[corners[b][2]:corners[b][3],
+                                       corners[b][0]:corners[b][1]]))
+            d[corners[b][2]:corners[b][3], corners[b][0]:corners[b][1]] -= mid
+
+        plt.imshow(d, origin="lower", vmin=-pltstd, vmax=2*pltstd,
+                   cmap=plt.get_cmap('Greys_r'))
         plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
         plt.colorbar()
         logger.info("As %s", outfig)
