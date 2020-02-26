@@ -129,7 +129,7 @@ def create_masterbias(biasdir=None):
     lslowbias = []
 
     # Select all filts that are Bias with same instrument
-    for ff in glob.glob("rc*fits"):
+    for ff in glob.glob("rc*[0-9].fits"):
         try:
             if "BIAS" in str.upper(fitsutils.get_par(ff, "IMGTYPE").upper()):
                 if fitsutils.get_par(ff, "ADCSPEED") == 2:
@@ -227,7 +227,7 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
     lsdflat = []
     lfdflat = []
 
-    for ff in glob.glob("rc*fits"):
+    for ff in glob.glob("rc*[0-9].fits"):
         try:
             if fitsutils.has_par(ff, "IMGTYPE"):
                 imtype = str.upper(fitsutils.get_par(ff, "IMGTYPE"))
