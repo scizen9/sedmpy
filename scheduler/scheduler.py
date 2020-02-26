@@ -298,7 +298,7 @@ class ScheduleNight:
         return results
 
     def remove_setting_targets(self, target_list, start_time="", end_time="",
-                               airmass=(1, 2.3), moon=(20,180)):
+                               airmass=(1, 2.5), moon=(20,180)):
         """
         
         :param targets: 
