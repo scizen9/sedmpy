@@ -217,13 +217,17 @@ def reduce_on_the_fly(photdir, nocopy=False):
                     if not nocopy:
                         # Copy them to transient
                         for r in reduced:
-                            cmd = "rcp %s grbuser@transient.caltech.edu:" \
-                                  "/scr3/mansi/ptf/p60phot/fremling_pipeline/" \
-                                  "sedm/reduced/%s/" % (r, dayname)
-                            subprocess.call(cmd, shell=True)
-                            logger.info(cmd)
-                            logger.info("Successfully copied the image: %s" %
-                                        cmd)
+                            toks = os.path.basename(r).split('.')[0].split('_')
+                            # Do the filters match?
+                            if toks[-2] == toks[-1]:
+                                cmd = "rcp %s grbuser@transient.caltech.edu:" \
+                                      "/scr3/mansi/ptf/p60phot/" \
+                                      "fremling_pipeline/sedm/reduced/%s/" % \
+                                      (r, dayname)
+                                subprocess.call(cmd, shell=True)
+                                logger.info(cmd)
+                                logger.info("Successfully copied the image: %s"
+                                            % r)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
