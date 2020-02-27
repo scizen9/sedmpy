@@ -2223,12 +2223,18 @@ def search_stats_file(mydate=None):
     # None will be returned if it does not exist.
     if mydate:
         s = os.path.join(phot_dir, mydate, "stats/stats.log")
-        if os.path.exists(s) and os.path.getsize(s) > 0:
-            return s, mydate
+        if os.path.exists(s):
+            if os.path.getsize(s) > 0:
+                return s, mydate
+            else:
+                return None, None
         else:
             s = os.path.join(new_phot_dir, mydate, "stats/stats.log")
-            if os.path.exists(s) and os.path.getsize(s) > 0:
-                return s, mydate
+            if os.path.exists(s):
+                if os.path.getsize(s) > 0:
+                    return s, mydate
+                else:
+                    return None, None
             return None, None
 
     else:
@@ -2240,10 +2246,16 @@ def search_stats_file(mydate=None):
             newdatedir = "%d%02d%02d" % (newdate.year, newdate.month, newdate.day)
             s = os.path.join(phot_dir, newdatedir, "stats/stats.log")
             s_new = os.path.join(new_phot_dir, newdatedir, "stats/stats.log")
-            if os.path.exists(s) and os.path.getsize(s) > 0:
-                return s, newdatedir
-            elif os.path.exists(s_new) and os.path.getsize(s) > 0:
-                return s_new, newdatedir
+            if os.path.exists(s):
+                if os.path.getsize(s) > 0:
+                    return s, newdatedir
+                else:
+                    return None, None
+            elif os.path.exists(s_new):
+                if os.path.getsize(s) > 0:
+                    return s_new, newdatedir
+                else:
+                    return None, None
             i = i + 1
             curdate -= datetime.timedelta(days=1)
         return None, None
