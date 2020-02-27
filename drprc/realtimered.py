@@ -59,8 +59,6 @@ def plot_image(image, verbose=False):
     Plots the reduced image into the png folder.
 
     """
-    logger.info("Plotting raw image %s" % image)
-    
     image = os.path.abspath(image)
 
     try:
@@ -74,6 +72,9 @@ def plot_image(image, verbose=False):
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
+
+    logger.info("Plotting raw %s %s image of %s: %s" %
+                (imtype, filt, name, image))
 
     # Sub-dir
     subdir = imtype.lower().strip()
