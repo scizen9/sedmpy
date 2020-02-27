@@ -11,6 +11,7 @@ import glob
 import shutil
 import sys
 import numpy as np
+from scipy.stats import sigmaclip
 
 import ccdproc
 
@@ -738,17 +739,25 @@ def plot_image(image):
         os.makedirs(png_dir)
 
     ff = fits.open(image)[0]
-    d = ff.data
+    d = ff.data.astype(np.float64)
     h = ff.header
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
     ontarget = h.get('ONTARGET', False)
 
-    plt.imshow(d, origin="lower", vmin=np.percentile(d.flatten(), 5),
-               vmax=np.percentile(d, 95), cmap=plt.get_cmap('cubehelix'))
+    c, lo, hi = sigmaclip(d, low=2.5, high=2.5)
+    pltmn = c.mean()
+    if c.std() > 100:
+        pltstd = c.std()
+    else:
+        pltstd = 100.
+
+    plt.imshow(d, origin="lower", vmin=(pltmn-pltstd), vmax=(pltmn+2.*pltstd),
+               cmap=plt.get_cmap('Greys_r'))
     plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
                                                   exptime, ontarget))
+    plt.colorbar()
     plt.savefig(os.path.join(png_dir, imname.replace(".fits", ".png")))
     plt.close()
 
@@ -806,14 +815,14 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
             # Nominal output filename
             destfile = os.path.join(target_dir, imname + "_f_b_a_%s_%s.fits" %
                                     (objectname, band))
-            logger.info("Looking if file %s exists: %s" %
+            logger.info("Does file %s already exist?: %s" %
                         (destfile, (os.path.isfile(destfile))))
             file_exists = (os.path.isfile(destfile))
             # Filename if astrometry failed
             if not file_exists:
                 destfile = os.path.join(target_dir, imname + "_f_b_%s_%s.fits" %
                                         (objectname, band))
-                logger.info("Looking if file %s exists: %s" %
+                logger.info("Does file %s already exist?: %s" %
                             (destfile, (os.path.isfile(destfile))))
                 file_exists = (os.path.isfile(destfile))
             existing = existing and file_exists
@@ -903,6 +912,10 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     rawf.data[rawf.data < 0] = 0
     hdul = rawf.to_hdu()
     hdul.writeto(debiased)
+
+    # Clean CR cleaned images
+    if cosmic:
+        os.remove(img)
 
     # Slicing the image for flats
     print("Creating sliced files...")

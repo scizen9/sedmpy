@@ -246,12 +246,6 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--photdir', type=str, dest="photdir",
                         help='Fits directory file with tonight images.',
                         default=None)
-    parser.add_argument('-f', '--fullred', action='store_true', dest="fullred",
-                        default=False,
-                        help='Whether we should do a full reduction.')
-    parser.add_argument('-o', '--overwrite', action="store_true",
-                        help='re-reduce and overwrite the reduced images?',
-                        default=False)
     parser.add_argument('-p', '--nocopy', action="store_true",
                         help='do not copy to transient', default=False)
 
