@@ -520,7 +520,7 @@ def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
 
     cmd = "solve-field --ra %s --dec %s --radius %.4f -p --new-fits %s " \
         "-W none -B none -M none -R none -S none -t %d --overwrite " \
-          "--nsigma 12 --crpix-center --cpulimit 5 --parity neg %s " % \
+          "--nsigma 12 --crpix-center --cpulimit 15 --parity neg %s " % \
           (ra, dec, radius, astro, tweak, img)
     if with_pix:
         cmd = cmd + \
