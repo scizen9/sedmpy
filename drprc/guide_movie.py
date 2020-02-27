@@ -1,32 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 14 15:01:50 2015
+Created on Wed Feb 26 2020
 
-@author: nadiablago
+@author: neill
 """
 import subprocess
 from astropy.io import fits as pf
 
-import numpy as np
-import aplpy
-try:
-    import coordinates_conversor
-except ImportError:
-    import drprc.coordinates_conversor as coordinates_conversor
 try:
     import fitsutils
 except ImportError:
     import drprc.fitsutils as fitsutils
-import datetime
 import os
-import sys
 import glob
 import argparse
 from configparser import ConfigParser
 import codecs
-
-from matplotlib import pylab as plt
-plt.switch_backend('Agg')
 
 cfg_parser = ConfigParser()
 
@@ -105,11 +94,10 @@ if __name__ == "__main__":
         n_guide = len(filesguide)
         print("Found %d files used for quiding %s" % (n_guide, objnam))
         outmov = os.path.join(
-            pngdir, os.path.basename(imfile).split('.fits')[0] + '.gif')
+            pngdir,
+            os.path.basename(imfile).split('.fits')[0] + '_guide_movie.gif')
         cmd = 'convert -delay 20 ' + ' '.join(filesguide) + ' -loop 1 ' + outmov
         print(cmd)
         subprocess.run(cmd, shell=True)
     else:
         print("Please specify an input IFU image that was guided.")
-
-
