@@ -2252,7 +2252,7 @@ def search_stats_file(mydate=None):
                 else:
                     return None, None
             elif os.path.exists(s_new):
-                if os.path.getsize(s) > 0:
+                if os.path.getsize(s_new) > 0:
                     return s_new, newdatedir
                 else:
                     return None, None
