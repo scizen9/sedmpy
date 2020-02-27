@@ -215,7 +215,9 @@ def reduce_on_the_fly(photdir, nocopy=False):
                     else:
                         do_cosmic = False
                     reduced = rcred.reduce_image(n, cosmic=do_cosmic)
-                    if not nocopy:
+                    if nocopy:
+                        logger.info("Copy to transient skipped for %s" % n)
+                    else:
                         # Copy them to transient
                         for r in reduced:
                             toks = os.path.basename(r).split('.')[0].split('_')

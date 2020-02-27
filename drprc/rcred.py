@@ -717,7 +717,7 @@ def init_header_reduced(image):
     fitsutils.update_pars(image, pardic)
 
 
-def plot_image(image):
+def plot_image(image, verbose=False):
     """
     Plots the reduced image into the png folder.
 
@@ -748,10 +748,14 @@ def plot_image(image):
 
     c, lo, hi = sigmaclip(d, low=2.5, high=2.5)
     pltmn = c.mean()
-    if c.std() > 100:
+    pltstd = 100.
+    if np.isnan(pltmn):
+        pltmn = 0.
+    if c.std() > pltstd:
         pltstd = c.std()
-    else:
-        pltstd = 100.
+
+    if verbose:
+        print("%s %s mn: %.2f, std: %.2f" % (name, filt, pltmn, pltstd))
 
     plt.imshow(d, origin="lower", vmin=(pltmn-pltstd), vmax=(pltmn+2.*pltstd),
                cmap=plt.get_cmap('Greys_r'))
