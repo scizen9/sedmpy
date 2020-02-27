@@ -146,7 +146,8 @@ def cube_ready(caldir='./', cur_date_str=None, avrmslim=35.0):
             msg['Subject'] = "SEDM Error - Wave solution failure for %s" \
                              % cur_date_str
             msg['From'] = 'No_reply_sedm_robot@astro.caltech.edu'
-            msg.set_content("Wavelength AvgRMS = %.1f > %.1f nm" % (avrms, avrmslim))
+            msg.set_content("Wavelength AvgRMS = %.1f > %.1f nm" % (avrms,
+                                                                    avrmslim))
             # Send the message via local SMTP server.
             with smtplib.SMTP('smtp-server.astro.caltech.edu') as s:
                 s.send_message(msg)
@@ -774,7 +775,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
             # are we a standard star?
             if 'STD-' in obj:
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
-                                    nodb=nodb, sci=False, hdr=None)
+                                    nodb=nodb, sci=False, hdr=None,
+                                    guider_movie=True)
                 if e3d_good:
                     # Get seeing
                     seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
@@ -858,7 +860,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
             else:
                 # Build cube for science observation
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
-                                    nodb=nodb, sci=True, hdr=hdr)
+                                    nodb=nodb, sci=True, hdr=hdr,
+                                    guider_movie=True)
 
                 if e3d_good:
                     # Get seeing
@@ -943,7 +946,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
 
 
 def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
-             hdr=None):
+             hdr=None, guider_movie=False):
     """ Make the e3d cube"""
     cube_good = False
     if fnam is None:
@@ -970,6 +973,10 @@ def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
     proccubefn = "e3d_%s_*.fits" % fn.split('.')[0]
     procedcube = glob.glob(os.path.join(destdir, proccubefn))
     if len(procedcube) == 0:
+        # Make guider movie?
+        if guider_movie:
+            subprocess.call("$SEDMPY/bin/guide_movie.py -i %s" % fnam,
+                            shell=True)
         # Build cube for observation
         logging.info("Building %s cube for %s" % (lab, fn))
         logging.info(" ".join(cmd))
@@ -1837,7 +1844,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             else:
                 # Update spec_calib table in sedmdb
                 spec_calib_id = update_calibration(cur_date_str)
-                logging.info("SEDM db accepted spec_calib at id %d" % spec_calib_id)
+                logging.info("SEDM db accepted spec_calib at id %d" %
+                             spec_calib_id)
         else:
             logging.error("These calibrations failed!")
             logging.info("Let's get our calibrations from a previous night")
