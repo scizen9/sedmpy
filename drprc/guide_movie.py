@@ -95,7 +95,8 @@ if __name__ == "__main__":
         print("Found %d files used for quiding %s" % (n_guide, objnam))
         outmov = os.path.join(
             pngdir,
-            os.path.basename(imfile).split('.fits')[0] + '_guide_movie.gif')
+            os.path.basename(imfile).split('.fits')[0] + '_' + objnam +
+            '_guide_movie.gif')
         cmd = 'convert -delay 20 ' + ' '.join(filesguide) + ' -loop 1 ' + outmov
         print(cmd)
         subprocess.run(cmd, shell=True)
