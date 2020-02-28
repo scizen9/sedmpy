@@ -123,8 +123,8 @@ def plot_stats(statfile):
 
     fg, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2)
     plt.suptitle("Statistics %s" % day)
-    fg.set_figwidth(15)
-    fg.set_figheight(11.5)
+    fg.set_figwidth(14)
+    fg.set_figheight(11)
     ax1.plot(datestat, s["f3"], ".-")
     ax1.set_title('Number of bright sources extracted')
     
