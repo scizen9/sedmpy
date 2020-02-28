@@ -68,7 +68,6 @@ def plot_image(image, verbose=False):
         return
     d = ff.data.astype(np.float64)
     h = ff.header
-    ff.close()
     imtype = h.get('IMGTYPE', 'None')
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
