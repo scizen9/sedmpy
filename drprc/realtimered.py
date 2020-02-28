@@ -73,9 +73,6 @@ def plot_image(image, verbose=False):
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
 
-    logger.info("Plotting raw %s %s image of %s: %s" %
-                (imtype, filt, name, image))
-
     # Sub-dir
     subdir = imtype.lower().strip()
     
@@ -94,6 +91,10 @@ def plot_image(image, verbose=False):
     outfig = os.path.join(png_dir, imname.replace(".fits", "_all.png"))
 
     if not os.path.isfile(outfig):
+
+        logger.info("Plotting raw %s %s image of %s: %s" %
+                    (imtype, filt, name, image))
+
         corners = {
             "g": [1, 1023, 1, 1023],
             "i": [1, 1023, 1024, 2045],
@@ -129,7 +130,8 @@ def plot_image(image, verbose=False):
         plt.savefig(outfig)
         plt.close()
     else:
-        logger.info("Exists: %s", outfig)
+        if verbose:
+            logger.info("Exists: %s", outfig)
 
 
 def reduce_on_the_fly(photdir, nocopy=False):
@@ -164,7 +166,10 @@ def reduce_on_the_fly(photdir, nocopy=False):
         whatl = wtf.readlines()
     acqs = [wl for wl in whatl if 'ACQ' in wl]
     while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
-        logger.info("No acquisition yet (bright), waiting 10 min...")
+        for wl in whatl:
+            fl = wl.split()[0]
+            plot_image(os.path.join(photdir, fl))
+        logger.info("No acquisition yet (bright or weather), waiting 10 min...")
         time.sleep(600)
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
@@ -176,12 +181,12 @@ def reduce_on_the_fly(photdir, nocopy=False):
             logger.warning("Waited 12hr and no ACQ appeared!")
             return
 
-    logger.info("It's dark now, so let's reduce some data!")
+    logger.info("We have acquired now, so let's reduce some data!")
     # Get the current the number of files
 
     nfiles = []
     logger.info("Starting the on-the-fly reduction for directory %s." % photdir)
-    
+
     dayname = os.path.basename(photdir)
 
     time_curr = datetime.datetime.now()
