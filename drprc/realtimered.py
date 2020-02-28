@@ -186,6 +186,14 @@ def reduce_on_the_fly(photdir, nocopy=False):
 
     time_curr = datetime.datetime.now()
     deltime = time_curr - time_ini
+
+    if not nocopy:
+        # Make destination directory
+        cmd = "rsh transient.caltech.edu -l grbuser mkdir " \
+              "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
+              dayname
+        logger.info(cmd)
+        subprocess.call(cmd, shell=True)
     
     # Run this loop for 12h after the start.
     while deltime.total_seconds() < total_wait:
@@ -216,7 +224,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
                         do_cosmic = False
                     reduced = rcred.reduce_image(n, cosmic=do_cosmic)
                     if nocopy:
-                        logger.info("Copy to transient skipped for %s" % n)
+                        logger.info("Skipping copies to transient")
                     else:
                         # Copy them to transient
                         for r in reduced:
