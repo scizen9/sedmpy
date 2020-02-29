@@ -204,7 +204,7 @@ class QueryCatalogue:
         uu = urllib.urlopen(url)
         
         tmp_file = '/tmp/ps1_cat_%s.xml' % timestamp
-        f = open(tmp_file, "w")
+        f = open(tmp_file, "wb")
         f.writelines(uu.readlines())
         f.close()
         
