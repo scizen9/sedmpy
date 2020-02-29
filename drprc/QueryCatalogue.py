@@ -201,11 +201,11 @@ class QueryCatalogue:
               "CAT=%s&RA=%.5f&DEC=%.5f&SR=%.5f&MAGRANGE=%.3f,%.3f" % \
               (catalogue, self.ra, self.dec, self.rad, self.minmag, self.maxmag)
         
-        u = urllib.urlopen(url)
+        uu = urllib.urlopen(url)
         
         tmp_file = '/tmp/ps1_cat_%s.xml' % timestamp
         f = open(tmp_file, "w")
-        f.writelines(u.readlines())
+        f.writelines(uu.readlines())
         f.close()
         
         # Read RA, Dec and magnitude from XML format USNO catalog
