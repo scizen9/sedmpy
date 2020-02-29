@@ -541,7 +541,7 @@ def solve_astrometry(img, radius=0.2, with_pix=True, overwrite=False, tweak=3):
         try:
             is_on_target(img)
         except InconsistentAxisTypesError as e:
-            fitsutils.update_par(img, "ONTARGET", 0)
+            fitsutils.update_par(img, "ONTARGET", False)
             print("Error detected with WCS when reading file %s. \n %s" % (img,
                                                                            e))
     # return the name of the astrometry solved image
@@ -613,20 +613,21 @@ def is_on_target(image):
     ra, dec = cc.hour2deg(fitsutils.get_par(image, 'OBJRA'),
                           fitsutils.get_par(image, 'OBJDEC'))
 
-    impf = fits.open(image)
-    # w = WCS(impf[0].header)
-
-    # filt = fitsutils.get_par(image, "FILTER")
     pra, pdec = get_xy_coords(image, ra, dec)
+
+    impf = fits.open(image)
 
     shape = impf[0].data.shape
 
     if (pra > 0) and (pra < shape[0]) and (pdec > 0) and (pdec < shape[1]):
-        fitsutils.update_par(image, "ONTARGET", 1)
-        return True
+        ontarget = True
     else:
-        fitsutils.update_par(image, "ONTARGET", 0)
-        return False
+        ontarget = False
+
+    pardic = {"ONTARGET": ontarget, "TARGXPX": pra, "TARGYPX": pdec}
+    fitsutils.update_pars(image, pardic)
+
+    return ontarget
 
 
 def clean_cosmic(fl):
@@ -745,6 +746,8 @@ def plot_image(image, verbose=False):
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
     ontarget = h.get('ONTARGET', False)
+    xpx = h.get('TARGXPX', -1.)
+    ypx = h.get('TARGYPX', -1.)
 
     c, lo, hi = sigmaclip(d, low=2.5, high=2.5)
     pltmn = c.mean()
@@ -762,6 +765,10 @@ def plot_image(image, verbose=False):
     plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
                                                   exptime, ontarget))
     plt.colorbar()
+    if ontarget and xpx >= 0 and ypx >= 0:
+        circle = plt.Circle((xpx, ypx), 20, fill=False, color='r')
+        fig, ax = plt.subplots()
+        ax.add_artist(circle)
     plt.savefig(os.path.join(png_dir, imname.replace(".fits", ".png")))
     plt.close()
 
@@ -918,7 +925,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     hdul.writeto(debiased)
 
     # Clean CR cleaned images
-    if cosmic:
+    if cosmic and not save_int:
         os.remove(img)
 
     # Slicing the image for flats
