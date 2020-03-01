@@ -146,7 +146,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
     # Delta time
     deltime = time_curr - time_ini
     # Don't wait longer than this (12hr)
-    total_wait = 12.*3600.
+    total_wait = 13.*3600.
 
     # Do we have files yet?
     whatf = os.path.join(photdir, 'rcwhat.list')
