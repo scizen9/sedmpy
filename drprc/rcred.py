@@ -767,7 +767,8 @@ def plot_image(image, verbose=False):
     plt.colorbar()
     if ontarget and xpx >= 0 and ypx >= 0:
         circle = plt.Circle((xpx, ypx), 20, fill=False, color='r')
-        fig, ax = plt.subplots()
+        fig = plt.gcf()
+        ax = fig.gca()
         ax.add_artist(circle)
     plt.savefig(os.path.join(png_dir, imname.replace(".fits", ".png")))
     plt.close()
