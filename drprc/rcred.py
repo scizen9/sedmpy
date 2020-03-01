@@ -795,6 +795,10 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
     print("Reducing image ", image)
 
+    if not os.path.isfile(image):
+        logger.error("File %s does not exist!" % image)
+        return
+
     image = os.path.abspath(image)
     imname = os.path.basename(image).replace(".fits", "")
     try:
