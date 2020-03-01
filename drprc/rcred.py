@@ -619,7 +619,7 @@ def is_on_target(image):
 
     shape = impf[0].data.shape
 
-    if (pra > 0) and (pra < shape[0]) and (pdec > 0) and (pdec < shape[1]):
+    if (pra > 0) and (pra < shape[1]) and (pdec > 0) and (pdec < shape[0]):
         ontarget = True
     else:
         ontarget = False
@@ -766,7 +766,8 @@ def plot_image(image, verbose=False):
                                                   exptime, ontarget))
     plt.colorbar()
     if ontarget and xpx >= 0 and ypx >= 0:
-        circle = plt.Circle((xpx, ypx), 20, fill=False, color='r')
+        circle = plt.Circle((xpx, ypx), 20, fill=False, color='r',
+                            clip_on=False)
         fig = plt.gcf()
         ax = fig.gca()
         ax.add_artist(circle)
