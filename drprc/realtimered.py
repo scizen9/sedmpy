@@ -158,7 +158,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
         if deltime.total_seconds() > total_wait:
-            logger.warning("Waited 12hr and no rcwhat file appeared!")
+            logger.warning("Waited 13hr and no rcwhat file appeared!")
             return
 
     # Wait for an acquisition
@@ -178,7 +178,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
         if deltime.total_seconds() > total_wait:
-            logger.warning("Waited 12hr and no ACQ appeared!")
+            logger.warning("Waited 13hr and no ACQ appeared!")
             return
 
     logger.info("We have acquired now, so let's reduce some data!")
