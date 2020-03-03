@@ -19,9 +19,16 @@ with codecs.open(configfile, 'r') as f:
     cfg_parser.read_file(f)
 # Get paths
 _rawpath = cfg_parser.get('paths', 'rawpath')
+_reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 
 if __name__ == '__main__':
+
+    # Make sure we are in the redux dir
+    print("Changing directory to %s" % _reduxpath)
+    os.chdir(_reduxpath)
+
+    # Parse arguments
     parser = argparse.ArgumentParser(
         description="re-process old data",
         formatter_class=argparse.RawTextHelpFormatter)
