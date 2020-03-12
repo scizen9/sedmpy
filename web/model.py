@@ -65,6 +65,7 @@ if computer == 'pele':
     raw_dir = '/scr/rsw/sedm/raw/'
     phot_dir = '/scr/rsw/sedm/phot/'
     redux_dir = '/scr/rsw/sedm/data/redux/'
+    new_phot_dir = '/scr/rsw/sedm/data/redux/phot/'
     status_dir = '/scr/rsw/'
     host = 'pharos.caltech.edu'
     port = 5432
@@ -1236,11 +1237,16 @@ def get_science_products(user_id="", obsdate="", camera_type=""):
 
         data_dir = '%s%s/' % (phot_dir, obsdate)
         new_data_dir = '%s%s/' % (new_phot_dir, obsdate)
+        print(data_dir, "In the get science prods")
+        print(new_data_dir, "In the get science prods new")
         if os.path.exists(data_dir):
+            print("Old data")
             return get_rc_products(data_dir, user_id, obsdate)
         elif os.path.exists(new_data_dir):
+            print("New data")
             return get_rc_redux_products(new_data_dir, user_id, obsdate)
         else:
+            print("Default data")
             return get_rc_products(data_dir, user_id, obsdate)
 
 def get_ab_what(obsdir):
@@ -1388,7 +1394,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         print("There was an error. You can't see this")
 
                 # If we are not the admin then we need to check if the user can see the object
-                if user_id != 2:
+
+                if user_id not in [2, 20200227202025683]:
 
                     if object_id:
                         target_requests = db.get_from_request(values=['allocation_id'],
@@ -1851,21 +1858,34 @@ def get_rc_redux_products(obsdir, user_id, obsdate="", show_finder=True,
     for targ in what_list:
         if 'Guider' in targ:
             pass
+        elif 'Calib' in targ:
+            pass
+        elif 'FOCUS' in targ:
+            pass
+        elif 'Twilight' in targ:
+            pass
         else:
             science_list.append(targ)
 
     # Now we go through and make sure the user is allowed to see this target
     show_list = []
+    print(science_list, "science list")
     if len(science_list) >= 1:
         allocation_id_list = get_allocations_user(user_id=user_id,
                                                   return_type='list')
 
         for sci_targ in science_list:
-            # Start by pulling up all request that match the science target
-            targ_name = sci_targ.split(':')[1].split()[0]
+            print(sci_targ, "Science Target")
+            if 'ACQ'  in sci_targ:
+                targ_name = sci_targ.split()[-2].replace("ACQ-", "")
+            else:
+                targ_name = sci_targ.split()[-2]
+
+            ## Start by pulling up all request that match the science target
+            #targ_name = sci_targ.split(':')[1].split()[0]
             if 'STD' not in targ_name:
                 # 1. Get the object id
-
+                print(targ_name, "In RC for loop")
                 object_ids = db.get_object_id_from_name(targ_name)
 
                 if len(object_ids) == 1:
@@ -1920,13 +1940,15 @@ def get_rc_redux_products(obsdir, user_id, obsdate="", show_finder=True,
         count = 0
         div_str = ''
         for targ in show_list:
-            print(targ)
+            print(targ, "show_list info")
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
 
-            image_list = (glob.glob('%sreduced/png/*%s*.png' % (obsdir, fits_file)))
-
+            image_list = (glob.glob('%spngraw/science/*%s*.png' % (obsdir, fits_file)))
+            image_list += (glob.glob('%spngraw/acquisition/*%s*.png' % (obsdir, fits_file)))
+            print(image_list)
+            print('%s/pngraw/*%s*.png' % (obsdir, fits_file))
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list}
             else:
@@ -1938,6 +1960,7 @@ def get_rc_redux_products(obsdir, user_id, obsdate="", show_finder=True,
         # and classification.
 
         count = 0
+        print(science_dict, "science dict")
 
         for obj, obj_data in science_dict.items():
             if '_xRx_' in obj:
@@ -1954,21 +1977,10 @@ def get_rc_redux_products(obsdir, user_id, obsdate="", show_finder=True,
                 div_str += """<div class="row">"""
                 div_str += """<h4>%s</h4>""" % obj
 
-            if obj_data['e3d_list']:
-                for j in obj_data['e3d_list']:
-                    impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
-                    div_str += ('<div class="col-md-{2}">'
-                                '<a href="%s">E3D File</a>'
-                                '</div>' % impath)
-                if obj_data['spec_ascii_list']:
-                    for j in obj_data['spec_ascii_list']:
-                        impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
-                        div_str += ('<div class="col-md-{2}">'
-                                    '<a href="%s">ASCII Spec File</a>'
-                                    '</div>' % impath)
             # ToDO: Grab data from somewhere to put in the meta data column
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
+                    print(i, 'for i image_list')
 
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
                     impathlink = "/data/%s/%s" % (obsdate, os.path.basename(i))
@@ -2414,6 +2426,7 @@ def get_config_paths():
     return dict(path={
         'path_archive': redux_dir,
         'path_phot': phot_dir,
+        'path_redux_phot': new_phot_dir,
         'path_raw': raw_dir})
 
 

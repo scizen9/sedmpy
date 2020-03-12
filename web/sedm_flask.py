@@ -149,8 +149,22 @@ def data_static(filename):
         else:
             return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
     elif _f.startswith('rc') or _f.startswith('finder') or 'ACQ' in _f:
-
-        return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
+        print("In rc path")
+        print(_p, _f)
+        if _f.startswith('rc'):
+            if 'redux' in _p:
+                return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
+            else:
+                print("USING THE HERE")
+                base_obspath = os.path.join(config['path']['path_redux_phot'], _p, 'pngraw')
+                pathlist = ['acquisition',  'bias',  'dome',  'focus',
+                            'guider',  'science',  'twilight']
+                for i in pathlist:
+                    test_path = os.path.join(base_obspath, i)
+                    if os.path.exists(os.path.join(test_path,_f)):
+                        return send_from_directory(test_path, _f)
+        else:
+            return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
     else:
         return send_from_directory(os.path.join(config['path']['path_archive'], _p), _f)
 
