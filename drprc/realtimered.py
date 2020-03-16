@@ -59,8 +59,6 @@ def plot_image(image, verbose=False):
     Plots the reduced image into the png folder.
 
     """
-    logger.info("Plotting raw image %s" % image)
-    
     image = os.path.abspath(image)
 
     try:
@@ -93,6 +91,10 @@ def plot_image(image, verbose=False):
     outfig = os.path.join(png_dir, imname.replace(".fits", "_all.png"))
 
     if not os.path.isfile(outfig):
+
+        logger.info("Plotting raw %s %s image of %s: %s" %
+                    (imtype, filt, name, image))
+
         corners = {
             "g": [1, 1023, 1, 1023],
             "i": [1, 1023, 1024, 2045],
@@ -128,7 +130,8 @@ def plot_image(image, verbose=False):
         plt.savefig(outfig)
         plt.close()
     else:
-        logger.info("Exists: %s", outfig)
+        if verbose:
+            logger.info("Exists: %s", outfig)
 
 
 def reduce_on_the_fly(photdir, nocopy=False):
@@ -143,7 +146,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
     # Delta time
     deltime = time_curr - time_ini
     # Don't wait longer than this (12hr)
-    total_wait = 12.*3600.
+    total_wait = 13.*3600.
 
     # Do we have files yet?
     whatf = os.path.join(photdir, 'rcwhat.list')
@@ -155,7 +158,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
         if deltime.total_seconds() > total_wait:
-            logger.warning("Waited 12hr and no rcwhat file appeared!")
+            logger.warning("Waited 13hr and no rcwhat file appeared!")
             return
 
     # Wait for an acquisition
@@ -163,7 +166,10 @@ def reduce_on_the_fly(photdir, nocopy=False):
         whatl = wtf.readlines()
     acqs = [wl for wl in whatl if 'ACQ' in wl]
     while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
-        logger.info("No acquisition yet (bright), waiting 10 min...")
+        for wl in whatl:
+            fl = wl.split()[0]
+            plot_image(os.path.join(photdir, fl))
+        logger.info("No acquisition yet (bright or weather), waiting 10 min...")
         time.sleep(600)
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
@@ -172,19 +178,27 @@ def reduce_on_the_fly(photdir, nocopy=False):
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
         if deltime.total_seconds() > total_wait:
-            logger.warning("Waited 12hr and no ACQ appeared!")
+            logger.warning("Waited 13hr and no ACQ appeared!")
             return
 
-    logger.info("It's dark now, so let's reduce some data!")
+    logger.info("We have acquired now, so let's reduce some data!")
     # Get the current the number of files
 
     nfiles = []
     logger.info("Starting the on-the-fly reduction for directory %s." % photdir)
-    
+
     dayname = os.path.basename(photdir)
 
     time_curr = datetime.datetime.now()
     deltime = time_curr - time_ini
+
+    if not nocopy:
+        # Make destination directory
+        cmd = "rsh transient.caltech.edu -l grbuser mkdir " \
+              "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
+              dayname
+        logger.info(cmd)
+        subprocess.call(cmd, shell=True)
     
     # Run this loop for 12h after the start.
     while deltime.total_seconds() < total_wait:
@@ -214,16 +228,22 @@ def reduce_on_the_fly(photdir, nocopy=False):
                     else:
                         do_cosmic = False
                     reduced = rcred.reduce_image(n, cosmic=do_cosmic)
-                    if not nocopy:
+                    if nocopy:
+                        logger.info("Skipping copies to transient")
+                    else:
                         # Copy them to transient
                         for r in reduced:
-                            cmd = "rcp %s grbuser@transient.caltech.edu:" \
-                                  "/scr3/mansi/ptf/p60phot/fremling_pipeline/" \
-                                  "sedm/reduced/%s/" % (r, dayname)
-                            subprocess.call(cmd, shell=True)
-                            logger.info(cmd)
-                            logger.info("Successfully copied the image: %s" %
-                                        cmd)
+                            toks = os.path.basename(r).split('.')[0].split('_')
+                            # Do the filters match?
+                            if toks[-2] == toks[-1]:
+                                cmd = "rcp %s grbuser@transient.caltech.edu:" \
+                                      "/scr3/mansi/ptf/p60phot/" \
+                                      "fremling_pipeline/sedm/reduced/%s/" % \
+                                      (r, dayname)
+                                subprocess.call(cmd, shell=True)
+                                logger.info(cmd)
+                                logger.info("Successfully copied the image: %s"
+                                            % r)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
@@ -241,12 +261,6 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--photdir', type=str, dest="photdir",
                         help='Fits directory file with tonight images.',
                         default=None)
-    parser.add_argument('-f', '--fullred', action='store_true', dest="fullred",
-                        default=False,
-                        help='Whether we should do a full reduction.')
-    parser.add_argument('-o', '--overwrite', action="store_true",
-                        help='re-reduce and overwrite the reduced images?',
-                        default=False)
     parser.add_argument('-p', '--nocopy', action="store_true",
                         help='do not copy to transient', default=False)
 

@@ -297,7 +297,7 @@ if __name__ == "__main__":
         os.makedirs("finders")
 
     # We gather all RC images to locate the Acquisition ones.
-    files = glob.glob(os.path.join(rcdir, "rc*fit*"))
+    files = glob.glob(os.path.join(rcdir, "rc*[0-9].fit*"))
     files.sort()
     filesacq = []
 

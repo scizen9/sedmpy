@@ -284,7 +284,7 @@ def extract_star_sequence(imfile, band, plot=True, survey='ps1', debug=False,
     ff = pf.open(imfile)
     wcs = WCS(ff[0].header)
 
-    img = f[0].data
+    img = ff[0].data
     img[img < 0] = 0
     
     ra, dec = wcs.wcs_pix2world(np.array([img.shape[0]/2, img.shape[1]/2],

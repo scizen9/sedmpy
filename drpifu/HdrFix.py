@@ -99,8 +99,12 @@ def sedm_fix_header(fname):
     # Get root filename
     rute = fname.split('/')[-1]
     # Make sure header is correct
-    if len(ff[0].header) < 30:
-        logging.warning("Short header: %s" % rute)
+    try:
+        if len(ff[0].header) < 30:
+            logging.warning("Short header: %s" % rute)
+            return False
+    except IndexError:
+        logging.error("Problem with file: %s" % rute)
         return False
     # Count updated keywords
     nupkey = 1
