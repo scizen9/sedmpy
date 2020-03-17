@@ -3,12 +3,5 @@
     {{ super() }}
 {% endblock %}
 {% block content %}
-<table id="constraints">
-    <tr><th>ID</th><th>Rejection Constraint Reason</th></tr>
-    <tr><td>1</td><td>Airmass</td></tr>
-    <tr><td>2</td><td>Altitude</td></tr>
-    <tr><td>3</td><td>Moon Separation</td></tr>
-</table>
-<br><br>
     {{sedm_dict.scheduler | safe}}
 {% endblock %}

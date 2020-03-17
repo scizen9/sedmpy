@@ -1,0 +1,72 @@
+{% extends "sedm_base.html" %}
+{% from "macros.html" import calendar_picker %}
+
+{% block head %}
+    {{ calendar_picker('head') }}
+    {{ super() }}
+{% endblock head %}
+
+{% block content %}
+    {{ calendar_picker('content', name='obsdate') }}
+    <h2>Data for the night of {{ sedm_dict.obsdate }}</h2>
+    <input id="obsdate" type="hidden" value="{{ sedm_dict.obsdate }}">
+    <div class="container">
+        <div class="btn-group">
+          <button class="tablinks" onclick="openStat(event, 'science');" id="defaultOpen">Science</button>
+          <button class="tablinks" onclick="openStat(event, 'acquisition');">Acquisition</button>
+          <button class="tablinks" onclick="openStat(event, 'guider_movies');">Guider Movies</button>
+          <button class="tablinks" onclick="openStat(event, 'guider_images');">Guider Images</button>
+          <button class="tablinks" onclick="openStat(event, 'focus');">Focus</button>
+          <button class="tablinks" onclick="openStat(event, 'bias');">Bias</button>
+          <button class="tablinks" onclick="openStat(event, 'dome');">Dome</button>
+          <button class="tablinks" onclick="openStat(event, 'twilight');">Twilight</button>
+          <button class="tablinks" onclick="openStat(event, 'science_raw');">Science Raw</button>
+        </div>
+
+
+
+    </div>
+
+    <div id="opanel">{{sedm_dict.data | safe}}</div>
+{% endblock %}
+
+{% block footer %}
+    <script>
+     function openStat(evt, statWindow){
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+
+        //document.getElementById(statWindow).style.display = "block";
+        evt.currentTarget.className += " active";
+
+        var obsdate = $('#obsdate').val();
+
+        var obsdata = {obsdate: obsdate,
+                       product: statWindow};
+
+        var myJSON = JSON.stringify(obsdata);
+
+        $.ajax({
+            url: "/get_rc_redux_product",
+            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(myJSON),
+            type: 'post',
+            success: function (data, status) {
+                console.log(data);
+                document.getElementById("opanel").innerHTML = data['data'];
+            }
+        });
+        }
+
+    </script>
+    {{ super() }}
+    {{ calendar_picker('footer') }}
+{% endblock footer %}
