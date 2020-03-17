@@ -114,6 +114,16 @@ def add_csv():
     return render_template('add_csv.html', req_dict=req_dict, form=form)
 
 
+@app.route('/get_rc_redux_product', methods=['GET', 'POST'])
+#@flask_login.login_required
+def get_rc_redux_product():
+    if request.is_json:
+        content = json.loads(request.get_json())
+    else:
+        obsdate = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+        return jsonify(model.get_rc_redux_products(obsdate))
+    return jsonify(model.get_rc_redux_products(**content))
+
 @app.route('/data_access/<path:instrument>', methods=['GET'])
 #@flask_login.login_required
 def data_access(instrument):
@@ -129,10 +139,22 @@ def data_access(instrument):
 
     content['user_id'] = flask_login.current_user.id
     content['camera_type'] = instrument.lower()
-    out = model.get_science_products(**content)
-    print(out)
-    return render_template('view_data.html', sedm_dict=out)
+    if instrument.lower() == 'ifu':
+        out = model.get_science_products(**content)
+        return render_template('view_data.html', sedm_dict=out)
+    else:
+        out = model.get_rc_redux_products(**content)
+        print(out)
+        return render_template('view_data_redux.html', sedm_dict=out)
 
+@app.route('/data_r/<path:filename>')
+#@flask_login.login_required
+def data_static_r(filename):
+    print(filename, 'this is the filename in data')
+    base_path = model.base_dir
+    print(os.path.join(base_path, filename), "this is the full path")
+    _p, _f = os.path.split(os.path.join(base_path, filename))
+    return send_from_directory(_p, _f)
 
 @app.route('/data/<path:filename>')
 #@flask_login.login_required

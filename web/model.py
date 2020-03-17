@@ -67,6 +67,7 @@ if computer == 'pele':
     redux_dir = '/scr/rsw/sedm/data/redux/'
     new_phot_dir = '/scr/rsw/sedm/data/redux/phot/'
     status_dir = '/scr/rsw/'
+    base_dir = '/scr/rsw/'
     host = 'pharos.caltech.edu'
     port = 5432
 
@@ -77,20 +78,24 @@ elif computer == 'pharos':
     redux_dir = '/scr2/sedmdrp/redux/'
     status_dir = '/scr2/sedm/raw/telstatus/'
     host = 'localhost'
+    base_dir = '/scr2/sedm/sedmdrp/'
     port = 5432
 
 elif computer == 'ether':
-    raw_dir = '/home/rsw/sedm/raw/'
+    raw_dir = '/home/rsw/sedm_data/raw/'
     phot_dir = '/home/rsw/sedm/phot/'
-    redux_dir = '/home/rsw/sedm/redux/'
+    redux_dir = '/home/rsw/sedm_data/redux/'
+    new_phot_dir = '/home/rsw/sedm_data/redux/phot/'
+    base_dir = '/home/rsw/sedm_data/'
     host = 'localhost'
     port = 22222
 
+print(computer, port, host, "inputs")
 db = SedmDB(host=host, dbname='sedmdb', port=port)
 
 
 def get_db():
-    return SedmDB(host=host, dbname='sedmdb')
+    return SedmDB(host=host, dbname='sedmdb', port=port)
 
 
 def tools():
@@ -284,6 +289,16 @@ def get_homepage(userid, username):
     # Make a greeting statement
     sedm_dict['greeting'] = 'Hello %s!' % username
     return sedm_dict
+
+###############################################################################
+# THIS SECTION HANDLES EXPIRED TARGETS.                                       #
+# KEYWORD:EXPIRED                                                             #
+###############################################################################
+def show_expired(days=7):
+    """
+
+    :return:
+    """
 
 
 ###############################################################################
@@ -1786,8 +1801,8 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
 
     return sedm_dict
 
-def get_rc_redux_products(obsdir, user_id, obsdate="", show_finder=True,
-                     product_type='all'):
+def get_rc_redux_products(obsdate=None, product=None, user_id=None,
+                          camera_type='rc'):
     """
 
     :param obsdir:
@@ -1796,208 +1811,94 @@ def get_rc_redux_products(obsdir, user_id, obsdate="", show_finder=True,
     :param product_type:
     :return:
     """
-    print(obsdir, 'rc')
-    # Look first to make sure there is a data directory.
-    if not os.path.exists(obsdir):
-        return {'message': 'No data directory could be located for %s UT' %
-                           os.path.basename(os.path.normpath(obsdir)),
-                'obsdate': obsdate}
+    print(product, 'product')
+    raw_png_dir = ['acquisition', 'bias', 'dome', 'focus',
+                   'guider_images','guider_movies', 'twilight',
+                   'science_raw']
 
+    sedm_dict = {}
     if not obsdate:
-        obsdate = os.path.basename(os.path.normpath(obsdir))
-    sedm_dict = {'obsdate': obsdate,
-                 'sci_data': ''}
+        obsdate = datetime.datetime.utcnow().strftime("%Y%m%d")
+        sedm_dict['obsdate'] = obsdate
+    elif isinstance(obsdate, list):
+        obsdate = obsdate[0]
+        sedm_dict['obsdate'] = obsdate
 
-    # Now lets get the non-science products (i.e. calibrations)
+    if not product:
+        product = 'science'
 
-    calib_dict = {}
+    display_dict = {}
+    ext = '*.png'
 
-    # If a calibration frame doesn't exist then pop it out to avoid bad links
-    # on the page
-    remove_list = []
-    div_str = ''
-    for k, v in calib_dict.items():
-        if not os.path.exists(v):
-            remove_list.append(k)
+    if product.lower() == 'science':
+        print(new_phot_dir, obsdate)
+        sci_path = os.path.join(new_phot_dir, obsdate, 'reduced', 'png')
+        if not os.path.exists(sci_path):
+            print("Path doesn't exist", sci_path)
+            sedm_dict['data'] = "No %s images found" % product
+    elif product.lower() in raw_png_dir:
+        print(new_phot_dir, obsdate)
+        if 'guider' in product.lower():
+            p_split = product.split("_")
+            if p_split[-1] == 'movies':
+                ext = '*.gif'
+            product = 'guider'
 
-    if remove_list:
-        for i in remove_list:
-            calib_dict.pop(i)
-    print(calib_dict, 'calib products')
+        sci_path = os.path.join(new_phot_dir, obsdate,
+                                    'pngraw', product.lower().replace('_raw',''))
+        print(sci_path, "Science path in alt")
+        if not os.path.exists(sci_path):
+            print("Path doesn't exist")
 
-    div_str += """<div class="row">"""
-    div_str += """<h4>Calibrations</h4>"""
-    for k, v in calib_dict.items():
-        impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
-        impathlink = "/data/%s/%s" % (obsdate,
-                                      os.path.basename(v.replace('.png', '.pdf')))
-        if not os.path.exists(impathlink):
-            impathlink = impath
-        div_str += """<div class="col-md-{0}">
-          <div class="thumbnail">
-            <a href="{1}">
-              <img src="{2}" width="{3}px" height="{4}px">
-            </a>
-          </div>
-        </div>""".format(2, impathlink, impath, 400, 400)
-    div_str += "</div>"
-    sedm_dict['sci_data'] += div_str
-    # To get ifu products we first look to see if a what.list file has been
-    # created. This way we will know which files to add to our dict and
-    # whether the user has permissions to see the file
-    if not os.path.exists(os.path.join(obsdir, 'rcwhat.list')):
-        return {'message': 'Could not find summary file (what.list) for %s UT' %
-                           os.path.basename(os.path.normpath(obsdir))}
+    print("Looking in directory:", sci_path)
+    find_path = os.path.join(sci_path, ext)
+    print(find_path, 'find_path')
+    files = glob.glob(find_path)
 
-    # Go throught the what list and return all non-calibration entries
-    with open(os.path.join(obsdir, 'rcwhat.list')) as f:
-        what_list = f.read().splitlines()
+    print("Files found", files)
 
-    science_list = []
-    standard_list = []
-    for targ in what_list:
-        if 'Guider' in targ:
-            pass
-        elif 'Calib' in targ:
-            pass
-        elif 'FOCUS' in targ:
-            pass
-        elif 'Twilight' in targ:
-            pass
+    for f in files:
+        base_name = os.path.basename(f).replace(".png", "")
+        if product.lower() == 'science' and 'ACQ' in base_name:
+            continue
+        elif product.lower() == 'science':
+            filters = base_name.split("_")
+            objfilt = filters[-2]
+            imgfilt = filters[-1]
+
+            if objfilt == imgfilt:
+                if 'data' in display_dict:
+                    display_dict['data'].append(f)
+                else:
+                    display_dict['data'] = [f]
         else:
-            science_list.append(targ)
-
-    # Now we go through and make sure the user is allowed to see this target
-    show_list = []
-    print(science_list, "science list")
-    if len(science_list) >= 1:
-        allocation_id_list = get_allocations_user(user_id=user_id,
-                                                  return_type='list')
-
-        for sci_targ in science_list:
-            print(sci_targ, "Science Target")
-            if 'ACQ'  in sci_targ:
-                targ_name = sci_targ.split()[-2].replace("ACQ-", "")
+            if 'data' in display_dict:
+                display_dict['data'].append(f)
             else:
-                targ_name = sci_targ.split()[-2]
+                display_dict['data'] = [f]
 
-            ## Start by pulling up all request that match the science target
-            #targ_name = sci_targ.split(':')[1].split()[0]
-            if 'STD' not in targ_name:
-                # 1. Get the object id
-                print(targ_name, "In RC for loop")
-                object_ids = db.get_object_id_from_name(targ_name)
 
-                if len(object_ids) == 1:
-                    object_id = object_ids[0][0]
-                elif len(object_ids) > 1:
-                    # TODO       what really needs to happen here is that we need to
-                    # TODO cont: find the id that is closest to the obsdate.
-                    # TODO cont: For now I am just going to use last added
-                    print(object_ids)
-                    object_id = object_ids[-1][0]
-                elif not object_ids and ('at' in targ_name.lower() \
-                                         or 'sn' in targ_name.lower()):
-                    # sometimes it's at 2018abc not at2018abc in the db
-                    targ_name = targ_name[:2] + ' ' + targ_name[2:]
-                    object_ids = db.get_object_id_from_name(targ_name)
-                    try:
-                        object_id = object_ids[-1][0]
-                    except IndexError:
-                        print("There was an error. You can't see this")
 
-                target_requests = db.get_from_request(values=['allocation_id'],
-                                                      where_dict={'object_id':
-                                                                      object_id,
-                                                                  'status':
-                                                                      'COMPLETED'})
+    div_str = ""
 
-                # Right now I am only seeing if there exists a match between
-                # allocations of all request.  It's possible the request could
-                # have been made by another group as another follow-up and thus
-                # the user shouldn't be able to see it.  This should be able to
-                # be fixed once all request are listed in the headers of the
-                # science images.
-                for req in target_requests:
-                    if req[0] in allocation_id_list:
-                        show_list.append((sci_targ, targ_name))
-                    else:
-                        print("You can't see this at target request 2")
-            else:
-                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
-                show_list.append((sci_targ, targ_name))
+    if 'data' in display_dict:
+        for i in sorted(display_dict['data']):
+            i = i.replace(base_dir, '')
+            impath = "/data_r/%s" % (i)
+            impathlink = "/data_r/%s" % (i)
+            div_str += """<div class="col-md-{0}">
+                        <div class="thumbnail">
+                          <h4>{5}</h4>
+                          <a href="{1}">
+                            <img src="{2}" width="{3}px" height="{4}px">
+                          </a>
+                        </div>
+                        </div>""".format(4, impathlink, impath, 400, 400, os.path.basename(i))
 
-    if len(standard_list) >= 1:
-        for std_targ in standard_list:
-            targ_name = std_targ.split(':')[1].split()[0].replace('STD-', '')
-            show_list.append((std_targ, targ_name))
-
-    # We have our list of targets that we can be shown, now lets actually find
-    # the files that we will show on the web page.  To make this backwards
-    # compatible I have to look for two types of files
-    if len(show_list) >= 1:
-        science_dict = {}
-        count = 0
-        div_str = ''
-        for targ in show_list:
-            print(targ, "show_list info")
-            targ_params = targ[0].split()
-            fits_file = targ_params[0].replace('.fits', '')
-            name = targ[1]
-
-            image_list = (glob.glob('%spngraw/science/*%s*.png' % (obsdir, fits_file)))
-            image_list += (glob.glob('%spngraw/acquisition/*%s*.png' % (obsdir, fits_file)))
-            print(image_list)
-            print('%s/pngraw/*%s*.png' % (obsdir, fits_file))
-            if name not in science_dict:
-                science_dict[name] = {'image_list': image_list}
-            else:
-                # We do this to handle cases where there are two or more of
-                # the same object name
-                science_dict[name + '_xRx_%s' % str(count)] = {'image_list': image_list}
-            count += 1
-        # Alright now we build the table that will show the spectra, image file
-        # and classification.
-
-        count = 0
-        print(science_dict, "science dict")
-
-        for obj, obj_data in science_dict.items():
-            if '_xRx_' in obj:
-                obj = obj.split('_xRx_')[0]
-
-            if 'ZTF' in obj:
-                obj_link = ('<a href="http://skipper.caltech.edu:8080/'
-                            'cgi-bin/growth/view_source.cgi?name=%s">%s</a>' %
-                            (obj, obj))
-
-                div_str += """<div class="row">"""
-                div_str += """<h4>%s</h4>""" % obj_link
-            else:
-                div_str += """<div class="row">"""
-                div_str += """<h4>%s</h4>""" % obj
-
-            # ToDO: Grab data from somewhere to put in the meta data column
-            if obj_data['image_list']:
-                for i in obj_data['image_list']:
-                    print(i, 'for i image_list')
-
-                    impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    impathlink = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    if not os.path.exists(impathlink):
-                        impathlink = impath
-
-                    div_str += """<div class="col-md-{0}">
-                    <div class="thumbnail">
-                      <a href="{1}">
-                        <img src="{2}" width="{3}px" height="{4}px">
-                      </a>
-                    </div>
-                  </div>""".format(2, impathlink, impath, 400, 400)
-            div_str += "</div>"
-
-        sedm_dict['sci_data'] += div_str
-
+        sedm_dict['data'] = div_str
+    else:
+        sedm_dict['data'] = "No %s images found" % product
+    print(sedm_dict)
     return sedm_dict
 
 ###############################################################################
