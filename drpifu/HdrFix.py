@@ -257,6 +257,9 @@ def sedm_fix_header(fname):
         ff[0].header['OBSDATE'] = (dt, "UT Start Date")
         ff[0].header['OBSTIME'] = (tm, "UT Start Time")
         nupkey += 2
+    # AIRMASS
+    if type(ff[0].header['AIRMASS']) == str:
+        ff[0].header['AIRMASS'] = float(ff[0].header['AIRMASS'])
     # END values
     if 'ENDAIR' not in ff[0].header:
         if 'AIRMASS' in ff[0].header:
