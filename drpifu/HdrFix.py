@@ -259,7 +259,10 @@ def sedm_fix_header(fname):
         nupkey += 2
     # AIRMASS
     if type(ff[0].header['AIRMASS']) == str:
-        ff[0].header['AIRMASS'] = float(ff[0].header['AIRMASS'])
+        try:
+            ff[0].header['AIRMASS'] = float(ff[0].header['AIRMASS'])
+        except ValueError:
+            ff[0].header['AIRMASS'] = (1.0, 'bogus airmass')
     # END values
     if 'ENDAIR' not in ff[0].header:
         if 'AIRMASS' in ff[0].header:
