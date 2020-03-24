@@ -679,7 +679,8 @@ def process_request_form(content, form, userid):
                 request_dict[key] = content[key]
         except Exception as e:
             print(str(e), key, 't')
-    print("I made it here")
+            pass
+    #print("I made it here")
     # 3. Now we need to create the obs_seq and exptime entries
     #    We need to also make sure and add the object magnitude
     #    to calculate exposure times
@@ -706,13 +707,13 @@ def process_request_form(content, form, userid):
                     request_dict[k] = -1
             ret = db.update_request(request_dict)
         else:
-            print("I AN HERE NOW")
+            #print("I AN HERE NOW")
             if 'request_id' in request_dict:
                 request_dict.pop('request_id')
             request_dict['user_id'] = int(request_dict['user_id'])
-            print(request_dict)
+            #print(request_dict)
             ret = db.add_request(request_dict)
-            print(ret)
+            #print(ret)
     return process_dict, form
 
 
@@ -826,7 +827,7 @@ def make_obs_seq(obs_seq_dict):
             filters_list.append("1ifu")
             exptime_list.append(str(ifu_exptime))
 
-    print(obs_seq_dict)
+    #print(obs_seq_dict)
     if obs_seq_dict['rc'].lower() in ['y', 'yes', 'true']:
         for flt in rc_filter_list:
             if obs_seq_dict['do_%s' % flt]:
@@ -974,7 +975,7 @@ def check_login(username, password):
 
     user_pass = db.get_from_users(['username', 'password', 'id'], {'username': username})
 
-    print(user_pass)
+    #print(user_pass)
     if not user_pass:
         return False, 'Incorrect username or password!'
 
@@ -1252,16 +1253,16 @@ def get_science_products(user_id="", obsdate="", camera_type=""):
 
         data_dir = '%s%s/' % (phot_dir, obsdate)
         new_data_dir = '%s%s/' % (new_phot_dir, obsdate)
-        print(data_dir, "In the get science prods")
+        #print(data_dir, "In the get science prods")
         print(new_data_dir, "In the get science prods new")
         if os.path.exists(data_dir):
-            print("Old data")
+            #print("Old data")
             return get_rc_products(data_dir, user_id, obsdate)
         elif os.path.exists(new_data_dir):
-            print("New data")
+            #print("New data")
             return get_rc_redux_products(new_data_dir, user_id, obsdate)
         else:
-            print("Default data")
+           #print("Default data")
             return get_rc_products(data_dir, user_id, obsdate)
 
 def get_ab_what(obsdir):
@@ -1323,7 +1324,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-    print(calib_dict, 'calib products')
+    #print(calib_dict, 'calib products')
 
     div_str += """<div class="row">"""
     div_str += """<h4>Calibrations</h4>"""
@@ -1395,7 +1396,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     # TODO       what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
-                    print(object_ids)
+                    #print(object_ids)
                     object_id = object_ids[-1][0]
                 elif not object_ids and ('at' in targ_name.lower() \
                                       or 'sn' in targ_name.lower()):
@@ -1406,7 +1407,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         object_id = object_ids[-1][0]
                     except IndexError:
                         object_id = False
-                        print("There was an error. You can't see this")
+                        #print("There was an error. You can't see this")
 
                 # If we are not the admin then we need to check if the user can see the object
 
@@ -1426,7 +1427,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                                                                           'status':
                                                                               'OBSERVED'})
 
-                    print("Object id", object_id)
+                    #print("Object id", object_id)
                     # Right now I am only seeing if there exists a match between
                     # allocations of all request.  It's possible the request could
                     # have been made by another group as another follow-up and thus
@@ -1434,8 +1435,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                     # be fixed once all request are listed in the headers of the
                     # science images.
                     for req in target_requests:
-                        print(sci_targ, targ_name)
-                        print(allocation_id_list, "List of allocations this person can see")
+                        #print(sci_targ, targ_name)
+                        #print(allocation_id_list, "List of allocations this person can see")
                         if req[0] in allocation_id_list:
                             show_list.append((sci_targ, targ_name))
                         else:
@@ -1460,7 +1461,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         div_str = ''
 
         for targ in show_list:
-            print(targ)
+            #print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
@@ -1604,7 +1605,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
     :param product_type:
     :return:
     """
-    print(obsdir, 'rc')
+    #print(obsdir, 'rc')
     # Look first to make sure there is a data directory.
     if not os.path.exists(obsdir):
         return {'message': 'No data directory could be located for %s UT' %
@@ -1629,7 +1630,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-    print(calib_dict, 'calib products')
+    #print(calib_dict, 'calib products')
 
     div_str += """<div class="row">"""
     div_str += """<h4>Calibrations</h4>"""
@@ -1687,7 +1688,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
                     # TODO       what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
-                    print(object_ids)
+                    #print(object_ids)
                     object_id = object_ids[-1][0]
                 elif not object_ids and ('at' in targ_name.lower() \
                                          or 'sn' in targ_name.lower()):
@@ -1733,7 +1734,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
         count = 0
         div_str = ''
         for targ in show_list:
-            print(targ)
+            #print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
@@ -1811,7 +1812,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     :param product_type:
     :return:
     """
-    print(product, 'product')
+    #print(product, 'product')
     raw_png_dir = ['acquisition', 'bias', 'dome', 'focus',
                    'guider_images','guider_movies', 'twilight',
                    'science_raw']
@@ -1831,13 +1832,13 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     ext = '*.png'
 
     if product.lower() == 'science':
-        print(new_phot_dir, obsdate)
+        #print(new_phot_dir, obsdate)
         sci_path = os.path.join(new_phot_dir, obsdate, 'reduced', 'png')
         if not os.path.exists(sci_path):
-            print("Path doesn't exist", sci_path)
+            #print("Path doesn't exist", sci_path)
             sedm_dict['data'] = "No %s images found" % product
     elif product.lower() in raw_png_dir:
-        print(new_phot_dir, obsdate)
+        #print(new_phot_dir, obsdate)
         if 'guider' in product.lower():
             p_split = product.split("_")
             if p_split[-1] == 'movies':
@@ -1846,16 +1847,16 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
         sci_path = os.path.join(new_phot_dir, obsdate,
                                     'pngraw', product.lower().replace('_raw',''))
-        print(sci_path, "Science path in alt")
+       # print(sci_path, "Science path in alt")
         if not os.path.exists(sci_path):
             print("Path doesn't exist")
 
-    print("Looking in directory:", sci_path)
+    #print("Looking in directory:", sci_path)
     find_path = os.path.join(sci_path, ext)
-    print(find_path, 'find_path')
+    #print(find_path, 'find_path')
     files = glob.glob(find_path)
 
-    print("Files found", files)
+    #print("Files found", files)
 
     for f in files:
         base_name = os.path.basename(f).replace(".png", "")
@@ -1908,7 +1909,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
         sedm_dict['data'] = div_str
     else:
         sedm_dict['data'] = "No %s images found" % product
-    print(sedm_dict)
+    #print(sedm_dict)
     return sedm_dict
 
 ###############################################################################
@@ -2378,11 +2379,11 @@ def get_user_observations(username, password, obsdate):
     :param request_id:
     :return:
     """
-    print(username, type(username))
+    #print(username, type(username))
 
     ret = check_login(username, password)
 
-    print(ret)
+    #print(ret)
     if not ret[0]:
         return {'message': "User name and password do not match"}
 
@@ -2404,7 +2405,7 @@ def get_user_observations(username, password, obsdate):
 
     master_calib_list += pkl_list
 
-    print(master_calib_list, 'master')
+    #print(master_calib_list, 'master')
 
     # Look first to make sure there is a data directory.
     if not obsdate:
@@ -2439,7 +2440,7 @@ def get_user_observations(username, password, obsdate):
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-    print(calib_dict, 'calib products')
+    #print(calib_dict, 'calib products')
 
     for v in master_calib_list:
         impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
@@ -2553,21 +2554,21 @@ def get_user_observations(username, password, obsdate):
     # We have our list of targets that we can be shown, now lets actually find
     # the files that we will show on the web page.  To make this backwards
     # compatible I have to look for two types of files
-    print(show_list, "Show list")
+    #print(show_list, "Show list")
     if len(show_list) >= 1:
         science_dict = {}
         count = 0
         div_str = ''
 
         for targ in show_list:
-            print(targ)
+            #print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
-            print(obsdir, fits_file)
-            print('%s%s_SEDM.png' % (obsdir, name))
-            print('%sspec_forcepsf*%s*.png' % (obsdir,fits_file))
-            print('%sspec_auto*%s*.png' % (obsdir, fits_file))
+           #print(obsdir, fits_file)
+            #print('%s%s_SEDM.png' % (obsdir, name))
+            #print('%sspec_forcepsf*%s*.png' % (obsdir,fits_file))
+            #print('%sspec_auto*%s*.png' % (obsdir, fits_file))
 
             image_list = (glob.glob('%sifu_spaxels_*%s*.png' % (obsdir,
                                                                 fits_file)) +
@@ -2616,7 +2617,7 @@ def get_user_observations(username, password, obsdate):
         # and classification.
 
         count = 0
-        print(science_dict)
+        #print(science_dict)
         for obj, obj_data in science_dict.items():
             if '_xRx_' in obj:
                 obj = obj.split('_xRx_')[0]

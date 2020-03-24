@@ -61,7 +61,7 @@ def requests():
     #    submission.
     if request.method == 'POST':
         content = request.form
-        print(flask_login.current_user)
+        #print(flask_login.current_user)
         if not flask_login.current_user.is_authenticated:
             user_id =content['user_id']
         else:
@@ -144,15 +144,15 @@ def data_access(instrument):
         return render_template('view_data.html', sedm_dict=out)
     else:
         out = model.get_rc_redux_products(**content)
-        print(out)
+        #print(out)
         return render_template('view_data_redux.html', sedm_dict=out)
 
 @app.route('/data_r/<path:filename>')
 #@flask_login.login_required
 def data_static_r(filename):
-    print(filename, 'this is the filename in data')
+    #print(filename, 'this is the filename in data')
     base_path = model.base_dir
-    print(os.path.join(base_path, filename), "this is the full path")
+    #print(os.path.join(base_path, filename), "this is the full path")
     _p, _f = os.path.split(os.path.join(base_path, filename))
     return send_from_directory(_p, _f)
 
@@ -171,13 +171,13 @@ def data_static(filename):
         else:
             return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
     elif _f.startswith('rc') or _f.startswith('finder') or 'ACQ' in _f:
-        print("In rc path")
-        print(_p, _f)
+        #print("In rc path")
+        #print(_p, _f)
         if _f.startswith('rc'):
             if 'redux' in _p:
                 return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
             else:
-                print("USING THE HERE")
+                #print("USING THE HERE")
                 base_obspath = os.path.join(config['path']['path_redux_phot'], _p, 'pngraw')
                 pathlist = ['acquisition',  'bias',  'dome',  'focus',
                             'guider',  'science',  'twilight']
