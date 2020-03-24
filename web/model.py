@@ -78,7 +78,7 @@ elif computer == 'pharos':
     redux_dir = '/scr2/sedmdrp/redux/'
     status_dir = '/scr2/sedm/raw/telstatus/'
     host = 'localhost'
-    base_dir = '/scr2/sedm/sedmdrp/'
+    base_dir = '/scr2/sedmdrp/'
     port = 5432
 
 elif computer == 'ether':
@@ -1885,7 +1885,17 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
         for i in sorted(display_dict['data']):
             i = i.replace(base_dir, '')
             impath = "/data_r/%s" % (i)
-            impathlink = "/data_r/%s" % (i)
+
+            if 'reduced' in i:
+                impathlink = "/data_r/%s" % i.replace('/png/', '/').replace('.png', '.fits')
+            elif 'pngraw' in i:
+                base_link = i.split('/pngraw/')
+
+                impathlink = "/data_r/%s" % os.path.join(base_link[0],
+                                                         os.path.basename(i).replace('_all.png', '.fits'))
+            else:
+                impathlink = "/data_r/%s" % (i)
+
             div_str += """<div class="col-md-{0}">
                         <div class="thumbnail">
                           <h4>{5}</h4>
