@@ -86,7 +86,7 @@ def find_recent(redd, fname, destdir, dstr):
     return ret
 
 
-def find_recent_bias(redd, fname, destdir):
+def find_recent_bias(redd, fname, destdir, dstr):
     """Find the most recent version of fname and copy it to destdir.
 
     Look through sorted list of redux directories to find most recent
@@ -96,6 +96,7 @@ def find_recent_bias(redd, fname, destdir):
         redd (str): reduced directory (something like /scr2/sedm/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
+        dstr (str): YYYYMMDD date string of current directory
 
     Returns:
         bool: True if file found and copied, False otherwise.
@@ -117,6 +118,9 @@ def find_recent_bias(redd, fname, destdir):
                           if os.path.isdir(d)])[0:-1]
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
+            # Skip dirs newer than current dir (if any)
+            if int(d.split('/')[-1]) >= int(dstr):
+                continue
             src = glob.glob(os.path.join(d, fname))
             if len(src) == 1:
                 os.symlink(src[0], os.path.join(destdir, fname))
@@ -129,7 +133,7 @@ def find_recent_bias(redd, fname, destdir):
     return ret
 
 
-def find_recent_std(redd, fname, destdir):
+def find_recent_std(redd, fname, destdir, dstr):
     """Find the most recent version of fname and copy it to destdir.
 
     Look through sorted list of redux directories to find most recent
@@ -139,6 +143,7 @@ def find_recent_std(redd, fname, destdir):
         redd (str): reduced directory (something like /scr2/sedm/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
+        dstr (str): YYYYMMDD date string of current directory
 
     Returns:
         bool: True if file found and copied, False otherwise.
@@ -160,6 +165,9 @@ def find_recent_std(redd, fname, destdir):
                           if os.path.isdir(d)])[0:-1]
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
+            # Skip dirs newer than current dir (if any)
+            if int(d.split('/')[-1]) >= int(dstr):
+                continue
             src = glob.glob(os.path.join(d, fname))
             if len(src) >= 1:
                 src.sort()
@@ -186,8 +194,8 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
     ncw = find_recent(redd, '_WaveSolution.pkl', outdir, cur_date_str)
     ncf = find_recent(redd, '_Flat.fits', outdir, cur_date_str)
     if not bias_ready(outdir):
-        ncb = find_recent_bias(redd, 'bias0.1.fits', outdir)
-        nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir)
+        ncb = find_recent_bias(redd, 'bias0.1.fits', outdir, cur_date_str)
+        nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir, cur_date_str)
     else:
         ncb = True
         nc2 = True
@@ -199,7 +207,8 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
                  "stopping" % (nct, nctm, ncg, ncw, ncf, ncb, nc2))
     # If we get here, we are done
     if link_std:
-        if find_recent_std(redd, 'fluxcal_auto_robot_*STD*.fits', outdir):
+        if find_recent_std(redd, 'fluxcal_auto_robot_*STD*.fits', outdir,
+                           cur_date_str):
             logging.info("Linked previous std into %s" % outdir)
         else:
             logging.warning("Could not find std to link")
