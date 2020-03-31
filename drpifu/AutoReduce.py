@@ -790,7 +790,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                         cmd = ("extractstar.py", datestr, "--auto", fn,
                                "--std", "--tag", "robot",
                                "--centroid", "brightest", "--seeing", "2.0")
-                               # "--seeing", "%.2f" % seeing)
+                        # "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("Old extraction method used")
                         cmd = ("extract_star.py", datestr, "--auto", fn,
@@ -877,7 +877,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                         cmd = ("extractstar.py", datestr, "--auto", fn,
                                "--autobins", "6", "--tag", "robot",
                                "--centroid", "auto", "--seeing", "2.0")
-                               # "--seeing", "%.2f" % seeing)
+                        # "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("Old extraction method used")
                         cmd = ("extract_star.py", datestr, "--auto", fn,

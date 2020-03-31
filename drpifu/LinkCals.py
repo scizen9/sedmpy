@@ -129,7 +129,7 @@ def find_recent_bias(redd, fname, destdir):
     return ret
 
 
-def link_cals(redd='/scr2/sedmdrp/redux', outdir=None):
+def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
     # Get current date string
     cur_date_str = str(outdir.split('/')[-1])
     # Check status
@@ -158,6 +158,12 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None):
         sys.exit(msg)
     # If we get here, we are done
     logging.info("Using earlier night calibration files")
+    if link_std:
+        nst = find_recent_bias(redd, 'fluxcal_auto_robot_*STD*.fits', outdir)
+        if nst:
+           logging.info("Linked previous std into %d" % outdir)
+        else:
+            logging.warning("Could not find std to link")
 
 
 if __name__ == '__main__':
@@ -168,9 +174,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--reduxdir', type=str, default='/scr2/sedmdrp/redux',
                         help='Output reduced directory (/scr2/sedmdrp/redux)')
+    parser.add_argument('--std', action="store_true", default=False,
+                        help='Link in a flux calibrator?')
 
     args = parser.parse_args()
 
     curdir = os.getcwd()
 
-    link_cals(redd=args.reduxdir, outdir=curdir)
+    link_cals(redd=args.reduxdir, outdir=curdir, link_std=args.std)
