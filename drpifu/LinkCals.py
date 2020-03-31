@@ -171,11 +171,17 @@ def find_recent_std(redd, fname, destdir, dstr):
             src = glob.glob(os.path.join(d, fname))
             if len(src) >= 1:
                 src.sort()
-                outlink = os.path.join(destdir, src[0].split('/')[-1])
-                os.symlink(src[0], outlink)
-                ret = True
-                logging.info("Found %s, linking to %s" % (src[0], outlink))
-                break
+                for ss in src:
+                    # skip symlinks
+                    if os.path.islink(ss):
+                        continue
+                    outlink = os.path.join(destdir, ss.split('/')[-1])
+                    os.symlink(ss, outlink)
+                    ret = True
+                    logging.info("Found %s, linking to %s" % (ss, outlink))
+                    break
+                if ret:
+                    break
     if not ret:
         logging.warning("%s not found" % fname)
     return ret
