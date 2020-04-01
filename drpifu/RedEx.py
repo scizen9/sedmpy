@@ -170,6 +170,21 @@ if __name__ == "__main__":
             if ret:
                 logging.error("Verify failed!")
                 sys.exit(1)
+            else:
+                # Display verify image and then prompt for quality
+                verify_file = glob.glob("verify_auto_%s_*.png" % tagstr)[0]
+                pars = ["display", verify_file]
+                ret = subprocess.call(pars)
+                good = input("Re-extraction good? (N/y): ")
+                if not good:
+                    good = 'N'
+                if good[0].capitalize() != "Y":
+                    logging.error("Try re-extraction again.")
+                    logging.info("Removing *_%s_*" % tagstr)
+                    flist = glob.glob("*_%s_*" % tagstr)
+                    for f in flist:
+                        os.remove(f)
+                    sys.exit(1)
             # Re-report
             pars = ["pysedm_report.py", dd, "--contains", abtagstr]
             logging.info("Running " + " ".join(pars))
