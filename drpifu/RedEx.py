@@ -71,8 +71,11 @@ if __name__ == "__main__":
             logging.info("Recovering a quality 5 spectrum %s in %s" % (ob_id,
                                                                        dd))
             # Update quality in fits file
-            flist = glob.glob(os.path.join(
-                rd, dd, "spec_auto_robot_lstep1__*_%s_*.fits" % ob_id))
+            if args.doab:
+                fspec = "spec_auto_AB*_%s_*.fits" % ob_id
+            else:
+                fspec = "spec_auto_robot_lstep1__*_%s_*.fits" % ob_id
+            flist = glob.glob(os.path.join(rd, dd, fspec))
             if not flist:
                 logging.error("No spec file with id %s" % ob_id)
                 sys.exit(1)
