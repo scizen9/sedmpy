@@ -99,9 +99,10 @@ if __name__ == "__main__":
             # Update database entry
             ar.update_spec(fits_file, update_db=True)
             # Update quality in text file
-            text_file = glob.glob(os.path.join(rd, dd,
-                                  "spec_auto_robot_lstep1__*_%s_*.txt" %
-                                               ob_id))[0]
+            text_file = fits_file.replace('.fits', '.txt')
+            #    glob.glob(os.path.join(rd, dd,
+            #                      "spec_auto_robot_lstep1__*_%s_*.txt" %
+            #                                   ob_id))[0]
             with open(text_file, "r") as textIn:
                 spec_lines = textIn.readlines()
                 index = [i for i, s in enumerate(spec_lines) if 'QUALITY' in s]
