@@ -788,6 +788,13 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
         crrf = glob.glob(os.path.join(destdir, rute+'.fit*'))
         if len(crrf) > 0:
             continue
+        # get spec filename
+        specf = glob.glob(os.path.join(destdir,
+                                       'spec_auto_ABext_lstep1__' +
+                                       crrf + '*.fit*'))
+        if len(specf) > 0:
+            logging.info("Spec already extracted: %s" % specf)
+            continue
         got_positions = False
         if posdic:
             # Get position keys for posdic
