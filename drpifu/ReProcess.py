@@ -791,7 +791,7 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
         # get spec filename
         specf = glob.glob(os.path.join(destdir,
                                        'spec_auto_ABext_lstep1__' +
-                                       crrf + '*.fit*'))
+                                       rute + '*.fit*'))
         if len(specf) > 0:
             logging.info("Spec already extracted: %s" % specf)
             continue
