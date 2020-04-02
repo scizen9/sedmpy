@@ -100,9 +100,6 @@ if __name__ == "__main__":
             ar.update_spec(fits_file, update_db=True)
             # Update quality in text file
             text_file = fits_file.replace('.fits', '.txt')
-            #    glob.glob(os.path.join(rd, dd,
-            #                      "spec_auto_robot_lstep1__*_%s_*.txt" %
-            #                                   ob_id))[0]
             with open(text_file, "r") as textIn:
                 spec_lines = textIn.readlines()
                 index = [i for i, s in enumerate(spec_lines) if 'QUALITY' in s]
@@ -184,8 +181,8 @@ if __name__ == "__main__":
                     good = 'N'
                 if good[0].capitalize() != "Y":
                     logging.error("Try re-extraction again.")
-                    logging.info("Removing *_%s_*" % tagstr)
-                    flist = glob.glob("*_%s_*" % tagstr)
+                    logging.info("Removing *_%s_*" % abtagstr)
+                    flist = glob.glob("*_%s_*" % abtagstr)
                     for f in flist:
                         os.remove(f)
                     sys.exit(1)
