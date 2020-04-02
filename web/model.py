@@ -1889,7 +1889,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
             if 'reduced' in i:
                 impathlink = "/data_r/%s" % i.replace('/png/', '/').replace('.png', '.fits')
-            elif 'pngraw' in i:
+            elif 'pngraw' in i and '.gif' not in i:
                 base_link = i.split('/pngraw/')
 
                 impathlink = "/data_r/%s" % os.path.join(base_link[0],
@@ -2191,6 +2191,7 @@ def load_p48seeing(obsdate):
     day_frac_diff = datetime.timedelta(
         np.ceil((datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
     local_date = np.array(time) + day_frac_diff
+
     d = pd.DataFrame({'date': local_date, 'seeing': seeing})
 
     return d
@@ -2816,8 +2817,10 @@ def get_p18obsdata(obsdate):
 
     if "-" in obsdate:
         f = datetime.datetime.strptime(obsdate, "%Y-%m-%d") - datetime.timedelta(days=1)
+        obsd = datetime.datetime.strptime(obsdate, "%Y-%m-%d")
     else:
         f = datetime.datetime.strptime(obsdate, "%Y%m%d") - datetime.timedelta(days=1)
+        obsd = datetime.datetime.strptime(obsdate, "%Y%m%d")
 
     y, m, d = [f.strftime("%Y"), int(f.strftime("%m")), int(f.strftime("%d"))]
     p18obsdate = "%s-%s-%s" % (y, m, d)
@@ -2831,14 +2834,18 @@ def get_p18obsdata(obsdate):
 
     # 4. Loop through the data and only use points that have 4 or more seeing values to average
     for i in data:
-        i = i.split()
+        try:
+            i = i.split()
 
-        if len(i) > 5 and int(i[5]) > 4:
-            d = '%s %s' % (i[1], i[0])
-            p18date.append(datetime.datetime.strptime(d, "%m/%d/%Y %H:%M:%S")
-                           + datetime.timedelta(hours=8))
-            p18seeing.append(float(i[4]))
-
+            if len(i) > 5 and int(i[5]) > 4:
+                d = '%s %s' % (i[1], i[0])
+                p18date.append(datetime.datetime.strptime(d, "%m/%d/%Y %H:%M:%S")
+                               + datetime.timedelta(hours=8))
+                p18seeing.append(float(i[4]))
+        except Exception as e:
+            print(str(e))
+            obsd = obsd.replace(hour=7)
+            return [obsd], [0]
     return p18date, p18seeing
 
 
