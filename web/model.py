@@ -2814,8 +2814,10 @@ def get_p18obsdata(obsdate):
     # 1. Create the URL to get the seeing for the requested night
     p18date = []
     p18seeing = []
-
-    if "-" in obsdate:
+    if not obsdate:
+        f = datetime.datetime.strptime(obsdate, "%Y%m%d") - datetime.timedelta(days=1)
+        obsd = datetime.datetime.strptime(obsdate, "%Y%m%d")
+    elif "-" in obsdate:
         f = datetime.datetime.strptime(obsdate, "%Y-%m-%d") - datetime.timedelta(days=1)
         obsd = datetime.datetime.strptime(obsdate, "%Y-%m-%d")
     else:
