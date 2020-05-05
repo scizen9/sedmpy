@@ -9,7 +9,7 @@ def report():
     """Generate DRP report using output spec_*.txt files"""
     # comment?
     if len(sys.argv) > 1:
-        comment = input(__prompt="Enter comment: ")
+        comment = input("Enter comment: ")
     else:
         comment = None
 
