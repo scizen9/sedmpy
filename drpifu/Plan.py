@@ -243,6 +243,7 @@ classify:
 	$(REPORT) | tee report.txt
 
 finalreport:
+    $(REPORT) comment | tee report.txt
 	cat report*.txt | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,rsw@astro.caltech.edu,fremling@caltech.edu,jesper@astro.su.se,tda@lists.astro.caltech.edu
 
 """
