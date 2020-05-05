@@ -1,15 +1,23 @@
 import glob
 import os
+import sys
 import time
 import subprocess
 
 
 def report():
     """Generate DRP report using output spec_*.txt files"""
+    # comment?
+    if len(sys.argv) > 1:
+        comment = input(__prompt="Enter comment: ")
+    else:
+        comment = None
 
     flist = glob.glob("spec_*.txt")
     flist.sort()
     print("\nReport generated on %s" % time.strftime("%c"))
+    if comment:
+        print("\n%s" % comment)
     print("\nSEDM DRP run in %s\nFound %d spec_*.txt files" %
           (os.getcwd(), len(flist)))
     print("See http://pharos.caltech.edu/data_access/ifu?obsdate=%s\n" %
