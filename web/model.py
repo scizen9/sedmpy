@@ -1837,6 +1837,11 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
         if not os.path.exists(sci_path):
             #print("Path doesn't exist", sci_path)
             sedm_dict['data'] = "No %s images found" % product
+    elif product.lower() == 'acquisition':
+        sci_path = os.path.join(new_phot_dir, obsdate, 'reduced', 'png')
+        if not os.path.exists(sci_path):
+            #print("Path doesn't exist", sci_path)
+            sedm_dict['data'] = "No %s images found" % product
     elif product.lower() in raw_png_dir:
         #print(new_phot_dir, obsdate)
         if 'guider' in product.lower():
@@ -1872,13 +1877,21 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                     display_dict['data'].append(f)
                 else:
                     display_dict['data'] = [f]
+        elif product.lower() == 'acquisition':
+            if 'ACQ' not in base_name:
+                continue
+            elif "_r_r" not in base_name:
+                continue
+            else:
+                if 'data' in display_dict:
+                    display_dict['data'].append(f)
+                else:
+                    display_dict['data'] = [f]
         else:
             if 'data' in display_dict:
                 display_dict['data'].append(f)
             else:
                 display_dict['data'] = [f]
-
-
 
     div_str = ""
 
@@ -1897,18 +1910,22 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
             else:
                 impathlink = "/data_r/%s" % (i)
 
-            div_str += """<div class="col-md-{0}">
-                        <div class="thumbnail">
-                          <h4>{5}</h4>
-                          <a href="{1}">
-                            <img src="{2}" width="{3}px" height="{4}px">
-                          </a>
-                        </div>
-                        </div>""".format(4, impathlink, impath, 400, 400, os.path.basename(i))
+            div_str += """<div class="card" style="float:left;margin:5px;border:black">
+                            <a href="http://pharos.caltech.edu{3}">
+                                <img style="width:300px" class="card-img-top" src="{1}" alt="Card image">
+                            </a>
+                            <div class="cardbody">
+                                <p class="card-text" style="font:.5em">{2}</p>
+                                <a href="http://pharos.caltech.edu{0}">
+                                    Download
+                                </a>
+                            </div>
+                        </div>""".format(impathlink, impath, os.path.basename(i), impath)
 
         sedm_dict['data'] = div_str
     else:
         sedm_dict['data'] = "No %s images found" % product
+
     #print(sedm_dict)
     return sedm_dict
 
