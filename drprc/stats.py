@@ -102,9 +102,9 @@ def get_sextractor_stats(files):
                     else:
                         weather_string += ',%.2f,' % out_temp
                     if in_hum < -99:
-                        weather_string += ',nan'
+                        weather_string += 'nan'
                     else:
-                        weather_string += ',%.2f' % in_hum
+                        weather_string += '%.2f' % in_hum
                     # get image stats
                     ns, fwhm, ellipticity, bkg = sextractor.analyse_image(sf)
                     out.write(
@@ -156,8 +156,8 @@ def plot_stats(statfile):
     # get rid of bad values
     tin = s["f8"]
     tout = s["f10"]
-    tin[tin < -100] = np.nan
-    tout[tout < -100] = np.nan
+    # tin[tin < -100] = np.nan
+    # tout[tout < -100] = np.nan
     ax5.plot(datestat, tin, ".-", label="Inside")
     ax5.plot(datestat, tout, ".-", label="Outside")
     # ax5.plot(datestat, s["f11"], ".-")
