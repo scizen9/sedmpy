@@ -626,6 +626,10 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
             print("Not flux calibrated: %s" % fi)
             continue
 
+        if "contsep" in fi:
+            print("Not uploading contsep extraction yet: %s" % fi)
+            continue
+
         # Extract request ID
         req_id = subprocess.check_output(('grep', 'REQ_ID', fi),
                                          universal_newlines=True)

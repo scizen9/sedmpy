@@ -893,6 +893,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
+                        # Run SNID
                         logging.info("Running SNID for " + fn)
                         cmd = ("make", "classify")
                         logging.info(" ".join(cmd))
@@ -939,6 +940,24 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                                              (proced, spec_id))
                         else:
                             logging.error("Not found: %s" % proced)
+                        # contsep extraction
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "contsep",
+                               "--centroid", "auto", "--contsep")
+                        logging.info("Extracting contsep spectra for " + fn)
+                        logging.info(" ".join(cmd))
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
+                            logging.error("Error extracting contsep spectrum "
+                                          "for" + fn)
+                        else:
+                            # Run SNID
+                            logging.info("Running SNID for contsep " + fn)
+                            cmd = ("make", "classify")
+                            logging.info(" ".join(cmd))
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
+                                logging.error("Error running SNID")
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
     return ncp, copied
