@@ -940,7 +940,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                                 logging.warning("No update of spec in SEDM db")
                             else:
                                 # Update SedmDb table spec
-                                spec_id = update_spec(proced)
+                                spec_id = update_spec(
+                                    proced, nopush_marshal=nopush_marshal)
                                 logging.info("update of %s with spec_id %d" %
                                              (proced, spec_id))
                         else:
@@ -1033,7 +1034,7 @@ def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
     # END: make_e3d
 
 
-def update_spec(input_specfile, update_db=False):
+def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     """ Update the SEDM database on pharos by adding a new spec entry"""
 
     header_dict = {
@@ -1129,7 +1130,10 @@ def update_spec(input_specfile, update_db=False):
     if 'STD' not in objnam and spec_dict['quality'] <= 2:
         srcid = None
         specid = None
-        srcid, specid = mc.get_missing_info(objnam, utdate, srcid, specid)
+        if nopush_marshal:
+            logging.warning("nopush_marshal: skipping marshal retrieval")
+        else:
+            srcid, specid = mc.get_missing_info(objnam, utdate, srcid, specid)
         if srcid is None:
             logging.info("Not an object on the marshal: %s" % objnam)
         else:
