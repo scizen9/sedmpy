@@ -211,7 +211,7 @@ if __name__ == "__main__":
             pars = ["extractstar.py", dd, "--auto", ob_id,
                     "--autobins", "6", "--lstep", lstep,
                     "--centroid", "auto", "--tag", cstagstr,
-                    "--reducer", reducer]
+                    "--reducer", reducer, "--contsep"]
             if args.new_x and args.new_y:
                 xo = args.new_x
                 yo = args.new_y
