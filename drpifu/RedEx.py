@@ -215,7 +215,7 @@ if __name__ == "__main__":
             if args.new_x and args.new_y:
                 xo = args.new_x
                 yo = args.new_y
-                pars.append(["--contsep_offset", xo, yo])
+                pars.extend(["--contsep_offset", xo, yo])
             logging.info("Running " + " ".join(pars))
             res = subprocess.run(pars)
             if res.returncode != 0:
