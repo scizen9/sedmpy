@@ -42,6 +42,8 @@ if __name__ == "__main__":
                         help='just testing: extract spec, but no uploads')
     parser.add_argument('--doab', action="store_true", default=False,
                         help='re-extract an A/B pair manually')
+    parser.add_argument('--contsep', action="store_true", default=False,
+                        help='use contsep module for re-extraction')
     args = parser.parse_args()
 
     if args.lstep:
@@ -57,7 +59,7 @@ if __name__ == "__main__":
         # Get tag id
         now = datetime.datetime.now()
         tagstr = "redo%02d%02d%02.0f" % (now.hour, now.minute, now.second)
-        abtagstr = "ABredo%02d%02d%02.0f" % (now.hour, now.minute, now.second)
+
         # Check inputs and environment
         ob_id = args.obs_id
         dd = os.getcwd().split('/')[-1]
@@ -142,6 +144,7 @@ if __name__ == "__main__":
         elif args.doab:
             logging.info("Re-extracting an A/B observation %s in %s" % (ob_id,
                                                                         dd))
+            abtagstr = tagstr.replace("redo", "ABredo")
             # get reducer
             def_reducer = os.getenv("SEDM_USER", default='manual')
             reducer = input("Your name (<cr> - %s): " % def_reducer)
@@ -192,6 +195,37 @@ if __name__ == "__main__":
             ret = subprocess.call(pars)
             if ret:
                 logging.error("pysedm_report.py failed!")
+                sys.exit(1)
+        # Re-extract a contsep extraction
+        elif args.contsep:
+            logging.info("Re-extracting with contsep observation %s in %s"
+                         % (ob_id, dd))
+            cstagstr = tagstr.replace("redo", "contredo")
+            # get reducer
+            def_reducer = os.getenv("SEDM_USER", default='manual')
+            reducer = input("Your name (<cr> - %s): " % def_reducer)
+            if not reducer:
+                reducer = def_reducer
+            reducer = reducer.replace(" ", "_")
+            # set up script
+            pars = ["extractstar.py", dd, "--auto", ob_id,
+                    "--autobins", "6", "--lstep", lstep,
+                    "--centroid", "auto", "--tag", cstagstr,
+                    "--reducer", reducer]
+            if args.new_x and args.new_y:
+                xo = args.new_x
+                yo = args.new_y
+                pars.append(["--contsep_offset", xo, yo])
+            logging.info("Running " + " ".join(pars))
+            res = subprocess.run(pars)
+            if res.returncode != 0:
+                logging.error("Extraction failed.")
+                sys.exit(1)
+            # Re-classify
+            logging.info("make classify")
+            ret = subprocess.call(["make", "classify"])
+            if ret:
+                logging.error("SNID classification failed!")
                 sys.exit(1)
         # Re-extract a recoverable observation
         else:
