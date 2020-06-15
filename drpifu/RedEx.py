@@ -200,7 +200,7 @@ if __name__ == "__main__":
         elif args.contsep:
             logging.info("Re-extracting with contsep observation %s in %s"
                          % (ob_id, dd))
-            cstagstr = tagstr.replace("redo", "contredo")
+            cstagstr = tagstr.replace("redo", "CSredo")
             # get reducer
             def_reducer = os.getenv("SEDM_USER", default='manual')
             reducer = input("Your name (<cr> - %s): " % def_reducer)
