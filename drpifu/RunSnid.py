@@ -6,6 +6,7 @@ Created on Thu Aug 11 11:23:00 2016
 """
 
 import os
+import glob
 import argparse
 import subprocess
 import re
@@ -232,7 +233,12 @@ def record_snid(spec_file=None):
         try:
             snidoutput = fl.replace(".txt", "_snid.output")
             snid_type, pars = parse_and_fill(fl, snidoutput)
-            psoutput = fl.replace(".txt", "_comp0001_snidflux.ps")
+            psfspec = fl.replace(".txt", "_comp0001_snidflux*")
+            psoutput = glob.glob(psfspec)
+            if len(psoutput) > 0:
+                psoutput = psoutput[0]
+            else:
+                psoutput = 'snid_output_file_not_found'
             if os.path.exists(psoutput):
                 # handle spaces, if they exist
                 fl = fl.replace(" ", "\\ ")
