@@ -279,10 +279,6 @@ if __name__ == "__main__":
             # Object name
             obname = specname[0].split('_')[-1].split('.')[0]
             # Re-classify
-            flist = glob.glob("spec_*_%s_%s_*" % (ob_id, obname))
-            for f in flist:
-                logging.info("removing %s" % f)
-                os.remove(f)
             logging.info("make classify")
             ret = subprocess.call(["make", "classify"])
             if ret:
