@@ -964,6 +964,27 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                             retcode = subprocess.call(cmd)
                             if retcode != 0:
                                 logging.error("Error running SNID")
+                            # run Verify.py
+                            cmd = "~/sedmpy/drpifu/Verify.py %s " \
+                                  "--contains contsep_lstep1__%s" \
+                                  % (datestr, fn.split('.')[0])
+                            subprocess.call(cmd, shell=True)
+                            # run pysedm_report
+                            if local or nopush_slack:
+                                cmd = ("pysedm_report.py", datestr,
+                                       "--contains",
+                                       "contsep_lstep1__" + fn.split('.')[0])
+                            else:
+                                cmd = ("pysedm_report.py", datestr,
+                                       "--contains",
+                                       "contsep_lstep1__" + fn.split('.')[0],
+                                       "--slack")
+                            logging.info(" ".join(cmd))
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
+                                logging.error("Error running report for " +
+                                              "contsep_lstep1__" +
+                                              fn.split('.')[0])
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
     return ncp, copied
