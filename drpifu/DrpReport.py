@@ -112,6 +112,15 @@ def report():
     recs.sort()
     for r in recs:
         print(r)
+    # Check for contsep uploads
+    flist = glob.glob("spec_auto_contsep_*.upl")
+    if len(flist) > 0:
+        print("\nThere were/was %d contsep spectra uploaded to marshal"
+              % len(flist))
+        for f in flist:
+            tstr = ':'.join(f.split('ifu')[-1].split('_')[1:4])
+            tok = f.split("_")[-1].split(".")[0]
+            print("%8s %-25s contsep" % (tstr, tok))
     # Check for failed extractions
     flist = glob.glob("spec_*failed.fits")
     if len(flist) > 0:
