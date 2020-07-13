@@ -11,6 +11,8 @@ PYTHONPATH=${SEDMPATH}
 # fi
 export PYTHONPATH
 
+indate=$(date +%Y%m%d)
+
 if [ "$#" -eq 0 ]
 then 
     echo "Starting Python"
@@ -24,7 +26,7 @@ else
         report) python $SEDMPATH/drpifu/DrpReport.py;;
         update) shift 1; python $SEDMPATH/drpifu/AutoReduce.py --update "$@";;
         finder) shift 1; python $SEDMPATH/drpifu/acq_finder.py --imfile "$@";;
-        growth) shift 1; python $SEDMPATH/growth/growth.py --data_file "$@";;
+        growth) shift 1; python $SEDMPATH/growth/growth.py $indate --data_file "$@";;
         effplot) python $SEDMPATH/drpifu/EffTrend.py;;
         *) python -u "$@";;
     esac
