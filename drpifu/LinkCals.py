@@ -86,7 +86,7 @@ def find_recent(redd, fname, destdir, dstr):
     return ret
 
 
-def find_recent_bias(redd, fname, destdir):
+def find_recent_bias(redd, fname, destdir, dstr):
     """Find the most recent version of fname and copy it to destdir.
 
     Look through sorted list of redux directories to find most recent
@@ -96,6 +96,7 @@ def find_recent_bias(redd, fname, destdir):
         redd (str): reduced directory (something like /scr2/sedm/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
+        dstr (str): YYYYMMDD date string of current directory
 
     Returns:
         bool: True if file found and copied, False otherwise.
@@ -117,6 +118,9 @@ def find_recent_bias(redd, fname, destdir):
                           if os.path.isdir(d)])[0:-1]
         # Go back in reduced dir list until we find our file
         for d in reversed(redlist):
+            # Skip dirs newer than current dir (if any)
+            if int(d.split('/')[-1]) >= int(dstr):
+                continue
             src = glob.glob(os.path.join(d, fname))
             if len(src) == 1:
                 os.symlink(src[0], os.path.join(destdir, fname))
@@ -129,12 +133,65 @@ def find_recent_bias(redd, fname, destdir):
     return ret
 
 
-def link_cals(redd='/scr2/sedmdrp/redux', outdir=None):
+def find_recent_std(redd, fname, destdir, dstr):
+    """Find the most recent version of fname and copy it to destdir.
+
+    Look through sorted list of redux directories to find most recent
+    version of the input file.  Copy it to the destination directory.
+
+    Args:
+        redd (str): reduced directory (something like /scr2/sedm/redux)
+        fname (str): what file to look for
+        destdir (str): where the file should go
+        dstr (str): YYYYMMDD date string of current directory
+
+    Returns:
+        bool: True if file found and copied, False otherwise.
+
+    """
+
+    # Default return value
+    ret = False
+    # Make sure the file doesn't already exist in destdir
+    local_file = glob.glob(os.path.join(destdir, fname))
+    if len(local_file) == 1:
+        logging.warning("%s already exists in %s" % (fname, destdir))
+        ret = True
+    # Search in redd for file
+    else:
+        # Get all but the most recent reduced data directories
+        fspec = os.path.join(redd, '20??????')
+        redlist = sorted([d for d in glob.glob(fspec)
+                          if os.path.isdir(d)])[0:-1]
+        # Go back in reduced dir list until we find our file
+        for d in reversed(redlist):
+            # Skip dirs newer than current dir (if any)
+            if int(d.split('/')[-1]) >= int(dstr):
+                continue
+            src = glob.glob(os.path.join(d, fname))
+            if len(src) >= 1:
+                src.sort()
+                for ss in src:
+                    # skip symlinks
+                    if os.path.islink(ss):
+                        continue
+                    outlink = os.path.join(destdir, ss.split('/')[-1])
+                    os.symlink(ss, outlink)
+                    ret = True
+                    logging.info("Found %s, linking to %s" % (ss, outlink))
+                    break
+                if ret:
+                    break
+    if not ret:
+        logging.warning("%s not found" % fname)
+    return ret
+
+
+def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
     # Get current date string
     cur_date_str = str(outdir.split('/')[-1])
     # Check status
-    logging.warning("Bad calibrations from this night!")
-    logging.info("Let's get our calibrations from a previous night")
+    logging.info("Looking for calibrations from a previous night")
     nct = find_recent(redd, '_TraceMatch.pkl', outdir,
                       cur_date_str)
     nctm = find_recent(redd, '_TraceMatch_WithMasks.pkl', outdir,
@@ -143,21 +200,24 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None):
     ncw = find_recent(redd, '_WaveSolution.pkl', outdir, cur_date_str)
     ncf = find_recent(redd, '_Flat.fits', outdir, cur_date_str)
     if not bias_ready(outdir):
-        ncb = find_recent_bias(redd, 'bias0.1.fits', outdir)
-        nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir)
+        ncb = find_recent_bias(redd, 'bias0.1.fits', outdir, cur_date_str)
+        nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir, cur_date_str)
     else:
         ncb = True
         nc2 = True
     # Check for failure
     if not nct or not nctm or not ncg or not ncw or not ncf or not ncb \
             or not nc2:
-        msg = "Calibration stage failed: trace = %s, trace/mask = %s" \
-              "grid = %s, wave = %s, flat = %s, " \
-              "bias0.1 = %s, bias2.0 = %s, " \
-              "stopping" % (nct, nctm, ncg, ncw, ncf, ncb, nc2)
-        sys.exit(msg)
+        sys.exit("Calibration not linked: trace = %s, trace/mask = %s, "
+                 "grid = %s, wave = %s, flat = %s, bias0.1 = %s, bias2.0 = %s, "
+                 "stopping" % (nct, nctm, ncg, ncw, ncf, ncb, nc2))
     # If we get here, we are done
-    logging.info("Using earlier night calibration files")
+    if link_std:
+        if find_recent_std(redd, 'fluxcal_auto_robot_*STD*.fits', outdir,
+                           cur_date_str):
+            logging.info("Linked previous std into %s" % outdir)
+        else:
+            logging.warning("Could not find std to link")
 
 
 if __name__ == '__main__':
@@ -168,9 +228,11 @@ if __name__ == '__main__':
 
     parser.add_argument('--reduxdir', type=str, default='/scr2/sedmdrp/redux',
                         help='Output reduced directory (/scr2/sedmdrp/redux)')
+    parser.add_argument('--std', action="store_true", default=False,
+                        help='Link in a flux calibrator?')
 
     args = parser.parse_args()
 
     curdir = os.getcwd()
 
-    link_cals(redd=args.reduxdir, outdir=curdir)
+    link_cals(redd=args.reduxdir, outdir=curdir, link_std=args.std)

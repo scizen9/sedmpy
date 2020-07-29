@@ -71,9 +71,11 @@ if __name__ == "__main__":
             logging.info("Recovering a quality 5 spectrum %s in %s" % (ob_id,
                                                                        dd))
             # Update quality in fits file
-            flist = glob.glob(os.path.join(rd, dd,
-                                  "spec_auto_robot_lstep1__*_%s_*.fits" %
-                                               ob_id))
+            if args.doab:
+                fspec = "spec_auto_AB*_%s_*.fits" % ob_id
+            else:
+                fspec = "spec_auto_robot_lstep1__*_%s_*.fits" % ob_id
+            flist = glob.glob(os.path.join(rd, dd, fspec))
             if not flist:
                 logging.error("No spec file with id %s" % ob_id)
                 sys.exit(1)
@@ -97,9 +99,7 @@ if __name__ == "__main__":
             # Update database entry
             ar.update_spec(fits_file, update_db=True)
             # Update quality in text file
-            text_file = glob.glob(os.path.join(rd, dd,
-                                  "spec_auto_robot_lstep1__*_%s_*.txt" %
-                                               ob_id))[0]
+            text_file = fits_file.replace('.fits', '.txt')
             with open(text_file, "r") as textIn:
                 spec_lines = textIn.readlines()
                 index = [i for i, s in enumerate(spec_lines) if 'QUALITY' in s]
@@ -171,6 +171,21 @@ if __name__ == "__main__":
             if ret:
                 logging.error("Verify failed!")
                 sys.exit(1)
+            else:
+                # Display verify image and then prompt for quality
+                verify_file = glob.glob("verify_auto_%s_*.png" % abtagstr)[0]
+                pars = ["display", verify_file]
+                ret = subprocess.call(pars)
+                good = input("Re-extraction good? (N/y): ")
+                if not good:
+                    good = 'N'
+                if good[0].capitalize() != "Y":
+                    logging.error("Try re-extraction again.")
+                    logging.info("Removing *_%s_*" % abtagstr)
+                    flist = glob.glob("*_%s_*" % abtagstr)
+                    for f in flist:
+                        os.remove(f)
+                    sys.exit(1)
             # Re-report
             pars = ["pysedm_report.py", dd, "--contains", abtagstr]
             logging.info("Running " + " ".join(pars))
