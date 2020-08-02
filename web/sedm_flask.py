@@ -227,6 +227,21 @@ def add_growth():
         print('Not a json file')
         return('ERROR')
 
+@app.route('/add_fritz', methods=['GET', 'POST'])
+def add_fritz():
+    x = request.files['jsonfile'].read()
+    if x:
+        content = json.loads(x)
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
+        data = json.dumps(content)
+        output.write(data)
+        output.close()
+        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+    else:
+        print('Not a json file')
+        return('ERROR')
+
+
 @app.route('/get_marshal_id', methods=['GET', 'POST'])
 def get_marhsal_id():
 
