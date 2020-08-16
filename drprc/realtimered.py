@@ -222,7 +222,8 @@ def reduce_on_the_fly(photdir, nocopy=False):
                 # Make a plot of image
                 imtype = fitsutils.get_par(n, "IMGTYPE")
                 plot_image(n)
-                if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper():
+                if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper() or \
+                        "STANDARD" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:
                         do_cosmic = True
                     else:

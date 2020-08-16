@@ -1837,6 +1837,11 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
         if not os.path.exists(sci_path):
             #print("Path doesn't exist", sci_path)
             sedm_dict['data'] = "No %s images found" % product
+    elif product.lower() == 'acquisition':
+        sci_path = os.path.join(new_phot_dir, obsdate, 'reduced', 'png')
+        if not os.path.exists(sci_path):
+            #print("Path doesn't exist", sci_path)
+            sedm_dict['data'] = "No %s images found" % product
     elif product.lower() in raw_png_dir:
         #print(new_phot_dir, obsdate)
         if 'guider' in product.lower():
@@ -1872,13 +1877,21 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                     display_dict['data'].append(f)
                 else:
                     display_dict['data'] = [f]
+        elif product.lower() == 'acquisition':
+            if 'ACQ' not in base_name:
+                continue
+            elif "_r_r" not in base_name:
+                continue
+            else:
+                if 'data' in display_dict:
+                    display_dict['data'].append(f)
+                else:
+                    display_dict['data'] = [f]
         else:
             if 'data' in display_dict:
                 display_dict['data'].append(f)
             else:
                 display_dict['data'] = [f]
-
-
 
     div_str = ""
 
@@ -1899,8 +1912,10 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                 impathlink = "/data_r/%s" % (i)
 
             div_str += """<div class="card" style="float:left;margin:5px;border:black">
+
                             <a href="{1}?image={4}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
                                 <img style="width:300px" class="card-img-top" src="{1}?image{4}" alt="Card image">
+
                             </a>
                             <div class="cardbody">
                                 <p class="card-text" style="font:.5em">{2}</p>
@@ -1908,14 +1923,17 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                                     Download
                                 </a>
                             </div>
+
                         </div>""".format(impathlink, impath, os.path.basename(i), impath, count)
 
 
             count += 1
 
+
         sedm_dict['data'] = div_str
     else:
         sedm_dict['data'] = "No %s images found" % product
+
     #print(sedm_dict)
     return sedm_dict
 
