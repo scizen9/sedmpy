@@ -1896,6 +1896,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     div_str = ""
 
     if 'data' in display_dict:
+        count = 100
         for i in sorted(display_dict['data']):
             i = i.replace(base_dir, '')
             impath = "/data_r/%s" % (i)
@@ -1911,8 +1912,10 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                 impathlink = "/data_r/%s" % (i)
 
             div_str += """<div class="card" style="float:left;margin:5px;border:black">
-                            <a href="http://pharos.caltech.edu{3}">
-                                <img style="width:300px" class="card-img-top" src="{1}" alt="Card image">
+
+                            <a href="{1}?image={4}" data-toggle="lightbox" data-gallery="example-gallery" class="col-sm-4">
+                                <img style="width:300px" class="card-img-top" src="{1}?image{4}" alt="Card image">
+
                             </a>
                             <div class="cardbody">
                                 <p class="card-text" style="font:.5em">{2}</p>
@@ -1920,7 +1923,12 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                                     Download
                                 </a>
                             </div>
-                        </div>""".format(impathlink, impath, os.path.basename(i), impath)
+
+                        </div>""".format(impathlink, impath, os.path.basename(i), impath, count)
+
+
+            count += 1
+
 
         sedm_dict['data'] = div_str
     else:

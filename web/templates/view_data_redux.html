@@ -4,6 +4,12 @@
 {% block head %}
     {{ calendar_picker('head') }}
     {{ super() }}
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="/static/css/bootstrap.css" type="text/css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css" type="text/css">
+
 {% endblock head %}
 
 {% block content %}
@@ -14,6 +20,7 @@
         <div class="btn-group">
           <button class="tablinks" onclick="openStat(event, 'science');" id="defaultOpen">Science</button>
           <button class="tablinks" onclick="openStat(event, 'acquisition');">Acquisition</button>
+          <button class="tablinks" onclick="openStat(event, 'rc_standard');">RC Standard</button>
           <button class="tablinks" onclick="openStat(event, 'guider_movies');">Guider Movies</button>
           <button class="tablinks" onclick="openStat(event, 'guider_images');">Guider Images</button>
           <button class="tablinks" onclick="openStat(event, 'focus');">Focus</button>
@@ -70,6 +77,12 @@
         });
         }
 
+    </script>
+    <script>
+            $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+                            event.preventDefault();
+                            $(this).ekkoLightbox();
+            });
     </script>
     {{ super() }}
     {{ calendar_picker('footer') }}
