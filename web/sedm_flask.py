@@ -227,9 +227,62 @@ def add_growth():
         print('Not a json file')
         return('ERROR')
 
+@app.route('/add_request', methods=['GET', 'POST'])
+def add_request():
+    origin_url = request.url
+
+    # First check for the type of request
+    if request.data:
+        # Assume data string in json format
+        content = json.loads(request.data)
+    elif request.is_json:
+        content = json.loads(request.get_json())
+    elif 'jsonfile' in request.files:
+        data = request.files['jsonfile'].read()
+        content = json.loads(data)
+    else:
+        return('Content-type: text/html\n <title>Invalid Formatting of Request</title>')
+
+    # Next add the origins url to determine where the request came from
+    content['origins_url'] = origin_url
+
+    # Now write the request to file
+    output = open('fritz_request_%s.txt' %
+                  datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+
+    data = json.dumps(content)
+    output.write(data)
+    output.close()
+
+    return ('Content-type: text/html\n <title>Accepted Request</title>')
+
+
 @app.route('/add_fritz', methods=['GET', 'POST'])
 def add_fritz():
-    x = request.files['jsonfile'].read()
+
+    if request.data:
+        content = json.loads(request.data)
+        #output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
+        output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
+            "%Y%m%d_%H_%M_%S.%f"), 'w')
+
+        data = json.dumps(content)
+        output.write(data)
+        output.close()
+        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+    if request.is_json:
+        content = json.loads(request.get_json())
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
+        data = json.dumps(content)
+        output.write(data)
+        output.close()
+        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+    print(request.args.to_dict(flat=True))
+
+    if 'jsonfile' in request.files:
+        x = request.files['jsonfile'].read()
+    else:
+        return("No json file")
     if x:
         content = json.loads(x)
         output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
