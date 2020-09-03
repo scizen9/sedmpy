@@ -710,7 +710,8 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None, nodb=False):
     # END: cpsci
 
 
-def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
+def dosci(destdir='./', datestr=None, local=False, nodb=False,
+          nopush_marshal=False, nopush_slack=False, oldext=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -723,6 +724,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
         datestr (str): YYYYMMDD date string
         local (bool): set to skip pushing to marshal and slack
         nodb (bool): if True no update to SEDM db
+        nopush_marshal (bool): True if no update to marshal
+        nopush_slack (bool): True if no update to slack
         oldext (bool): True to use extract_star.py instead of extractstar.py
 
     Returns:
@@ -806,7 +809,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
-                        if local:
+                        if local or nopush_slack:
                             cmd = ("pysedm_report.py", datestr, "--contains",
                                    fn.split('.')[0])
                         else:
@@ -893,13 +896,14 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
+                        # Run SNID
                         logging.info("Running SNID for " + fn)
                         cmd = ("make", "classify")
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
                             logging.error("Error running SNID")
-                        if local:
+                        if local or nopush_slack:
                             cmd = ("pysedm_report.py", datestr, "--contains",
                                    fn.split('.')[0])
                         else:
@@ -911,8 +915,9 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                             logging.error("Error running report for " +
                                           fn.split('.')[0])
                         # Upload spectrum to marshal
-                        if local:
-                            logging.warning("local: skipping ztfupload")
+                        if local or nopush_marshal:
+                            logging.warning("nopush_marshal or local: "
+                                            "skipping ztfupload")
                         else:
                             cmd = ("make", "ztfupload")
                             retcode = subprocess.call(cmd)
@@ -926,19 +931,60 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False, oldext=False):
                         # notify user that followup successfully completed
                         proced = glob.glob(os.path.join(destdir, procfn))[0]
                         if os.path.exists(proced):
-                            if local:
-                                logging.warning("local: skipping email")
+                            if local or nopush_marshal:
+                                logging.warning("nopush_marshal or local: "
+                                                "skipping email")
                             else:
                                 email_user(proced, datestr, obj)
                             if nodb:
                                 logging.warning("No update of spec in SEDM db")
                             else:
                                 # Update SedmDb table spec
-                                spec_id = update_spec(proced)
+                                spec_id = update_spec(
+                                    proced, nopush_marshal=nopush_marshal)
                                 logging.info("update of %s with spec_id %d" %
                                              (proced, spec_id))
                         else:
                             logging.error("Not found: %s" % proced)
+                        # contsep extraction
+                        cmd = ("extractstar.py", datestr, "--auto", fn,
+                               "--autobins", "6", "--tag", "contsep",
+                               "--centroid", "auto", "--contsep")
+                        logging.info("Extracting contsep spectra for " + fn)
+                        logging.info(" ".join(cmd))
+                        retcode = subprocess.call(cmd)
+                        if retcode != 0:
+                            logging.error("Error extracting contsep spectrum "
+                                          "for" + fn)
+                        else:
+                            # Run SNID
+                            logging.info("Running SNID for contsep " + fn)
+                            cmd = ("make", "classify")
+                            logging.info(" ".join(cmd))
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
+                                logging.error("Error running SNID")
+                            # run Verify.py
+                            cmd = "~/sedmpy/drpifu/Verify.py %s " \
+                                  "--contains contsep_lstep1__%s" \
+                                  % (datestr, fn.split('.')[0])
+                            subprocess.call(cmd, shell=True)
+                            # run pysedm_report
+                            if local or nopush_slack:
+                                cmd = ("pysedm_report.py", datestr,
+                                       "--contains",
+                                       "contsep_lstep1__" + fn.split('.')[0])
+                            else:
+                                cmd = ("pysedm_report.py", datestr,
+                                       "--contains",
+                                       "contsep_lstep1__" + fn.split('.')[0],
+                                       "--slack")
+                            logging.info(" ".join(cmd))
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
+                                logging.error("Error running report for " +
+                                              "contsep_lstep1__" +
+                                              fn.split('.')[0])
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
     return ncp, copied
@@ -1009,7 +1055,7 @@ def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
     # END: make_e3d
 
 
-def update_spec(input_specfile, update_db=False):
+def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     """ Update the SEDM database on pharos by adding a new spec entry"""
 
     header_dict = {
@@ -1105,7 +1151,10 @@ def update_spec(input_specfile, update_db=False):
     if 'STD' not in objnam and spec_dict['quality'] <= 2:
         srcid = None
         specid = None
-        srcid, specid = mc.get_missing_info(objnam, utdate, srcid, specid)
+        if nopush_marshal:
+            logging.warning("nopush_marshal: skipping marshal retrieval")
+        else:
+            srcid, specid = mc.get_missing_info(objnam, utdate, srcid, specid)
         if srcid is None:
             logging.info("Not an object on the marshal: %s" % objnam)
         else:
@@ -1636,7 +1685,8 @@ def cpcal(srcdir, destdir='./', fsize=8400960, nodb=False):
 
 
 def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
-             piggyback=False, local=False, nodb=False, oldext=False):
+             piggyback=False, local=False, nodb=False,
+             nopush_marshal=False, nopush_slack=False, oldext=False):
     """One night observing loop: processes calibrations and science data
 
     Copy raw cal files until we are ready to process the night's
@@ -1657,6 +1707,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         piggyback (bool): basic processing done by StartObs.py
         local (bool): True if no marshal/slack update required
         nodb (bool): True if no update to SEDM db
+        nopush_marshal (bool): True if no update to marshal
+        nopush_slack (bool): True if no update to slack
         oldext (bool): True to use extract_star.py instead of extracstar.py
 
     Returns:
@@ -1897,13 +1949,17 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             start_time = time.time()
             if piggyback:
                 nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      local=local, nodb=nodb, oldext=oldext)
+                                      local=local, nodb=nodb,
+                                      nopush_marshal=nopush_marshal,
+                                      nopush_slack=nopush_slack, oldext=oldext)
                 ncp = nsci
             else:
                 ncp, copied = cpsci(srcdir, outdir, datestr=cur_date_str,
                                     nodb=nodb)
                 nsci, science = dosci(outdir, datestr=cur_date_str,
-                                      local=local, nodb=nodb, oldext=oldext)
+                                      local=local, nodb=nodb,
+                                      nopush_marshal=nopush_marshal,
+                                      nopush_slack=nopush_slack, oldext=oldext)
             # We copied some new ones so report processing time
             if ncp > 0:
                 proc_time = int(time.time() - start_time)
@@ -1981,7 +2037,7 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
 
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
        check_precal=True, indate=None, piggyback=False, local=False,
-       nodb=False, oldext=False):
+       nopush_marshal=False, nopush_slack=False, nodb=False, oldext=False):
     """Outermost infinite loop that watches for a new raw directory.
 
     Keep a list of raw directories in `redd` and fire off
@@ -1996,6 +2052,8 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         indate (str): input date to process: YYYYMMDD (e.g. 20180626)
         piggyback (bool): True if using other script to copy data
         local (bool): True if no marshal/slack update required
+        nopush_marshal (bool): True if no marshal update required
+        nopush_slack (bool): True if no slack update required
         nodb (bool): True if no update of SEDM Db
         oldext (bool): True to use extract_star.py instead of extractstar.py
 
@@ -2024,7 +2082,8 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         if not wait:
             stat = obs_loop(rawlist, redd, check_precal=check_precal,
                             piggyback=piggyback, local=local, nodb=nodb,
-                            oldext=oldext)
+                            nopush_marshal=nopush_marshal,
+                            nopush_slack=nopush_slack, oldext=oldext)
             its += 1
             logging.info("Finished SEDM observing iteration %d in raw dir %s" %
                          (its, rawlist[-1]))
@@ -2071,6 +2130,8 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
         logging.info("Processing raw data from %s" % indir)
         stat = obs_loop(rawlist, redd, check_precal=check_precal, indir=indir,
                         piggyback=piggyback, local=local, nodb=nodb,
+                        nopush_marshal=nopush_marshal,
+                        nopush_slack=nopush_slack,
                         oldext=oldext)
         its += 1
         logging.info("Finished SEDM processing in raw dir %s with status %d" %
@@ -2101,6 +2162,10 @@ if __name__ == '__main__':
     parser.add_argument('--local', action="store_true", default=False,
                         help='Process data locally only (no push to marshal or '
                              'slack')
+    parser.add_argument('--nopush_marshal', action="store_true", default=False,
+                        help='Do not push to marshal')
+    parser.add_argument('--nopush_slack', action="store_true", default=False,
+                        help='Do not push to slack')
     parser.add_argument('--nodb', action="store_true", default=False,
                         help='Do not update SEDM Db')
     parser.add_argument('--oldext', action="store_true", default=False,
@@ -2114,4 +2179,5 @@ if __name__ == '__main__':
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
            piggyback=args.piggyback, local=args.local, nodb=args.nodb,
+           nopush_marshal=args.nopush_marshal, nopush_slack=args.nopush_slack,
            oldext=args.oldext)

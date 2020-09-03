@@ -83,17 +83,34 @@ def get_sextractor_stats(files):
 
                 hd = pf.open(ff)[0].header
                 try:
+                    # get observation parameters
                     jd = hd["JD"]
                     obj = hd["OBJECT"]
                     airmass = hd["AIRMASS"]
                     in_temp = hd["IN_AIR"]
                     out_temp = hd["OUT_AIR"]
                     in_hum = hd["IN_HUM"]
+                    # get weather string (includes imtype)
+                    weather_string = ''
+                    if in_temp < -99:
+                        weather_string += 'nan,'
+                    else:
+                        weather_string += '%.1f,' % in_temp
+                    weather_string += imtype
+                    if out_temp < -99:
+                        weather_string += ',nan,'
+                    else:
+                        weather_string += ',%.2f,' % out_temp
+                    if in_hum < -99:
+                        weather_string += 'nan'
+                    else:
+                        weather_string += '%.2f' % in_hum
+                    # get image stats
                     ns, fwhm, ellipticity, bkg = sextractor.analyse_image(sf)
                     out.write(
-                        "%s,%s,%.3f,%d,%.2f,%.3f,%.3f,%.2f,%.1f,%s,%.2f,%.2f\n"
+                        "%s,%s,%.3f,%d,%.2f,%.3f,%.3f,%.2f,%s\n"
                         % (os.path.abspath(ff), obj, jd, ns, fwhm, ellipticity,
-                           bkg, airmass, in_temp, imtype, out_temp, in_hum))
+                           bkg, airmass, weather_string))
                 except Exception as e:
                     print("Error when retrieving the stats parameters from the "
                           "header of file %s.\n Error %s" % (ff, e))
@@ -139,8 +156,8 @@ def plot_stats(statfile):
     # get rid of bad values
     tin = s["f8"]
     tout = s["f10"]
-    tin[tin < -100] = np.nan
-    tout[tout < -100] = np.nan
+    # tin[tin < -100] = np.nan
+    # tout[tout < -100] = np.nan
     ax5.plot(datestat, tin, ".-", label="Inside")
     ax5.plot(datestat, tout, ".-", label="Outside")
     # ax5.plot(datestat, s["f11"], ".-")

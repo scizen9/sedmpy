@@ -606,7 +606,31 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
     # files = glob.glob('%sZTF*.txt' % target_dir)
     # files += glob.glob('%sztf*.txt' % target_dir)
     # files += glob.glob('%sspec_*ZTF*.txt' % target_dir)
-    files = glob.glob('%sspec_*.txt' % target_dir)
+
+    # list of all spectra in directory
+    fls = glob.glob('%sspec_*.txt' % target_dir)
+    # scrape out unneeded files or find upfil in list
+    files = []
+    for fi in fls:
+        # are we uploading a specific file?
+        if upfil is not None:
+            # is this our file?
+            if upfil in fi:
+                files.append(fi)
+            else:
+                continue
+        # uploading all files in directory
+        else:
+            # skip uncalibrated spectra
+            if "notfluxcal" in fi:
+                print("Not flux calibrated: %s" % fi)
+                continue
+            # skip contsep extractions
+            if "contsep" in fi:
+                print("Not uploading contsep extraction yet: %s" % fi)
+                continue
+            # add all others
+            files.append(fi)
 
     started = os.path.exists(os.path.join(target_dir, "report_ztf.txt"))
     out = open(target_dir + "report_ztf.txt", "a")
@@ -619,11 +643,6 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
         # Has it already been uploaded?
         if os.path.exists(fi.split('.')[0] + ".upl"):
             print("Already uploaded: %s" % fi)
-            continue
-
-        # Is it flux calibrated?
-        if "notfluxcal" in fi:
-            print("Not flux calibrated: %s" % fi)
             continue
 
         # Extract request ID

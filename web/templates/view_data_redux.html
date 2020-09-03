@@ -34,7 +34,11 @@
 
     </div>
 
-    <div id="opanel">{{sedm_dict.data | safe}}</div>
+    <div id="opanel">
+        <div class="card-group">
+            {{sedm_dict.data | safe}}
+        </div>
+    </div>
 {% endblock %}
 
 {% block footer %}
