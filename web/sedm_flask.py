@@ -6,7 +6,7 @@ from web.forms import *
 import json
 import os
 import web.model as model
-
+from werkzeug.datastructures import ImmutableMultiDict
 from bokeh.resources import INLINE
 
 resources = INLINE
@@ -218,7 +218,7 @@ def add_growth():
     x = request.files['jsonfile'].read()
     if x:
         content = json.loads(x)
-        output = open('/scr2/sedm/sedmpy/web/static/request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
+        output = open('/scr2/sedm/sedmpy/web/static/request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
@@ -259,7 +259,8 @@ def add_request():
 
 @app.route('/add_fritz', methods=['GET', 'POST'])
 def add_fritz():
-
+    print(request.data)
+    print(request.form)
     if request.data:
         content = json.loads(request.data)
         #output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
@@ -272,12 +273,18 @@ def add_fritz():
         return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
     if request.is_json:
         content = json.loads(request.get_json())
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
+        output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
         return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
-    print(request.args.to_dict(flat=True))
+    if request.form:
+        content = request.form.to_dict(flat=True)
+        output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
+        data = json.dumps(content)
+        output.write(data)
+        output.close()
+        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
 
     if 'jsonfile' in request.files:
         x = request.files['jsonfile'].read()
@@ -285,7 +292,7 @@ def add_fritz():
         return("No json file")
     if x:
         content = json.loads(x)
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
