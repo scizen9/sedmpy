@@ -150,7 +150,7 @@ def simple_finder(myfile, findername):
     zmin = np.percentile(newimg.flatten(), 10)
     zmax = np.percentile(newimg.flatten(), 99)
     plt.figure(figsize=(10, 9))
-    plt.imshow(newimg, origin="lower", cmap=plt.get_cmap('gray'),
+    plt.imshow(newimg, cmap=plt.get_cmap('gray'),
                vmin=zmin, vmax=zmax)
 
     plt.savefig(findername)
@@ -198,7 +198,7 @@ def simple_finder_astro(myfile, findername, searchrad=28./3600):
     plt.figure(figsize=(10, 9))
     ax = plt.subplot(projection=wcs)
     ax.imshow(np.flip(newimg, axis=0),
-              origin="lower", cmap=plt.get_cmap('gray'), vmin=zmin, vmax=zmax)
+              cmap=plt.get_cmap('gray'), vmin=zmin, vmax=zmax)
     r = SphericalCircle((ra * u.deg, dec * u.deg), 5./3600 * u.degree,
                         edgecolor='red', facecolor='none',
                         transform=ax.get_transform('fk5'))

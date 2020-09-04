@@ -1,4 +1,3 @@
-from __future__ import print_function
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan  7 11:30:32 2016
@@ -163,7 +162,7 @@ def get_offset_center_failed_astro(af, doplot=False, interactive=True):
         plt.suptitle(obj, fontsize=20)
         zmin, zmax = zscale.zscale(imageloc)
         plt.imshow(imageloc, aspect="auto", interpolation="none",
-                   origin="lower", vmin=zmin, vmax=zmax, extent=(0, +300,
+                   vmin=zmin, vmax=zmax, extent=(0, +300,
                                                                  0, +300))
         plt.plot(x, y, "go", ms=20, label="Centroid using gaussiuan fit.")    
         plt.plot(def_x, def_y, "b*", ms=20, label="Centroid using max/min.")
@@ -230,7 +229,7 @@ def get_offset_center(af, doplot=False, interactive=False):
             obj = fitsutils.get_par(f, "OBJECT")
             plt.suptitle(obj, fontsize=20)
             plt.imshow(imageloc.T, extent=(xl[0], xu[0], yl[0], yu[0]),
-                       aspect="equal", interpolation="none", origin="lower",
+                       aspect="equal", interpolation="none",
                        vmin=zmin, vmax=zmax)
             plt.plot(1293., 1280., "ws", ms=7, label="Current pointing")
             plt.plot(x, y, "b*", ms=10, label="Target pointing")

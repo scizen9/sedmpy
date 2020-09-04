@@ -760,7 +760,7 @@ def plot_image(image, verbose=False):
     if verbose:
         print("%s %s mn: %.2f, std: %.2f" % (name, filt, pltmn, pltstd))
 
-    plt.imshow(d, origin="lower", vmin=(pltmn-pltstd), vmax=(pltmn+2.*pltstd),
+    plt.imshow(d, vmin=(pltmn-pltstd), vmax=(pltmn+2.*pltstd),
                cmap=plt.get_cmap('Greys_r'))
     plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
                                                   exptime, ontarget))

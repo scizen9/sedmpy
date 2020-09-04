@@ -79,7 +79,7 @@ if __name__ == '__main__':
             mi, ma = zscale.zscale(image)
             fg = plt.imshow(plt.log10(image), aspect="equal",
                             extent=(0, im_ny, 0, im_nx),
-                            origin="lower", cmap=plt.get_cmap('gray_r'),
+                            cmap=plt.get_cmap('gray_r'),
                             interpolation="none", vmin=np.log10(av),
                             vmax=np.log10(3*av))  # , interpolation="lanczos")
             plt.scatter(targ_pix[0], targ_pix[1], marker="x", s=10, c="red")

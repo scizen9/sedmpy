@@ -200,7 +200,7 @@ def get_app_phot(coords, image, plot_only=False, wcsin="world",
                         zmax = np.nanmax(img[x1:x2, y1:y2])
                 ax.imshow(img[x1:x2, y1:y2], aspect="equal",
                           extent=(-cutrad, cutrad, -cutrad, cutrad),
-                          origin="lower", cmap=plt.get_cmap('Grays_r'),
+                          cmap=plt.get_cmap('Grays_r'),
                           interpolation="none", vmin=zmin, vmax=zmax)
                 c1 = plt.Circle((0, 0), edgecolor="r", facecolor="none",
                                 radius=aperture_rad)
@@ -424,13 +424,13 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, wcsin="logical",
         
         # zmin, zmax = zscale.zscale(impf[0].data)
            
-        # im = plt.imshow(impf[0].data, vmin=zmin, vmax=zmax, origin="bottom")
+        # im = plt.imshow(impf[0].data, vmin=zmin, vmax=zmax)
         print(np.percentile(impf[0].data, 5), np.percentile(impf[0].data, 95))
         impf[0].data[np.isnan(impf[0].data)] = np.nanmedian(impf[0].data)
         print(np.percentile(impf[0].data, 5), np.percentile(impf[0].data, 95))
 
         im = plt.imshow(impf[0].data, vmin=np.percentile(impf[0].data, 5),
-                        vmax=np.percentile(impf[0].data, 95), origin="bottom")
+                        vmax=np.percentile(impf[0].data, 95))
        
         xx = int(ma["X"][0])
         yy = int(ma["Y"][0])
@@ -446,7 +446,7 @@ def get_app_phot_target(image, ra=None, dec=None, plot=True, wcsin="logical",
         zmin, zmax = zscale.zscale(impf[0].data.T[xx-50:xx+50, yy-50:yy+50].T)
         im = plt.imshow(impf[0].data.T[pra-50:pra+50, pdec-50:pdec+50].T,
                         vmin=zmin, vmax=zmax, interpolation="none",
-                        origin="bottom", extent=(-50, 50, -50, 50))
+                        extent=(-50, 50, -50, 50))
         c1 = plt.Circle((pra-xx, pdec-yy), edgecolor="k", facecolor="none",
                         radius=aperture_rad, label="Initial position")
         c11 = plt.Circle((pra-xx, pdec-yy), edgecolor="k", facecolor="none",

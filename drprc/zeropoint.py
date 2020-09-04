@@ -135,10 +135,8 @@ def twod_gauss_test(theta=0):
     
     # plot twoD_Gaussian data generated above
     plt.figure()
-    plt.imshow(data.reshape(201, 201), origin="bottom", extent=(x.min(),
-                                                                x.max(),
-                                                                y.min(),
-                                                                y.max()))
+    plt.imshow(data.reshape(201, 201), extent=(x.min(), x.max(),
+                                               y.min(), y.max()))
     plt.colorbar()
     
     # add some noise to the data and try to fit the data generated beforehand
@@ -154,7 +152,7 @@ def twod_gauss_test(theta=0):
     fig, ax = plt.subplots(1, 1)
     ax.hold(True)
     ax.imshow(data_noisy.reshape(201, 201), cmap=plt.get_cmap('jet'),
-              origin='bottom', extent=(x.min(), x.max(), y.min(), y.max()))
+              extent=(x.min(), x.max(), y.min(), y.max()))
     ax.contour(x, y, data_fitted.reshape(201, 201), 8, colors='w')
     plt.show()
 
@@ -226,12 +224,12 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
             fig, (ax, ax2) = plt.subplots(1, 2)
             ax.hold(True)
             ax.imshow(sub, cmap=plt.get_cmap('jet'),
-                      origin='bottom', extent=(min(x), max(x), min(y), max(y)))
+                      extent=(min(x), max(x), min(y), max(y)))
             ax.contour(xx, yy, data_fitted.reshape(sub.shape[0], sub.shape[1]),
                        5, colors='w')
             ax2.imshow(sub-data_fitted.reshape(sub.shape[0], sub.shape[1]),
                        cmap=plt.get_cmap('jet'),
-                       origin='bottom', extent=(min(x), max(x), min(y), max(y)))
+                       extent=(min(x), max(x), min(y), max(y)))
             ax2.contour(xx, yy, data_fitted.reshape(sub.shape[0], sub.shape[1]),
                         5, colors='w')
             ax.scatter(def_x, def_y, marker="*", s=100, color="yellow")
@@ -242,7 +240,7 @@ def find_fwhm(imfile, xpos, ypos, plot=True):
             fig, ax = plt.subplots(1)
             ax.hold(True)
             ax.imshow(sub, cmap=plt.get_cmap('jet'),
-                      origin='bottom', extent=(min(x), max(x), min(y), max(y)))
+                      extent=(min(x), max(x), min(y), max(y)))
             plt.title("NOT DETECTED for Position X,Y = %d,%d" % (x_i, y_i))
             plt.savefig(os.path.join(os.path.dirname(imfile), "gauss_%d" % i))
             plt.clf()
