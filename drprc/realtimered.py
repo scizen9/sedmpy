@@ -122,7 +122,7 @@ def plot_image(image, verbose=False):
             if verbose:
                 print("%s %.2f %.2f %.2f" % (b, mid, std, pltstd))
 
-        plt.imshow(d, origin="lower", vmin=-pltstd, vmax=2.*pltstd,
+        plt.imshow(d, vmin=-pltstd, vmax=2.*pltstd,
                    cmap=plt.get_cmap('Greys_r'))
         plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
         plt.colorbar()
