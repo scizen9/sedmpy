@@ -1,14 +1,23 @@
 import os
 import json
 import glob
+import requests
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
-with open(os.path.join(SITE_ROOT, 'config', 'marshals.json')) as data_file:
+with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config', 'marshals.json')) as data_file:
     params = json.load(data_file)
 
-print(params)
+token = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
 
+def api(method, endpoint, data=None):
+    headers = {'Authorization': f'token {token}'}
+    response = requests.request(method, endpoint, json=data, headers=headers)
+    print(f'HTTP code: {response.status_code}, {response.reason}')
+    if response.status_code in (200, 400):
+        print(f'JSON response: {response.json()}')
+
+    return response
 
 def update_status_request(status, request_id, marshal_name,
                           update_type='jsonfile', save=True,
@@ -51,9 +60,16 @@ def update_status_request(status, request_id, marshal_name,
                                                str(last_file_count),
                                                ".json")
 
-    # 2. Create the new status dictionary
-    status_config = {'instrument_id': instrument_id,
-                     'request_id': request_id,
-                     'new_status': status}
+    # 2. Create the new status dictionaryCopy
+    status_payload = {
+        "new_status": status,
+        "followup_request_id": request_id
+    }
+
+    # 3. Send the update
+    api("POST", "https://private.caltech.edu/api/facility", data=status_payload)
 
 
+if __name__ == "__main__":
+
+    update_status_request("ACCEPTED BUT NOT OBSERVING", 4, "fritz", output_file='test')
