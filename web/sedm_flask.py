@@ -1,18 +1,18 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
 import sys
+
 sys.path.append('/scr2/sedm/sedmpy/')
 import flask_login
 from web.forms import *
 import json
 import os
 import web.model as model
-
+from werkzeug.datastructures import ImmutableMultiDict
 from bokeh.resources import INLINE
 
 resources = INLINE
 js_resources = resources.render_js()
 css_resources = resources.render_css()
-
 
 # config
 SECRET_KEY = 'secret'
@@ -26,6 +26,7 @@ login_manager.init_app(app)
 
 config = model.get_config_paths()
 
+
 class User(flask_login.UserMixin):
     pass
 
@@ -38,7 +39,7 @@ def load_user(user_id):
     user = User()
     user.id = users[0][0]
     user.name = users[0][1]
-    flask_login.login_user(user) # , remember=True)
+    flask_login.login_user(user)  # , remember=True)
     return user
 
 
@@ -61,9 +62,9 @@ def requests():
     #    submission.
     if request.method == 'POST':
         content = request.form
-        #print(flask_login.current_user)
+        # print(flask_login.current_user)
         if not flask_login.current_user.is_authenticated:
-            user_id =content['user_id']
+            user_id = content['user_id']
         else:
             user_id = flask_login.current_user.id
         req_dict, form = model.process_request_form(content, form, user_id)
@@ -115,7 +116,7 @@ def add_csv():
 
 
 @app.route('/get_rc_redux_product', methods=['GET', 'POST'])
-#@flask_login.login_required
+# @flask_login.login_required
 def get_rc_redux_product():
     if request.is_json:
         content = json.loads(request.get_json())
@@ -124,8 +125,9 @@ def get_rc_redux_product():
         return jsonify(model.get_rc_redux_products(obsdate))
     return jsonify(model.get_rc_redux_products(**content))
 
+
 @app.route('/data_access/<path:instrument>', methods=['GET'])
-#@flask_login.login_required
+# @flask_login.login_required
 def data_access(instrument):
     if not flask_login.current_user.is_authenticated:
         return redirect('login')
@@ -144,20 +146,22 @@ def data_access(instrument):
         return render_template('view_data.html', sedm_dict=out)
     else:
         out = model.get_rc_redux_products(**content)
-        #print(out)
+        # print(out)
         return render_template('view_data_redux.html', sedm_dict=out)
 
+
 @app.route('/data_r/<path:filename>')
-#@flask_login.login_required
+# @flask_login.login_required
 def data_static_r(filename):
-    #print(filename, 'this is the filename in data')
+    # print(filename, 'this is the filename in data')
     base_path = model.base_dir
-    #print(os.path.join(base_path, filename), "this is the full path")
+    # print(os.path.join(base_path, filename), "this is the full path")
     _p, _f = os.path.split(os.path.join(base_path, filename))
     return send_from_directory(_p, _f)
 
+
 @app.route('/data/<path:filename>')
-#@flask_login.login_required
+# @flask_login.login_required
 def data_static(filename):
     '''
      Get files from the archive
@@ -171,36 +175,37 @@ def data_static(filename):
         else:
             return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
     elif _f.startswith('rc') or _f.startswith('finder') or 'ACQ' in _f:
-        #print("In rc path")
-        #print(_p, _f)
+        # print("In rc path")
+        # print(_p, _f)
         if _f.startswith('rc'):
             if 'redux' in _p:
                 return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
             else:
-                #print("USING THE HERE")
+                # print("USING THE HERE")
                 base_obspath = os.path.join(config['path']['path_redux_phot'], _p, 'pngraw')
-                pathlist = ['acquisition',  'bias',  'dome',  'focus',
-                            'guider',  'science',  'twilight']
+                pathlist = ['acquisition', 'bias', 'dome', 'focus',
+                            'guider', 'science', 'twilight']
                 for i in pathlist:
                     test_path = os.path.join(base_obspath, i)
-                    if os.path.exists(os.path.join(test_path,_f)):
+                    if os.path.exists(os.path.join(test_path, _f)):
                         return send_from_directory(test_path, _f)
         else:
             return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
     else:
         return send_from_directory(os.path.join(config['path']['path_archive'], _p), _f)
 
+
 @app.route('/visibility')
 def active_visibility():
     sedm_dict = model.get_active_visibility(flask_login.current_user.id)
-    sedm_dict['js_resources'] = INLINE.render_js() # TODO
+    sedm_dict['js_resources'] = INLINE.render_js()  # TODO
     sedm_dict['css_resources'] = INLINE.render_css()
 
     return render_template('visibility.html', sedm_dict=sedm_dict)
 
+
 @app.route('/weather_stats', methods=['GET', 'POST'])
 def weather_stats():
-
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
     if request.is_json:
@@ -213,19 +218,23 @@ def weather_stats():
     out['css_resources'] = INLINE.render_css()
     return render_template('weather_stats.html', sedm_dict=out)
 
+
 @app.route('/add_growth', methods=['GET', 'POST'])
 def add_growth():
     x = request.files['jsonfile'].read()
     if x:
         content = json.loads(x)
-        output = open('/scr2/sedm/sedmpy/web/static/request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
+        output = open(
+            '/scr2/sedm/sedmpy/web/static/request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),
+            'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return('Content-type: text/html\n <title>Test CGI</title>')
+        return ('Content-type: text/html\n <title>Test CGI</title>')
     else:
         print('Not a json file')
-        return('ERROR')
+        return ('ERROR')
+
 
 @app.route('/add_request', methods=['GET', 'POST'])
 def add_request():
@@ -241,7 +250,7 @@ def add_request():
         data = request.files['jsonfile'].read()
         content = json.loads(data)
     else:
-        return('Content-type: text/html\n <title>Invalid Formatting of Request</title>')
+        return ('Content-type: text/html\n <title>Invalid Formatting of Request</title>')
 
     # Next add the origins url to determine where the request came from
     content['origins_url'] = origin_url
@@ -259,45 +268,54 @@ def add_request():
 
 @app.route('/add_fritz', methods=['GET', 'POST'])
 def add_fritz():
-
+    print(request.data)
+    print(request.form)
     if request.data:
         content = json.loads(request.data)
-        #output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
-        output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
+
+        #output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
+        #    "%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
             "%Y%m%d_%H_%M_%S.%f"), 'w')
 
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
     if request.is_json:
         content = json.loads(request.get_json())
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),'w')
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
-    print(request.args.to_dict(flat=True))
+        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+    if request.form:
+        content = request.form.to_dict(flat=True)
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        data = json.dumps(content)
+        output.write(data)
+        output.close()
+        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
 
     if 'jsonfile' in request.files:
         x = request.files['jsonfile'].read()
     else:
-        return("No json file")
+        return ("No json file")
     if x:
         content = json.loads(x)
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"),'w')
+        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
+            "%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
     else:
         print('Not a json file')
-        return('ERROR')
+        return ('ERROR')
 
 
 @app.route('/get_marshal_id', methods=['GET', 'POST'])
 def get_marhsal_id():
-
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
 
@@ -312,9 +330,9 @@ def get_marhsal_id():
     out = model.get_marshal_id(**content)
     return jsonify(out)
 
+
 @app.route('/get_user_observations', methods=['GET', 'POST'])
 def get_user_observations():
-
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
 
@@ -326,13 +344,12 @@ def get_user_observations():
     else:
         content = request.args.to_dict(flat=True)
 
-
     out = model.get_user_observations(**content)
     return jsonify(out)
 
+
 @app.route('/objects', methods=['GET', 'POST'])
 def objects():
-
     form = FindObject()
 
     if request.method == 'POST':
@@ -346,7 +363,7 @@ def objects():
 
 @app.route('/project_stats', methods=['GET', 'POST'])
 def project_stats():
-    #form = AddFixedRequest()
+    # form = AddFixedRequest()
     if request.is_json:
         content = json.loads(request.get_json())
     else:
@@ -357,6 +374,7 @@ def project_stats():
     out['css_resources'] = INLINE.render_css()
     return render_template('project_stats.html', sedm_dict=out)
 
+
 @app.route('/scheduler', methods=['GET', 'POST'])
 def scheduler():
     out = model.get_schedule()
@@ -365,7 +383,6 @@ def scheduler():
 
 @app.route('/search/get_objects', methods=['GET', 'POST'])
 def get_object():
-
     if request.is_json:
         content = json.loads(request.get_json())
     elif request.method == 'POST':
@@ -376,9 +393,9 @@ def get_object():
     out = model.get_object_info(**content)
     return jsonify(out)
 
+
 @app.route('/search/get_object_values', methods=['GET', 'POST'])
 def get_object_values():
-
     if request.is_json:
         content = json.loads(request.get_json())
     elif request.method == 'POST':
@@ -390,9 +407,9 @@ def get_object_values():
 
     return jsonify(out)
 
+
 @app.route('/status/get_update', methods=['GET', 'POST'])
 def update():
-
     out = model.get_status()
 
     return jsonify(out)
@@ -400,7 +417,6 @@ def update():
 
 @app.route('/monitor', methods=['GET', 'POST'])
 def monitor():
-
     out = model.get_obstimes()
     return render_template('monitor.html', sedm_dict=out)
 
@@ -440,7 +456,7 @@ def login_change():
         else:
             return render_template('change_pass.html', sedm_dict=out, form=form)
 
-    return render_template('change_pass.html', sedm_dict={'message':''}, form=form)
+    return render_template('change_pass.h 000tml', sedm_dict={'message': ''}, form=form)
 
 
 @app.route("/logout")

@@ -1,4 +1,4 @@
-from marshals import ingest
+from marshals import interface
 
 
 def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
@@ -16,20 +16,30 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
     :return:
     """
     # 1. Open the request
-    req_dict = ingest.read_request(request, isfile=isfile)
+    req_dict = interface.read_request(request, isfile=isfile)
 
     # 2. Check if there were any issues reading in the request
     if 'iserror' in req_dict:
         print("Error reading in the request file")
         return False, req_dict['msg']
+    else:
+        print("Request is in proper format")
 
     # 3. Check any rejection criteria
     # TODO: Check database to determine if group has allocation time
     if check_rejection:
-        ret = ingest.checker(req_dict)
+        ret = interface.checker(req_dict, check_source=False)
         if 'iserror' in ret:
             return False, ret['msg']
+        else:
+            print("Target passed checker")
 
+if __name__ == "__main__":
+    request = "/home/rsw/PycharmProjects/sedmpy/growth/archived/test.json"
+    ret = process_new_request(request, isfile=True, check_rejection=True)
+    print(ret)
+
+    """
     # 4. Check if we are adding it to the SEDm DB if not continue
     if add2db:
         print("Adding request to database")
@@ -47,4 +57,4 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
         if not os.path.exists(current_archive):
             os.system('mkdir %s' % current_archive)
         os.system('mv %s %s' % (request, current_archive))
-    return ret
+    return ret"""
