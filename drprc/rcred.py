@@ -749,7 +749,7 @@ def plot_image(image, verbose=False):
     xpx = h.get('TARGXPX', -1.)
     ypx = h.get('TARGYPX', -1.)
 
-    c, lo, hi = sigmaclip(d, low=2.5, high=2.5)
+    c, lo, hi = sigmaclip(d[np.isfinite(d)], low=2.5, high=2.5)
     pltmn = c.mean()
     pltstd = 100.
     if np.isnan(pltmn):
