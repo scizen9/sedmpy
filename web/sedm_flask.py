@@ -460,7 +460,7 @@ def login_change():
         else:
             return render_template('change_pass.html', sedm_dict=out, form=form)
 
-    return render_template('change_pass.h 000tml', sedm_dict={'message': ''}, form=form)
+    return render_template('change_pass.html', sedm_dict={'message': ''}, form=form)
 
 
 @app.route("/logout")
