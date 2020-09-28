@@ -72,7 +72,6 @@ def update_status_request(status, request_id, marshal_name,
     api("POST", "https://private.caltech.edu/api/facility", data=status_payload)
 
 
-
 def read_request(request, isfile=True):
     """
     Read an incoming request from external marshal.  All request are expected

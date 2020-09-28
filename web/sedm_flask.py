@@ -270,9 +270,10 @@ def add_request():
 def add_fritz():
     print(request.data)
     print(request.form)
+    origin_url = request.url
     if request.data:
         content = json.loads(request.data)
-
+        content['origins_url'] = origin_url
         #output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
         #    "%Y%m%d_%H_%M_%S.%f"), 'w')
         output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
@@ -284,6 +285,7 @@ def add_fritz():
         return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
     if request.is_json:
         content = json.loads(request.get_json())
+        content['origins_url'] = origin_url
         output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
@@ -291,6 +293,7 @@ def add_fritz():
         return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
     if request.form:
         content = request.form.to_dict(flat=True)
+        content['origins_url'] = origin_url
         output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
@@ -303,6 +306,7 @@ def add_fritz():
         return ("No json file")
     if x:
         content = json.loads(x)
+        content['origins_url'] = origin_url
         output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
             "%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
@@ -456,7 +460,7 @@ def login_change():
         else:
             return render_template('change_pass.html', sedm_dict=out, form=form)
 
-    return render_template('change_pass.h 000tml', sedm_dict={'message': ''}, form=form)
+    return render_template('change_pass.html', sedm_dict={'message': ''}, form=form)
 
 
 @app.route("/logout")
