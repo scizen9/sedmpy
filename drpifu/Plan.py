@@ -241,7 +241,7 @@ ztfupload:
 	$(ZTFUPLOAD) $(current_dir)
 
 fritzupload:
-    $(FRITZUPLOAD) $(current_dir)
+	$(FRITZUPLOAD) $(current_dir)
 
 classify:
 	$(CLASS) --specdir $(dir $(mkfile_path))
