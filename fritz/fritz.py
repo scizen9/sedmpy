@@ -34,7 +34,8 @@ default_id = 37
 instrument_id = 2
 telescope_id = 37
 if auth:
-    user, pwd = auth
+    user = None
+    pwd = None
 else:
     user = None
     pwd = None
