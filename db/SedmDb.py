@@ -1683,7 +1683,7 @@ class SedmDB:
             (-1, "ERROR...") if there was an issue
         """
         allowed_params = {'id': int, 'object_id': int, 'user_id': int, 'allocation_id': int, 'exptime': str,
-                          'status': str,
+                          'status': str, 'external_id': int,
                           'priority': float, 'inidate': 'date', 'enddate': 'date', 'marshal_id': int,
                           'maxairmass': float, 'cadence': float, 'phasesamples': float, 'sampletolerance': float,
                           'filters': str, 'nexposures': str, 'obs_seq': str, 'creationdate': 'date',
