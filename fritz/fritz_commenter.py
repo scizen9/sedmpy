@@ -5,17 +5,10 @@ from getpass import getpass
 from pprint import pprint
 import json
 
-fritz_base_url = 'http://skipper.caltech.edu:8080/cgi-bin/fritz/'
+fritz_base_url = 'http://private.caltech.edu/'
 fritz_source_summary_url = fritz_base_url + 'source_summary.cgi?sourcename='
 
-try:
-    user, pwd = open('/home/sedm/.fritz_creds.txt', 'r').readlines()[0].split()
-    auth = (user, pwd)
-    # config = json.load(open('config.json'))
-    # auth = tuple(config['fritz_auth']['adugas'])
-except FileNotFoundError:
-    print("ERROR - could not find credentials file!")
-    auth = None
+auth = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
 
 
 def get_missing_info(ztfname, obsdate, sourceid, specid, reducedby=None):

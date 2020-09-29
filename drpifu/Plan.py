@@ -194,10 +194,12 @@ make_preamble = """
 PY = ~/spy
 PYC = ~/sedmpy/drpifu
 PYG = ~/sedmpy/growth
+PYF = ~/sedmpy/fritz
 IMCOMBINE = $(PY) $(PYC)/Imcombine.py
 REPORT = $(PY) $(PYC)/DrpReport.py
 CLASS = $(PY) $(PYC)/Classify.py
 ZTFUPLOAD = $(PY) $(PYG)/growth.py
+FRITZUPLOAD = $(PY) $(PYF)/fritz.py
 
 BSUB = $(PY) $(PYC)/Debias.py
 CRRSUB =  $(PY) $(PYC)/CosmicX.py
@@ -237,6 +239,9 @@ report:
 
 ztfupload:
 	$(ZTFUPLOAD) $(current_dir)
+
+fritzupload:
+    $(FRITZUPLOAD) $(current_dir)
 
 classify:
 	$(CLASS) --specdir $(dir $(mkfile_path))
