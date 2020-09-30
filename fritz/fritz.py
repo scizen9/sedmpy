@@ -258,12 +258,15 @@ def upload_spectra(spec_file, instrument_id=2, request_id='',
         print("Spectra quality does not pass")
         return False
 
-    # print(type(format_type), type(request_id), type(instrument_id))
+    # create payload
+    with open(spec_file) as sfh:
+        contents = sfh.read()
     submission_dict.update({'filename': spec_file,
                             'obj_id': sourceid,
                             'instrument_id': instrument_id,
                             'followup_request_id': request_id,
-                            'observer': observer.rstrip().lstrip()
+                            'observer': observer.rstrip().lstrip(),
+                            'ascii': contents
                             })
 
     # Are we just testing?
