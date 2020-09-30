@@ -102,7 +102,7 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
     returns: True if all four comments/attachments works, False
             (and it'll exit early) otherwise
     """
-    # TODO if we look at the _snid.output we can get more info, eg phase
+
     file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
