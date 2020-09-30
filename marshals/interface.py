@@ -30,16 +30,13 @@ def update_status_request(status, request_id, marshal_name,
     not been deleted. The new status will show up on the status section
     of the request on the growth marshal.
 
-    :param filename:
     :param status:
-    :param instrument_id:
     :param request_id:
-    :param output_dir:
     :param save:
+    :param output_file:
     :param testing:
     :return:
     """
-    instrument_id = ""
 
     # 1. Get the instrument id
     if marshal_name.lower() not in params['marshals']:
@@ -138,7 +135,6 @@ def checker(request, check_source=True, check_followup=True,
     :param check_source: Check if there is a source in the request
     :param check_followup: Check if there is a followup type or filters listed
     :param check_program: Check that there is a valid follow-up program
-    :param check_token: Check that token matches url sender
     :param check_user: Check if a valid user is in the request
     :param check_email: Check if a valid email is in the request
     :param check_status: Check that we have a status of new, edit, delete
@@ -146,7 +142,8 @@ def checker(request, check_source=True, check_followup=True,
     """
     # Make sure all dictionary keys are lowercase
     if not isinstance(request, dict):
-        return {"iserror": True, "msg": "Can't check request when not in py dict form"}
+        return {"iserror": True,
+                "msg": "Can't check request when not in py dict form"}
 
     request = dict((k.lower(), v) for k, v in request.items())
     msg_list = []
@@ -215,7 +212,7 @@ def checker(request, check_source=True, check_followup=True,
         return request
 
 
-
 if __name__ == "__main__":
 
-    update_status_request("ACCEPTED BUT NOT OBSERVING", 4, "fritz", output_file='test')
+    update_status_request("ACCEPTED BUT NOT OBSERVING", 4, "fritz",
+                          output_file='test')
