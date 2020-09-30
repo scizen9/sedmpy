@@ -67,7 +67,11 @@ def update_status_request(status, request_id, marshal_name,
     }
 
     # 3. Send the update
-    api("POST", "https://private.caltech.edu/api/facility", data=status_payload)
+    if testing:
+        print(status_payload)
+    else:
+        api("POST", "https://private.caltech.edu/api/facility",
+            data=status_payload)
 
 
 def read_request(request, isfile=True):
