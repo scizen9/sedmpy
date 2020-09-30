@@ -6,6 +6,7 @@ import argparse
 import os
 import datetime
 import sys
+from marshals.interface import api, update_status_request
 try:
     from fritz_commenter import add_SNID_pysedm_autoannot as add_annots
     from fritz_commenter import get_missing_info
@@ -22,11 +23,11 @@ add_target_url = 'http://private.caltech.edu/api/'
 pharos_spec_dir = '/scr2/sedmdrp/redux/'
 pharos_phot_dir = '/scr2/sedmrp/redux/phot/'
 
-fritz_base_url = 'http://private.caltech.edu/api/'
+fritz_base_url = 'http://private.caltech.edu/'
 fritz_inst_url = fritz_base_url + 'UNKNOWN'     # change request params?
 fritz_stat_url = fritz_base_url + 'followup_request/request_id'
-fritz_spec_url = fritz_base_url + 'spectrum'
-fritz_phot_url = fritz_base_url + 'photometry'
+fritz_spec_url = fritz_base_url + 'api/spectrum'
+fritz_phot_url = fritz_base_url + 'api/photometry'
 fritz_view_source_url = fritz_base_url + 'source'
 fritz_token = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
 
@@ -62,63 +63,6 @@ def timestamp():
     :return: 
     """
     return datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S")
-
-
-def update_request(status, request_id, instrument_id='',
-                   output_dir='targets', filename='', save=True,
-                   testing=False):
-    """
-    Function to update the status of any request as long as it has
-    not been deleted. The new status will show up on the status section
-    of the request on the fritz marshal.
-    
-    :param filename: 
-    :param status: 
-    :param instrument_id: 
-    :param request_id: 
-    :param output_dir: 
-    :param save:
-    :param testing:
-    :return: 
-    """
-
-    # 1. Make sure that we have the required fields
-    if not request_id:
-        print("Can't update a request without the request id")
-        return False
-
-    if not instrument_id:
-        instrument_id = default_id
-
-    if not filename:
-        filename = "%s_%s.txt" % (str(request_id), timestamp())
-
-    output_file = os.path.join(output_dir, filename)
-
-    # 2. Create the new status dictionary
-    status_config = {'instrument_id': instrument_id,
-                     'request_id': request_id,
-                     'new_status': status}
-
-    # Are we testing?
-    if testing:
-        ret = 'TESTING update_request(): no data sent to marshal'
-    else:
-        # 3. Write and read in the json file to memory
-        json_file = open(write_json_file(status_config, output_file), 'r')
-
-        # 4. Send the request, close the file, and save if needed
-        ret = requests.post(fritz_stat_url, auth=(user, pwd),
-                            files={'jsonfile': json_file})
-        json_file.close()
-
-    if not save:
-        os.remove(output_file)
-
-    # 5. Print the request response for the user
-    print(ret)
-
-    return True
 
 
 def get_keywords_from_file(inputfile, keywords, sep=':'):
@@ -212,9 +156,9 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
         return ret
 
 
-def upload_spectra(spec_file, instrument_id=2, request_id='',
-                   observer='SEDmRobot', output_dir='targets/', sourceid=None,
-                   check_quality=True, min_quality=2, testing=False):
+def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
+                   observer='SEDmRobot', check_quality=True, min_quality=2,
+                   testing=False):
     """
     Add spectra to the fritz marshal.  If the fill_by_file is selected then
     most of the keywords will be filled from the spectra file itself.  If
@@ -222,10 +166,9 @@ def upload_spectra(spec_file, instrument_id=2, request_id='',
     to update the request
     
     :param spec_file:
-    :param instrument_id:
+    :param inst_id:
     :param request_id:
     :param observer:
-    :param output_dir:
     :param sourceid:
     :param check_quality:
     :param min_quality:
@@ -233,13 +176,9 @@ def upload_spectra(spec_file, instrument_id=2, request_id='',
 
     :return: 
     """
-    if not request_id and not sourceid:
-        print("Can't update without either a request id or a source id")
-        return False
-
-    basefile = os.path.basename(spec_file)
-    output = os.path.join(output_dir, basefile)
-    output_file = output.replace('.txt', '.json')
+    if not request_id or not sourceid:
+        print("Can't update without a request id and a source id")
+        return None
 
     # Create the mandatory keyword dictionary payload
     keywords_dict = {'reduced_by': 'REDUCER',
@@ -250,20 +189,20 @@ def upload_spectra(spec_file, instrument_id=2, request_id='',
 
     submission_dict = get_keywords_from_file(spec_file, keywords_dict)
 
+    # Retrieve quality
     quality = int(submission_dict['quality'])
     del submission_dict['quality']
     # Check the quality if it is smaller or equal to min quality
-    # then upload spectra
     if check_quality and quality > min_quality:
         print("Spectra quality does not pass")
-        return False
+        return None
 
     # create payload
     with open(spec_file) as sfh:
         contents = sfh.read()
     submission_dict.update({'filename': spec_file,
                             'obj_id': sourceid,
-                            'instrument_id': instrument_id,
+                            'instrument_id': inst_id,
                             'followup_request_id': request_id,
                             'observer': observer.rstrip().lstrip(),
                             'ascii': contents
@@ -273,20 +212,13 @@ def upload_spectra(spec_file, instrument_id=2, request_id='',
     if testing:
         ret = 'TESTING upload_spectra(): no data sent to marshal'
         print(submission_dict)
-        return False
+        return None
     else:
-        # Open the configuration and spec file for transmission
-        json_file = open(write_json_file(submission_dict, output_file), 'r')
-        upfile = open(spec_file, 'r')
-        # Send the request
-        ret = requests.post(fritz_spec_url, auth=(user, pwd),
-                            files={'jsonfile': json_file, 'upfile': upfile})
-        # Close files and send request response
-        upfile.close()
-        json_file.close()
+        # post the spectrum
+        ret = api("POST", fritz_spec_url, data=submission_dict)
     print(ret)
 
-    return True
+    return ret
 
 
 def read_request(request_file):
@@ -376,12 +308,14 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         if add_spectra:
 
             spec_ret = upload_spectra(spectra_file, request_id=marshal_id,
-                                      testing=testing, sourceid=object_name)
+                                      sourceid=object_name, testing=testing)
             if not spec_ret:
                 spec_stat = 'IFU: Failed ' + ts_str
             else:
                 spec_stat = 'IFU: Complete ' + ts_str
                 if not testing:
+                    ret_data = spec_ret['data']
+                    spec_id = ret_data['id']
                     annots_posted = add_annots(spectra_file, auth,
                                                reducedby=reducedby,
                                                testing=testing)
@@ -391,8 +325,8 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                         print("Warning: Annotations encountered a problem")
 
         if add_status and not testing:
-            status_ret = update_request(spec_stat, request_id=marshal_id,
-                                        testing=testing)
+            status_ret = update_status_request(spec_stat, marshal_id, 'fritz',
+                                               testing=testing)
 
         return_link = fritz_view_source_url + "/%s" % object_name
 
