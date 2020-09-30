@@ -149,7 +149,8 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
         header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
                                              header['snidmatchsubtype']])
 
-    dtypes = {'match': 'STRING', 'rlap': 'FLOAT', 'redshift': 'FLOAT'}
+    dtypes = {'match': 'STRING', 'rlap': 'FLOAT',
+              'redshift': 'FLOAT', 'age': 'FLOAT'}
     for key in dtypes:
         if not add_spec_autoannot(object_id, '[AUTO_SNID_' + key + '] ' +
                                              header['snidmatch' + key],
