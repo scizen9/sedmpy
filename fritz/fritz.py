@@ -260,6 +260,7 @@ def upload_spectra(spec_file, instrument_id=2, request_id='',
 
     # print(type(format_type), type(request_id), type(instrument_id))
     submission_dict.update({'filename': spec_file,
+                            'obj_id': sourceid,
                             'instrument_id': instrument_id,
                             'followup_request_id': request_id,
                             'observer': observer.rstrip().lstrip()
@@ -294,18 +295,16 @@ def read_request(request_file):
     return json.load(open(request_file, 'r'))
 
 
-def update_target_by_object(objname, add_spectra=False, spectra_file='',
+def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                             add_status=False, status='Completed',
-                            request_id=None, search_db=None,
-                            reducedby=None, testing=False):
+                            search_db=None, reducedby=None, testing=False):
     """
     Go through the request and find the one that matches the objname
-    :param objname:
+    :param request_id:
     :param add_spectra:
     :param spectra_file:
     :param add_status:
     :param status:
-    :param request_id:
     :param search_db:
     :param reducedby:
     :param testing:
@@ -323,51 +322,48 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     spec_stat = ''
     # Look in the SEDM Db
     if search_db:
-        if request_id:
-            print("Searching SedmDB")
+        print("Searching SedmDB")
 
-            # Search for target in the database
-            try:
-                res = search_db.get_from_request(["marshal_id",
-                                                  "object_id",
-                                                  "user_id",
-                                                  "external_id"],
-                                                 {"id": request_id})[0]
-            except IndexError:
-                print("Unable to retrieve ids from database")
-                return return_link, spec_ret, status_ret
-            marshal_id = res[0]
-            object_id = res[1]
-            user_id = res[2]
-            external_id = res[3]
-            # is this a Fritz object?
-            if external_id != 2:
-                print("Not a Fritz object!")
-                return return_link, spec_ret, status_ret
-            try:
-                res = search_db.get_from_object(["name"], {"id": object_id})[0]
-            except IndexError:
-                print("Unable to retrieve object_name from database")
-                return return_link, spec_ret, status_ret
-            object_name = res[0]
-            try:
-                res = search_db.get_from_users(["name", "email"],
-                                               {"id": user_id})[0]
-            except IndexError:
-                print("Unable to retrieve username, email from database")
-                return return_link, spec_ret, status_ret
-            username = res[0]
-            email = res[1]
-        else:
-            print("No request id provided")
+        # Search for target in the database
+        try:
+            res = search_db.get_from_request(["marshal_id",
+                                              "object_id",
+                                              "user_id",
+                                              "external_id"],
+                                             {"id": request_id})[0]
+        except IndexError:
+            print("Unable to retrieve ids from database")
+            return return_link, spec_ret, status_ret
+        marshal_id = res[0]
+        object_id = res[1]
+        user_id = res[2]
+        external_id = res[3]
+        # is this a Fritz object?
+        if external_id != 2:
+            print("Not a Fritz object!")
+            return return_link, spec_ret, status_ret
+        try:
+            res = search_db.get_from_object(["name"], {"id": object_id})[0]
+        except IndexError:
+            print("Unable to retrieve object_name from database")
+            return return_link, spec_ret, status_ret
+        object_name = res[0]
+        try:
+            res = search_db.get_from_users(["name", "email"],
+                                           {"id": user_id})[0]
+        except IndexError:
+            print("Unable to retrieve username, email from database")
+            return return_link, spec_ret, status_ret
+        username = res[0]
+        email = res[1]
     else:
         print("no dbase given!")
 
     # Did we get a marshal ID?
     if marshal_id is None:
-        print("Unable to find marshal id for target %s" % objname)
+        print("Unable to find marshal id for target %s" % object_name)
     else:
-        print("Updating target %s using id %d" % (objname, marshal_id))
+        print("Updating target %s using id %d" % (object_name, marshal_id))
 
         now = datetime.datetime.now()
         ts_str = "%4d%02d%02d %02d_%02d_%02d" % (now.year, now.month,
@@ -377,7 +373,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         if add_spectra:
 
             spec_ret = upload_spectra(spectra_file, request_id=marshal_id,
-                                      testing=testing)
+                                      testing=testing, sourceid=object_name)
             if not spec_ret:
                 spec_stat = 'IFU: Failed ' + ts_str
             else:
@@ -486,14 +482,13 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
             if upfil not in fi:
                 continue
         # Upload
-        r, spec, stat = update_target_by_object(objname, add_status=True,
-                                                status='Completed',
-                                                add_spectra=True,
-                                                spectra_file=fi,
-                                                request_id=req_id,
-                                                search_db=dbase,
-                                                reducedby=reducedby,
-                                                testing=testing)
+        r, spec, stat = update_target_by_request_id(req_id, add_status=True,
+                                                    status='Completed',
+                                                    add_spectra=True,
+                                                    spectra_file=fi,
+                                                    search_db=dbase,
+                                                    reducedby=reducedby,
+                                                    testing=testing)
         # Mark as uploaded
         os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # log upload
