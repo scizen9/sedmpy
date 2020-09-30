@@ -142,12 +142,12 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
                 outstr = out.split(sep, 1)[-1]
                 return_dict[k] = float(outstr)
             elif v.upper() == 'OBSDATE':
-                date_str = out.split(sep, 1)[-1]
+                date_str = out.split(sep, 1)[-1].split()[-1]
                 out = subprocess.check_output('grep OBSTIME %s' % inputfile,
                                               shell=True,
                                               universal_newlines=True)
-                date_str += "T" + out.split(sep, 1)[-1]
-                date_str = " ".join(date_str.split()).split('.')[0] + "Z"
+                date_str += "T" + out.split(sep, 1)[-1].split()[-1]
+                date_str = date_str.split('.')[0] + "Z"
                 return_dict[k] = date_str
             else:
                 return_dict[k] = out.split(sep, 1)[-1]
