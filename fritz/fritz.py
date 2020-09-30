@@ -7,7 +7,10 @@ import os
 import datetime
 import sys
 from marshals.interface import api, update_status_request
-from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
+try:
+    from fritz_commenter import add_SNID_pysedm_autoannot as add_annots
+except ImportError:
+    from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
 
 # Path constants
 add_target_url = 'http://private.caltech.edu/api/'
@@ -192,12 +195,10 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
                             'observer': observer.rstrip().lstrip(),
                             'ascii': contents
                             })
-
     # Are we just testing?
     if testing:
-        ret = 'TESTING upload_spectra(): no data sent to marshal'
         print(submission_dict)
-        return {"message": "string", "status": "success", "data": {"id": -1}}
+        ret = {"message": "string", "status": "success", "data": {"id": -1}}
     else:
         # post the spectrum
         ret = api("POST", fritz_spec_url, data=submission_dict)
@@ -298,15 +299,14 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 spec_stat = 'IFU: Failed ' + ts_str
             else:
                 spec_stat = 'IFU: Complete ' + ts_str
-                if not testing:
-                    ret_data = spec_ret['data']
-                    spec_id = ret_data['id']
-                    annots_posted = add_annots(spectra_file, spec_id=spec_id,
-                                               testing=testing)
-                    if annots_posted:
-                        print("Annotations successfully posted")
-                    else:
-                        print("Warning: Annotations encountered a problem")
+                ret_data = spec_ret['data']
+                spec_id = ret_data['id']
+                annots_posted = add_annots(spectra_file, spec_id=spec_id,
+                                           testing=testing)
+                if annots_posted:
+                    print("Annotations successfully posted")
+                else:
+                    print("Warning: Annotations encountered a problem")
 
         if add_status:
             status_ret = update_status_request(spec_stat, marshal_id, 'fritz',
