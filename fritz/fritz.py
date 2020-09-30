@@ -150,7 +150,7 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
                 date_str = date_str.split('.')[0] + "Z"
                 return_dict[k] = date_str
             else:
-                return_dict[k] = out.split(sep, 1)[-1]
+                return_dict[k] = out.split(sep, 1)[-1].rstrip()
         except subprocess.CalledProcessError:
             print("Not found: %s" % k)
 
