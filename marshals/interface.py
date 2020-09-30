@@ -5,18 +5,19 @@ import requests
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
-with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config', 'marshals.json')) as data_file:
+with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
+                       'marshals.json')) as data_file:
     params = json.load(data_file)
 
 token = params['marshals']['fritz']['token']
 
 
 def api(method, endpoint, data=None):
-    headers = {'Authorization': f'token {token}'}
+    headers = {'Authorization': 'token {}'.format(token)}
     response = requests.request(method, endpoint, json=data, headers=headers)
-    print(f'HTTP code: {response.status_code}, {response.reason}')
+    print('HTTP code: {}, {}'.format(response.status_code, response.reason))
     if response.status_code in (200, 400):
-        print(f'JSON response: {response.json()}')
+        print('JSON response: {}'.format(response.json()))
 
     return response
 
