@@ -1,9 +1,7 @@
 import re
-import requests
 from glob import glob
 from getpass import getpass
 from pprint import pprint
-import json
 
 from marshals.interface import api
 
@@ -88,8 +86,8 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
             return False
 
 
-def add_SNID_pysedm_autoannot(fname, object_id=None,
-                              spec_id=None, testing=False):
+def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
+                              testing=False):
     """
     if z < 0.3 and rlap > 5.0
         adds autoannotations with SNID rlap, z, type, etc

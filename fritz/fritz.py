@@ -7,14 +7,9 @@ import os
 import datetime
 import sys
 from marshals.interface import api, update_status_request
-try:
-    from fritz_commenter import add_SNID_pysedm_autoannot as add_annots
-    from fritz_commenter import get_missing_info
-    from fritz_commenter import auth
-except ImportError:
-    from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
-    from fritz.fritz_commenter import get_missing_info
-    from fritz.fritz_commenter import auth
+
+from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
+from fritz.fritz_commenter import auth
 
 
 # Path constants
