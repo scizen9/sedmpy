@@ -151,15 +151,10 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
 
     dtypes = {'match': 'STRING', 'rlap': 'FLOAT', 'redshift': 'FLOAT'}
     for key in dtypes:
-        if 'STRING' in dtypes[key]:
-            r = add_spec_autoannot(object_id, '[AUTO_SNID_' + key + '] ' +
-                                   header['snidmatch' + key], testing=testing)
-        elif 'FLOAT' in dtypes[key]:
-            r = add_spec_autoannot(object_id, '[AUTO_SNID_' + key + ']  %.3f' %
-                                   header['snidmatch' + key], testing=testing)
-        else:
-            r = False
-        return r
+        if not add_spec_autoannot(object_id, '[AUTO_SNID_' + key + '] ' +
+                                             header['snidmatch' + key],
+                                  testing=testing):
+            return False
 
     if pr_posted:
         return True  # we already have an attachment comment so don't overwrite
