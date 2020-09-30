@@ -7,10 +7,7 @@ import os
 import datetime
 import sys
 from marshals.interface import api, update_status_request
-
 from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
-from fritz.fritz_commenter import auth
-
 
 # Path constants
 add_target_url = 'http://private.caltech.edu/api/'
@@ -29,12 +26,6 @@ fritz_token = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
 default_id = 37
 instrument_id = 2
 telescope_id = 37
-if auth:
-    user = None
-    pwd = None
-else:
-    user = None
-    pwd = None
 
 
 def write_json_file(pydict, output_file):
@@ -145,8 +136,7 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
             ret = "TESTING upload_phot(): no data sent to marshal"
         else:
             json_file = open('photometryExample.txt', 'r')
-            ret = requests.post(fritz_phot_url, auth=(user, pwd),
-                                files={'jsonfile': json_file})
+            ret = requests.post(fritz_phot_url, files={'jsonfile': json_file})
             json_file.close()
         return ret
 

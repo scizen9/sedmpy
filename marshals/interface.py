@@ -44,19 +44,20 @@ def update_status_request(status, request_id, marshal_name,
 
     if save:
         if not output_file:
-            output_file = os.path.join(marshal_name.lower(), "_", request_id,
+            request_str = str(request_id)
+            output_file = os.path.join(marshal_name.lower(), "_", request_str,
                                        ".json")
 
             if os.path.exists(output_file):
                 files = sorted(glob.glob("*_%s_*"))
                 if not files:
                     output_file = os.path.join(marshal_name.lower(), "_",
-                                               request_id, "_", "1", ".json")
+                                               request_str, "_", "1", ".json")
                 else:
                     last_file_count = files[-1].split('_')[-1].replace('.json', '')
                     last_file_count = int(last_file_count) + 1
                     output_file = os.path.join(marshal_name.lower(), "_",
-                                               request_id, "_",
+                                               request_str, "_",
                                                str(last_file_count),
                                                ".json")
 
