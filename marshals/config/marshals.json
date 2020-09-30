@@ -1,0 +1,21 @@
+{
+  "source": ["skipper.caltech.edu", "pharos.caltech.edu", "localhost"],
+  "tokens": {
+    "skipper.caltech.edu": "empty",
+    "pharos.caltech.edu": "empty",
+    "localhost": "empty"
+  },
+  "programs": ["all"],
+  "status_types": ["new", "edit", "update", "delete"],
+
+  "marshals": {
+    "fritz": {"instrument_id": 0,
+              "token": "cf127f93-19ef-4ba2-a692-b754c16412b8",
+              "status_url": ""
+    },
+    "growth": {"instrument_id": 0,
+               "token": "empty",
+               "status_url": ""
+    }
+  }
+}
