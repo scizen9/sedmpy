@@ -5,61 +5,13 @@ from getpass import getpass
 from pprint import pprint
 import json
 
+from marshals.interface import api
+
 fritz_base_url = 'http://private.caltech.edu/'
-fritz_source_summary_url = fritz_base_url + 'source_summary.cgi?sourcename='
-
-auth = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
+fritz_comment_url = fritz_base_url + 'comment'
 
 
-def get_missing_info(ztfname, obsdate, sourceid, specid, reducedby=None):
-    """
-    #TODO this is currently being called 5 times per object, which may
-        include a lot of downloading the same thing repeatedly.
-        Should probably make a ztf_object class, then save specid etc to that,
-        then call add_spec_attachment, etc methods to it. Another day '\_0_/'
-    """
-
-    try:
-        source_summary = requests.get(fritz_source_summary_url
-                                      + ztfname, auth=auth).json()
-    except json.decoder.JSONDecodeError:
-        print("ERROR - json could not decode")
-        return None, None
-
-    if not sourceid:
-        try:
-            sourceid = source_summary['id']
-        except IndexError as e:
-            print(e)
-            print("ERROR - count not get id from source summary")
-        except KeyError:
-            print("ERROR - could not obtain source summary")
-
-    if not specid:
-        if not reducedby:
-            reducedby = 'auto'
-        obsdate = obsdate.replace('-', '')  # YYYYMMDD, YYYY-MM-DD, Y-YY-YM-MDD
-        try:
-            specid = [spec['specid']
-                      for spec in source_summary['uploaded_spectra']
-                      if spec['obsdate'].replace('-', '') == obsdate
-                      and spec['instrumentid'] == 65
-                      and spec['reducedby'].strip() == reducedby][-1]
-        except KeyError:
-            print("ERROR - could not obtain source summary")
-        except IndexError as e:
-            print(e)
-            print("Target OBSDATE: %s" % obsdate)
-            print("Target reducedby: %s" % reducedby)
-            pprint([(spec['reducedby'], spec['obsdate'])
-                    for spec in source_summary['uploaded_spectra']
-                    if spec['instrumentid'] == 65])
-    return sourceid, specid
-
-
-def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
-                        specid=None, obsdate=None, reducedby=None,
-                        testing=False):
+def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     """
     adds a comment (not autoannotation) with attachment to a particular SEDM
     spectrum on the view_spec page, which will also appear elsewhere.
@@ -78,21 +30,14 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
     return: True if success, False if not
     """
 
-    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid,
-                                        reducedby=reducedby)
-
-    if sourceid is None or specid is None:
+    if obj_id is None or spec_id is None:
         print("ERROR - Unable to get info required to post comment")
         return False
 
-    ddict = {'comment':    comment,
-             'tablename': 'spec',
-             'tableid':    specid,
-             'camefrom':  'view_spec',
-             'name':       ztfname,
-             'sourceid':   sourceid,
-             'specid':     specid,
-             'commit':    'yes'}
+    # TODO: put in base64-encoded contents from file as attachement
+    ddict = {'obj_id': obj_id,
+             'text': comment,
+             'attachment': fname}
 
     if testing:
         print("TESTING add_spec_attachment(): no data sent to marshal")
@@ -100,73 +45,51 @@ def add_spec_attachment(ztfname, comment, fname, cred, sourceid=None,
         print(ddict)
         return True
     else:
-        with open(fname, 'rb') as att:
-            r = requests.post(fritz_base_url + "add_spec.cgi", auth=cred,
-                              data=ddict, files={"attachment": att})
-
-        if 'Updating Database' in r.text or 'copied file successfully' in r.text:
+        r = api("POST", fritz_comment_url, data=ddict)
+        if 'success' in r['status']:
             print('{} uploaded'.format(fname.split('/')[-1]))
             return True
         else:
             print('error submitting comment')
-            print(r.text)
+            print(r.status)
             raise Exception
             # return False
 
 
-def add_spec_autoannot(ztfname, value, annot_type, datatype, cred,
-                       sourceid=None, specid=None, obsdate=None,
-                       reducedby=None, testing=False):
+def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
     """
     adds an autoannotation without attachment to a particular SEDM spectrum
     on the view_spec page, which will also appear elsewhere.
 
-    ztfname: 'ZTF18aaaaaa', for example
-    comment: <str>
-    datatype: 'STRING' or 'FLOAT' or 'BOOL'
-    cred: (fritz username, fritz password) as (<str>, <str>)
-    sourceid: <int> around ~4000
-    specid: <int> around ~1700. faster if you provide it
-    obsdate: 'YYYYMMDD' or 'YYYY-MM-DD', necessary for finding the correct
-            spectrum if no specid. Assumes exactly 1 SEDM spectrum that night
+    obj_id: 'ZTF18aaaaaa', for example
+    text: <str>
+    spec_id: <int>
     testing: <bool> are we testing only?
 
     return: True if success, False if not
     """
 
-    sourceid, specid = get_missing_info(ztfname, obsdate, sourceid, specid,
-                                        reducedby=reducedby)
-
-    ddict = {'comment':    value,
-             'datatype':   datatype,
-             'tablename': 'spec',
-             'type':       annot_type,
-             'tableid':    specid,
-             'table':     'autoannotations',
-             'camefrom':  'view_spec',
-             'name':       ztfname,
-             'sourceid':   sourceid,
-             'specid':     specid,
-             'commit':    'yes'}
+    ddict = {'obj_id': obj_id,
+             'text': text}
 
     if testing:
         print("TESTING add_spec_autoannot(): no data sent to marshal")
         print(ddict)
         return True
     else:
-        r = requests.post(fritz_base_url + "add_spec.cgi", auth=cred,
-                          data=ddict)
+        r = api("POST", fritz_comment_url, data=ddict)
 
-        if 'Updating Database' in r.text or 'copied file successfully' in r.text:
-            print('{}: {} posted'.format(annot_type, value))
+        if 'success' in r.status:
+            print('{}: {} posted'.format(obj_id, text))
             return True
         else:
             print('error submitting comment')
-            print(r.text)
+            print(r.status)
             return False
 
 
-def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
+def add_SNID_pysedm_autoannot(fname, object_id=None,
+                              spec_id=None, testing=False):
     """
     if z < 0.3 and rlap > 5.0
         adds autoannotations with SNID rlap, z, type, etc
@@ -190,49 +113,14 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
                   line.split(':', 1)[-1].strip()
                   for line in f if line[0] == '#'}
 
-    # get the specid by comparing all the header info
-    sourcename = header['name']
-    try:
-        source_summary = requests.get(fritz_base_url +
-                                  'source_summary.cgi?'
-                                  'sourcename=%s' % sourcename,
-                                  auth=cred).json()
-    except json.decoder.JSONDecodeError:
-        print("ERROR: could not decode results")
-        return False
-
-    if 'uploaded_spectra' in source_summary:
-        if source_summary['uploaded_spectra']:
-            for spec in source_summary['uploaded_spectra']:
-                f = requests.get('http://skipper.caltech.edu:8080/fritz-data/'
-                                 + spec['datapath'],
-                                 auth=cred).text
-                fheader = {line.split(':', 1)[0][1:].strip().lower():
-                           line.split(':', 1)[-1].strip()
-                           for line in f.split('\n') if '#' in line}
-                if header == fheader:
-                    # specid = spec['specid']
-                    break
-        else:
-            print("ERROR: No uploaded spectra for %s" % sourcename)
-            return False
-
-    # Update obsdate
-    if ':' not in header['obsdate']:
-        obsdate = header['obsdate'].strip() + " " + \
-                  header['obstime'].strip().split('.')[0]
-
     # PYSEDM_REPORT
     # must be posted after the SNID plot or else it'll be overwritten
     try:
-        # TODO use os.path.dir or something
         pysedm_report = glob(fname.replace('spec',
                                            'pysedm_report').replace('.txt',
                                                                     '.png'))[0]
-        pr_posted = add_spec_attachment(header['name'], 'pysedm_report',
-                                        pysedm_report, cred,
-                                        obsdate=obsdate,
-                                        reducedby=reducedby,
+        pr_posted = add_spec_attachment(object_id, 'pysedm_report',
+                                        pysedm_report, spec_id=spec_id,
                                         testing=testing)
     except IndexError:
         print('no pysedm_report for {}?'.format(header['name']))
@@ -265,12 +153,15 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
 
     dtypes = {'match': 'STRING', 'rlap': 'FLOAT', 'redshift': 'FLOAT'}
     for key in dtypes:
-        if not add_spec_autoannot(header['name'], header['snidmatch' + key],
-                                  'AUTO_SNID_' + key, dtypes[key], cred,
-                                  obsdate=obsdate,
-                                  reducedby=reducedby,
-                                  testing=testing):
-            return False
+        if 'STRING' in dtypes[key]:
+            r = add_spec_autoannot(object_id, '[AUTO_SNID_' + key + '] ' +
+                                   header['snidmatch' + key], testing=testing)
+        elif 'FLOAT' in dtypes[key]:
+            r = add_spec_autoannot(object_id, '[AUTO_SNID_' + key + ']  %.3f' %
+                                   header['snidmatch' + key], testing=testing)
+        else:
+            r = False
+        return r
 
     if pr_posted:
         return True  # we already have an attachment comment so don't overwrite
@@ -278,12 +169,11 @@ def add_SNID_pysedm_autoannot(fname, cred, reducedby=None, testing=False):
     # SNID PLOT
     # NOTE: this makes a major assumption about the naming scheme of snid plots
     image_filename = fname.replace('.txt',
-                                      '_{}.png'.format(header['snidmatchtype']))
+                                   '_{}.png'.format(header['snidmatchtype']))
     if not glob(image_filename):
         return False
-    add_spec_attachment(header['name'], 'AUTO_SNID_plot', image_filename,
-                        cred,  obsdate=obsdate,
-                        reducedby=reducedby, testing=testing)
+    add_spec_attachment(object_id, 'AUTO_SNID_plot', image_filename,
+                        spec_id=spec_id, testing=testing)
 
     return True
 

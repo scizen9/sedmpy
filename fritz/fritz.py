@@ -212,7 +212,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
     if testing:
         ret = 'TESTING upload_spectra(): no data sent to marshal'
         print(submission_dict)
-        return None
+        return {"message": "string", "status": "success", "data": {"id": -1}}
     else:
         # post the spectrum
         ret = api("POST", fritz_spec_url, data=submission_dict)
@@ -316,15 +316,14 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 if not testing:
                     ret_data = spec_ret['data']
                     spec_id = ret_data['id']
-                    annots_posted = add_annots(spectra_file, auth,
-                                               reducedby=reducedby,
+                    annots_posted = add_annots(spectra_file, spec_id=spec_id,
                                                testing=testing)
                     if annots_posted:
                         print("Annotations successfully posted")
                     else:
                         print("Warning: Annotations encountered a problem")
 
-        if add_status and not testing:
+        if add_status:
             status_ret = update_status_request(spec_stat, marshal_id, 'fritz',
                                                testing=testing)
 
