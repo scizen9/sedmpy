@@ -33,7 +33,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
         return False
 
     # TODO: put in base64-encoded contents from file as attachement
-    ddict = {'obj_id': obj_id,
+    ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
              'attachment': fname}
 
@@ -67,7 +67,7 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
     return: True if success, False if not
     """
 
-    ddict = {'obj_id': obj_id,
+    ddict = {'obj_id': obj_id,  # 'commentable_id': spec_id,
              'text': text}
 
     if testing:

@@ -21,7 +21,7 @@ pharos_phot_dir = '/scr2/sedmrp/redux/phot/'
 fritz_base_url = 'http://private.caltech.edu/'
 fritz_inst_url = fritz_base_url + 'UNKNOWN'     # change request params?
 fritz_stat_url = fritz_base_url + 'followup_request/request_id'
-fritz_spec_url = fritz_base_url + 'api/spectrum'
+fritz_spec_url = fritz_base_url + 'api/spectrum/ascii'
 fritz_phot_url = fritz_base_url + 'api/photometry'
 fritz_view_source_url = fritz_base_url + 'source'
 fritz_token = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
@@ -217,8 +217,8 @@ def read_request(request_file):
 
 
 def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
-                            add_status=False, status='Completed',
-                            search_db=None, reducedby=None, testing=False):
+                                add_status=False, status='Completed',
+                                search_db=None, reducedby=None, testing=False):
     """
     Go through the request and find the one that matches the objname
     :param request_id:
