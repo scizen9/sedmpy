@@ -1,4 +1,5 @@
 import re
+import base64
 from glob import glob
 from getpass import getpass
 from pprint import pprint
@@ -32,15 +33,18 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
         print("ERROR - Unable to get info required to post comment")
         return False
 
-    # TODO: put in base64-encoded contents from file as attachement
+    # read in file
+    with open(fname, 'rb') as image_file:
+        encoded = base64.b64encode(image_file.read())
+    # create payload
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
-             'attachment': fname}
+             'attachment': encoded}
 
     if testing:
         print("TESTING add_spec_attachment(): no data sent to marshal")
-        print(fname)
-        print(ddict)
+        print("%s: %s encoded with length %d" % (obj_id, fname.split('/')[-1],
+                                                 len(encoded)))
         return True
     else:
         r = api("POST", fritz_comment_url, data=ddict)
