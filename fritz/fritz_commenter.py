@@ -34,7 +34,6 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     # create payload
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
-             # 'group_ids': [1],
              'attachment': {'body': encoded,
                             'name': fname.split('/')[-1]}}
     if testing:
@@ -48,10 +47,9 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
             print('{} uploaded'.format(fname.split('/')[-1]))
             return True
         else:
-            print('error submitting comment')
+            print('error submitting comment with attachment')
             print(r['status'])
-            raise Exception
-            # return False
+            return False
 
 
 def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
@@ -68,7 +66,6 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
     """
 
     ddict = {'obj_id': obj_id,  # 'commentable_id': spec_id,
-             # 'group_ids': [1],
              'text': text}
 
     if testing:
@@ -83,7 +80,7 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
             return True
         else:
             print('error submitting comment')
-            print(r.status)
+            print(r['status'])
             return False
 
 
@@ -112,8 +109,7 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
                   line.split(':', 1)[-1].strip()
                   for line in f if line[0] == '#'}
 
-    # PYSEDM_REPORT
-    # must be posted after the SNID plot or else it'll be overwritten
+    # Upload pysedm_report
     try:
         pysedm_report = glob(fname.replace('spec',
                                            'pysedm_report').replace('.txt',
@@ -153,9 +149,9 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
     dtypes = {'match': 'STRING', 'rlap': 'FLOAT',
               'redshift': 'FLOAT', 'age': 'FLOAT'}
     for key in dtypes:
-        if not add_spec_autoannot(object_id, '[AUTO_SNID_' + key + '] ' +
-                                             header['snidmatch' + key],
-                                  testing=testing):
+        if not add_spec_autoannot(
+                object_id, '[AUTO_SNID_' + key + '] ' +
+                           header['snidmatch' + key], testing=testing):
             return False
 
     if pr_posted:
@@ -167,10 +163,9 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
                                    '_{}.png'.format(header['snidmatchtype']))
     if not glob(image_filename):
         return False
-    add_spec_attachment(object_id, 'AUTO_SNID_plot', image_filename,
-                        spec_id=spec_id, testing=testing)
-
-    return True
+    ret = add_spec_attachment(object_id, 'AUTO_SNID_plot', image_filename,
+                              spec_id=spec_id, testing=testing)
+    return ret
 
 
 if __name__ == "__main__":
