@@ -194,7 +194,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
                             # 'followup_request_id': request_id,
                             # 'observer': observer.rstrip().lstrip(),
                             'ascii': contents,
-                            'group_ids': 0
+                            'group_ids': []
                             })
     # Are we just testing?
     if testing:
