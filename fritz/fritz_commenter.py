@@ -15,15 +15,10 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     adds a comment (not autoannotation) with attachment to a particular SEDM
     spectrum on the view_spec page, which will also appear elsewhere.
 
-    ztfname: 'ZTF18aaaaaa', for example
+    obj_id: <str>
     comment: <str>
-    fname: <str> spec file name
-    cred: (<str>, <str>) credentials
-    sourceid: <int> around ~4000
-    specid: <int> around ~1700. faster if you provide it
-    obsdate: 'YYYYMMDD', necessary for finding the correct spectrum. Assumes
-            exactly 1 SEDM spectrum that night
-    reducedby: <str> who did the reduction, defaults to 'auto'
+    fname: <str>
+    spec_id: <int>
     testing: <bool> are we just testing?
 
     return: True if success, False if not
@@ -39,9 +34,9 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     # create payload
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
+             'group_ids': [1],
              'attachment': encoded}
-    local_test = False
-    if local_test:
+    if testing:
         print("TESTING add_spec_attachment(): no data sent to marshal")
         print("%s: %s encoded with length %d" % (obj_id, fname.split('/')[-1],
                                                  len(encoded)))
@@ -72,6 +67,7 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
     """
 
     ddict = {'obj_id': obj_id,  # 'commentable_id': spec_id,
+             'group_ids': [1],
              'text': text}
 
     if testing:
