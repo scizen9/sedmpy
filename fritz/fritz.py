@@ -169,7 +169,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
         return None
 
     # Create the mandatory keyword dictionary payload
-    keywords_dict = {'reduced_by': 'REDUCER',
+    keywords_dict = {   # 'reduced_by': 'REDUCER',
                      'observed_at': 'OBSDATE',
                      'quality': 'QUALITY'}
     if '_SEDM' in spec_file:
@@ -191,8 +191,8 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
     submission_dict.update({'filename': spec_file,
                             'obj_id': sourceid,
                             'instrument_id': inst_id,
-                            'followup_request_id': request_id,
-                            'observer': observer.rstrip().lstrip(),
+                            # 'followup_request_id': request_id,
+                            # 'observer': observer.rstrip().lstrip(),
                             'ascii': contents
                             })
     # Are we just testing?
