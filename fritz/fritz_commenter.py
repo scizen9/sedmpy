@@ -35,12 +35,12 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
 
     # read in file
     with open(fname, 'rb') as image_file:
-        encoded = base64.b64encode(image_file.read())
+        encoded = base64.b64encode(image_file.read()).decode('ascii')
     # create payload
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
              'attachment': encoded}
-    local_test = True
+    local_test = False
     if local_test:
         print("TESTING add_spec_attachment(): no data sent to marshal")
         print("%s: %s encoded with length %d" % (obj_id, fname.split('/')[-1],
