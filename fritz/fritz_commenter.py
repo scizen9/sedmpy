@@ -34,7 +34,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     # create payload
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
-             'group_ids': [1],
+             # 'group_ids': [1],
              'attachment': encoded}
     if testing:
         print("TESTING add_spec_attachment(): no data sent to marshal")
@@ -67,7 +67,7 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
     """
 
     ddict = {'obj_id': obj_id,  # 'commentable_id': spec_id,
-             'group_ids': [1],
+             # 'group_ids': [1],
              'text': text}
 
     if testing:
