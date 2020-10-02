@@ -22,8 +22,7 @@ def api(method, endpoint, data=None):
     return response
 
 
-def update_status_request(status, request_id, marshal_name,
-                          update_type='jsonfile', save=True,
+def update_status_request(status, request_id, marshal_name, save=False,
                           output_file='', testing=False):
     """
     Function to update the status of any request as long as it has
@@ -32,6 +31,7 @@ def update_status_request(status, request_id, marshal_name,
 
     :param status:
     :param request_id:
+    :param marshal_name:
     :param save:
     :param output_file:
     :param testing:
@@ -54,12 +54,14 @@ def update_status_request(status, request_id, marshal_name,
                     output_file = os.path.join(marshal_name.lower(), "_",
                                                request_str, "_", "1", ".json")
                 else:
-                    last_file_count = files[-1].split('_')[-1].replace('.json', '')
+                    last_file_count = files[-1].split('_')[-1].replace('.json',
+                                                                       '')
                     last_file_count = int(last_file_count) + 1
                     output_file = os.path.join(marshal_name.lower(), "_",
                                                request_str, "_",
                                                str(last_file_count),
                                                ".json")
+        print("output_file(not used) = %s" % output_file)
 
     # 2. Create the new status dictionaryCopy
     status_payload = {
@@ -71,8 +73,12 @@ def update_status_request(status, request_id, marshal_name,
     if testing:
         print(status_payload)
     else:
-        api("POST", "https://private.caltech.edu/api/facility",
-            data=status_payload)
+        ret = api("POST", "https://private.caltech.edu/api/facility",
+                  data=status_payload).json()
+        if 'success' in ret['status']:
+            print('Status for request %d updated to %s' % (request_id, status))
+        else:
+            print('Status update failed:\n', ret)
 
 
 def read_request(request, isfile=True):
