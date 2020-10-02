@@ -6,7 +6,7 @@ from pprint import pprint
 
 from marshals.interface import api
 
-fritz_base_url = 'http://private.caltech.edu/'
+fritz_base_url = 'http://private.caltech.edu/api/'
 fritz_comment_url = fritz_base_url + 'comment'
 
 
