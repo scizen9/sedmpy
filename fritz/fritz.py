@@ -205,7 +205,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
         ret = api("POST", fritz_spec_url, data=submission_dict)
     print(ret)
 
-    return ret
+    return ret.json()
 
 
 def read_request(request_file):
