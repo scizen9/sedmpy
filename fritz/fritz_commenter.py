@@ -48,7 +48,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
             return True
         else:
             print('error submitting comment')
-            print(r.status)
+            print(r['status'])
             raise Exception
             # return False
 
