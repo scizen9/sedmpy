@@ -35,7 +35,8 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
              # 'group_ids': [1],
-             'attachment': encoded}
+             'attachment': {'body': encoded,
+                            'name': fname.split('/')[-1]}}
     if testing:
         print("TESTING add_spec_attachment(): no data sent to marshal")
         print("%s: %s encoded with length %d" % (obj_id, fname.split('/')[-1],
