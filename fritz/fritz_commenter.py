@@ -40,8 +40,8 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
              'text': comment,
              'attachment': encoded}
-
-    if testing:
+    local_test = True
+    if local_test:
         print("TESTING add_spec_attachment(): no data sent to marshal")
         print("%s: %s encoded with length %d" % (obj_id, fname.split('/')[-1],
                                                  len(encoded)))
@@ -79,7 +79,7 @@ def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
         print(ddict)
         return True
     else:
-        r = api("POST", fritz_comment_url, data=ddict)
+        r = api("POST", fritz_comment_url, data=ddict).json()
 
         if 'success' in r.status:
             print('{}: {} posted'.format(obj_id, text))
