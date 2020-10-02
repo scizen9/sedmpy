@@ -47,7 +47,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
                                                  len(encoded)))
         return True
     else:
-        r = api("POST", fritz_comment_url, data=ddict)
+        r = api("POST", fritz_comment_url, data=ddict).json()
         if 'success' in r['status']:
             print('{} uploaded'.format(fname.split('/')[-1]))
             return True
