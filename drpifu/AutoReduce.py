@@ -919,11 +919,18 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                             logging.warning("nopush_marshal or local: "
                                             "skipping ztfupload")
                         else:
+                            # fritz upload
+                            cmd = ("make", "fritzupload")
+                            retcode = subprocess.call(cmd)
+                            if retcode != 0:
+                                logging.error("Error uploading spectra to"
+                                              " fritz marshal")
+                            # growth upload
                             cmd = ("make", "ztfupload")
                             retcode = subprocess.call(cmd)
                             if retcode != 0:
                                 logging.error("Error uploading spectra to"
-                                              " marshal")
+                                              " growth marshal")
                         # run Verify.py
                         cmd = "~/sedmpy/drpifu/Verify.py %s --contains %s" % \
                               (datestr, fn.split('.')[0])
