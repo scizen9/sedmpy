@@ -368,7 +368,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
     started = os.path.exists(os.path.join(target_dir, "report_fritz.txt"))
     out = open(target_dir + "report_fritz.txt", "a")
     if not started:
-        out.write("\nZTF Upload report for %s started on %s\n\n" %
+        out.write("\nZTF fritz marshal upload report for %s started on %s\n\n" %
                   (target_dir.split('/')[-2],
                    datetime.datetime.now().strftime("%c")))
     for fi in files:
@@ -412,7 +412,8 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
                                                     reducedby=reducedby,
                                                     testing=testing)
         # Mark as uploaded
-        os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
+        if stat:
+            os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # log upload
         out.write("%s %s: " % (obs_id, objname))
         # Was a spectrum uploaded?

@@ -635,7 +635,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
     started = os.path.exists(os.path.join(target_dir, "report_ztf.txt"))
     out = open(target_dir + "report_ztf.txt", "a")
     if not started:
-        out.write("\nZTF Upload report for %s started on %s\n\n" %
+        out.write("\nZTF growth marshal upload report for %s started on %s\n\n" %
                   (target_dir.split('/')[-2],
                    datetime.datetime.now().strftime("%c")))
     pr = True
