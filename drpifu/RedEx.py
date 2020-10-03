@@ -328,6 +328,18 @@ if __name__ == "__main__":
                 home = os.environ['HOME']
                 if args.testing:
                     cmd = [os.path.join(home, "spy"),
+                           os.path.join(home, "sedmpy/fritz/fritz.py"), dd,
+                           "--reducedby", reducer, "--testing"]
+                else:
+                    cmd = [os.path.join(home, "spy"),
+                           os.path.join(home, "sedmpy/fritz/fritz.py"), dd,
+                           "--reducedby", reducer]
+                logging.info(" ".join(cmd))
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    logging.error("Error uploading spectra to fritz marshal")
+                if args.testing:
+                    cmd = [os.path.join(home, "spy"),
                            os.path.join(home, "sedmpy/growth/growth.py"), dd,
                            "--reducedby", reducer, "--testing"]
                 else:
@@ -337,7 +349,7 @@ if __name__ == "__main__":
                 logging.info(" ".join(cmd))
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
-                    logging.error("Error uploading spectra to marshal")
+                    logging.error("Error uploading spectra to growth marshal")
             # Get the resulting fits file
             fits_file = glob.glob(
                 os.path.join(rd, dd, "spec_auto_%s_*_%s.fits" %
