@@ -443,7 +443,8 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             try:
                 res = search_db.get_from_request(["marshal_id",
                                                   "object_id",
-                                                  "user_id"],
+                                                  "user_id",
+                                                  "external_id"],
                                                  {"id": request_id})[0]
             except IndexError:
                 print("Unable to retrieve ids from database")
@@ -451,6 +452,11 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             marshal_id = res[0]
             object_id = res[1]
             user_id = res[2]
+            external_id = res[3]
+            # is this a Growth object?
+            if external_id == 2:
+                print("Not a Growth object!")
+                return return_link, spec_ret, status_ret
             try:
                 res = search_db.get_from_object(["name"], {"id": object_id})[0]
             except IndexError:

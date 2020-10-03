@@ -414,24 +414,24 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
         # Mark as uploaded
         if stat:
             os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
-        # log upload
-        out.write("%s %s: " % (obs_id, objname))
-        # Was a spectrum uploaded?
-        if spec:
-            out.write("OK ")
-        else:
-            out.write("NO ")
-        # Was status updated?
-        if stat:
-            out.write("OK ")
-        else:
-            out.write("NO ")
-        if r:
-            print("URL: " + r)
-            out.write("%s\n" % r)
-        else:
-            print("URL: None")
-            out.write("None\n")
+            # log upload
+            out.write("%s %s: " % (obs_id, objname))
+            # Was a spectrum uploaded?
+            if spec:
+                out.write("OK ")
+            else:
+                out.write("NO ")
+            # Was status updated?
+            if stat:
+                out.write("OK ")
+            else:
+                out.write("NO ")
+            if r:
+                print("URL: " + r)
+                out.write("%s\n" % r)
+            else:
+                print("URL: None")
+                out.write("None\n")
 
     # Close log file
     out.close()
