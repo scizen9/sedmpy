@@ -365,8 +365,9 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
             # add all others
             files.append(fi)
 
-    started = os.path.exists(os.path.join(target_dir, "report_fritz.txt"))
-    out = open(target_dir + "report_ztf_fritz.txt", "a")
+    report_fname = "report_ztf_fritz.txt"
+    started = os.path.exists(os.path.join(target_dir, report_fname))
+    out = open(target_dir + report_fname, "a")
     if not started:
         out.write("\nZTF fritz marshal upload report for %s started on %s\n\n" %
                   (target_dir.split('/')[-2],
