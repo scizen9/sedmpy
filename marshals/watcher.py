@@ -45,10 +45,10 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
 
     # 4. Determine if a new request or if we need to update an old request
     if req_dict['status'] == 'delete':
-        delete_request_entry()
+        delete_request_entry(req_dict)
         create_request = False
     elif req_dict['status'] == 'edit':
-        delete_request_entry()
+        delete_request_entry(req_dict)
 
     # 4. Now check to see if we are adding it to the database
     if create_request:
