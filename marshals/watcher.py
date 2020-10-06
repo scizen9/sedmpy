@@ -43,6 +43,13 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
         else:
             print("Target passed checker")
 
+    # 4. Determine if a new request or if we need to update an old request
+    if req_dict['status'] == 'delete':
+        delete_request_entry(req_dict)
+        create_request = False
+    elif req_dict['status'] == 'edit':
+        delete_request_entry(req_dict)
+
     # 4. Now check to see if we are adding it to the database
     if create_request:
         ret = create_request_entry(req_dict)
@@ -51,6 +58,25 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
     if add2db:
         ret = add_request_to_db(req_dict)
         print(ret)
+
+
+def delete_request_entry(request_dict):
+    # a. start by trying to get the request id from the marshal id
+    sedm_requestid = sedmdb.get_from_request(values=['id'],
+                                             where_dict={'marshal_id': request_dict['requestid'],
+                                                         'external_id': 2})
+
+    if not sedm_requestid:
+        print("No request matching that id")
+    else:
+        for i in sedm_requestid:
+            try:
+                print(sedmdb.update_request({'id': i[0], 'status': 'CANCELED'}))
+                return
+            except Exception as e:
+                print(str(e))
+                return
+
 
 def add_request_to_db(request_dict):
     """
@@ -362,8 +388,9 @@ def get_exptime(obsfilter, mag):
 
 if __name__ == "__main__":
     request = "/home/rsw/PycharmProjects/sedmpy/growth/archived/test.json"
-    ret = process_new_request(request, isfile=True, check_rejection=True, add2db=True)
-    print(ret)
+    request_dict = interface.read_request(request)
+    #ret = process_new_request(request, isfile=True, check_rejection=True, add2db=True)
+    print(delete_request_entry(request_dict))
 
     """
     # 4. Check if we are adding it to the SEDm DB if not continue
