@@ -9,7 +9,7 @@ import os
 import web.model as model
 from werkzeug.datastructures import ImmutableMultiDict
 from bokeh.resources import INLINE
-
+from marshals import watcher
 resources = INLINE
 js_resources = resources.render_js()
 css_resources = resources.render_css()
@@ -255,8 +255,13 @@ def add_request():
     # Next add the origins url to determine where the request came from
     content['origins_url'] = origin_url
 
+    try:
+        watcher.process_new_request(content)
+    except Exception as e:
+        print(str(e))
+
     # Now write the request to file
-    output = open('fritz_request_%s.txt' %
+    output = open('new_request_%s.txt' %
                   datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
 
     data = json.dumps(content)
