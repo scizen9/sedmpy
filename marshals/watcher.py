@@ -3,6 +3,7 @@ import glob
 import os
 import time
 import datetime
+import json
 import db.SedmDb
 
 
@@ -10,7 +11,7 @@ sedmdb = db.SedmDb.SedmDB()
 
 
 def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
-                        check_rejection=False, archive=True,
+                        check_rejection=False, archive=True, create_request=True,
                         archive_dir='archived/', request_date=''):
     """
 
@@ -43,13 +44,43 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
             print("Target passed checker")
 
     # 4. Now check to see if we are adding it to the database
+    if create_request:
+        ret = create_request_entry(req_dict)
+        print(ret)
+
     if add2db:
         ret = add_request_to_db(req_dict)
         print(ret)
 
+def add_request_to_db(request_dict):
+    """
 
-def add_request_to_db(request, custom_dict=None,
-                      fill_by_custom_dict=False):
+    :param request_dict:
+    :return:
+    """
+
+    # Convert previous photmetry to json string
+    try:
+        request_dict['prior_photometry'] = json.dumps(request_dict['prior_photometry'])
+    except Exception as e:
+        print(str(e))
+        request_dict['prior_photometry'] = '{"error": "conversion error"}'
+
+    columns = ', '.join(str(x).replace('/', '_').lower() for x in request_dict.keys())
+    values = ', '.join("'" + str(x).replace('/', '_') + "'" for x in request_dict.values())
+
+
+    insert_statement = 'INSERT INTO marshal_requests (%s) VALUES (%s)' % (columns, values)
+    try:
+        ret = sedmdb.execute_sql(insert_statement)
+        return ret
+    except Exception as e:
+        print(str(e), "Unable to add request to database")
+
+
+def create_request_entry(request, custom_dict=None,
+                         fill_by_custom_dict=False,
+                         add_raw_to_db=True):
     """
 
     :param request:
@@ -114,11 +145,6 @@ def add_request_to_db(request, custom_dict=None,
             print("TARGET IN DB ALREADY")
             print(msg)
             object_id = msg.split()[-1]
-            #object_id = sedmdb.get_from_object(
-            #    values=['id'],
-            #    where_dict={'name': request['sourcename'].lower()})
-            #print(object_id, type(object_id))
-            #[0][0]
         priority = request['priority']
         print(priority)
 
@@ -131,13 +157,21 @@ def add_request_to_db(request, custom_dict=None,
         program_id = sedmdb.get_from_program(
             values=['id'], where_dict={'name': name})[0][0]
 
-        allocation_id = sedmdb.get_from_allocation(
-            values=['id'],
-            where_dict={'program_id': program_id, 'active': True})
+        try:
+            allocation_id = sedmdb.get_from_allocation(
+                values=['id'],
+                where_dict={'program_id': program_id, 'active': True})
+            print(len(allocation_id))
 
-        print(len(allocation_id))
+            print(allocation_id)
+            allocation_id = allocation_id[0][0]
+        except Exception as e:
+            print(str(e))
+            # TODO add an email alert indicating an unknown
+            # program has been added
+            allocation_id = 1
 
-        print(allocation_id)
+
 
     start_date = request['startdate']
     end_date = request['enddate']

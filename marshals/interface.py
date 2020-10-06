@@ -73,12 +73,17 @@ def update_status_request(status, request_id, marshal_name, save=False,
     if testing:
         print(status_payload)
     else:
-        ret = api("POST", "https://private.caltech.edu/api/facility",
+        ret = api("POST", params["marshals"][marshal_name]['status_url'],
                   data=status_payload).json()
         if 'success' in ret['status']:
             print('Status for request %d updated to %s' % (request_id, status))
         else:
             print('Status update failed:\n', ret)
+            if "message" in ret:
+                ret["iserror"] = ret['message']
+            else:
+                ret["iserror"] = "Unkown error when posting update"
+        return ret
 
 
 def read_request(request, isfile=True):
@@ -225,5 +230,5 @@ def checker(request, check_source=True, check_followup=True,
 
 if __name__ == "__main__":
 
-    update_status_request("ACCEPTED BUT NOT OBSERVING", 4, "fritz",
-                          output_file='test')
+    print(update_status_request("ACCEPTED BUT NOT OBSERVING", 4, "fritz",
+                          output_file='test'))
