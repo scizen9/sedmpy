@@ -172,6 +172,11 @@ def sedm_fix_header(fname):
         else:
             ff[0].header[k] = v
             nupkey += 1
+    # CTYPE2
+    if 'CTYPE2' in ff[0].header:
+        if 'DEC---TAN' in ff[0].header['CTYPE2']:
+            ff[0].header['CTYPE2'] = 'DEC--TAN'
+            nupkey += 1
     # RA rate
     if 'RA_RATE' not in ff[0].header:
         if 'RARATE' in ff[0].header:
