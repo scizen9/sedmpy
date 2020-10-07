@@ -430,7 +430,7 @@ def get_median_bkg(img):
     """
     hdu = fits.open(img)
     # header = hdu[0].header
-    bkg = np.median(hdu[0].data[hdu[0].data > 0])
+    bkg = np.nanmedian(hdu[0].data[hdu[0].data > 0])
     return bkg
 
 
@@ -1004,7 +1004,10 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     # Moving files to the target directory
     for image in slice_names:
         bkg = get_median_bkg(image)
-        fitsutils.update_par(image, "SKYBKG", bkg)
+        if np.isfinite(bkg):
+            fitsutils.update_par(image, "SKYBKG", bkg)
+        else:
+            fitsutils.update_par(image, "SKYBKG", 0.)
 
         # Get basic statistics for the image
         nsrc, fwhm, ellip, bkg = sextractor.get_image_pars(image)
