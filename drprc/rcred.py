@@ -915,11 +915,13 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     rawf = ccdproc.fits_ccddata_reader(filename=img, unit='adu')
     rawf.data = rawf.data.astype(np.float64)
     if 'fast' in speed:
+        logger.info("Using bias %s" % bias_fast)
         fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
         rawf.data -= fbias.data
         rawf.header['BIASFILE'] = (bias_fast, 'Master bias')
         rawf.header['RDNOISE'] = (20., 'Read noise in electrons')
     else:
+        logger.info("Using bias %s" % bias_slow)
         sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
         rawf.data -= sbias.data
         rawf.header['BIASFILE'] = (bias_slow, 'Master bias')
@@ -1001,7 +1003,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         slice_names[i] = deflatted
 
-    # Moving files to the target directory
+    # Get image statistics and insert in header
     for image in slice_names:
         bkg = get_median_bkg(image)
         if np.isfinite(bkg):
