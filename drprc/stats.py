@@ -18,9 +18,9 @@ except ImportError:
     import drprc.coordinates_conversor as cc
 import numpy as np
 try:
-    import sextractor
+    import rcsex as sextractor
 except ImportError:
-    import drprc.sextractor as sextractor
+    import drprc.rcsex as sextractor
 from astropy.io import fits as pf
 from matplotlib import pylab as plt
 try:

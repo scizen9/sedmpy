@@ -27,9 +27,9 @@ except ImportError:
     import drprc.fitsutils as fitsutils
 
 try:
-    import sextractor
+    import rcsex as sextractor
 except ImportError:
-    import drprc.sextractor as sextractor
+    import drprc.rcsex as sextractor
 
 from astropy.io import fits
 from astropy.wcs import WCS

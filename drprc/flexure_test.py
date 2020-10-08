@@ -7,9 +7,9 @@ Updated on Thu Feb  6 2020 by neill
 """
 
 try:
-    import sextractor
+    import rcsex as sextractor
 except ImportError:
-    import drprc.sextractor as sextractor
+    import drprc.rcsex as sextractor
 try:
     import fitsutils
 except ImportError:

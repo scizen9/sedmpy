@@ -12,9 +12,9 @@ except ImportError:
     import drprc.recenter_ifu as recenter_ifu
 import socket
 try:
-    import sextractor
+    import rcsex as sextractor
 except ImportError:
-    import drprc.sextractor as sextractor
+    import drprc.rcsex as sextractor
 import sys
 try:
     import sao
