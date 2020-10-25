@@ -20,7 +20,7 @@
         <div class="btn-group">
           <button class="tablinks" onclick="openStat(event, 'science');" id="defaultOpen">Science</button>
           <button class="tablinks" onclick="openStat(event, 'acquisition');">Acquisition</button>
-          <button class="tablinks" onclick="openStat(event, 'rc_standard');">RC Standard</button>
+
           <button class="tablinks" onclick="openStat(event, 'guider_movies');">Guider Movies</button>
           <button class="tablinks" onclick="openStat(event, 'guider_images');">Guider Images</button>
           <button class="tablinks" onclick="openStat(event, 'focus');">Focus</button>
@@ -35,9 +35,9 @@
     </div>
 
     <div id="opanel">
-        <div class="card-group">
+
             {{sedm_dict.data | safe}}
-        </div>
+
     </div>
 {% endblock %}
 
