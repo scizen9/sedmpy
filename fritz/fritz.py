@@ -13,18 +13,13 @@ except ImportError:
     from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
 
 # Path constants
-add_target_url = 'http://private.caltech.edu/api/'
-
 pharos_spec_dir = '/scr2/sedmdrp/redux/'
 pharos_phot_dir = '/scr2/sedmrp/redux/phot/'
-
-fritz_base_url = 'http://private.caltech.edu/'
-fritz_inst_url = fritz_base_url + 'UNKNOWN'     # change request params?
-fritz_stat_url = fritz_base_url + 'followup_request/request_id'
+# URL constants
+fritz_base_url = 'http://fritz.science/'
 fritz_spec_url = fritz_base_url + 'api/spectrum/ascii'
 fritz_phot_url = fritz_base_url + 'api/photometry'
 fritz_view_source_url = fritz_base_url + 'source'
-fritz_token = 'cf127f93-19ef-4ba2-a692-b754c16412b8'
 
 default_id = 37
 instrument_id = 2
@@ -145,8 +140,7 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
 
 
 def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
-                   observer='SEDmRobot', check_quality=True, min_quality=2,
-                   testing=False):
+                   check_quality=True, min_quality=2, testing=False):
     """
     Add spectra to the fritz marshal.  If the fill_by_file is selected then
     most of the keywords will be filled from the spectra file itself.  If
@@ -156,7 +150,6 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
     :param spec_file:
     :param inst_id:
     :param request_id:
-    :param observer:
     :param sourceid:
     :param check_quality:
     :param min_quality:
