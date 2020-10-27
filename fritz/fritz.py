@@ -16,7 +16,7 @@ except ImportError:
 pharos_spec_dir = '/scr2/sedmdrp/redux/'
 pharos_phot_dir = '/scr2/sedmrp/redux/phot/'
 # URL constants
-fritz_base_url = 'http://fritz.science/'
+fritz_base_url = 'https://fritz.science/'
 fritz_spec_url = fritz_base_url + 'api/spectrum/ascii'
 fritz_phot_url = fritz_base_url + 'api/photometry'
 fritz_view_source_url = fritz_base_url + 'source'
