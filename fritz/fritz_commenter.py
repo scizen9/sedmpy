@@ -8,6 +8,7 @@ from marshals.interface import api
 
 fritz_base_url = 'https://fritz.science/api/'
 fritz_comment_url = fritz_base_url + 'comment'
+fritz_annotation_url = fritz_base_url + 'annotation'
 
 
 def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
@@ -52,31 +53,33 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
             return False
 
 
-def add_spec_autoannot(obj_id, text, spec_id=None, testing=False):
+def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
     """
     adds an autoannotation without attachment to a particular SEDM spectrum
     on the view_spec page, which will also appear elsewhere.
 
     obj_id: 'ZTF18aaaaaa', for example
-    text: <str>
+    andic: <dict> of annotations
     spec_id: <int>
+    origin: <str> giving origin of annotations
     testing: <bool> are we testing only?
 
     return: True if success, False if not
     """
 
     ddict = {'obj_id': obj_id,  # 'commentable_id': spec_id,
-             'text': text}
+             'origin': origin,
+             'data': andic}
 
     if testing:
         print("TESTING add_spec_autoannot(): no data sent to marshal")
         print(ddict)
         return True
     else:
-        r = api("POST", fritz_comment_url, data=ddict).json()
+        r = api("POST", fritz_annotation_url, data=ddict).json()
 
         if 'success' in r['status']:
-            print('{}: {} posted'.format(obj_id, text))
+            print('{}: {} posted'.format(obj_id, origin))
             return True
         else:
             print('error submitting comment')
@@ -146,13 +149,15 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
         header['snidmatchmatch'] = '-'.join([header['snidmatchtype'],
                                              header['snidmatchsubtype']])
 
-    dtypes = {'match': 'STRING', 'rlap': 'FLOAT',
-              'redshift': 'FLOAT', 'age': 'FLOAT'}
-    for key in dtypes:
-        if not add_spec_autoannot(
-                object_id, '[AUTO_SNID_' + key + '] ' +
-                           header['snidmatch' + key], testing=testing):
-            return False
+    # construct annotations dictionary
+    andic = {'match': 'None', 'rlap': 0., 'redshift': 0., 'age': 0.}
+    for key in andic:
+        andic[key] = header['snidmatch' + key]
+    # construct origin
+    origin = 'sedm:spc%d' % spec_id
+
+    if not add_spec_autoannot(object_id, andic, origin=origin, testing=testing):
+        return False
 
     if pr_posted:
         return True  # we already have an attachment comment so don't overwrite
