@@ -456,7 +456,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             # is this a Growth object?
             if external_id == 2:
                 print("Not a Growth object!")
-                return return_link, spec_ret, status_ret
+                return return_link, spec_ret, phot_ret, status_ret
             try:
                 res = search_db.get_from_object(["name"], {"id": object_id})[0]
             except IndexError:
