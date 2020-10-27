@@ -293,10 +293,15 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 spec_stat = 'Failed ' + ts_str
             else:
                 spec_stat = 'Complete ' + ts_str
-                ret_data = spec_ret['data']
-                spec_id = ret_data['id']
-                annots_posted = add_annots(spectra_file, object_id=object_name,
-                                           spec_id=spec_id, testing=testing)
+                try:
+                    ret_data = spec_ret['data']
+                    spec_id = ret_data['id']
+                    annots_posted = add_annots(spectra_file,
+                                               object_id=object_name,
+                                               spec_id=spec_id, testing=testing)
+                except KeyError:
+                    annots_posted = False
+                    print("ERROR - unable to upload spectrum")
                 if annots_posted:
                     print("Annotations successfully posted")
                 else:
