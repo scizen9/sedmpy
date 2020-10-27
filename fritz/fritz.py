@@ -193,6 +193,8 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
     if testing:
         print(submission_dict)
         ret = {"message": "string", "status": "success", "data": {"id": -1}}
+        print(ret)
+        return ret
     else:
         # post the spectrum
         ret = api("POST", fritz_spec_url, data=submission_dict)
