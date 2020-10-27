@@ -117,7 +117,8 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
         pysedm_report = glob(fname.replace('spec',
                                            'pysedm_report').replace('.txt',
                                                                     '.png'))[0]
-        pr_posted = add_spec_attachment(object_id, 'pysedm_report',
+        pr_posted = add_spec_attachment(object_id,
+                                        'pysedm_report:spc%d' % spec_id,
                                         pysedm_report, spec_id=spec_id,
                                         testing=testing)
     except IndexError:
