@@ -27,6 +27,7 @@ else
         update) shift 1; python $SEDMPATH/drpifu/AutoReduce.py --update "$@";;
         finder) shift 1; python $SEDMPATH/drpifu/acq_finder.py --imfile "$@";;
         growth) shift 1; python $SEDMPATH/growth/growth.py $indate --data_file "$@";;
+        fritz) shift 1; python $SEDMPATH/fritz/fritz.py $indate --data_file "$@";;
         effplot) python $SEDMPATH/drpifu/EffTrend.py;;
         *) python -u "$@";;
     esac
