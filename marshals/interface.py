@@ -2,6 +2,10 @@ import os
 import json
 import glob
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+DEFAULT_TIMEOUT = 5  # seconds
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
@@ -12,9 +16,37 @@ with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
 token = params['marshals']['fritz']['token']
 
 
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
+session = requests.Session()
+session_headers = {'Authorization': f"token {token}"}
+retries = Retry(
+    total=5,
+    backoff_factor=2,
+    status_forcelist=[405, 429, 500, 502, 503, 504],
+    method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH"]
+)
+adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
+session.mount("https://", adapter)
+session.mount("http://", adapter)
+
+
 def api(method, endpoint, data=None):
     headers = {'Authorization': 'token {}'.format(token)}
-    response = requests.request(method, endpoint, json=data, headers=headers)
+    response = session.request(method, endpoint, json=data, headers=headers)
     print('HTTP code: {}, {}'.format(response.status_code, response.reason))
     if response.status_code in (200, 400):
         print('JSON response: {}'.format(response.json()))
