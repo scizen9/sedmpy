@@ -32,7 +32,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 session = requests.Session()
-session_headers = {'Authorization': f"token {token}"}
+session_headers = {'Authorization': 'token {}'.format(token)}
 retries = Retry(
     total=5,
     backoff_factor=2,
