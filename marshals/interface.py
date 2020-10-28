@@ -13,7 +13,7 @@ with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
                        'marshals.json')) as data_file:
     params = json.load(data_file)
 
-token = params['marshals']['fritz']['token']
+token = params['marshals']['fritz']['status_token']
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -49,7 +49,8 @@ def api(method, endpoint, data=None):
     response = session.request(method, endpoint, json=data, headers=headers)
     print('HTTP code: {}, {}'.format(response.status_code, response.reason))
     if response.status_code in (200, 400):
-        print('JSON response: {}'.format(response.json()))
+        print(response.text)
+        #print('JSON response: {}'.format(response.json()))
 
     return response
 
@@ -130,6 +131,7 @@ def read_request(request, isfile=True):
 
     # 1. If isfile is true then check for the file and assume it is
     # in json format
+    print(type(request))
     if isfile and os.path.exists(request):
         try:
             with open(request) as f:
@@ -261,6 +263,5 @@ def checker(request, check_source=True, check_followup=True,
 
 
 if __name__ == "__main__":
-
-    print(update_status_request("ACCEPTED BUT NOT OBSERVING", 4, "fritz",
-                          output_file='test'))
+    #print(api("GET", "https://fritz.science/api/allocation"))
+    print(update_status_request("ACCEPTED", 19, "fritz"))

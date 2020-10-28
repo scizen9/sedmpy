@@ -238,7 +238,7 @@ def add_growth():
 
 @app.route('/add_request', methods=['GET', 'POST'])
 def add_request():
-    origin_url = request.url
+    origin_url = request.environ['REMOTE_ADDR']
 
     # First check for the type of request
     if request.data:
@@ -254,9 +254,9 @@ def add_request():
 
     # Next add the origins url to determine where the request came from
     content['origins_url'] = origin_url
-
+    print(content)
     try:
-        watcher.process_new_request(content)
+        watcher.process_new_request(content, isfile=False)
     except Exception as e:
         print(str(e))
 

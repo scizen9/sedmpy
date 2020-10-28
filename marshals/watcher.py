@@ -12,7 +12,7 @@ sedmdb = db.SedmDb.SedmDB()
 
 def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
                         check_rejection=False, archive=True, create_request=True,
-                        archive_dir='archived/', request_date=''):
+                        update_source=True, archive_dir='archived/', request_date=''):
     """
 
     :param add2db:
@@ -58,6 +58,13 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
     if add2db:
         ret = add_request_to_db(req_dict)
         print(ret)
+
+    #if update_source and create_request:
+        #try:
+        #    interface.update_status_request("ACCEPTED", req_dict['requestid'], "fritz")
+        #except Exception as e:
+        #    print(str(e))
+        #    pass
 
 
 def delete_request_entry(request_dict):
@@ -175,8 +182,8 @@ def create_request_entry(request, custom_dict=None,
         print(priority)
 
         # TODO: Replace this and only use the programname to add request
-        if request['programname'] == 'ZTF Science Validation':
-            name = 'GROWTH classification program'
+        if request['programname'] == 'Redshift Completeness Factor':
+            name = 'Bright Cosmology Survey'
         else:
             name = 'ZTF commissioning'
 
@@ -224,7 +231,7 @@ def create_request_entry(request, custom_dict=None,
         'obs_seq': obs_seq,
         'inidate': start_date,
         'enddate': end_date,
-        'external_id': external_id,
+        'external_id': 2,
         'marshal_id': int(request['requestid'])
     }
     print(request_dict)
