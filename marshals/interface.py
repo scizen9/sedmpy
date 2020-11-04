@@ -13,7 +13,7 @@ with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
                        'marshals.json')) as data_file:
     params = json.load(data_file)
 
-token = params['marshals']['fritz']['status_token']
+token = params['marshals']['fritz']['token']
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
