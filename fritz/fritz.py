@@ -184,10 +184,9 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
     submission_dict.update({'filename': spec_file,
                             'obj_id': sourceid,
                             'instrument_id': inst_id,
-                            # 'followup_request_id': request_id,
+                            'followup_request_id': request_id,
                             # 'observer': observer.rstrip().lstrip(),
-                            'ascii': contents,
-                            'group_ids': [1]
+                            'ascii': contents
                             })
     # Are we just testing?
     if testing:
