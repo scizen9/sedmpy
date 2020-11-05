@@ -329,13 +329,13 @@ def get_exptime(obsfilter, mag):
     mag = float(mag)
     print("Finding exptime for filter:%s at magnitude:%s" % (obsfilter, mag))
     if mag > 18:
-        ifu_exptime = 3600
+        ifu_exptime = 2250
         r_exptime = 180
         g_exptime = 180
         i_exptime = 180
         u_exptime = 300
     elif 15 > mag < 18:
-        ifu_exptime = 2700
+        ifu_exptime = 2000
         r_exptime = 120
         g_exptime = 120
         i_exptime = 120
