@@ -31,7 +31,7 @@ for d in dlist:
     ddate_int = int(ddate)
 
     # Recent data
-    if recent and (ddate_int < 2019010):
+    if recent and (ddate_int < 20190101):
         continue
 
     print(d)
