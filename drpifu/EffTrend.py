@@ -14,6 +14,8 @@ sdir = '/scr2/sedmdrp/redux'
 fspec = os.path.join(sdir, '20??????')
 dlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])[1:]
 
+recent = False  # do the whole data set
+
 area = 18000.0  # P60 area in cm^2
 refl = 0.82     # P60 reflectance fraction
 da = []
@@ -24,9 +26,15 @@ ef4 = []
 ef5 = []
 efs = []
 for d in dlist:
-    print(d)
     ddate = d.split('/')[-1]
     dtime = Time(ddate[0:4]+'-'+ddate[4:6]+'-'+ddate[6:])
+    ddate_int = int(ddate)
+
+    # Recent data
+    if recent and (ddate_int < 2019010):
+        continue
+
+    print(d)
 
     fspec = os.path.join(d, 'spec_aperture_*_STD-*_ea.fits')
     slist = glob.glob(fspec)
@@ -124,8 +132,12 @@ pl.title('Efficiency Trend')
 pl.legend(loc=2)
 pl.grid(True)
 pl.ylim(-1, 45)
-ofil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.pdf')
-tfil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.txt')
+if recent:
+    ofil = os.path.join(sdir, 'SEDM_eff_recent_pysedm.pdf')
+    tfil = os.path.join(sdir, 'SEDM_eff_recent_pysedm.txt')
+else:
+    ofil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.pdf')
+    tfil = os.path.join(sdir, 'SEDM_eff_trend_pysedm.txt')
 pl.savefig(ofil)
 with open(tfil, 'w') as dfil:
     dat_writer = csv.writer(dfil, delimiter=" ", quoting=csv.QUOTE_MINIMAL)
