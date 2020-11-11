@@ -15,6 +15,7 @@ fspec = os.path.join(sdir, '20??????')
 dlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])[1:]
 
 recent = False  # do the whole data set
+recent_date = 20180101
 
 area = 18000.0  # P60 area in cm^2
 refl = 0.82     # P60 reflectance fraction
@@ -31,7 +32,7 @@ for d in dlist:
     ddate_int = int(ddate)
 
     # Recent data
-    if recent and (ddate_int < 20190101):
+    if recent and (ddate_int < recent_date):
         continue
 
     print(d)
