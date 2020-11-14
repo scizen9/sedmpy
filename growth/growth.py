@@ -422,6 +422,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
     :return: 
     """
 
+    is_growth = False
     marshal_id = None
     object_name = None
     username = None
@@ -456,19 +457,21 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             # is this a Growth object?
             if external_id == 2:
                 print("Not a Growth object!")
-                return return_link, spec_ret, phot_ret, status_ret
+                return return_link, spec_ret, phot_ret, status_ret, is_growth
+            else:
+                is_growth = True
             try:
                 res = search_db.get_from_object(["name"], {"id": object_id})[0]
             except IndexError:
                 print("Unable to retrieve object_name from database")
-                return return_link, spec_ret, phot_ret, status_ret
+                return return_link, spec_ret, phot_ret, status_ret, is_growth
             object_name = res[0]
             try:
                 res = search_db.get_from_users(["name", "email"],
                                                {"id": user_id})[0]
             except IndexError:
                 print("Unable to retrieve username, email from database")
-                return return_link, spec_ret, phot_ret, status_ret
+                return return_link, spec_ret, phot_ret, status_ret, is_growth
             username = res[0]
             email = res[1]
         else:
@@ -591,7 +594,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
         print("Send to %s at %s\nRequest status = %s\n%s" %
               (username, email, status, return_link))
 
-    return return_link, spec_ret, phot_ret, status_ret
+    return return_link, spec_ret, phot_ret, status_ret, is_growth
 
           
 def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
@@ -679,18 +682,19 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
             if upfil not in fi:
                 continue
         # Upload
-        r, spec, phot, stat = update_target_by_object(objname,
-                                                      add_status=True,
-                                                      status='Completed',
-                                                      add_spectra=True,
-                                                      spectra_file=fi,
-                                                      request_id=req_id,
-                                                      search_db=dbase,
-                                                      pull_requests=pr,
-                                                      reducedby=reducedby,
-                                                      testing=testing)
+        r, spec, phot, stat, own = update_target_by_object(objname,
+                                                           add_status=True,
+                                                           status='Completed',
+                                                           add_spectra=True,
+                                                           spectra_file=fi,
+                                                           request_id=req_id,
+                                                           search_db=dbase,
+                                                           pull_requests=pr,
+                                                           reducedby=reducedby,
+                                                           testing=testing)
         # Mark as uploaded
-        os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
+        if own:
+            os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # Only need to pull requests the first time
         pr = False
         # log upload
