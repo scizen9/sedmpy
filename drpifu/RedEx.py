@@ -126,7 +126,15 @@ if __name__ == "__main__":
             if args.local:
                 pars = ["pysedm_report.py", dd, "--contains", ob_id]
             else:
-                # Upload spectrum to marshal
+                # Upload spectrum to fritz
+                cmd = ("make", "fritzupload")
+                retcode = subprocess.call(cmd)
+                if retcode != 0:
+                    logging.error("Error uploading spectrum to fritz marshal")
+                else:
+                    # e-mail user that recovery was made
+                    ar.email_user(fits_file, dd, obj)
+                # Now try growth
                 cmd = ("make", "ztfupload")
                 retcode = subprocess.call(cmd)
                 if retcode != 0:
