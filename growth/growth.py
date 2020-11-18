@@ -449,7 +449,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
                                                  {"id": request_id})[0]
             except IndexError:
                 print("Unable to retrieve ids from database")
-                return return_link, spec_ret, phot_ret, status_ret
+                return return_link, spec_ret, phot_ret, status_ret, is_growth
             marshal_id = res[0]
             object_id = res[1]
             user_id = res[2]
