@@ -87,6 +87,56 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
             return False
 
 
+def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
+                                   testing=False):
+    """
+    if z < 0.3 and rlap > 5.0
+        adds autoannotations with SNID rlap, z, type, etc
+        adds a comment with the SNID plot attached
+
+    fname: '*ZTF18aaaaaaa.txt' that has a bunch of
+            "# SNIDMATCH[something]: [val]" in the header
+    cred: ('username', 'password')
+    reducedby: (str)
+    testing: (bool)
+
+    returns: True if all four comments/attachments works, False
+            (and it'll exit early) otherwise
+    """
+
+    file_ext = fname.split('.')[-1]
+    assert file_ext == 'txt' or file_ext == 'ascii'
+
+    with open(fname) as f:
+        header = {line.split(':', 1)[0][1:].strip().lower():
+                  line.split(':', 1)[-1].strip()
+                  for line in f if line[0] == '#'}
+
+    # SNIascore RESULTS
+    if 'SNIASCORE' not in header:
+        print(fname, "never run through SNIascore?")
+        return False
+
+    if header['SNIASCORE'] < 0:
+        print('no score')
+        return False
+
+    # construct annotations dictionary
+    if header['SNIASCORE'] >= 0.9:
+        andic = {'SNIascore': header['SNIASCORE'],
+                 'SNIascore_err': header['SNIASCORE_ERR'],
+                 'SNIa_z': header['SNIASCORE_Z'],
+                 'SNIa_z_err': header['SNIASCORE_ZERR']}
+    else:
+        andic = {
+            'SNIascore': header['SNIASCORE'],
+            'SNIascore_err': header['SNIASCORE_ERR']}
+    # construct origin
+    origin = 'SNIascore:spc%d' % spec_id
+
+    return add_spec_autoannot(object_id, andic, origin=origin, testing=testing)
+
+
 def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
                               testing=False):
     """

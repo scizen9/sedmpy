@@ -11,6 +11,10 @@ try:
     from fritz_commenter import add_SNID_pysedm_autoannot as add_annots
 except ImportError:
     from fritz.fritz_commenter import add_SNID_pysedm_autoannot as add_annots
+try:
+    from fritz_commenter import add_SNIascore_pysedm_autoannot as add_ia_annots
+except ImportError:
+    from fritz.fritz_commenter import add_SNIascore_pysedm_autoannot as add_ia_annots
 
 # Path constants
 pharos_spec_dir = '/scr2/sedmdrp/redux/'
@@ -302,11 +306,26 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                                                spec_id=spec_id, testing=testing)
                 except KeyError:
                     annots_posted = False
-                    print("ERROR - unable to upload spectrum")
+                    print("ERROR - unable to upload SNID annotations")
                 if annots_posted:
-                    print("Annotations successfully posted")
+                    print("SNID annotations successfully posted")
                 else:
-                    print("Warning: Annotations encountered a problem")
+                    print("Warning: SNID annotations encountered a problem")
+                try:
+                    ret_data = spec_ret['data']
+                    spec_id = ret_data['id']
+                    ia_annots_posted = add_ia_annots(spectra_file,
+                                                     object_id=object_name,
+                                                     spec_id=spec_id,
+                                                     testing=testing)
+                except KeyError:
+                    ia_annots_posted = False
+                    print("ERROR - unable to upload SNIascore annotations")
+                if ia_annots_posted:
+                    print("SNIascore annotations successfully posted")
+                else:
+                    print("Warning: SNIascore annotations encountered a "
+                          "problem")
 
         if add_status:
             status_ret = update_status_request(spec_stat, marshal_id, 'fritz',
