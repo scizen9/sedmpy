@@ -117,12 +117,12 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
         print(fname, "never run through SNIascore?")
         return False
 
-    if header['SNIASCORE'] < 0:
+    if float(header['SNIASCORE']) < 0:
         print('no score')
         return False
 
     # construct annotations dictionary
-    if header['SNIASCORE'] >= 0.9:
+    if float(header['SNIASCORE']) >= 0.9:
         andic = {'SNIascore': header['SNIASCORE'],
                  'SNIascore_err': header['SNIASCORE_ERR'],
                  'SNIa_z': header['SNIASCORE_Z'],
