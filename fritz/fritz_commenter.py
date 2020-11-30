@@ -108,7 +108,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     assert file_ext == 'txt' or file_ext == 'ascii'
 
     with open(fname) as f:
-        header = {line.split(':', 1)[0][1:].strip().lower():
+        header = {line.split(':', 1)[0][1:].strip():
                   line.split(':', 1)[-1].strip()
                   for line in f if line[0] == '#'}
 
