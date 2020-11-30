@@ -10,6 +10,7 @@ import os
 import argparse
 import re
 import drpifu.RunSnid as RunSnid
+import drpifu.RunSNIascore as RunSNIascore
 
 
 def classify(spec_dir='./', overwrite=False):
@@ -71,37 +72,53 @@ def classify(spec_dir='./', overwrite=False):
             else:
                 dec_rate = 0.
 
-            # If quality is good, check for previous classification
-            if q < 3 or q == 5:
-                clas = [li for li in lines if "SNID" in li]
-                # If the file has been classified, move to the next
-                if len(clas) > 0 and not overwrite:
-                    print("already classified")
-                    continue
-            else:
-                print("bad quality")
-                continue
-
             # non-sidereal, then skip
             if ra_rate != 0. or dec_rate != 0.:
                 print("non-sidereal")
                 continue
-            
-        # If we are here, we run the classification with snid
-        specfl = fl.split('/')[-1]
-        good = RunSnid.run_snid(spec_file=specfl, overwrite=overwrite)
-        # If we actually ran, record the results
-        if good:
-            res = specfl + " " + RunSnid.record_snid(spec_file=specfl)
-            summary.append(res)
+
+            # If quality is good, check for previous classification
+            if q < 3 or q == 5:
+                # Check for SNID first
+                clas = [li for li in lines if "SNID" in li]
+                # If the file has been classified by SNID, move to the next
+                if len(clas) > 0 and not overwrite:
+                    print("already classified by SNID")
+                else:
+                    # If we are here, we run the classification with SNID
+                    specfl = fl.split('/')[-1]
+                    good = RunSnid.run_snid(spec_file=specfl,
+                                            overwrite=overwrite)
+                    # If we actually ran, record the results
+                    if good:
+                        res = specfl + " " + RunSnid.record_snid(
+                            spec_file=specfl)
+                        summary.append(res)
+                # Check for SNIascore
+                scor = [li for li in lines if "SNIASC" in li]
+                if len(scor) > 0 and not overwrite:
+                    print("already run through SNIascore")
+                else:
+                    # If we are here, we run SNIascore
+                    specfl = fl.split('/')[-1]
+                    good = RunSNIascore.run_sniascore(spec_file=specfl,
+                                                      overwrite=overwrite)
+                    # If we actually ran, record the results
+                    if good:
+                        res = specfl + " " + RunSNIascore.record_sniascore(
+                            spec_file=specfl)
+                        summary.append(res)
+            else:
+                print("bad quality")
+                continue
+
     # END loop over each file matching *_SEDM.txt
     for res in summary:
         print(res)
 
     
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=
-        """
+    parser = argparse.ArgumentParser(description="""
 
         Classifies the output ascii spectra
 
