@@ -144,7 +144,8 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
 
 
 def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
-                   check_quality=True, min_quality=2, testing=False):
+                   check_quality=True, min_quality=2, testing=False,
+                   group_id=None):
     """
     Add spectra to the fritz marshal.  If the fill_by_file is selected then
     most of the keywords will be filled from the spectra file itself.  If
@@ -158,6 +159,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
     :param check_quality:
     :param min_quality:
     :param testing:
+    :param group_id:
 
     :return: 
     """
@@ -192,16 +194,16 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
                             # 'observer': observer.rstrip().lstrip(),
                             'ascii': contents
                             })
+    if group_id is not None:
+        submission_dict.update({'group_ids': group_id})
     # Are we just testing?
     if testing:
         print(submission_dict)
         ret = {"message": "string", "status": "success", "data": {"id": -1}}
-        print(ret)
         return ret
     else:
         # post the spectrum
         ret = api("POST", fritz_spec_url, data=submission_dict)
-    print(ret)
 
     return ret.json()
 
@@ -232,6 +234,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
     """
 
     marshal_id = None
+    group_id = None
     object_name = None
     username = None
     email = None
@@ -249,7 +252,8 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
             res = search_db.get_from_request(["marshal_id",
                                               "object_id",
                                               "user_id",
-                                              "external_id"],
+                                              "external_id",
+                                              "shareid"],
                                              {"id": request_id})[0]
         except IndexError:
             print("Unable to retrieve ids from database")
@@ -258,16 +262,24 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         object_id = res[1]
         user_id = res[2]
         external_id = res[3]
+        share_id = res[4]
         # is this a Fritz object?
         if external_id != 2:
             print("Not a Fritz object!")
             return return_link, spec_ret, status_ret
+        # set group id
+        if share_id == 2:
+            group_id = 209
+        else:
+            group_id = None
+        # get source name
         try:
             res = search_db.get_from_object(["name"], {"id": object_id})[0]
         except IndexError:
             print("Unable to retrieve object_name from database")
             return return_link, spec_ret, status_ret
         object_name = res[0]
+        # get user name and email
         try:
             res = search_db.get_from_users(["name", "email"],
                                            {"id": user_id})[0]
@@ -291,9 +303,9 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                                                  now.minute,
                                                  now.second)
         if add_spectra:
-
             spec_ret = upload_spectra(spectra_file, request_id=marshal_id,
-                                      sourceid=object_name, testing=testing)
+                                      sourceid=object_name, testing=testing,
+                                      group_id=group_id)
             if not spec_ret:
                 spec_stat = 'Failed ' + ts_str
             else:
