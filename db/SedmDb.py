@@ -1663,8 +1663,10 @@ class SedmDB:
                 'sampletolerance' (float),
                 'filters' (str),
                 'nexposures' (str),
-                'obs_seq' (str)
+                'obs_seq' (str),
                 'status' (str),
+                'external_id' (int),
+                'shareid' (int),
                 'creationdate' ('year-month-day'),
                 'lastmodified' ('year-month-day'),
                 'max_fwhm' (float),
@@ -1683,7 +1685,7 @@ class SedmDB:
             (-1, "ERROR...") if there was an issue
         """
         allowed_params = {'id': int, 'object_id': int, 'user_id': int, 'allocation_id': int, 'exptime': str,
-                          'status': str, 'external_id': int,
+                          'status': str, 'external_id': int, 'shareid': int,
                           'priority': float, 'inidate': 'date', 'enddate': 'date', 'marshal_id': int,
                           'maxairmass': float, 'cadence': float, 'phasesamples': float, 'sampletolerance': float,
                           'filters': str, 'nexposures': str, 'obs_seq': str, 'creationdate': 'date',
