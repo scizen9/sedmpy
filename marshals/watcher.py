@@ -10,7 +10,7 @@ import db.SedmDb
 sedmdb = db.SedmDb.SedmDB()
 
 
-def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
+def process_new_request(request, isfile=True, status='ACCEPTED', add2db=True,
                         check_rejection=False, archive=True, create_request=True,
                         update_source=True, archive_dir='archived/', request_date=''):
     """
@@ -50,11 +50,12 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=False,
     elif req_dict['status'] == 'edit':
         delete_request_entry(req_dict)
 
-    # 4. Now check to see if we are adding it to the database
+    # 4. Now check to see if we are creating a request entry
     if create_request:
         ret = create_request_entry(req_dict)
         print(ret)
 
+    # 5. Add the raw request to database
     if add2db:
         ret = add_request_to_db(req_dict)
         print(ret)
@@ -148,6 +149,7 @@ def create_request_entry(request, custom_dict=None,
 
     # 1. If we are filling the request by custom dict then we don't need to
     # look up the info.
+    shareid = 0
     if fill_by_custom_dict:
         user_id = custom_dict['user_id']
         object_id = custom_dict['object_id']
@@ -184,8 +186,87 @@ def create_request_entry(request, custom_dict=None,
         # TODO: Replace this and only use the programname to add request
         if request['programname'] == 'Redshift Completeness Factor':
             name = 'Bright Cosmology Survey'
+            shareid = 2
+        elif request['programname'] == 'Cosmology':
+            name = 'Bright Cosmology Survey'
+        elif request['programname'] == 'Transients in Elliptical Galaxies':
+            name = 'Transients in elliptical hosts'
+            shareid = 2
+        elif request['programname'] == 'Caltech Transients in Elliptical Galaxies':
+            name = 'Transients in elliptical hosts'
+            shareid = 3
+        elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
+            name = 'ToO GRB+GW'
+            shareid = 2
+        elif request['programname'] == 'Electromagnetic Counterparts to Neutrinos':
+            name = 'ToO neutrinos'
+            shareid = 2
+        elif request['programname'] == 'Infant Supernovae':
+            name = 'Infant SNe'
+            shareid = 2
+        elif request['programname'] == 'Nuclear Transients':
+            name = 'Tidal Disruption Events'
+            shareid = 2
+        elif request['programname'] == 'Stripped Envelope Supernovae':
+            name = 'Stripped Envelope SNe'
+            shareid = 2
+        elif request['programname'] == 'Census of the Local Universe':
+            name = 'Redshift Completeness Fraction'
+            shareid = 2
+        elif request['programname'] == 'Young Stars':
+            name = 'Caltech YSO'
+            shareid = 2
+        elif request['programname'] == 'Superluminous Supernovae II':
+            name = 'Caltech SLSN'
+            shareid = 2
+        elif request['programname'] == 'Variable Stars':
+            name = 'Variable Stars'
+            shareid = 2
+        elif request['programname'] == 'Cataclysmic Variables':
+            name = 'Variable Stars'
+            shareid = 2
+        elif request['programname'] == 'SN1991T Interaction':
+            name = 'Director Discretionary Time'
+            shareid = 2
+        elif request['programname'] == 'Caltech MSIP targets':
+            name = 'Caltech MSIP targets'
+            shareid = 2
+        elif request['programname'] == 'Orphan Afterglows Caltech':
+            name = 'Caltech MSIP targets'
+            shareid = 2
+        elif request['programname'] == 'Red Transients':
+            name = 'Caltech MSIP targets'
+            shareid = 2
+        elif request['programname'] == 'Palomar Gattini-IR':
+            name = 'Director Discretionary Time'
+            shareid = 3
+        elif request['programname'] == 'Palomar Gattini-IR Variables':
+            name = 'Director Discretionary Time'
+            shareid = 3
+        elif request['programname'] == 'ZTFBH Nuclear':
+            name = 'Tidal Disruption Events'
+            shareid = 2
+        elif request['programname'] == 'ZUDS and CLU':
+            name = 'Redshift Completeness Fraction'
+            shareid = 2
+        elif request['programname'] == 'Type IIn Supernovae':
+            name = 'Probing the light curves of of ZTF CC (Type IIn) supernovae'
+            shareid = 2
+        elif request['programname'] == 'Fast Transients':
+            name = 'The First Optically Selected Population of Relativistic Afterglows'
+            shareid = 2
+        elif request['programname'] == 'Rapidly Evolving Transients':
+            name = 'The First Optically Selected Population of Relativistic Afterglows'
+            shareid = 2
+        elif request['programname'] == 'X-ray Counterparts':
+            name = 'X-Ray Counterparts'
+            shareid = 2
         else:
             name = 'ZTF commissioning'
+            shareid = 0
+
+
+
 
         program_id = sedmdb.get_from_program(
             values=['id'], where_dict={'name': name})[0][0]
@@ -232,6 +313,7 @@ def create_request_entry(request, custom_dict=None,
         'inidate': start_date,
         'enddate': end_date,
         'external_id': 2,
+        'shareid': shareid,
         'marshal_id': int(request['requestid'])
     }
     print(request_dict)
