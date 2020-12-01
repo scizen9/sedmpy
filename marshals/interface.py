@@ -264,4 +264,6 @@ def checker(request, check_source=True, check_followup=True,
 
 if __name__ == "__main__":
     #print(api("GET", "https://fritz.science/api/allocation"))
-    print(update_status_request("ACCEPTED", 19, "fritz"))
+    #print(update_status_request("ACCEPTED", 19, "fritz"))
+    print(api("GET", "https://fritz.science/api/groups"))
+
