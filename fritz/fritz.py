@@ -195,7 +195,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
                             'ascii': contents
                             })
     if group_id is not None:
-        submission_dict.update({'group_ids': group_id})
+        submission_dict.update({'group_ids': [group_id]})
     # Are we just testing?
     if testing:
         print(submission_dict)
