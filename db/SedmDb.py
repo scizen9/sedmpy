@@ -259,15 +259,17 @@ class SedmDB:
                 'password' (str)
 
         Returns:
-            list of tuples containing the values for each user matching the criteria
+            list of tuples with the values for each user matching the criteria
             
             empty list if no users match ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'username': str, 'name': str, 'email': str, 'password': str}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'users')
-        print(sql)
+        allowed_params = {'id': int, 'username': str, 'name': str, 'email': str,
+                          'password': str}
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'users')
+        # print(sql)
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
         try:
