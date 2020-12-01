@@ -693,7 +693,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
                                                            reducedby=reducedby,
                                                            testing=testing)
         # Mark as uploaded
-        if own:
+        if own or 'STD' in fi:
             os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
         # Only need to pull requests the first time
         pr = False
