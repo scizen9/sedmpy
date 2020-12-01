@@ -45,6 +45,9 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     else:
         r = api("POST", fritz_comment_url, data=ddict).json()
         if 'success' in r['status']:
+            r_data = r['data']
+            if 'comment_id' in r_data:
+                print("Comment id = %d" % r_data['comment_id'])
             print('{} uploaded'.format(fname.split('/')[-1]))
             return True
         else:
@@ -79,6 +82,9 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         r = api("POST", fritz_annotation_url, data=ddict).json()
 
         if 'success' in r['status']:
+            r_data = r['data']
+            if 'annotation_id' in r_data:
+                print("annotation id = %d" % r_data['annotation_id'])
             print('{}: {} posted'.format(obj_id, origin))
             return True
         else:

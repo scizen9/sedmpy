@@ -44,13 +44,13 @@ session.mount("https://", adapter)
 session.mount("http://", adapter)
 
 
-def api(method, endpoint, data=None):
+def api(method, endpoint, data=None, verbose=False):
     headers = {'Authorization': 'token {}'.format(token)}
     response = session.request(method, endpoint, json=data, headers=headers)
     print('HTTP code: {}, {}'.format(response.status_code, response.reason))
-    if response.status_code in (200, 400):
+    if response.status_code in (200, 400) and verbose:
         print(response.text)
-        #print('JSON response: {}'.format(response.json()))
+        # print('JSON response: {}'.format(response.json()))
 
     return response
 

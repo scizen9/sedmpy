@@ -295,7 +295,8 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
     if marshal_id is None:
         print("Unable to find marshal id for target %s" % object_name)
     else:
-        print("Updating target %s using id %d" % (object_name, marshal_id))
+        print("Updating target %s using marshal id %d" % (object_name,
+                                                          marshal_id))
 
         now = datetime.datetime.now()
         ts_str = "%4d%02d%02d %02d_%02d_%02d" % (now.year, now.month,
@@ -310,9 +311,11 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 spec_stat = 'Failed ' + ts_str
             else:
                 spec_stat = 'Complete ' + ts_str
+                # now upload pysedm_report and SNID info
                 try:
                     ret_data = spec_ret['data']
                     spec_id = ret_data['id']
+                    print("Spectrum id = %d" % spec_id)
                     annots_posted = add_annots(spectra_file,
                                                object_id=object_name,
                                                spec_id=spec_id, testing=testing)
@@ -323,6 +326,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                     print("SNID annotations successfully posted")
                 else:
                     print("Warning: SNID annotations encountered a problem")
+                # now upload SNIascore info
                 try:
                     ret_data = spec_ret['data']
                     spec_id = ret_data['id']
