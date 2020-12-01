@@ -93,11 +93,6 @@ def run_sniascore(spec_file=None, overwrite=False):
             ll = sfl.readlines()
 
             q = [li for li in ll if "QUALITY" in li]
-            n = [li for li in ll if "nan" in li and "#" not in li]
-
-            if len(n) > 0:
-                print("Found nan's in spectrum, skipping")
-                return False
 
             if len(q) > 0:
                 token = re.search(r'\(?([0-9]+)\)?', q[0])
