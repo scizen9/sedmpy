@@ -3223,10 +3223,11 @@ class SedmDB:
                 optional:
                     'auto' (bool)
                     'phase' (float),
-                    'phase_err' (float)
-                    'score_type' (str)
-                    'class_source (str)'
-                    'class_template (str)'
+                    'phase_err' (float),
+                    'score_err' (float),
+                    'score_type' (str),
+                    'class_source' (str),
+                    'class_template' (str)
         Returns:
             (-1, "ERROR...") if there is an issue
 
@@ -3234,7 +3235,8 @@ class SedmDB:
         """
         param_types = {'id': int, 'spec_id': int, 'object_id': int,
                        'classification': str, 'redshift': float, 'auto': bool,
-                       'redshift_err': float, 'classifier': str, 'score': float,
+                       'redshift_err': float, 'classifier': str,
+                       'score': float, 'score_err': float,
                        'phase': float, 'phase_err': float, 'score_type': str,
                        'class_source': str, 'class_template': str}
         required_keys = ['spec_id', 'object_id', 'classification', 'redshift',
@@ -3305,14 +3307,15 @@ class SedmDB:
                     'auto' (bool),
                     'phase' (float),
                     'phase_err' (float),
-                    'score' (float)
+                    'score' (float),
+                    'score_err' (float),
                     'redshift' (float),
                     'redshift_err' (float),
                     'classifier' (str),
-                    'score' (float)
-                    'score_type' (str)
-                    'class_source (str)'
-                    'class_template (str)'
+                    'score' (float),
+                    'score_type' (str),
+                    'class_source' (str),
+                    'class_template' (str),
                 Note: this function will not modify id, spec_id,
                 classifier or object_id
 
@@ -3324,7 +3327,8 @@ class SedmDB:
         """
         param_types = {'id': int, 'spec_id': int, 'object_id': int,
                        'classification': str, 'redshift': float, 'auto': bool,
-                       'redshift_err': float, 'classifier': str, 'score': float,
+                       'redshift_err': float, 'classifier': str,
+                       'score': float, 'score_err': float,
                        'phase': float, 'phase_err': float, 'score_type': str,
                        'class_source': str, 'class_template': str}
 
@@ -3420,10 +3424,11 @@ class SedmDB:
                 'auto' (bool),
                 'phase' (float),
                 'phase_err' (float),
-                'score' (float)
-                'score_type' (str)
-                'class_source (str)'
-                'class_template (str)'
+                'score' (float),
+                'score_err' (float),
+                'score_type' (str),
+                'class_source' (str),
+                'class_template' (str)
 
         Returns:
             list of tuples containing the values for classifications
@@ -3438,7 +3443,8 @@ class SedmDB:
                 'id': int, 'spec_id': int, 'object_id': int,
                 'classification': str, 'redshift': float, 'auto': bool,
                 'redshift_err': float, 'classifier': str,
-                'score': float, 'phase': float, 'phase_err': float,
+                'score': float, 'score_err': float,
+                'phase': float, 'phase_err': float,
                 'score_type': str, 'class_source': str,
                 'class_template': str
         }
