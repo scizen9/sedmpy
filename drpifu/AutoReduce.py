@@ -1091,11 +1091,21 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         'redshift_err': 'SNIDZERR', 'score': 'SNIDRLAP', 'phase': 'SNIDAMED',
         'phase_err': 'SNIDAERR', 'class_template': 'SNIDTEMP'
     }
+    class_ia_header_dict = {
+        'score': 'SNIASCOR', 'score_err': 'SNIASCER',
+        'redshift': 'SNIASCZ', 'redshift_err': 'SNIASCZE'
+    }
     class_dict = {
         'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
         'redshift': 0., 'redshift_err': 0., 'classifier': 'SNID', 'score': 0.,
         'phase': 0., 'phase_err': 0., 'score_type': 'RLAP',
         'class_source': '', 'class_template': ''
+    }
+    class_ia_dict = {
+        'spec_id': 0, 'object_id': 0, 'classification': 'SNIa', 'auto': True,
+        'redshift': 0., 'redshift_err': 0., 'classifier': 'SNIascore',
+        'score': 0., 'score_err': 0., 'score_type': 'SNIa',
+        'class_source': ''
     }
 
     # Get utdate
@@ -1108,6 +1118,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     # Get object name
     objnam = ff[0].header['OBJECT'].split()[0]
     class_dict['class_source'] = objnam
+    class_ia_dict['class_source'] = objnam
 
     # Get header keyword values
     for key in header_dict.keys():
@@ -1127,6 +1138,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
                 logging.warning("Header keyword not found: %s" % hk)
 
     # Check for classification info
+    # SNID results
     good_class = False
     if 'SNIDTYPE' in ff[0].header:
         if 'NONE' in ff[0].header['SNIDTYPE']:
@@ -1146,6 +1158,21 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
                         ff[0].header['SNIDSUBT']
     else:
         logging.info("No SNID info in %s" % input_specfile)
+    # SNIascore results
+    good_ia_class = False
+    if 'SNIASCOR' in ff[0].header:
+        if ff[0].header['SNIASCOR'] < 0.:
+            logging.info("SNIascore was unable to score %s" % input_specfile)
+        else:
+            good_ia_class = True
+            for key in class_ia_header_dict.keys():
+                hk = class_ia_header_dict[key]
+                if hk in ff[0].header:
+                    class_ia_dict[key] = ff[0].header[hk]
+                else:
+                    logging.warning("Header keyword not found: %s" % hk)
+    else:
+        logging.info("No SNIascore info in %s" % input_specfile)
 
     ff.close()
 
@@ -1195,6 +1222,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     if observation_id:
         spec_dict['observation_id'] = observation_id[0][0]
         class_dict['object_id'] = observation_id[0][1]
+        class_ia_dict['object_id'] = observation_id[0][1]
     else:
         logging.error("No observation_id for %s" % ifufile)
         return -1
@@ -1216,16 +1244,26 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         spec_id, status = sedmdb.add_spec(spec_dict, update=update_db)
         # update classification
         class_dict['spec_id'] = spec_id
+        class_ia_dict['spec_id'] = spec_id
         logging.info(status)
         if good_class:
             class_id, cstatus = sedmdb.add_classification(class_dict)
             if class_id < 0 and update:
-                logging.info("Classification already exists for this spec")
+                logging.info("SNID Classification already exists for this spec")
             else:
-                logging.info("Classification accepted with id %d,"
+                logging.info("SNID Classification accepted with id %d,"
                              " and status %s" % (class_id, cstatus))
         else:
-            logging.info("No classification associated with input spectrum")
+            logging.info("No SNID classification found in input spectrum")
+        if good_ia_class:
+            class_ia_id, ciastatus = sedmdb.add_classification(class_ia_dict)
+            if class_ia_id < 0 and update:
+                logging.info("SNIascore record already exists for this spec")
+            else:
+                logging.info("SNIascore record accepted with id %d,"
+                             " and status %s" % (class_ia_id, ciastatus))
+        else:
+            logging.info("No SNIascore record found in input spectrum")
         return spec_id
     else:
         logging.error("ERROR: no spec_calib_id found for %s" % utdate)
