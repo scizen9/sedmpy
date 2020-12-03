@@ -456,9 +456,9 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
                 out.write("NO ")
             # Was status updated?
             if stat:
-                out.write("OK %9d" % spec_id)
+                out.write("OK %9d " % spec_id)
             else:
-                out.write("NO          ")
+                out.write("NO           ")
             if r:
                 print("URL: " + r)
                 out.write("%s\n" % r)
