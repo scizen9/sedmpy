@@ -1120,6 +1120,21 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     class_dict['class_source'] = objnam
     class_ia_dict['class_source'] = objnam
 
+    # Open database connection
+    sedmdb = db.SedmDb.SedmDB()
+
+    # Get marshal number
+    marsh = None
+    if 'REQ_ID' in ff[0].header:
+        request_id = ff[0].header['REQ_ID']
+        # Search for target in the database
+        try:
+            res = sedmdb.get_from_request(["external_id"],
+                                          {"id": request_id})[0]
+            marsh = res[0]
+        except IndexError:
+            print("Unable to retrieve marshal number from database")
+
     # Get header keyword values
     for key in header_dict.keys():
         hk = header_dict[key]
@@ -1182,7 +1197,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     spec_dict['asciifile'] = input_specfile.split('.fit')[0] + '.txt'
 
     # Get marshal spec id
-    if 'STD' not in objnam and spec_dict['quality'] <= 2:
+    if 'STD' not in objnam and spec_dict['quality'] <= 2 and marsh != 2:
         srcid = None
         specid = None
         if nopush_marshal:
@@ -1190,16 +1205,13 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         else:
             srcid, specid = mc.get_missing_info(objnam, utdate, srcid, specid)
         if srcid is None:
-            logging.info("Not an object on the marshal: %s" % objnam)
+            logging.info("Not an object on the growth marshal: %s" % objnam)
         else:
             if specid is None:
-                logging.info("No spectrum found on the marshal: %s, %s"
+                logging.info("No spectrum found on the growth marshal: %s, %s"
                              % (utdate, objnam))
             else:
                 spec_dict['marshal_spec_id'] = specid
-
-    # Open database connection
-    sedmdb = db.SedmDb.SedmDB()
 
     # Check if we've already added this spectrum
     search_fits = input_specfile.replace('+', '\+')
