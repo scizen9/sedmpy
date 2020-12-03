@@ -235,6 +235,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
 
     marshal_id = None
     group_id = None
+    spec_id = None
     object_name = None
     username = None
     email = None
@@ -257,7 +258,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                                              {"id": request_id})[0]
         except IndexError:
             print("Unable to retrieve ids from database")
-            return return_link, spec_ret, status_ret
+            return return_link, spec_ret, status_ret, spec_id
         marshal_id = res[0]
         object_id = res[1]
         user_id = res[2]
@@ -266,7 +267,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         # is this a Fritz object?
         if external_id != 2:
             print("Not a Fritz object!")
-            return return_link, spec_ret, status_ret
+            return return_link, spec_ret, status_ret, spec_id
         # set group id
         if share_id == 2:
             group_id = 209
@@ -277,7 +278,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
             res = search_db.get_from_object(["name"], {"id": object_id})[0]
         except IndexError:
             print("Unable to retrieve object_name from database")
-            return return_link, spec_ret, status_ret
+            return return_link, spec_ret, status_ret, spec_id
         object_name = res[0]
         # get user name and email
         try:
@@ -285,7 +286,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                                            {"id": user_id})[0]
         except IndexError:
             print("Unable to retrieve username, email from database")
-            return return_link, spec_ret, status_ret
+            return return_link, spec_ret, status_ret, spec_id
         username = res[0]
         email = res[1]
     else:
@@ -352,7 +353,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         print("Send to %s at %s\nRequest status = %s\n%s" %
               (username, email, status, return_link))
 
-    return return_link, spec_ret, status_ret
+    return return_link, spec_ret, status_ret, spec_id
 
           
 def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
@@ -439,13 +440,10 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
             if upfil not in fi:
                 continue
         # Upload
-        r, spec, stat = update_target_by_request_id(req_id, add_status=True,
-                                                    status='Completed',
-                                                    add_spectra=True,
-                                                    spectra_file=fi,
-                                                    search_db=dbase,
-                                                    reducedby=reducedby,
-                                                    testing=testing)
+        r, spec, stat, spec_id = update_target_by_request_id(
+            req_id, add_status=True, status='Completed', add_spectra=True,
+            spectra_file=fi, search_db=dbase, reducedby=reducedby,
+            testing=testing)
         # Mark as uploaded
         if stat:
             os.system("touch " + fi.split('.')[0].replace(" ", "\ ") + ".upl")
@@ -458,9 +456,9 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
                 out.write("NO ")
             # Was status updated?
             if stat:
-                out.write("OK ")
+                out.write("OK %9d" % spec_id)
             else:
-                out.write("NO ")
+                out.write("NO          ")
             if r:
                 print("URL: " + r)
                 out.write("%s\n" % r)
