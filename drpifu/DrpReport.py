@@ -23,9 +23,9 @@ def report():
     print("See http://pharos.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
 
-    print("UTStart  Object                    Exptime Air    Qual"
-          "                           method  Allocation                     "
-          "Type Subtype  z           Rlap")
+    print("UTStart  Object          Exptime Air    Qual"
+          "                   method  Allocation                     "
+          "Type Subtype  z           Rlap  SNIaS SNIaSe SNIaZ SNIaZe")
     recs = []
     for f in flist:
         # Get object name
@@ -45,24 +45,50 @@ def report():
             if len(clas) > 0:
                 for cl in clas:
                     ctype += (" %s" % cl.split()[-1])
-            # check for SNID classification
+            # check for SNID subtype
             clas = [li for li in lines if "SNIDMATCHSUBTYPE" in li]
             stype = ""
             if len(clas) > 0:
                 for cl in clas:
                     stype += (" %s" % cl.split()[-1])
-            # get redshift
+                ctype += "-"
+                ctype += stype
+            # get SNID redshift
             zmch = [li for li in lines if "REDSHIFT" in li]
             if len(zmch) > 0:
                 zmch = ("%.4f" % float(zmch[0].split()[-1]))
             else:
                 zmch = ""
-            # get rlap
+            # get SNID rlap
             rlap = [li for li in lines if "RLAP" in li]
             if len(rlap) > 0:
                 rlap = ("%.2f" % float(rlap[0].split()[-1]))
             else:
                 rlap = ""
+            # get SNIascore
+            snia_score = [li for li in lines if "SNIASCORE"]
+            if len(snia_score) > 0:
+                snia_score = ("%.3f" % float(snia_score[0].split()[-1]))
+            else:
+                snia_score = ""
+            # get SNIascore err
+            snia_score_err = [li for li in lines if "SNIASCORE_ERR"]
+            if len(snia_score_err) > 0:
+                snia_score_err = ("%.3f" % float(snia_score_err[0].split()[-1]))
+            else:
+                snia_score_err = ""
+            # get SNIascore redshift
+            snia_z = [li for li in lines if "SNIASCORE_Z"]
+            if len(snia_z) > 0:
+                snia_z = ("%.3f" % float(snia_z[0].split()[-1]))
+            else:
+                snia_z = ""
+            # get SNIascore redshift err
+            snia_z_err = [li for li in lines if "SNIASCORE_ZERR"]
+            if len(snia_z_err) > 0:
+                snia_z_err = ("%.3f" % float(snia_z_err[0].split()[-1]))
+            else:
+                snia_z_err = ""
             # get flux calibration
             flxcal = [li for li in lines if "FLUXCAL" in li]
             if len(flxcal) > 0:
@@ -105,10 +131,11 @@ def report():
                 zmch = ""
                 rlap = ""
 
-        recs.append("%8s %-25s %7s %5s     %d %32s  %-21s  %12s  "
-                    "%6s %-9s  %6s" %
+        recs.append("%8s %-15s %7s %5s     %d %24s  %-21s  %18s  "
+                    "%-9s  %6s  %6s %6s %6s %6s" %
                     (tstr, objname, expt, air, quality, meth, prid, ctype,
-                     stype, zmch, rlap))
+                     zmch, rlap, snia_score, snia_score_err,
+                     snia_z, snia_z_err))
     recs.sort()
     for r in recs:
         print(r)
