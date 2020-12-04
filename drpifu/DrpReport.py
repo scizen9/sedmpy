@@ -24,8 +24,8 @@ def report():
           os.getcwd().split('/')[-1])
 
     print("UTStart  Object          Exptime Air    Qual"
-          "                   method  Allocation                     "
-          "Type Subtype  z           Rlap  SNIaS SNIaSe SNIaZ SNIaZe")
+          "                   method  Allocation           "
+          "       Type  z           Rlap   SNIaS SNIaSe SNIaZ SNIaZe")
     recs = []
     for f in flist:
         # Get object name
@@ -131,7 +131,7 @@ def report():
                 zmch = ""
                 rlap = ""
 
-        recs.append("%8s %-15s %7s %5s     %d %24s  %-21s  %18s  "
+        recs.append("%8s %-15s %7s %5s     %d %24s  %-11s  %-18s  "
                     "%-9s  %6s  %6s %6s %6s %6s" %
                     (tstr, objname, expt, air, quality, meth, prid, ctype,
                      zmch, rlap, snia_score, snia_score_err,
