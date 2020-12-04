@@ -897,12 +897,12 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                         subprocess.call(cmd)
                     else:
                         # Run SNID
-                        logging.info("Running SNID for " + fn)
+                        logging.info("Running SNID, SNIascore for " + fn)
                         cmd = ("make", "classify")
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.error("Error running SNID")
+                            logging.error("Error running SNID or SNIascore")
                         if local or nopush_slack:
                             cmd = ("pysedm_report.py", datestr, "--contains",
                                    fn.split('.')[0])
