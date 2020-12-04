@@ -223,8 +223,8 @@ def fancy_request_table(df):
 
     styled = df.style\
                .apply(highlight_set, axis=1)\
-               .format({'object': '<a href="http://skipper.caltech.edu:8080/cgi-bin/growth/'\
-                                  'view_source.cgi?name={0}">{0}</a>', 'RA': '{:.3f}',
+               .format({'object': '<a href="https://fritz.science/source/'
+                                  '{0}">{0}</a>', 'RA': '{:.3f}',
                         'DEC': '{:.3f}', 'priority': '{:.0f}', 'start date': '{:%b %d}',
                         'end date': '{:%b %d}', 'lastmodified': '{:%b %d %H:%M}',
                         'UPDATE': '<a href="request?request_id={}">+</a>'})\
@@ -1506,8 +1506,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                 obj = obj.split('_xRx_')[0]
 
             if 'ZTF' in obj:
-                obj_link = ('<a href="http://skipper.caltech.edu:8080/'
-                            'cgi-bin/growth/view_source.cgi?name=%s">%s</a>' %
+                obj_link = ('<a href="https://fritz.science/source/'
+                            '%s">%s</a>' %
                             (obj, obj))
 
                 div_str += """<div class="row">"""
@@ -1758,8 +1758,8 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
                 obj = obj.split('_xRx_')[0]
 
             if 'ZTF' in obj:
-                obj_link = ('<a href="http://skipper.caltech.edu:8080/'
-                            'cgi-bin/growth/view_source.cgi?name=%s">%s</a>' %
+                obj_link = ('<a href="https://fritz.science/source/'
+                            '%s">%s</a>' %
                             (obj, obj))
 
                 div_str += """<div class="row">"""
