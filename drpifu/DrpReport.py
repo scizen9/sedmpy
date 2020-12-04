@@ -53,8 +53,11 @@ def report():
                     st = cl.split()[-1]
                     if st != '-':
                         stype += ("%s" % st)
-                ctype += "-"
-                ctype += stype
+                    else:
+                        stype = ""
+                if len(stype) > 0:
+                    ctype += "-"
+                    ctype += stype
             # get SNID redshift
             zmch = [li for li in lines if "REDSHIFT" in li]
             if len(zmch) > 0:
