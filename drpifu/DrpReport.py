@@ -23,9 +23,9 @@ def report():
     print("See http://pharos.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
 
-    print("UTStart  Object          Exptime Air    Qual"
+    print("UTStart  Object               Exptime Air    Qual"
           "                   method  Allocation           "
-          "Type            z           Rlap   SNIaS SNIaSe SNIaZ SNIaZe")
+          "Type            z        Rlap   SNIaS SNIaSe   SNIaZ SNIaZe")
     recs = []
     for f in flist:
         # Get object name
@@ -132,6 +132,10 @@ def report():
                 stype = ""
                 zmch = ""
                 rlap = ""
+                snia_score = ""
+                snia_score_err = ""
+                snia_z = ""
+                snia_z_err = ""
 
         recs.append("%8s %-20s %7s %5s     %d %24s  %-18s  %-14s  "
                     "%-8s %5s  %6s %6s  %6s %6s" %
