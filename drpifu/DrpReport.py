@@ -66,25 +66,25 @@ def report():
             else:
                 rlap = ""
             # get SNIascore
-            snia_score = [li for li in lines if "SNIASCORE"]
+            snia_score = [li for li in lines if "SNIASCORE" in li]
             if len(snia_score) > 0:
                 snia_score = ("%.3f" % float(snia_score[0].split()[-1]))
             else:
                 snia_score = ""
             # get SNIascore err
-            snia_score_err = [li for li in lines if "SNIASCORE_ERR"]
+            snia_score_err = [li for li in lines if "SNIASCORE_ERR" in li]
             if len(snia_score_err) > 0:
                 snia_score_err = ("%.3f" % float(snia_score_err[0].split()[-1]))
             else:
                 snia_score_err = ""
             # get SNIascore redshift
-            snia_z = [li for li in lines if "SNIASCORE_Z"]
+            snia_z = [li for li in lines if "SNIASCORE_Z" in li]
             if len(snia_z) > 0:
                 snia_z = ("%.3f" % float(snia_z[0].split()[-1]))
             else:
                 snia_z = ""
             # get SNIascore redshift err
-            snia_z_err = [li for li in lines if "SNIASCORE_ZERR"]
+            snia_z_err = [li for li in lines if "SNIASCORE_ZERR" in li]
             if len(snia_z_err) > 0:
                 snia_z_err = ("%.3f" % float(snia_z_err[0].split()[-1]))
             else:
