@@ -102,6 +102,7 @@ def report():
                 flxcal = "False"
             # get method
             meth = f.split('__crr')[0].split('spec_')[-1]
+            meth = meth.split('auto_')[-1]
             # get exposure time
             expt = [li for li in lines if "EXPTIME" in li]
             if len(expt) > 0:
