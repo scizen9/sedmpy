@@ -249,7 +249,7 @@ classify:
 
 finalreport:
 	$(REPORT) comment | tee report.txt
-	cat report*.txt | tail -n +2 | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,rsw@astro.caltech.edu,fremling@caltech.edu,jesper@astro.su.se,m.rigault@ipnl.in2p3.fr,lezmy@ipnl.y.copin@ipnl.in2p3.fr,in2p3.fr,tda@lists.astro.caltech.edu
+	cat report*.txt | tail -n +2 | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,rsw@astro.caltech.edu,fremling@caltech.edu,jesper@astro.su.se,m.rigault@ipnl.in2p3.fr,lezmy@ipnl.in2p3.fr,y.copin@ipnl.in2p3.fr,in2p3.fr,tda@lists.astro.caltech.edu
 
 """
 
