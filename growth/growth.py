@@ -455,7 +455,7 @@ def update_target_by_object(objname, add_spectra=False, spectra_file='',
             user_id = res[2]
             external_id = res[3]
             # is this a Growth object?
-            if external_id == 2:
+            if external_id == 2 or external_id == 4:
                 print("Not a Growth object!")
                 return return_link, spec_ret, phot_ret, status_ret, is_growth
             else:

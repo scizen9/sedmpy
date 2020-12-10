@@ -265,9 +265,14 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         external_id = res[3]
         share_id = res[4]
         # is this a Fritz object?
-        if external_id != 2:
+        if external_id != 2 and external_id != 4:
             print("Not a Fritz object!")
             return return_link, spec_ret, status_ret, spec_id
+        else:
+            if external_id == 4:
+                print("AMPEL trigger")
+            else:
+                print("Fritz trigger")
         # set group id
         if share_id == 2:
             group_id = 209
