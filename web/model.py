@@ -712,6 +712,8 @@ def process_request_form(content, form, userid):
                 request_dict.pop('request_id')
             request_dict['user_id'] = int(request_dict['user_id'])
             #print(request_dict)
+            if 'external_id' in content:
+                request_dict['external_id'] = content['external_id']
             ret = db.add_request(request_dict)
             #print(ret)
     return process_dict, form
@@ -1949,7 +1951,7 @@ def get_active_visibility(userid):
     requests = get_requests_for_user(userid, sedm_dict['inidate'], sedm_dict['enddate'])
 
     # organize requests into dataframes by whether they are completed or not
-    active = requests[(requests['status'] == 'PENDING') | (requests['status'] == 'ACTIVE')]
+    active = requests[(requests['status'] == 'PENDING')]
 
     # retrieve information about the user's allocations
     ac = get_allocations_user(userid)
