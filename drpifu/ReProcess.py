@@ -1496,6 +1496,11 @@ def re_calib(redd=None, ut_date=None, nodb=False):
                                 % spec_calib_id)
                         logging.info(
                             "Calibration stage complete, ready for science!")
+                        # Make cube report
+                        cmd = "python ~/sedmpy/drpifu/CubeReport.py %s" % \
+                            ut_date
+                        logging.info(cmd)
+                        subprocess.call(cmd, shell=True)
                         # Gzip cal images
                         subprocess.run(["gzip", "dome.fits", "Hg.fits",
                                         "Cd.fits", "Xe.fits"])
