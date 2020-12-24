@@ -879,7 +879,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                     if not oldext:
                         cmd = ("extractstar.py", datestr, "--auto", fn,
                                "--autobins", "6", "--tag", "robot",
-                               "--centroid", "auto", "--seeing", "2.0")
+                               "--centroid", "auto", "--byecr",
+                               "--seeing", "2.0")
                         # "--seeing", "%.2f" % seeing)
                     else:
                         logging.info("Old extraction method used")

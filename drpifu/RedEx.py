@@ -219,7 +219,7 @@ if __name__ == "__main__":
             pars = ["extractstar.py", dd, "--auto", ob_id,
                     "--autobins", "6", "--lstep", lstep,
                     "--centroid", "auto", "--tag", cstagstr,
-                    "--reducer", reducer, "--contsep"]
+                    "--reducer", reducer, "--byecr", "--contsep"]
             if args.new_x and args.new_y:
                 xo = args.new_x
                 yo = args.new_y
@@ -257,7 +257,7 @@ if __name__ == "__main__":
                     pars = ["extractstar.py", dd, "--auto", ob_id,
                             "--autobins", "6", "--centroid", xs, ys,
                             "--lstep", lstep, "--tag", tagstr,
-                            "--reducer", reducer]
+                            "--byecr", "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)
                 if res.returncode != 0:
@@ -271,7 +271,7 @@ if __name__ == "__main__":
                 else:
                     pars = ["extractstar.py", dd, "--auto", ob_id,
                             "--autobins", "6", "--display", "--lstep", lstep,
-                            "--centroid", "auto",
+                            "--centroid", "auto", "--byecr",
                             "--tag", tagstr, "--reducer", reducer]
                 logging.info("Running " + " ".join(pars))
                 res = subprocess.run(pars)

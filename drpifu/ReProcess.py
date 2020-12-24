@@ -944,7 +944,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
                     else:
                         cmd = ["extractstar.py", datestr, "--auto", fn,
                                "--std", "--tag", "robot",
-                               "--centroid", "brightest",
+                               "--centroid", "brightest", "--byecr",
                                "--seeing", "2.0"]  # "%.2f" % seeing]
                     logging.info("Extracting std star spectra for " + fn)
                     logging.info(" ".join(cmd))
@@ -1039,7 +1039,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
                                "--autobins", "6", "--tag", "robot"]
                     else:
                         cmd = ["extractstar.py", datestr, "--auto", fn,
-                               "--autobins", "6", "--tag", "robot",
+                               "--autobins", "6", "--tag", "robot", "--byecr",
                                "--seeing", "2.0"]  # "%.2f" % seeing]
                     # Add position parameters
                     cmd.extend(ccmd)
