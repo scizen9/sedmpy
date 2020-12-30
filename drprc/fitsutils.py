@@ -134,6 +134,10 @@ def has_par(myfits, par):
     """
     Updates the fits files with the new parameter.
     """
-    hdu = pf.open(myfits, ignore_missing_end=True)
+    try:
+        hdu = pf.open(myfits, ignore_missing_end=True)
+    except OSError:
+        print("Empty or corrupt FITS file: %s" % myfits)
+        return False
     header = hdu[0].header
     return par in header.keys()
