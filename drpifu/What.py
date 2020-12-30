@@ -22,6 +22,8 @@ def go(imfiles):
                 print("%28s : ?" % ifile.split('.gz')[0])
         except FileNotFoundError:
             pass
+        except OSError:
+            pass
 
 
 if __name__ == '__main__':
