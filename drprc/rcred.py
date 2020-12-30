@@ -93,7 +93,7 @@ def get_xy_coords(image, ra, dec):
 
     """
     w = WCS(image)
-    pix_all = w.all_world2pix(ra, dec, 0)
+    pix_all = w.all_world2pix(ra, dec, 0, quiet=True)
     coords = [float(pix_all[0]), float(pix_all[1])]
 
     return coords
