@@ -113,8 +113,11 @@ def update_par(myfits, par, value):
     """
     hdu = pf.open(myfits, ignore_missing_end=True)
     header = hdu[0].header
-    header.set(par, value)
-    hdu.writeto(myfits, overwrite=True)
+    try:
+        header.set(par, value)
+        hdu.writeto(myfits, overwrite=True)
+    except ValueError:
+        pass
 
 
 def update_pars(myfits, pardic):
@@ -126,8 +129,11 @@ def update_pars(myfits, pardic):
 
     # TODO: do we really have to writeto for each keyword?
     for key in pardic:
-        header.set(key, pardic[key])
-        hdu.writeto(myfits, overwrite=True)
+        try:
+            header.set(key, pardic[key])
+            hdu.writeto(myfits, overwrite=True)
+        except ValueError:
+            pass
 
 
 def has_par(myfits, par):
