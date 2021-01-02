@@ -957,7 +957,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                         # contsep extraction
                         cmd = ("extractstar.py", datestr, "--auto", fn,
                                "--autobins", "6", "--tag", "contsep",
-                               "--centroid", "auto", "--contsep")
+                               "--centroid", "auto", "--contsep", "--byecr")
                         logging.info("Extracting contsep spectra for " + fn)
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
