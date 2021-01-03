@@ -17,6 +17,12 @@ try:
     import fitsutils
 except ImportError:
     import drprc.fitsutils as fitsutils
+
+try:
+    from pysedmpush import slack
+except ImportError:
+    slack = None
+    print("you need to install pysedmpush to be able to push on slack")
 import datetime
 import logging
 from astropy.io import fits
@@ -38,6 +44,8 @@ with codecs.open(configfile, 'r') as f:
 
 _logpath = parser.get('paths', 'logpath')
 _photpath = parser.get('paths', 'photpath')
+
+SLACK_CHANNEL = "pysedm-report"
 
 plt.switch_backend('Agg')
 
@@ -245,6 +253,17 @@ def reduce_on_the_fly(photdir, nocopy=False):
                                 logger.info(cmd)
                                 logger.info("Successfully copied the image: %s"
                                             % r)
+                                # push to slack
+                                png_dir = os.path.dirname(r) + '/png/'
+                                basename = os.path.basename(r).split('.')[0]
+                                imgf = png_dir + basename + '.png'
+                                title = "RC image: %s | %s" % (basename, imtype)
+                                if slack is not None:
+                                    slack.push_image(imgf, caption="",
+                                                     title=title,
+                                                     channel=SLACK_CHANNEL)
+                                else:
+                                    print("Cannot push: %s" % imgf)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
