@@ -718,7 +718,7 @@ def init_header_reduced(image):
     fitsutils.update_pars(image, pardic)
 
 
-def plot_image(image, verbose=False):
+def plot_image(image, verbose=False, ut_id=None):
     """
     Plots the reduced image into the png folder.
 
@@ -762,8 +762,12 @@ def plot_image(image, verbose=False):
 
     plt.imshow(d, vmin=(pltmn-pltstd), vmax=(pltmn+2.*pltstd),
                cmap=plt.get_cmap('Greys_r'))
-    plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
-                                                  exptime, ontarget))
+    if ut_id is not None:
+        plt.title("%s %s %s-band [%ds]. On target=%s" % (ut_id, name, filt,
+                                                         exptime, ontarget))
+    else:
+        plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
+                                                      exptime, ontarget))
     plt.colorbar()
     if ontarget and xpx >= 0 and ypx >= 0:
         circle = plt.Circle((xpx, ypx), 20, fill=False, color='r',
@@ -803,6 +807,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
     image = os.path.abspath(image)
     imname = os.path.basename(image).replace(".fits", "")
+    utid = "_".join(imname.split("_")[1:])
     try:
         objectname = fitsutils.get_par(image, "NAME").split()[0] + "_" + \
                      fitsutils.get_par(image, "FILTER")
@@ -1013,7 +1018,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         # Get basic statistics for the image
         nsrc, fwhm, ellip, bkg = sextractor.get_image_pars(image)
-        plot_image(image)
+        plot_image(image, ut_id=utid)
 
         logger.info("Sextractor statistics: nscr %d, fwhm (arcsec) "
                     "%.2f, ellipticity %.2f" % (nsrc, fwhm, ellip))

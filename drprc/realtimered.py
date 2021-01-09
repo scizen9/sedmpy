@@ -62,7 +62,7 @@ logging.basicConfig(format=log_format,
 logger = logging.getLogger('realtimered')
 
 
-def plot_image(image, verbose=False):
+def plot_image(image, verbose=False, ut_id=None):
     """
     Plots the reduced image into the png folder.
 
@@ -132,7 +132,10 @@ def plot_image(image, verbose=False):
 
         plt.imshow(d, vmin=-pltstd, vmax=2.*pltstd,
                    cmap=plt.get_cmap('Greys_r'))
-        plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
+        if ut_id is not None:
+            plt.title("{%s} %s %s %s-band [%ds] " % (imtype, ut_id, name, filt, exptime))
+        else:
+            plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
         plt.colorbar()
         logger.info("As %s", outfig)
         plt.savefig(outfig)
@@ -229,7 +232,9 @@ def reduce_on_the_fly(photdir, nocopy=False):
                         continue
                 # Make a plot of image
                 imtype = fitsutils.get_par(n, "IMGTYPE")
-                plot_image(n)
+                imname = os.path.basename(n).replace(".fits", "")
+                utid = "_".join(imname.split("_")[1:])
+                plot_image(n, ut_id=utid)
                 if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper() or \
                         "STANDARD" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:
