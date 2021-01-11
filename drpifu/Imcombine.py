@@ -55,10 +55,13 @@ def imcombine(flist, fout, listfile=None, combtype="mean",
     hdr.add_history('SEDMr.Imcombine run on %s' % time.strftime("%c"))
     hdr['DRPVER'] = drp_ver
 
-    pf.writeto(fout, oimg, hdr)
+    try:
+        pf.writeto(fout, oimg, hdr)
+    except OSError:
+        print("%s already exists!" % fout)
 
     if listfile is None:
-        path = "flatcombine.lst"
+        path = "imcombine.lst"
     else:
         path = listfile
     f = open(path, "w")
