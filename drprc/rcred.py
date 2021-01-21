@@ -835,7 +835,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         existing = True
         for band in ['u', 'g', 'r', 'i']:
             # Nominal output filename
-            destfile = os.path.join(target_dir, imname + "_f_b_a_%s_%s.fits" %
+            destfile = os.path.join(target_dir, imname + "_f_a_b_%s_%s.fits" %
                                     (objectname, band))
             logger.info("Does file %s already exist?: %s" %
                         (destfile, (os.path.isfile(destfile))))
@@ -854,35 +854,22 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     # Initialize the basic parameters.
     init_header_reduced(image)
 
-    astro = ""
-    if astrometry:
-        logger.info("Solving astrometry for the whole image...")
-        img = solve_astrometry(image)
-        if os.path.isfile(img):
-            astro = "a_"
-            fitsutils.update_par(img, "IQWCS", 1)
-        else:
-            logger.error("ASTROMETRY DID NOT SOLVE ON IMAGE %s" % image)
-            img = image
-    else:
-        img = image
-
     # Are we a fast or slow readout image?
-    if fitsutils.get_par(img, "ADCSPEED") == 2:
+    if fitsutils.get_par(image, "ADCSPEED") == 2:
         speed = 'fast'
     else:
         speed = 'slow'
 
     # Update noise parameters needed for cosmic reection
     if 'fast' in speed:
-        fitsutils.update_par(img, "RDNOISE", 20.)
+        fitsutils.update_par(image, "RDNOISE", 20.)
     else:
-        fitsutils.update_par(img, "RDNOISE", 4.)
+        fitsutils.update_par(image, "RDNOISE", 4.)
 
     if cosmic:
         logger.info("Correcting for cosmic rays...")
         # Correct for cosmics each filter
-        cleanimg = clean_cosmic(os.path.join(os.path.abspath(curdir), img))
+        cleanimg = clean_cosmic(os.path.join(os.path.abspath(curdir), image))
         img = cleanimg
 
     # Compute BIAS
@@ -937,18 +924,31 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     hdul = rawf.to_hdu()
     hdul.writeto(debiased)
 
+    astro = ""
+    if astrometry:
+        logger.info("Solving astrometry for the whole image...")
+        astro_img = solve_astrometry(debiased)
+        if os.path.isfile(astro_img):
+            astro = "a_"
+            fitsutils.update_par(astro_img, "IQWCS", 1)
+        else:
+            logger.error("ASTROMETRY DID NOT SOLVE ON IMAGE %s" % debiased)
+            astro_img = debiased
+    else:
+        astro_img = debiased
+
     # Clean CR cleaned images
     if cosmic and not save_int:
         os.remove(img)
 
     # Slicing the image for flats
     print("Creating sliced files...")
-    slice_names = slice_rc(debiased)
+    slice_names = slice_rc(astro_img)
     print("Created: ", slice_names)
 
     # Remove un-sliced image
     if not save_int:
-        os.remove(debiased)
+        os.remove(astro_img)
 
     # DE-flat each filter and store under object name
     for i, debiased_f in enumerate(slice_names):
@@ -970,7 +970,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         deflatted = os.path.join(
             os.path.dirname(image), target_dir,
-            imname + "_f_b_" + astro + objectname + "_%s.fits" % b)
+            imname + "_f_" + astro + "b_" + objectname + "_%s.fits" % b)
 
         # Flat to be used for that filter
         flat = os.path.join(flatdir, "Flat_rc_%s_%s_%s_norm.fits" % (kind,
