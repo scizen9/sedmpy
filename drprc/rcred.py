@@ -871,6 +871,8 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         # Correct for cosmics each filter
         cleanimg = clean_cosmic(os.path.join(os.path.abspath(curdir), image))
         img = cleanimg
+    else:
+        img = image
 
     # Compute BIAS
     if biasdir is None or biasdir == "":
