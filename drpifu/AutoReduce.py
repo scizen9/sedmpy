@@ -897,7 +897,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
-                        # Run SNID
+                        # Run SNID and SNIascore
                         logging.info("Running SNID, SNIascore for " + fn)
                         cmd = ("make", "classify")
                         logging.info(" ".join(cmd))
