@@ -44,6 +44,11 @@ try:
 except ImportError:
     import drprc.cosmics as cosmics
 
+try:
+    from target_mag import get_target_mag
+except ImportError:
+    from drprc.target_mag import get_target_mag
+
 from configparser import ConfigParser
 import codecs
 
@@ -1156,6 +1161,9 @@ if __name__ == '__main__':
                 reduced = reduce_image(f, cosmic=do_cosmic,
                                        kind_use='twilight', speed_use='slow',
                                        overwrite=args.overwrite)
+                for rf in reduced:
+                    if fitsutils.get_par(rf, "ONTARGET"):
+                        target_mag = get_target_mag(rf)
                 reducedfiles.extend(reduced)
             except OSError:
                 print("Error when reducing image %s" % f)
