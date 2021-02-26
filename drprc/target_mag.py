@@ -28,7 +28,7 @@ def get_target_mag(imfile):
         targ_y = hdu[0].header['TARGYPX']
 
         # create source position
-        positions = [(targ_y, targ_x)]
+        positions = [(targ_x, targ_y)]
 
         # Do photometry
         apertures = CircularAperture(positions, r=4.)
@@ -47,9 +47,8 @@ def get_target_mag(imfile):
         phot['aper_bkg'] = bkg_median * apertures.area
         phot['aper_sum_bkgsub'] = phot['aperture_sum'] - phot['aper_bkg']
         phot['mag_inst'] = 25.0 - math.log10(phot['aper_sum_bkgsub'])
-        for col in phot.colnames:
-            phot[col].info.format = '%.8g'
-        print(phot)
+        targ_mag = phot['mag_inst']
+        targ_magerr = targ_mag / 100.
 
     hdu.close()
 
