@@ -46,9 +46,10 @@ def get_target_mag(imfile):
         phot['annulus_median'] = bkg_median
         phot['aper_bkg'] = bkg_median * apertures.area
         phot['aper_sum_bkgsub'] = phot['aperture_sum'] - phot['aper_bkg']
-        phot['mag_inst'] = 25.0 - math.log10(phot['aper_sum_bkgsub'])
-        targ_mag = phot['mag_inst']
-        targ_magerr = targ_mag / 100.
+        ap_sum_bkgsub = phot['aper_sum_bkgsub'].data[0]
+        if ap_sum_bkgsub > 0:
+            targ_mag = 25.0 - math.log10(ap_sum_bkgsub)
+            targ_magerr = targ_mag / 100.
 
     hdu.close()
 
