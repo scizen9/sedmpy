@@ -10,12 +10,18 @@ from astropy.stats import sigma_clipped_stats
 from photutils import aperture_photometry, CircularAperture, CircularAnnulus
 import numpy as np
 
+sdss_r_band_extinction_coeff = 0.12
 
-def get_target_mag(imfile):
+stds = {'lb227': 12.55}
+
+
+def get_target_mag(imfile, zeropoint=None):
     """get target mag"""
     # initialize outputs
     targ_mag = None
     targ_magerr = None
+    std_mag = None
+    std_zeropoint = None
 
     # Open reduced image file
     hdu = pf.open(imfile)
@@ -26,6 +32,12 @@ def get_target_mag(imfile):
         image = hdu[0].data.astype(float)
         targ_x = hdu[0].header['TARGXPX']
         targ_y = hdu[0].header['TARGYPX']
+        targ_air = hdu[0].header['AIRMASS']
+        targ_name = hdu[0].header['OBJECT']
+        if 'STD' in targ_name:
+            std_name = targ_name.split()[0].split('-')[-1].lower()
+            if std_name in stds:
+                std_mag = stds[std_name]
 
         # create source position
         positions = [(targ_x, targ_y)]
@@ -48,9 +60,15 @@ def get_target_mag(imfile):
         phot['aper_sum_bkgsub'] = phot['aperture_sum'] - phot['aper_bkg']
         ap_sum_bkgsub = phot['aper_sum_bkgsub'].data[0]
         if ap_sum_bkgsub > 0:
-            targ_mag = 25.0 - math.log10(ap_sum_bkgsub)
+            if zeropoint is not None:
+                zp = zeropoint
+            else:
+                zp = 25.0
+            targ_mag = zp - math.log10(ap_sum_bkgsub) - targ_air * sdss_r_band_extinction_coeff
+            if std_mag is not None:
+                std_zeropoint = targ_mag - std_mag
             targ_magerr = targ_mag / 100.
 
     hdu.close()
 
-    return targ_mag, targ_magerr
+    return targ_mag, targ_magerr, std_zeropoint
