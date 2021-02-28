@@ -12,10 +12,10 @@ import numpy as np
 
 sdss_r_band_extinction_coeff = 0.12
 
-stds = {'lb227': 12.55}
+stds = {'lb227': 15.75}
 
 
-def get_target_mag(imfile, zeropoint=None):
+def get_target_mag(imfile, zeropoint=None, verbose=False):
     """get target mag"""
     # initialize outputs
     targ_mag = None
@@ -34,6 +34,8 @@ def get_target_mag(imfile, zeropoint=None):
         targ_y = hdu[0].header['TARGYPX']
         targ_air = hdu[0].header['AIRMASS']
         targ_name = hdu[0].header['OBJECT']
+        if verbose:
+            print("x: %.2f, y: %.2f, air: %.3f, targ: %s" % (targ_x, targ_y, targ_air, targ_name))
         if 'STD' in targ_name:
             std_name = targ_name.split()[0].split('-')[-1].lower()
             if std_name in stds:
@@ -64,9 +66,17 @@ def get_target_mag(imfile, zeropoint=None):
                 zp = zeropoint
             else:
                 zp = 25.0
-            targ_mag = zp - math.log10(ap_sum_bkgsub) - targ_air * sdss_r_band_extinction_coeff
+            int_mag = math.log10(ap_sum_bkgsub) - targ_air * sdss_r_band_extinction_coeff
             if std_mag is not None:
-                std_zeropoint = targ_mag - std_mag
+                std_zeropoint = std_mag + int_mag
+                zp = std_zeropoint
+                if verbose:
+                    print("std_mag: %2f, std_zp: %.2f" % (std_mag, zp))
+            targ_mag = zp - int_mag
+
+            if verbose:
+                print("cnts: %.1f, imag: %.2f, tmag: %.2f, zp: %.2f" % (ap_sum_bkgsub, int_mag, targ_mag, zp))
+
             targ_magerr = targ_mag / 100.
 
     hdu.close()
