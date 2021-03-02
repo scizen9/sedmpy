@@ -27,7 +27,7 @@ stds = {
     }    # r = V - 0.46 * (B-V) + 0.11
 
 
-def get_target_mag(imfile, aper_r=40., sky_aper_in=50., sky_aper_out=65.,
+def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
                    zeropoint=None, verbose=False):
     """get target mag
     Inputs
@@ -44,6 +44,11 @@ def get_target_mag(imfile, aper_r=40., sky_aper_in=50., sky_aper_out=65.,
     std_mag = None
     std_zeropoint = None
 
+    # default radii
+    ap_r = aper_r
+    sky_in = sky_aper_in
+    sky_out = sky_aper_out
+
     # Open reduced image file
     hdu = pf.open(imfile)
     on_target = hdu[0].header['ONTARGET']
@@ -56,18 +61,36 @@ def get_target_mag(imfile, aper_r=40., sky_aper_in=50., sky_aper_out=65.,
         targ_x = hdu[0].header['TARGXPX']
         targ_y = hdu[0].header['TARGYPX']
         targ_air = hdu[0].header['AIRMASS']
-        targ_name = hdu[0].header['OBJECT']
+        targ_obj = hdu[0].header['OBJECT']
         targ_expt = hdu[0].header['EXPTIME']
         targ_gain = hdu[0].header['GAIN']
         targ_rnoise = hdu[0].header['RDNOISE']
+
+        # Get target
+        if 'STD' in targ_obj:
+            targ_name = targ_obj.split()[0].split('STD-')[-1]
+        elif 'ACQ' in targ_obj:
+            targ_name = targ_obj.split()[0].split('ACQ-')[-1]
+        else:
+            targ_name = targ_obj.split()[0]
 
         if verbose:
             print("%s | x: %.2f, y: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
                   (targ_name, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
 
-        # Centroid STD stars
-        if 'STD' in targ_name:
-            cent_x, cent_y = centroid_sources(image, targ_x, targ_y, box_size=int(aper_r),
+        # Are we a standard star?
+        if targ_name.lower() in stds:
+            std_name = targ_name.lower()
+            if std_name in stds:
+                std_mag = stds[std_name]
+
+            # Adjust apertures
+            ap_r = 40.
+            sky_in = 50.
+            sky_out = 65.
+
+            # Centroid standard stars
+            cent_x, cent_y = centroid_sources(image, targ_x, targ_y, box_size=int(ap_r),
                                               centroid_func=centroid_2dg)
             targ_x = cent_x[0]
             targ_y = cent_y[0]
@@ -80,18 +103,12 @@ def get_target_mag(imfile, aper_r=40., sky_aper_in=50., sky_aper_out=65.,
         # Convert DN to electrons
         image *= targ_gain
 
-        # Are we a standard star?
-        if 'STD' in targ_name:
-            std_name = targ_name.split()[0].split('-')[-1].lower()
-            if std_name in stds:
-                std_mag = stds[std_name]
-
         # create source position
         positions = [(targ_x, targ_y)]
 
         # Set up apertures
-        apertures = CircularAperture(positions, r=aper_r)
-        annulus_aperture = CircularAnnulus(positions, r_in=sky_aper_in, r_out=sky_aper_out)
+        apertures = CircularAperture(positions, r=ap_r)
+        annulus_aperture = CircularAnnulus(positions, r_in=sky_in, r_out=sky_out)
         annulus_masks = annulus_aperture.to_mask(method='center')
 
         # Estimate background
@@ -147,6 +164,14 @@ def get_target_mag(imfile, aper_r=40., sky_aper_in=50., sky_aper_out=65.,
             if verbose:
                 print("e-/s: %.1f, err: %.1f, excor: %.2f, imag: %.2f, zp: %.2f, targ_mag: %.2f +- %.2f" %
                       (ap_sum_bkgsub_per_sec, ap_sum_err, air_cor, int_mag, zp, targ_mag, targ_magerr))
+
+            # Update header
+            hdu[0].header['RQMAG'] = (targ_mag, 'r-band quick magnitude')
+            hdu[0].header['RQMGERR'] = (targ_magerr, 'r-band quick mag error')
+            hdu[0].header['RQZP'] = (zp, 'r-band zeropoint used')
+            if std_mag is not None:
+                hdu[0].header['RQSTDZP'] = (std_zeropoint, 'calculated r-band zeropoint')
+            hdu.writeto(imfile, overwrite=True)
 
         else:
             print("Warning: negative net aperture sum, no mag calculated!")
