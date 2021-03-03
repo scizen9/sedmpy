@@ -179,7 +179,7 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
             targ_magerr = 1.0857362 * ap_sum_err / ap_sum_bkgsub
 
             if verbose:
-                print("e-/s: %.1f, err: %.1f, excor: %.2f, imag: %.2f, zp: %.2f, targ_mag: %.2f +- %.2f" %
+                print("Ap results | e-/s: %.1f, err: %.1f, excor: %.2f, imag: %.2f, zp: %.2f, targ_mag: %.2f +- %.2f" %
                       (ap_sum_bkgsub_per_sec, ap_sum_err, air_cor, int_mag, zp, targ_mag, targ_magerr))
 
             # Update header
