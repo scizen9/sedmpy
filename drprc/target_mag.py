@@ -13,17 +13,17 @@ import numpy as np
 sdss_r_band_extinction_coeff = 0.12
 
 stds = {
-    'sa95-42': 15.793,
-    'hz4': 14.576,
-    'lb227': 15.408,
-    'hz2': 14.028,
-    'bd+75d325': 9.811,
-    'feige34': 11.449,
-    'hz44': 11.917,
-    'bd+33d2642': 11.014,
-    'bd+28d4211': 10.776,
-    'bd+25d4655': 9.923,
-    'feige110': 12.082
+    'sa95-42': {'r': 15.793},
+    'hz4': {'r': 14.576},
+    'lb227': {'r': 15.408},
+    'hz2': {'r': 14.028},
+    'bd+75d325': {'r': 9.811},
+    'feige34': {'r': 11.449},
+    'hz44': {'r': 11.917},
+    'bd+33d2642': {'r': 11.014},
+    'bd+28d4211': {'r': 10.776},
+    'bd+25d4655': {'r': 9.923},
+    'feige110': {'r': 12.082}
     }    # r = V - 0.46 * (B-V) + 0.11
 
 
@@ -66,6 +66,9 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
         targ_gain = hdu[0].header['GAIN']
         targ_rnoise = hdu[0].header['RDNOISE']
 
+        # Get filter
+        filter = targ_obj.split()[-1]
+
         # Get target
         if 'STD' in targ_obj:
             targ_name = targ_obj.split()[0].split('STD-')[-1]
@@ -75,14 +78,15 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
             targ_name = targ_obj.split()[0]
 
         if verbose:
-            print("%s | x: %.2f, y: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
-                  (targ_name, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
+            print("%s %s | x: %.2f, y: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
+                  (targ_name, filter, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
 
         # Are we a standard star?
         if targ_name.lower() in stds:
             std_name = targ_name.lower()
-            if std_name in stds:
-                std_mag = stds[std_name]
+            std_dict = stds[std_name]
+            if filter in std_dict:
+                std_mag = std_dict[filter]
 
             # Adjust apertures
             ap_r = 40.
@@ -166,11 +170,12 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
                       (ap_sum_bkgsub_per_sec, ap_sum_err, air_cor, int_mag, zp, targ_mag, targ_magerr))
 
             # Update header
-            hdu[0].header['RQMAG'] = (targ_mag, 'r-band quick magnitude')
-            hdu[0].header['RQMGERR'] = (targ_magerr, 'r-band quick mag error')
-            hdu[0].header['RQZP'] = (zp, 'r-band zeropoint used')
+            key_stub = 'Q' + filter.upper()
+            hdu[0].header[key_stub + 'MAG'] = (targ_mag, filter + '-band quick magnitude')
+            hdu[0].header[key_stub + 'MGERR'] = (targ_magerr, filter + '-band quick mag error')
+            hdu[0].header[key_stub + 'ZP'] = (zp, filter + '-band zeropoint used')
             if std_mag is not None:
-                hdu[0].header['RQSTDZP'] = (std_zeropoint, 'calculated r-band zeropoint')
+                hdu[0].header[key_stub + 'STDZP'] = (std_zeropoint, filter + '-band calculated zeropoint')
             hdu.writeto(imfile, overwrite=True)
 
         else:
