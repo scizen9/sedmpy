@@ -169,7 +169,8 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
             # Use input zeropoint, if set
             if zeropoint is not None:
                 if targ_filter in zeropoint:
-                    zp = zeropoint[targ_filter]
+                    if zeropoint[targ_filter] is not None:
+                        zp = zeropoint[targ_filter]
 
             # Calculated calibrated target magnitude
             targ_mag = int_mag + zp
