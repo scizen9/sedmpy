@@ -89,7 +89,7 @@ def get_target_mag(imfile, u_zeropoint=None, g_zeropoint=None, r_zeropoint=None,
         if verbose:
             print("\n%s" % imfile)
             print("%s %s | x: %.2f, y: %.2f, fwhm: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
-                  (targ_name, targ_filter, targ_x, targ_y, targ_expt, targ_fwhm, targ_air, targ_gain, targ_rnoise))
+                  (targ_name, targ_filter, targ_x, targ_y, targ_fwhm, targ_expt, targ_air, targ_gain, targ_rnoise))
 
         # default radii
         if targ_fwhm > 0:
