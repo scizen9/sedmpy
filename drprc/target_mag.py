@@ -31,14 +31,10 @@ stds = {
     }
 
 
-def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
-                   zeropoint=None, verbose=False):
+def get_target_mag(imfile, zeropoint=None, verbose=False):
     """get target mag
     Inputs
     imfile: (str) - filename
-    aper_r: (float) - aperture radius in pixels
-    sky_aper_in: (float) - sky annulus inner radius
-    sky_aper_out: (float) - sky annulus outer radius
     zeropoint: (float) - magnitude zeropoint
     verbose: (bool) - extra output?
     """
@@ -47,11 +43,6 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
     targ_magerr = None
     std_mag = None
     std_zeropoint = None
-
-    # default radii
-    ap_r = aper_r
-    sky_in = sky_aper_in
-    sky_out = sky_aper_out
 
     # Open reduced image file
     hdu = pf.open(imfile)
@@ -69,6 +60,7 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
         targ_expt = hdu[0].header['EXPTIME']
         targ_gain = hdu[0].header['GAIN']
         targ_rnoise = hdu[0].header['RDNOISE']
+        targ_fwhm = hdu[0].header['FWHMPIX']
 
         # Get filter
         targ_filter = targ_obj.split()[-1]
@@ -83,8 +75,18 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
 
         if verbose:
             print("\n%s" % imfile)
-            print("%s %s | x: %.2f, y: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
-                  (targ_name, targ_filter, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
+            print("%s %s | x: %.2f, y: %.2f, fwhm: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
+                  (targ_name, targ_filter, targ_x, targ_y, targ_expt, targ_fwhm, targ_air, targ_gain, targ_rnoise))
+
+        # default radii
+        if targ_fwhm > 0:
+            ap_r = targ_fwhm
+            sky_in = targ_fwhm + targ_fwhm * 0.2
+            sky_out = targ_fwhm * 2.
+        else:
+            ap_r = 10.
+            sky_in = 12.
+            sky_out = 20.
 
         # Are we a standard star?
         if targ_name.lower() in stds:
