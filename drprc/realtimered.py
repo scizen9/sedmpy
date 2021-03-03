@@ -250,7 +250,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
                     # perform quick photometry
                     for rf in reduced:
                         if fitsutils.get_par(rf, "ONTARGET"):
-                            logger.info("Getting target mag for %f" % rf)
+                            logger.info("Getting target mag for %s" % rf)
                             target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
                             logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                             if std_zp is not None:
