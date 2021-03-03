@@ -10,7 +10,7 @@ from astropy.stats import sigma_clipped_stats
 from photutils import aperture_photometry, CircularAperture, CircularAnnulus, centroid_sources, centroid_2dg
 import numpy as np
 
-sdss_r_band_extinction_coeff = 0.12
+extinction_coeff = {'u': 0.594, 'g': 0.208, 'r': 0.120, 'i': 0.059}
 
 stds = {
     'sa95-42': {'r': 15.793},
@@ -78,6 +78,7 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
             targ_name = targ_obj.split()[0]
 
         if verbose:
+            print("\n%s" % imfile)
             print("%s %s | x: %.2f, y: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
                   (targ_name, filter, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
 
@@ -143,7 +144,10 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
         if ap_sum_bkgsub_per_sec > 0:
 
             # Calculate airmass-corrected instrumental magnitude
-            air_cor = targ_air * sdss_r_band_extinction_coeff
+            if filter in extinction_coeff:
+                air_cor = targ_air * extinction_coeff[filter]
+            else:
+                air_cor = 0.
             int_mag = -2.5 * math.log10(ap_sum_bkgsub_per_sec) - air_cor
 
             # Generate a new zeropoint, if we are a standard star
@@ -151,7 +155,7 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
                 std_zeropoint = std_mag - int_mag
                 zp = std_zeropoint
                 if verbose:
-                    print("std_mag: %2f, std_zp: %.2f" % (std_mag, zp))
+                    print("std_mag: %.2f, std_zp: %.2f" % (std_mag, zp))
             else:
                 zp = 25.0
 

@@ -1165,9 +1165,9 @@ if __name__ == '__main__':
                 for rf in reduced:
                     if fitsutils.get_par(rf, "ONTARGET"):
                         target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
-                        print("r = %.3f +- %.3f" % (target_mag, target_magerr))
+                        print("mag = %.3f +- %.3f" % (target_mag, target_magerr))
                         if std_zp is not None:
-                            print("r_zp: %.3f" % std_zp)
+                            print("mag_zp: %.3f" % std_zp)
                             if phot_zp is None:
                                 phot_zp = std_zp
                 reducedfiles.extend(reduced)
