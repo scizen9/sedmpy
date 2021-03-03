@@ -17,6 +17,10 @@ try:
     import fitsutils
 except ImportError:
     import drprc.fitsutils as fitsutils
+try:
+    from target_mag import get_target_mag
+except ImportError:
+    from drprc.target_mag import get_target_mag
 
 try:
     from pysedmpush import slack
@@ -210,7 +214,8 @@ def reduce_on_the_fly(photdir, nocopy=False):
               dayname
         logger.info(cmd)
         subprocess.call(cmd, shell=True)
-    
+
+    phot_zp = None
     # Run this loop for 12h after the start.
     while deltime.total_seconds() < total_wait:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
@@ -242,6 +247,16 @@ def reduce_on_the_fly(photdir, nocopy=False):
                     else:
                         do_cosmic = False
                     reduced = rcred.reduce_image(n, cosmic=do_cosmic)
+                    # perform quick photometry
+                    for rf in reduced:
+                        if fitsutils.get_par(rf, "ONTARGET"):
+                            logger.info("Getting target mag for %f" % rf)
+                            target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
+                            logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
+                            if std_zp is not None:
+                                logger.info("Quick MAG_ZP: %.3f" % std_zp)
+                                if phot_zp is None:
+                                    phot_zp = std_zp
                     if nocopy:
                         logger.info("Skipping copies to transient")
                     else:

@@ -1166,9 +1166,9 @@ if __name__ == '__main__':
                     if fitsutils.get_par(rf, "ONTARGET"):
                         logger.info("Getting target mag for %f" % rf)
                         target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
-                        logger.info("MAG = %.3f +- %.3f" % (target_mag, target_magerr))
+                        logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                         if std_zp is not None:
-                            logger.info("MAG_ZP: %.3f" % std_zp)
+                            logger.info("Quick MAG_ZP: %.3f" % std_zp)
                             if phot_zp is None:
                                 phot_zp = std_zp
                 reducedfiles.extend(reduced)
