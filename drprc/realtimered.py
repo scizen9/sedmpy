@@ -215,7 +215,7 @@ def reduce_on_the_fly(photdir, nocopy=False):
         logger.info(cmd)
         subprocess.call(cmd, shell=True)
 
-    phot_zp = None
+    phot_zp = {'u': None, 'g': None, 'r': None, 'i': None}
     # Run this loop for 12h after the start.
     while deltime.total_seconds() < total_wait:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
@@ -250,13 +250,17 @@ def reduce_on_the_fly(photdir, nocopy=False):
                     # perform quick photometry
                     for rf in reduced:
                         if fitsutils.get_par(rf, "ONTARGET"):
-                            logger.info("Getting target mag for %s" % rf)
-                            target_mag, target_magerr, std_zp = get_target_mag(rf, r_zeropoint=phot_zp)
+                            target_object = fitsutils.get_par(rf, "OBJECT")
+                            target_filter = target_object.split()[-1]
+                            target_name = target_object.split()[0]
+                            logger.info("Getting quick %s-band mag for %s in %s"
+                                        % (target_filter, target_name, rf))
+                            target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
                             logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                             if std_zp is not None:
                                 logger.info("Quick MAG_ZP: %.3f" % std_zp)
-                                if phot_zp is None:
-                                    phot_zp = std_zp
+                                if phot_zp[target_filter] is None:
+                                    phot_zp[target_filter] = std_zp
                     if nocopy:
                         logger.info("Skipping copies to transient")
                     else:

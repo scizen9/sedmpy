@@ -32,12 +32,11 @@ stds = {
     }
 
 
-def get_target_mag(imfile, u_zeropoint=None, g_zeropoint=None, r_zeropoint=None, i_zeropoint=None,
-                   verbose=False):
+def get_target_mag(imfile, zeropoint=None, verbose=False):
     """get target mag
     Inputs
     imfile: (str) - filename
-    zeropoint: (float) - magnitude zeropoint
+    zeropoint: (dict) - magnitude zeropoint dictionary with entries for ugri filters
     verbose: (bool) - extra output?
     """
     # initialize outputs
@@ -66,18 +65,6 @@ def get_target_mag(imfile, u_zeropoint=None, g_zeropoint=None, r_zeropoint=None,
 
         # Get filter
         targ_filter = targ_obj.split()[-1]
-
-        # Get passed zp
-        if 'u' in targ_filter:
-            zeropoint = u_zeropoint
-        elif 'g' in targ_filter:
-            zeropoint = g_zeropoint
-        elif 'r' in targ_filter:
-            zeropoint = r_zeropoint
-        elif 'i' in targ_filter:
-            zeropoint = i_zeropoint
-        else:
-            zeropoint = None
 
         # Get target
         if 'STD' in targ_obj:
@@ -145,7 +132,7 @@ def get_target_mag(imfile, u_zeropoint=None, g_zeropoint=None, r_zeropoint=None,
             bkg_median.append(median_sigclip)
         bkg_median = np.array(bkg_median)
 
-        # Calculate net aperture sums
+        # Calculate aperture sums
         phot = aperture_photometry(image, apertures, error=erimg)
         phot['annulus_median'] = bkg_median
         phot['aper_bkg'] = bkg_median * apertures.area
@@ -181,7 +168,8 @@ def get_target_mag(imfile, u_zeropoint=None, g_zeropoint=None, r_zeropoint=None,
 
             # Use input zeropoint, if set
             if zeropoint is not None:
-                zp = zeropoint
+                if targ_filter in zeropoint:
+                    zp = zeropoint[targ_filter]
 
             # Calculated calibrated target magnitude
             targ_mag = int_mag + zp

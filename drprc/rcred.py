@@ -1143,7 +1143,7 @@ if __name__ == '__main__':
         logger.info("Found %d files to process" % len(myfiles))
 
     # Reduce them
-    phot_zp = None
+    phot_zp = {'u': None, 'g': None, 'r': None, 'i': None}
     reducedfiles = []
     for f in myfiles:
         logger.info(f)
@@ -1164,13 +1164,17 @@ if __name__ == '__main__':
                                        overwrite=args.overwrite)
                 for rf in reduced:
                     if fitsutils.get_par(rf, "ONTARGET"):
-                        logger.info("Getting target mag for %s" % rf)
-                        target_mag, target_magerr, std_zp = get_target_mag(rf, r_zeropoint=phot_zp)
+                        target_object = fitsutils.get_par(rf, "OBJECT")
+                        target_filter = target_object.split()[-1]
+                        target_name = target_object.split()[0]
+                        logger.info("Getting quick %s-band mag for %s in %s"
+                                    % (target_filter, target_name, rf))
+                        target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
                         logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                         if std_zp is not None:
                             logger.info("Quick MAG_ZP: %.3f" % std_zp)
-                            if phot_zp is None:
-                                phot_zp = std_zp
+                            if phot_zp[target_filter] is None:
+                                phot_zp[target_filter] = std_zp
                 reducedfiles.extend(reduced)
             except OSError:
                 logger.error("Error when reducing image %s" % f)
