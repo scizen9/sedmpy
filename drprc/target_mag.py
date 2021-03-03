@@ -31,7 +31,8 @@ stds = {
     }
 
 
-def get_target_mag(imfile, zeropoint=None, verbose=False):
+def get_target_mag(imfile, u_zeropoint=None, g_zeropoint=None, r_zeropoint=None, i_zeropoint=None,
+                   verbose=False):
     """get target mag
     Inputs
     imfile: (str) - filename
@@ -64,6 +65,18 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
 
         # Get filter
         targ_filter = targ_obj.split()[-1]
+
+        # Get passed zp
+        if 'u' in targ_filter:
+            zeropoint = u_zeropoint
+        elif 'g' in targ_filter:
+            zeropoint = g_zeropoint
+        elif 'r' in targ_filter:
+            zeropoint = r_zeropoint
+        elif 'i' in targ_filter:
+            zeropoint = i_zeropoint
+        else:
+            zeropoint = None
 
         # Get target
         if 'STD' in targ_obj:

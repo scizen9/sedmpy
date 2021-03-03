@@ -1165,7 +1165,7 @@ if __name__ == '__main__':
                 for rf in reduced:
                     if fitsutils.get_par(rf, "ONTARGET"):
                         logger.info("Getting target mag for %s" % rf)
-                        target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
+                        target_mag, target_magerr, std_zp = get_target_mag(rf, r_zeropoint=phot_zp)
                         logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                         if std_zp is not None:
                             logger.info("Quick MAG_ZP: %.3f" % std_zp)

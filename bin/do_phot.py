@@ -14,7 +14,7 @@ flist = glob.glob('rc*.fits')
 for rf in flist:
     if fitsutils.get_par(rf, "ONTARGET"):
         print("\nGetting target mag for %s" % rf)
-        target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
+        target_mag, target_magerr, std_zp = get_target_mag(rf, r_zeropoint=phot_zp, verbose=True)
         print("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
         if std_zp is not None:
             print("Quick MAG_ZP: %.3f" % std_zp)
