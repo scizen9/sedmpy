@@ -11,6 +11,7 @@ except ImportError:
 
 phot_zp = None
 flist = glob.glob('rc*.fits')
+flist.sort()
 for rf in flist:
     if fitsutils.get_par(rf, "ONTARGET"):
         print("\nGetting target mag for %s" % rf)
