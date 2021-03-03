@@ -12,6 +12,10 @@ import numpy as np
 
 extinction_coeff = {'u': 0.594, 'g': 0.208, 'r': 0.120, 'i': 0.059}
 
+# u = 1.28 * (U-B) + 1.14 + g
+# g = V + 0.64 * (B-V) - 0.13
+# r = V - 0.46 * (B-V) + 0.11
+# r-i = 0.98 * (R-I) - 0.22
 stds = {
     'sa95-42': {'r': 15.793},
     'hz4': {'r': 14.576},
@@ -24,7 +28,7 @@ stds = {
     'bd+28d4211': {'r': 10.776},
     'bd+25d4655': {'r': 9.923},
     'feige110': {'r': 12.082}
-    }    # r = V - 0.46 * (B-V) + 0.11
+    }
 
 
 def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
@@ -67,7 +71,7 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
         targ_rnoise = hdu[0].header['RDNOISE']
 
         # Get filter
-        filter = targ_obj.split()[-1]
+        targ_filter = targ_obj.split()[-1]
 
         # Get target
         if 'STD' in targ_obj:
@@ -80,14 +84,14 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
         if verbose:
             print("\n%s" % imfile)
             print("%s %s | x: %.2f, y: %.2f, expt: %.2f, air: %.3f, gain: %.3f, rn: %.1f" %
-                  (targ_name, filter, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
+                  (targ_name, targ_filter, targ_x, targ_y, targ_expt, targ_air, targ_gain, targ_rnoise))
 
         # Are we a standard star?
         if targ_name.lower() in stds:
             std_name = targ_name.lower()
             std_dict = stds[std_name]
-            if filter in std_dict:
-                std_mag = std_dict[filter]
+            if targ_filter in std_dict:
+                std_mag = std_dict[targ_filter]
 
             # Adjust apertures
             ap_r = 40.
@@ -144,8 +148,8 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
         if ap_sum_bkgsub_per_sec > 0:
 
             # Calculate airmass-corrected instrumental magnitude
-            if filter in extinction_coeff:
-                air_cor = targ_air * extinction_coeff[filter]
+            if targ_filter in extinction_coeff:
+                air_cor = targ_air * extinction_coeff[targ_filter]
             else:
                 air_cor = 0.
             int_mag = -2.5 * math.log10(ap_sum_bkgsub_per_sec) - air_cor
@@ -174,12 +178,12 @@ def get_target_mag(imfile, aper_r=10., sky_aper_in=15., sky_aper_out=25.,
                       (ap_sum_bkgsub_per_sec, ap_sum_err, air_cor, int_mag, zp, targ_mag, targ_magerr))
 
             # Update header
-            key_stub = 'Q' + filter.upper()
-            hdu[0].header[key_stub + 'MAG'] = (targ_mag, filter + '-band quick magnitude')
-            hdu[0].header[key_stub + 'MGERR'] = (targ_magerr, filter + '-band quick mag error')
-            hdu[0].header[key_stub + 'ZP'] = (zp, filter + '-band zeropoint used')
+            key_stub = 'Q' + targ_filter.upper()
+            hdu[0].header[key_stub + 'MAG'] = (targ_mag, targ_filter + '-band quick magnitude')
+            hdu[0].header[key_stub + 'MGERR'] = (targ_magerr, targ_filter + '-band quick mag error')
+            hdu[0].header[key_stub + 'ZP'] = (zp, targ_filter + '-band zeropoint used')
             if std_mag is not None:
-                hdu[0].header[key_stub + 'STDZP'] = (std_zeropoint, filter + '-band calculated zeropoint')
+                hdu[0].header[key_stub + 'STDZP'] = (std_zeropoint, targ_filter + '-band calculated zeropoint')
             hdu.writeto(imfile, overwrite=True)
 
         else:

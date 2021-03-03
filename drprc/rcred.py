@@ -1130,23 +1130,23 @@ if __name__ == '__main__':
                         "ACQ" in fitsutils.get_par(f, "IMGTYPE").upper()))):
                 myfiles.append(f)
         except (OSError, KeyError):
-            print("problems opening file %s" % f)
+            logger.error("problems opening file %s" % f)
 
     create_masterbias(mydir)
-    print("Create masterflat", mydir)
+    logger.info("Create masterflat", mydir)
     create_masterflat(mydir)
 
     if len(myfiles) == 0:
-        print("Found no files to process")
+        logger.warning("Found no files to process")
         sys.exit()
     else:
-        print("Found %d files to process" % len(myfiles))
+        logger.info("Found %d files to process" % len(myfiles))
 
     # Reduce them
     phot_zp = None
     reducedfiles = []
     for f in myfiles:
-        print(f)
+        logger.info(f)
         # make_mask_cross(f)
         if (fitsutils.has_par(f, "IMGTYPE") and
                 (fitsutils.get_par(f, "IMGTYPE").upper() == "SCIENCE" or (
@@ -1164,15 +1164,16 @@ if __name__ == '__main__':
                                        overwrite=args.overwrite)
                 for rf in reduced:
                     if fitsutils.get_par(rf, "ONTARGET"):
+                        logger.info("Getting target mag for %f" % rf)
                         target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
-                        print("mag = %.3f +- %.3f" % (target_mag, target_magerr))
+                        logger.info("MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                         if std_zp is not None:
-                            print("mag_zp: %.3f" % std_zp)
+                            logger.info("MAG_ZP: %.3f" % std_zp)
                             if phot_zp is None:
                                 phot_zp = std_zp
                 reducedfiles.extend(reduced)
             except OSError:
-                print("Error when reducing image %s" % f)
+                logger.error("Error when reducing image %s" % f)
                 pass
 
     # If copy is requested, then we copy the whole folder or just the
