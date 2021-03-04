@@ -5,8 +5,11 @@ Created on Wed Feb 24 09:36:52 2021
 @author: neill
 """
 import math
+import os
+import matplotlib.pyplot as plt
 from astropy.io import fits as pf
 from astropy.stats import sigma_clipped_stats
+from astropy.visualization import simple_norm
 from photutils import aperture_photometry, CircularAperture, CircularAnnulus, centroid_sources, centroid_2dg
 import numpy as np
 
@@ -54,6 +57,8 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
         image = hdu[0].data.astype(float)
 
         # Get header params
+        nx = hdu[0].header['NAXIS1']
+        ny = hdu[0].header['NAXIS2']
         targ_x = hdu[0].header['TARGXPX']
         targ_y = hdu[0].header['TARGYPX']
         targ_air = hdu[0].header['AIRMASS']
@@ -62,6 +67,7 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
         targ_gain = hdu[0].header['GAIN']
         targ_rnoise = hdu[0].header['RDNOISE']
         targ_fwhm = hdu[0].header['FWHMPIX']
+        is_std = ('STD' in targ_obj)
 
         # Get filter
         targ_filter = targ_obj.split()[-1]
@@ -81,11 +87,11 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
 
         # default radii
         if targ_fwhm > 0:
-            ap_r = targ_fwhm
-            sky_in = targ_fwhm + targ_fwhm * 0.2
-            sky_out = targ_fwhm * 2.
+            ap_r = targ_fwhm / 2.
+            sky_in = ap_r + ap_r * 0.2
+            sky_out = sky_in + ap_r
         else:
-            ap_r = 10.
+            ap_r = 5.
             sky_in = 12.
             sky_out = 20.
 
@@ -147,6 +153,41 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
         # Get e-/s
         ap_sum_bkgsub_per_sec = ap_sum_bkgsub / targ_expt
 
+        # Plot apertures
+
+        # get plot output
+        abimfile = os.path.abspath(imfile)
+        imdir, fimfile = os.path.split(abimfile)
+        png_dir = os.path.join(imdir, 'png')
+        if not os.path.isdir(png_dir):
+            os.makedirs(png_dir)
+        plot_file = os.path.join(png_dir, 'phot_' + fimfile.split('.')[0] + '.png')
+
+        # get plot limits
+        x0 = targ_x - sky_out * 2.
+        if x0 < 0:
+            x0 = 0
+        x1 = targ_x + sky_out * 2.
+        if x1 > (nx - 1):
+            x1 = nx - 1
+        y0 = targ_y - sky_out * 2.
+        if y0 < 0:
+            y0 = 0
+        y1 = targ_y + sky_out * 2.
+        if y1 > (ny - 1):
+            y1 = ny - 1
+        plt.ioff()
+        norm = simple_norm(image[int(y0):int(y1), int(x0):int(x1)], 'asinh', asinh_a=0.2, percent=99.5)
+        plt.imshow(image, norm=norm, interpolation='nearest')
+        plt.plot(targ_x, targ_y, 'k+')
+        apertures.plot(color='white', lw=2)
+        annulus_aperture.plot(color='red', lw=2)
+
+        plt.xlim(x0, x1)
+        plt.ylim(y1, y0)
+        plt.xlabel('<-- E X (px)')
+        plt.ylabel('Y (px) N -->')
+
         # Is the net sum positive?
         if ap_sum_bkgsub_per_sec > 0:
 
@@ -190,9 +231,17 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
             if std_mag is not None:
                 hdu[0].header[key_stub + 'STDZP'] = (std_zeropoint, targ_filter + '-band calculated zeropoint')
             hdu.writeto(imfile, overwrite=True)
+            plt.title('%s %s: %.3f +- %.3f (%.2f, %.2f)' % (targ_name, targ_filter,
+                                                           targ_mag, targ_magerr,
+                                                           targ_x, targ_y))
 
         else:
             print("Warning: negative net aperture sum, no mag calculated!")
+            plt.title('%s %s' % (targ_name, targ_filter))
+        if verbose:
+            print("saving plot to %s" % plot_file)
+        plt.savefig(plot_file)
+        plt.close()
 
     hdu.close()
 
