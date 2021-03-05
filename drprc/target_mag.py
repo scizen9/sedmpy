@@ -161,7 +161,7 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
         png_dir = os.path.join(imdir, 'png')
         if not os.path.isdir(png_dir):
             os.makedirs(png_dir)
-        plot_file = os.path.join(png_dir, 'phot_' + fimfile.split('.')[0] + '.png')
+        plot_file = os.path.join(png_dir, fimfile.split('.')[0] + '_phot.png')
 
         # get plot limits
         x0 = targ_x - sky_out * 2.
