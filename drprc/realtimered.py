@@ -256,7 +256,10 @@ def reduce_on_the_fly(photdir, nocopy=False):
                             logger.info("Getting quick %s-band mag for %s in %s"
                                         % (target_filter, target_name, rf))
                             target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
-                            logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
+                            if target_mag is None or target_magerr is None:
+                                logger.warning("Quick mag failed!")
+                            else:
+                                logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
                             if std_zp is not None:
                                 logger.info("Quick MAG_ZP: %.3f" % std_zp)
                                 if phot_zp[target_filter] is None:
