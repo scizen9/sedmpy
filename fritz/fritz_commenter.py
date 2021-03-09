@@ -187,9 +187,8 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
         cldict = {
             "obj_id": object_id,
             "classification": "Ia",
-            "taxonomy": 3,
-            "probability": float(header['SNIASCORE']),
-            "group_ids": [0]
+            "taxonomy_id": 3,
+            "probability": float(header['SNIASCORE'])
         }
         if testing:
             print("TESTING add_SNIascore_classification(): no data sent to marshal")
@@ -204,7 +203,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 print('{}: Ia classification posted'.format(object_id))
                 return True
             else:
-                print('error submitting comment')
+                print('error submitting classification')
                 print(r['status'])
                 return False
 
