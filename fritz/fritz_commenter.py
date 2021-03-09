@@ -9,6 +9,7 @@ from marshals.interface import api
 fritz_base_url = 'https://fritz.science/api/'
 fritz_comment_url = fritz_base_url + 'comment'
 fritz_annotation_url = fritz_base_url + 'annotation'
+fritz_classification_url = fritz_base_url + 'classification'
 
 
 def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
@@ -96,17 +97,16 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
 def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
                                    testing=False):
     """
-    if z < 0.3 and rlap > 5.0
-        adds autoannotations with SNID rlap, z, type, etc
-        adds a comment with the SNID plot attached
+    adds autoannotations with SNIASCORE and error
+    if SNIASCORE > 0.9, also adds SNIASCORE redshift and error
 
     fname: '*ZTF18aaaaaaa.txt' that has a bunch of
-            "# SNIDMATCH[something]: [val]" in the header
-    cred: ('username', 'password')
-    reducedby: (str)
+            "# SNIASCORE[something]: [val]" in the header
+    object_id: (str)
+    spec_id: (int)
     testing: (bool)
 
-    returns: True if all four comments/attachments works, False
+    returns: True if autoannotation works, False
             (and it'll exit early) otherwise
     """
 
@@ -129,10 +129,19 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
 
     # construct annotations dictionary
     if float(header['SNIASCORE']) >= 0.9:
-        andic = {'SNIascore': header['SNIASCORE'],
-                 'SNIascore_err': header['SNIASCORE_ERR'],
-                 'SNIa_z': header['SNIASCORE_Z'],
-                 'SNIa_z_err': header['SNIASCORE_ZERR']}
+        # Post classification
+        if add_SNIascore_classification(fname, object_id=object_id,
+                                        testing=testing):
+            print("POSTed Ia classification to fritz")
+        else:
+            print("Unable to post Ia classification to fritz")
+        # Generate annotation dictionary
+        andic = {
+            'SNIascore': header['SNIASCORE'],
+            'SNIascore_err': header['SNIASCORE_ERR'],
+            'SNIa_z': header['SNIASCORE_Z'],
+            'SNIa_z_err': header['SNIASCORE_ZERR']
+        }
     else:
         andic = {
             'SNIascore': header['SNIASCORE'],
@@ -141,6 +150,65 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     origin = 'SNIascore:spc%d' % spec_id
 
     return add_spec_autoannot(object_id, andic, origin=origin, testing=testing)
+
+
+def add_SNIascore_classification(fname, object_id=None, testing=False):
+    """
+    adds SNIASCORE "Ia" classification if SNIASCORE > 0.9
+
+    fname: '*ZTF18aaaaaaa.txt' that has a bunch of
+            "# SNIASCORE[something]: [val]" in the header
+    object_id: (str)
+    testing: (bool)
+
+    returns: True if classification works, False
+            (and it'll exit early) otherwise
+    """
+
+    file_ext = fname.split('.')[-1]
+    assert file_ext == 'txt' or file_ext == 'ascii'
+
+    with open(fname) as f:
+        header = {line.split(':', 1)[0][1:].strip():
+                  line.split(':', 1)[-1].strip()
+                  for line in f if line[0] == '#'}
+
+    # SNIascore RESULTS
+    if 'SNIASCORE' not in header:
+        print(fname, "never run through SNIascore?")
+        return False
+
+    if float(header['SNIASCORE']) < 0:
+        print('no score')
+        return False
+
+    # construct annotations dictionary
+    if float(header['SNIASCORE']) >= 0.9:
+        cldict = {
+            "obj_id": object_id,
+            "classification": "Ia",
+            "taxonomy": 3,
+            "probability": float(header['SNIASCORE']),
+            "group_ids": [0]
+        }
+        if testing:
+            print("TESTING add_SNIascore_classification(): no data sent to marshal")
+            print(cldict)
+            return True
+        else:
+            r = api("POST", fritz_classification_url, data=cldict).json()
+            if 'success' in r['status']:
+                r_data = r['data']
+                if 'classification_id' in r_data:
+                    print("classification id = %d" % r_data['classification_id'])
+                print('{}: Ia classification posted'.format(object_id))
+                return True
+            else:
+                print('error submitting comment')
+                print(r['status'])
+                return False
+
+    return False
 
 
 def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
