@@ -830,7 +830,7 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
                     "--centroidB", "brightest", "--display"]
 
         cmd = ["extractstar_ab.py", datestr, "--auto", rute+'.fits',
-               "--autobins", "6", "--tag", "ABext",
+               "--autobins", "6", "--byecr", "--tag", "ABext",
                "--seeing", "2.0"]  # "%.2f" % seeing]
         if got_positions or manual:
             # Add position parameters
