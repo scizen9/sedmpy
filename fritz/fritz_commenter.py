@@ -10,6 +10,7 @@ fritz_base_url = 'https://fritz.science/api/'
 fritz_comment_url = fritz_base_url + 'comment'
 fritz_annotation_url = fritz_base_url + 'annotation'
 fritz_classification_url = fritz_base_url + 'classification'
+fritz_redshift_update_url = fritz_base_url + 'sources/'
 
 
 def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
@@ -191,7 +192,8 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
             "probability": float(header['SNIASCORE'])
         }
         if testing:
-            print("TESTING add_SNIascore_classification(): no data sent to marshal")
+            print("TESTING add_SNIascore_classification():"
+                  " no data sent to marshal")
             print(cldict)
             return True
         else:
@@ -199,12 +201,27 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
             if 'success' in r['status']:
                 r_data = r['data']
                 if 'classification_id' in r_data:
-                    print("classification id = %d" % r_data['classification_id'])
+                    print("classification id = %d" %
+                          r_data['classification_id'])
                 print('{}: Ia classification posted'.format(object_id))
+                # now add redshift
+                if 'SNIASCORE_Z' in header:
+                    rsdict = {"redshift": float(header['SNIASCORE_Z'])}
+                    rr = api("PATCH", fritz_redshift_update_url + object_id,
+                             data=rsdict)
+                    if 'success' in rr['status']:
+                        print("redshift updated to %.4f" % rsdict['redshift'])
+                    else:
+                        print('error updating redshift')
+                        print(rr['status'])
+                        print(rr['message'])
+                        print(rr['data'])
                 return True
             else:
                 print('error submitting classification')
                 print(r['status'])
+                print(r['message'])
+                print(r['data'])
                 return False
 
     return False
