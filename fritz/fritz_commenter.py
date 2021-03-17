@@ -206,16 +206,31 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 print('{}: Ia classification posted'.format(object_id))
                 # now add redshift
                 if 'SNIASCORE_Z' in header:
-                    rsdict = {"redshift": float(header['SNIASCORE_Z'])}
-                    rr = api("PATCH", fritz_redshift_update_url + object_id,
-                             data=rsdict).json()
-                    if 'success' in rr['status']:
-                        print("redshift updated to %.4f" % rsdict['redshift'])
-                    else:
-                        print('error updating redshift')
-                        print(rr['status'])
-                        print(rr['message'])
-                        print(rr['data'])
+                    # What is the current redshift set to?
+                    rc = api("GET",
+                             fritz_redshift_update_url + object_id).json()
+                    if 'success' in rc['status']:
+                        rc_data = rc['data']
+                        current_redshift = None
+                        if 'redshift' in rc_data:
+                            current_redshift = rc_data['redshift']
+                        # Only set redshift if it is not already set
+                        if current_redshift is None:
+                            rsdict = {"redshift": float(header['SNIASCORE_Z'])}
+                            rr = api("PATCH",
+                                     fritz_redshift_update_url + object_id,
+                                     data=rsdict).json()
+                            if 'success' in rr['status']:
+                                print("redshift updated to %.4f" %
+                                      rsdict['redshift'])
+                            else:
+                                print('error updating redshift')
+                                print(rr['status'])
+                                print(rr['message'])
+                                print(rr['data'])
+                        else:
+                            print('Redshift already set to %.4f' %
+                                  rc_data['redshift'])
                 return True
             else:
                 print('error submitting classification')
