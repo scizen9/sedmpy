@@ -208,7 +208,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 if 'SNIASCORE_Z' in header:
                     rsdict = {"redshift": float(header['SNIASCORE_Z'])}
                     rr = api("PATCH", fritz_redshift_update_url + object_id,
-                             data=rsdict)
+                             data=rsdict).json()
                     if 'success' in rr['status']:
                         print("redshift updated to %.4f" % rsdict['redshift'])
                     else:
