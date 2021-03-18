@@ -1,5 +1,6 @@
 import re
 import base64
+import math
 from glob import glob
 from getpass import getpass
 from pprint import pprint
@@ -205,7 +206,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                           r_data['classification_id'])
                 print('{}: Ia classification posted'.format(object_id))
                 # now add redshift
-                if 'SNIASCORE_Z' in header:
+                if 'SNIASCORE_Z' in header and 'SNIASCORE_ZERR' in header:
                     # What is the current redshift set to?
                     rc = api("GET",
                              fritz_redshift_update_url + object_id).json()
@@ -216,21 +217,34 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                             current_redshift = rc_data['redshift']
                         # Only set redshift if it is not already set
                         if current_redshift is None:
-                            rsdict = {"redshift": float(header['SNIASCORE_Z'])}
+                            new_redshift = float(header['SNIASCORE_Z'])
+                            new_redshift_error = float(header['SNIASCORE_ZERR'])
+                            try:
+                                new_z_round = round(abs(
+                                    math.log10(new_redshift_error)))
+                            # Handle negative, NaN, Inf, None and <str> values
+                            except (ValueError, OverflowError, TypeError):
+                                new_z_round = 1
+                            new_z = round(new_redshift,
+                                          1 if new_z_round < 1 else new_z_round)
+                            rsdict = {"redshift": new_z}
                             rr = api("PATCH",
                                      fritz_redshift_update_url + object_id,
                                      data=rsdict).json()
                             if 'success' in rr['status']:
-                                print("redshift updated to %.4f" %
-                                      rsdict['redshift'])
+                                print("redshift for %s updated to %.4f" %
+                                      (object_id, rsdict['redshift']))
                             else:
-                                print('error updating redshift')
+                                print('error updating %s redshift' % object_id)
                                 print(rr['status'])
                                 print(rr['message'])
                                 print(rr['data'])
                         else:
-                            print('Redshift already set to %.4f' %
-                                  rc_data['redshift'])
+                            print('Redshift for %s already set to %.4f' %
+                                  (object_id, rc_data['redshift']))
+                    else:
+                        print('error getting current redshift for %s' %
+                              object_id)
                 return True
             else:
                 print('error submitting classification')
