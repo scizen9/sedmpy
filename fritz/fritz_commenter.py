@@ -245,6 +245,9 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                     else:
                         print('error getting current redshift for %s' %
                               object_id)
+                else:
+                    print('No SNIascore redshift records found for %s ' %
+                          object_id)
                 return True
             else:
                 print('error submitting classification')
