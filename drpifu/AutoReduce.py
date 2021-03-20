@@ -732,7 +732,8 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
         int: Number of ifu images actually copied
 
     """
-
+    # don't make guider movie if we are local
+    guider_movie = not local
     # Record copies and standard star observations
     ncp = 0
     copied = []
@@ -779,7 +780,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
             if 'STD-' in obj:
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=False, hdr=None,
-                                    guider_movie=True)
+                                    guider_movie=guider_movie)
                 if e3d_good:
                     # Get seeing
                     seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
@@ -864,7 +865,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                 # Build cube for science observation
                 e3d_good = make_e3d(fnam=fl, destdir=destdir, datestr=datestr,
                                     nodb=nodb, sci=True, hdr=hdr,
-                                    guider_movie=True)
+                                    guider_movie=guider_movie)
 
                 if e3d_good:
                     # Get seeing
