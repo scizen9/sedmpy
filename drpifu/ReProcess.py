@@ -1376,16 +1376,6 @@ def make_abpair_cubes(destdir=None):
         fla_exists = os.path.exists(os.path.join(destdir, fla))
         flb_exists = os.path.exists(os.path.join(destdir, flb))
         if fla_exists and flb_exists:
-            hdu_a = pf.open(os.path.join(destdir, fla))
-            hdu_b = pf.open(os.path.join(destdir, flb))
-            # do the subtraction
-            ima = hdu_a[0].data
-            imb = hdu_b[0].data
-            dif = ima - imb
-            hdu_a[0].data = dif
-            # update header
-            hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
-            hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
             # get output file name
             ots = str(ts_ab.value
                       ).replace('-',
@@ -1393,10 +1383,23 @@ def make_abpair_cubes(destdir=None):
                                             '_').replace(' ',
                                                          '_').split('.')[0]
             flab = pre + 'ifu' + ots + '_' + obj + '.fits'
-            with open(os.path.join(destdir, flab), 'bw') as ff:
-                hdu_a.writeto(ff)
-            logging.info("wrote A/B cube %s" % flab)
-            nab += 1
+            if os.path.exists(os.path.join(destdir, flab)):
+                logging.warning("A/B cube %s already exists" % flab)
+            else:
+                hdu_a = pf.open(os.path.join(destdir, fla))
+                hdu_b = pf.open(os.path.join(destdir, flb))
+                # do the subtraction
+                ima = hdu_a[0].data
+                imb = hdu_b[0].data
+                dif = ima - imb
+                hdu_a[0].data = dif
+                # update header
+                hdu_a[0].header['ABFILA'] = (fla, 'A/B pair file A')
+                hdu_a[0].header['ABFILB'] = (flb, 'A/B pair file B')
+                with open(os.path.join(destdir, flab), 'bw') as ff:
+                    hdu_a.writeto(ff)
+                logging.info("wrote A/B cube %s" % flab)
+                nab += 1
         else:
             logging.warning("Both input cubes not found for %s" % obj)
             if not fla_exists:
