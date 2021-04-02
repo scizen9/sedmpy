@@ -87,13 +87,13 @@ def get_target_mag(imfile, zeropoint=None, verbose=False):
 
         # default radii
         if targ_fwhm > 0:
-            ap_r = targ_fwhm / 2.
+            ap_r = targ_fwhm  # / 2.
             sky_in = ap_r + ap_r * 0.2
             sky_out = sky_in + ap_r
         else:
-            ap_r = 5.
-            sky_in = 12.
-            sky_out = 20.
+            ap_r = 10.
+            sky_in = 24.
+            sky_out = 40.
 
         # Are we a standard star?
         if targ_name.lower() in stds:
