@@ -304,9 +304,11 @@ def reduce_on_the_fly(photdir, nocopy=False):
                         imgf = png_dir + basename + '.png'
                         title = "RC image: %s | %s" % (basename, imtype)
                         if slack is not None:
-                            slack.push_image(imgf, caption="",
-                                             title=title,
-                                             channel=SLACK_CHANNEL)
+                            # only push r-band where ref pixel is
+                            if '_r.png' in imgf:
+                                slack.push_image(imgf, caption="",
+                                                 title=title,
+                                                 channel=SLACK_CHANNEL)
                         else:
                             print("Cannot push: %s" % imgf)
         # Get new delta time
