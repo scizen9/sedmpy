@@ -291,6 +291,24 @@ def reduce_on_the_fly(photdir, nocopy=False):
                                                      channel=SLACK_CHANNEL)
                                 else:
                                     print("Cannot push: %s" % imgf)
+                elif "POINTING" in imtype.upper():
+                    if fitsutils.get_par(n, "EXPTIME") > 30.:
+                        do_cosmic = True
+                    else:
+                        do_cosmic = False
+                    reduced = rcred.reduce_image(n, cosmic=do_cosmic)
+                    for r in reduced:
+                        # push to slack
+                        png_dir = os.path.dirname(r) + '/png/'
+                        basename = os.path.basename(r).split('.')[0]
+                        imgf = png_dir + basename + '.png'
+                        title = "RC image: %s | %s" % (basename, imtype)
+                        if slack is not None:
+                            slack.push_image(imgf, caption="",
+                                             title=title,
+                                             channel=SLACK_CHANNEL)
+                        else:
+                            print("Cannot push: %s" % imgf)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
