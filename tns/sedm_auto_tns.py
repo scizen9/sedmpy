@@ -33,7 +33,7 @@ def get_source_api(ztf_name):
          spectra, includes redshift, classification, comments, etc.)
     """
     url = BASEURL+'api/sources/'+ztf_name+'?includeComments=true'
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     return resp['data']
 
 
@@ -69,7 +69,7 @@ def get_number_of_sources(group_id, date):
 
     url = BASEURL+'api/sources?saveSummary=true&group_ids=' + group_id + \
         '&savedAfter='+date+'T00:00:00.000001'
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     return len(resp['data']['sources'])
 
 
@@ -86,7 +86,7 @@ def get_group_sources(group_id, date):
 
         url = BASEURL+'api/sources?saveSummary=true&group_ids=' + group_id + \
               '&savedAfter='+date+'T00:00:00.000001'
-        resp = api('GET', url)
+        resp = api('GET', url).json()
         ztf_name = resp['data']['sources'][si]['obj_id']
         srces.append(ztf_name)
 
@@ -100,7 +100,7 @@ def get_total_number_of_sources(group_id):
     """
 
     url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     return len(resp['data']['sources'])
 
 
@@ -116,7 +116,7 @@ def get_all_group_sources(group_id):
     for si in range(get_number_of_sources(group_id)):
 
         url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id
-        resp = api('GET', url)
+        resp = api('GET', url).json()
         ztf_name = resp['data']['sources'][si]['obj_id']
         srces.append(ztf_name)
 
@@ -131,7 +131,7 @@ def get_iau_name(ztf_name):
     """
 
     url = BASEURL + 'api/alerts/ztf/' + ztf_name + '/aux'
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     return resp["data"]["cross_matches"]["TNS"]
 
 
@@ -145,7 +145,7 @@ def get_classification(ztf_name):
     """
 
     url = BASEURL + 'api/sources/' + ztf_name + '/classifications'
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     output = resp['data']
 
     classification = None
@@ -196,7 +196,7 @@ def get_redshift(ztf_name):
     """
 
     url = BASEURL + 'api/sources/' + ztf_name
-    resp = api('GET', url)
+    resp = api('GET', url).json()
 
     redshift = resp['data']['redshift']
 
@@ -209,7 +209,7 @@ def get_redshift(ztf_name):
 def get_tns_information(ztf_name):
 
     # url = BASEURL+'api/sources/'+ztf_name
-    # resp = api('GET', url)
+    # resp = api('GET', url).json()
 
     iau = get_iau_name(ztf_name)
 
@@ -250,14 +250,14 @@ def get_spectrum_api(spectrum_id):
         Returns : list of spectrum jsons
     """
     url = BASEURL + 'api/spectrum/' + str(spectrum_id)
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     return resp
 
 
 def get_all_spectra_len(ztf_name):
 
     url = BASEURL+'api/sources/'+ztf_name+'/spectra'
-    resp = api('GET', url)
+    resp = api('GET', url).json()
     return len(resp['data']['spectra'])
 
 
@@ -271,7 +271,7 @@ def get_all_spectra_id(ztf_name):
     for si in range(get_all_spectra_len(ztf_name)):
 
         url = BASEURL + 'api/sources/' + ztf_name + '/spectra'
-        resp = api('GET', url)
+        resp = api('GET', url).json()
 
         sid = resp['data']['spectra'][si]['id']
         spec_id.append(sid)
@@ -297,7 +297,7 @@ def get_required_spectrum_id(ztf_name):
         for s in range(spec):
 
             url = BASEURL + 'api/sources/' + ztf_name + '/spectra'
-            resp = api('GET', url)
+            resp = api('GET', url).json()
 
             spec_name = resp['data']['spectra'][s]['original_file_filename']
             spec_date = resp['data']['spectra'][s]['observed_at']
@@ -371,7 +371,7 @@ def post_comment(ztf_name, text):
 
     url = BASEURL + 'api/comment'
 
-    resp = api('POST', url, data=data)
+    resp = api('POST', url, data=data).json()
 
     return resp
 
@@ -481,7 +481,7 @@ def get_number(group_id, date):
 
     url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id + \
         '&savedAfter='+date+'T00:00:00.000001'
-    response = api('GET', url)
+    response = api('GET', url).json()
     return len(response['data']['sources'])
 
 
@@ -498,7 +498,7 @@ def get_sources(group_id, date):
 
         url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id + \
               '&savedAfter='+date+'T00:00:00.000001'
-        response = api('GET', url)
+        response = api('GET', url).json()
         ztf_name = response['data']['sources'][i]['obj_id']
         sources.append(ztf_name)
 
