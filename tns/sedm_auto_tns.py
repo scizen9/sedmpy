@@ -48,7 +48,7 @@ def get_group_ids(groupnames=None):
                       'Census of the Local Universe Caltech']
 
     url = BASEURL+'api/groups'
-    headers = {'Authorization': f'token {GETTOKEN}'}
+    headers = {'Authorization': 'token {}'.format(GETTOKEN)}
     groupnames = np.atleast_1d(groupnames)
     grpids = []
     for grpname in groupnames:
