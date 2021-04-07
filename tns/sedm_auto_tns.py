@@ -666,7 +666,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
                   for line in f if line[0] == '#'}
 
     if ztfname is None:
-        ztfname = header['name']
+        ztfname = header['NAME']
 
     comments = [c['text'] for c in get_source_api(ztfname)['comments']]
     if 'Uploaded to TNS' in comments:
@@ -695,9 +695,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
         print("No spectrum found")
         return False
 
-    specfile = (path + '/data/' + spectrum_name)
-
-    files = specfile
+    specfile = os.path.join(path, spectrum_name)
 
     classifiers = 'A. Dahiwale, C. Fremling(Caltech) on behalf of the ' \
                   'Zwicky Transient Facility (ZTF)'
@@ -739,22 +737,25 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
     pprint(classification_report.fill(), tab='  ')
 
     # ASCII FILE UPLOAD
-    print("\n")
-    response = upload_to_tns(files)
-    print(response)
-
-    if not response:
-        print("File upload didn't work")
+    if not testing:
+        print("\n")
+        response = upload_to_tns(specfile)
         print(response)
-        return False
 
-    print(response['id_code'], response['id_message'],
-          "\nSuccessfully uploaded ascii spectrum")
-    # classification_report.asciiName = response['data'][-1]
+        if not response:
+            print("File upload didn't work")
+            print(response)
+            return False
 
-    report_id = tns_classify(classification_report)
-    post_comment(ztfname, 'Uploaded to TNS')
-    tns_feedback(report_id)
+        print(response['id_code'], response['id_message'],
+              "\nSuccessfully uploaded ascii spectrum")
+        # classification_report.asciiName = response['data'][-1]
+
+        report_id = tns_classify(classification_report)
+        post_comment(ztfname, 'Uploaded to TNS')
+        tns_feedback(report_id)
+    else:
+        print(classification_report)
 
     return True
 
@@ -767,31 +768,18 @@ Uploads classification report to the TNS website.
 
 """,
         formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('indate', type=str, default=None,
-                        help='input directory date (UT date as YYYYMMDD)')
     parser.add_argument('--data_file', type=str, default=None,
-                        help='Data file to upload: spec_*.txt')
-    parser.add_argument('--reducedby', type=str, default=None,
-                        help='reducer (defaults to auto)')
+                        help='Data file to upload: '
+                             '/scr2/sedmdrp/redux/YYYYMMDD/spec_*.txt')
     parser.add_argument('--testing', action="store_true", default=False,
                         help='Do not actually post to TNS (for testing)')
     args = parser.parse_args()
 
-    # Check environment
-    try:
-        reddir = os.environ["SEDMREDUXPATH"]
-    except KeyError:
-        print("please set environment variable SEDMREDUXPATH")
-        sys.exit(1)
+    infile = args.data_file
 
-    # Get source dir
-    if args.indate:
-        utc = args.indate
+    # Check input
+    if not os.path.exists(infile):
+        print("File not found: %s" % infile)
     else:
-        utc = datetime.datetime.utcnow().strftime("%Y%m%d")
-    srcdir = reddir + '/' + utc + '/'
-    # Check source dir
-    if not os.path.exists(srcdir):
-        print("Dir not found: %s" % srcdir)
-    else:
-        print("Uploading from %s" % srcdir)
+        print("Uploading from %s" % infile)
+        sedm_tns_classify(infile, testing=args.testing)
