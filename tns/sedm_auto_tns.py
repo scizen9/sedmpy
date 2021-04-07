@@ -1,10 +1,12 @@
 import numpy as np
 from astropy.time import Time
 import os
+import sys
+import datetime
 import requests
 import json
+import argparse
 from time import sleep
-import webbrowser as wb
 
 from marshals.interface import api
 
@@ -279,54 +281,32 @@ def get_all_spectra_id(ztf_name):
     return spec_id
 
 
-def get_required_spectrum_id(ztf_name):
+def get_required_spectrum_id(ztf_name, spec_file):
 
-    spec = (get_all_spectra_len(ztf_name))
+    spec_id = None
 
-    name = []
-    date = []
+    specfn = os.path.basename(spec_file)
 
-    if spec == 0:
+    nspec = (get_all_spectra_len(ztf_name))
 
-        spec_id = "No Spectra Found"
-
-    else:
+    if nspec > 0:
 
         spec_ids = get_all_spectra_id(ztf_name)
 
-        for s in range(spec):
-
-            url = BASEURL + 'api/sources/' + ztf_name + '/spectra'
-            resp = api('GET', url).json()
-
-            spec_name = resp['data']['spectra'][s]['original_file_filename']
-            spec_date = resp['data']['spectra'][s]['observed_at']
-
-            name.append(spec_name)
-            date.append(spec_date.split('T')[0])
-
-        print("Please choose from the following spectra: \n")
-
-        for si in range(len(name)):
-            print((si+1), ")", "spectrum name: ", name[si],
-                  "spectrum date:", date[si])
-
-        wb.open(BASEURL + 'source/' + ztf_name, new=2)
-
-        spec_pick = input("Choose spectrum to upload: ")
-
-        spec_id = spec_ids[int(spec_pick)-1]
+        for sid in spec_ids:
+            spec = get_spectrum_api(sid)
+            if specfn in spec['data']['original_file_filename']:
+                spec_id = sid
 
     return spec_id
 
 
-def write_ascii_file(ztf_name):
+def write_ascii_file(ztf_name, specid, path=None):
 
-    specid = get_required_spectrum_id(ztf_name)
+    specfn = None
 
-    if specid == 'No Spectra Found':
-        spectrum_name = 'No Spectra Found'
-        print(spectrum_name)
+    if specid is None:
+        print("ERROR: no spec_id")
 
     else:
         a = get_spectrum_api(specid)
@@ -336,20 +316,18 @@ def write_ascii_file(ztf_name):
         if inst == 'SEDM':
 
             header = (a['data']['altdata'])
-            path = os.getcwd()
 
-            s = (ztf_name+'_' + str(header['OBSDATE']) + '_' +
-                 str(inst) + '.ascii')
+            specfn = (ztf_name + '_' + str(header['OBSDATE']) +
+                      '_' + str(inst) + '.ascii')
 
-            with open(path + '/data/' + s, 'w') as f:
+            with open(os.path.join(path, specfn), 'w') as f:
                 f.write(a['data']['original_file_string'])
-            f.close()
 
-            spectrum_name = s
         else:
-            spectrum_name = None
+            print('ERROR: not an SEDM spectrum!')
+            specfn = None
 
-    return spectrum_name, specid
+    return specfn
 
 
 def pprint(*args, **kwargs):
@@ -611,8 +589,10 @@ def upload_to_tns(filename, base_url=upload_url, api_key=API_KEY,
     elif filetype is 'fits':
         files = [('files[0]', (filename, open(filename, 'rb'),
                                'application/fits'))]
+    else:
+        files = None
 
-    if filename:
+    if files is not None:
         response = requests.post(url, data=data, files=files)
         try:
             return response.json()
@@ -620,7 +600,7 @@ def upload_to_tns(filename, base_url=upload_url, api_key=API_KEY,
             print(url, data, files, response.content, sep='\n')
             return False
     else:
-        return {}
+        return False
 
 
 def tns_classify(classification_report, base_url=report_url, api_key=API_KEY):
@@ -672,9 +652,21 @@ def tns_feedback(reprt_id):
         return False
 
 
-def sedm_tns_classify(ztfname, specid=None, snia_score=None):
+def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
     """Verify the input source, prepare a classification report and
     upload to TNS"""
+
+    if not os.path.exists(spec_file):
+        print("ERROR: File not found!: %s" % spec_file)
+        return False
+
+    with open(spec_file) as f:
+        header = {line.split(':', 1)[0][1:].strip():
+                  line.split(':', 1)[-1].strip()
+                  for line in f if line[0] == '#'}
+
+    if ztfname is None:
+        ztfname = header['name']
 
     comments = [c['text'] for c in get_source_api(ztfname)['comments']]
     if 'Uploaded to TNS' in comments:
@@ -692,31 +684,25 @@ def sedm_tns_classify(ztfname, specid=None, snia_score=None):
 
     # print(info)
 
-    spectrum_info = write_ascii_file(ztfname)  # returns "spectrum_name"
+    path = os.path.dirname(spec_file)
 
-    spectrum_name = spectrum_info[0]
+    if specid is None:
+        specid = get_required_spectrum_id(ztfname, spec_file)
 
-    if spectrum_name == 'No Spectra Found':
-        print(spectrum_name)
+    spectrum_name = write_ascii_file(ztfname, specid, path=path)
+
+    if spectrum_name is None:
+        print("No spectrum found")
         return False
-
-    path = os.getcwd()
 
     specfile = (path + '/data/' + spectrum_name)
 
     files = specfile
 
-    specid = spectrum_info[1]
-
-    a = get_spectrum_api(specid)
-
-    inst = (a['data']['instrument_name'])
-
     classifiers = 'A. Dahiwale, C. Fremling(Caltech) on behalf of the ' \
                   'Zwicky Transient Facility (ZTF)'
     source_group = 48  # Require source group id from drop down list, 0 is for
                        # None
-    spectypes = np.array(['object', 'host', 'sky', 'arcs', 'synthetic'])
 
     proprietary_period = '0'
     proprietary_units = "years"
@@ -726,6 +712,7 @@ def sedm_tns_classify(ztfname, specid=None, snia_score=None):
     spectype_id = ['object', 'host', 'sky', 'arcs',
                    'synthetic'].index(spectype) + 1
 
+    a = get_spectrum_api(specid)
     header = (a['data']['altdata'])
     obsdate = str((header['UTC']).split('T')[0]) + \
         ' ' + str((header['UTC']).split('T')[1])
@@ -739,7 +726,7 @@ def sedm_tns_classify(ztfname, specid=None, snia_score=None):
     classification_report.redshift = get_redshift(ztfname)
     classification_report.classificationComments = classification_comments
     classification_report.obsDate = obsdate
-    classification_report.instrumentID = get_tns_instrument_id(inst)
+    classification_report.instrumentID = get_tns_instrument_id('SEDM')
     classification_report.expTime = (header['EXPTIME'])
     classification_report.observers = 'SEDmRobot'
     classification_report.reducers = (header['REDUCER'])
@@ -770,3 +757,41 @@ def sedm_tns_classify(ztfname, specid=None, snia_score=None):
     tns_feedback(report_id)
 
     return True
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description="""
+
+Uploads classification report to the TNS website.
+
+""",
+        formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('indate', type=str, default=None,
+                        help='input directory date (UT date as YYYYMMDD)')
+    parser.add_argument('--data_file', type=str, default=None,
+                        help='Data file to upload: spec_*.txt')
+    parser.add_argument('--reducedby', type=str, default=None,
+                        help='reducer (defaults to auto)')
+    parser.add_argument('--testing', action="store_true", default=False,
+                        help='Do not actually post to TNS (for testing)')
+    args = parser.parse_args()
+
+    # Check environment
+    try:
+        reddir = os.environ["SEDMREDUXPATH"]
+    except KeyError:
+        print("please set environment variable SEDMREDUXPATH")
+        sys.exit(1)
+
+    # Get source dir
+    if args.indate:
+        utc = args.indate
+    else:
+        utc = datetime.datetime.utcnow().strftime("%Y%m%d")
+    srcdir = reddir + '/' + utc + '/'
+    # Check source dir
+    if not os.path.exists(srcdir):
+        print("Dir not found: %s" % srcdir)
+    else:
+        print("Uploading from %s" % srcdir)
