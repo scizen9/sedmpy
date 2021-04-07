@@ -672,17 +672,14 @@ def tns_feedback(reprt_id):
         return False
 
 
-def sedm_tns_classify(ztfname):
+def sedm_tns_classify(ztfname, specid=None, snia_score=None):
     """Verify the input source, prepare a classification report and
     upload to TNS"""
 
-    for i in range(len(get_source_api(ztfname)['comments'])):
-
-        comment = get_source_api(ztfname)['comments'][i]['text']
-
-        if comment == 'Uploaded to TNS':
-            print("Already %s" % comment)
-            return False
+    comments = [c['text'] for c in get_source_api(ztfname)['comments']]
+    if 'Uploaded to TNS' in comments:
+        print("Already uploaded to TNS")
+        return False
 
     info = get_tns_information(ztfname)
 
@@ -690,15 +687,10 @@ def sedm_tns_classify(ztfname):
         print(info[2])
         return False
 
-    a, b = (info[2]).split(',', 1)  # This is to get the classification date
-    c, d = b.split(':', 1)
-    e, class_date = d.split(' ', 1)
+    class_date = info[2].split(',')[-1].split(':')[-1].strip()
+    classify = info[2].split(',')[0].split(':')[-1].strip()
 
-    k, l = (info[2]).split(':', 1)  # This is to get the classification
-    m, n = l.split(',', 1)
-    o, classify = m.split(' ', 1)
-
-    print(info)
+    # print(info)
 
     spectrum_info = write_ascii_file(ztfname)  # returns "spectrum_name"
 
