@@ -5,7 +5,10 @@ from glob import glob
 from getpass import getpass
 from pprint import pprint
 
+import requests.exceptions
+
 from marshals.interface import api
+import tns.sedm_auto_tns as tns
 
 fritz_base_url = 'https://fritz.science/api/'
 fritz_comment_url = fritz_base_url + 'comment'
@@ -46,7 +49,11 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
                                                  len(encoded)))
         return True
     else:
-        r = api("POST", fritz_comment_url, data=ddict).json()
+        try:
+            r = api("POST", fritz_comment_url, data=ddict).json()
+        except requests.exceptions.ConnectionError:
+            r = {'status': 'Error', 'message': 'ConnectionError',
+                 'data': None}
         if 'success' in r['status']:
             r_data = r['data']
             if 'comment_id' in r_data:
@@ -82,7 +89,11 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         print(ddict)
         return True
     else:
-        r = api("POST", fritz_annotation_url, data=ddict).json()
+        try:
+            r = api("POST", fritz_annotation_url, data=ddict).json()
+        except requests.exceptions.ConnectionError:
+            r = {'status': 'Error', 'message': 'ConnectionError',
+                 'data': None}
 
         if 'success' in r['status']:
             r_data = r['data']
@@ -135,6 +146,11 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
         if add_SNIascore_classification(fname, object_id=object_id,
                                         testing=testing):
             print("POSTed Ia classification to fritz")
+            # Attempt to post to TNS
+            # if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
+            #    print("Uploaded SNIa classification to TNS")
+            # else:
+            #    print("Unable to upload SNIa classification to TNS")
         else:
             print("Unable to post Ia classification to fritz")
         # Generate annotation dictionary
@@ -167,6 +183,8 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
             (and it'll exit early) otherwise
     """
 
+    error_dict = {'status': 'Error', 'message': 'ConnectionError',
+                     'data': None}
     file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
@@ -198,7 +216,10 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
             print(cldict)
             return True
         else:
-            r = api("POST", fritz_classification_url, data=cldict).json()
+            try:
+                r = api("POST", fritz_classification_url, data=cldict).json()
+            except requests.exceptions.ConnectionError:
+                r = error_dict
             if 'success' in r['status']:
                 r_data = r['data']
                 if 'classification_id' in r_data:
@@ -208,8 +229,11 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 # now add redshift
                 if 'SNIASCORE_Z' in header and 'SNIASCORE_ZERR' in header:
                     # What is the current redshift set to?
-                    rc = api("GET",
-                             fritz_redshift_update_url + object_id).json()
+                    try:
+                        rc = api("GET",
+                                 fritz_redshift_update_url + object_id).json()
+                    except requests.exceptions.ConnectionError:
+                        rc = error_dict
                     if 'success' in rc['status']:
                         rc_data = rc['data']
                         current_redshift = None
@@ -228,9 +252,12 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                             new_z = round(new_redshift,
                                           1 if new_z_round < 1 else new_z_round)
                             rsdict = {"redshift": new_z}
-                            rr = api("PATCH",
-                                     fritz_redshift_update_url + object_id,
-                                     data=rsdict).json()
+                            try:
+                                rr = api("PATCH",
+                                         fritz_redshift_update_url + object_id,
+                                         data=rsdict).json()
+                            except requests.exceptions.ConnectionError:
+                                rr = error_dict
                             if 'success' in rr['status']:
                                 print("redshift for %s updated to %.4f" %
                                       (object_id, rsdict['redshift']))
