@@ -354,8 +354,12 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                           "problem")
 
         if add_status:
-            status_ret = update_status_request(spec_stat, marshal_id, 'fritz',
-                                               testing=testing)
+            try:
+                status_ret = update_status_request(spec_stat, marshal_id,
+                                                   'fritz',
+                                                   testing=testing)
+            except requests.exceptions.ConnectionError:
+                status_ret = None
 
         return_link = fritz_view_source_url + "/%s" % object_name
 
