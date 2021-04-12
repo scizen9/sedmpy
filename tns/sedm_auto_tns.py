@@ -20,10 +20,10 @@ report_url = "https://www.wis-tns.org/api/bulk-report"
 reply_url = "https://www.wis-tns.org/api/bulk-report-reply"
 
 # SANDBOX URLs for TNS upload trials
-SAND_TNS_BASE_URL = "https://sandbox-tns.org/api/"
-SAND_upload_url = "https://sandbox-tns.org/api/"
-SAND_report_url = "https://sandbox-tns.org/api/bulk-report"
-SAND_reply_url = "https://sandbox-tns.org/api/bulk-report-reply"
+SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
+SAND_upload_url = "https://sandbox.wis-tns.org/api/"
+SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
+SAND_reply_url = "https://sandbox.wis-tns.org/api/bulk-report-reply"
 
 
 def get_source_api(ztf_name):
