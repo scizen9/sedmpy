@@ -147,10 +147,10 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
                                         testing=testing):
             print("POSTed Ia classification to fritz")
             # Attempt to post to TNS
-            # if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
-            #    print("Uploaded SNIa classification to TNS")
-            # else:
-            #    print("Unable to upload SNIa classification to TNS")
+            if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
+                print("Uploaded SNIa classification to TNS")
+            else:
+                print("Unable to upload SNIa classification to TNS")
         else:
             print("Unable to post Ia classification to fritz")
         # Generate annotation dictionary
