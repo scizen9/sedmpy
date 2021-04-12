@@ -20,6 +20,7 @@ report_url = "https://www.wis-tns.org/api/bulk-report"
 reply_url = "https://www.wis-tns.org/api/bulk-report-reply"
 
 # SANDBOX URLs for TNS upload trials
+SAND_API_KEY = "604d60d302f86eb38fd1407abe41d05b438043bd"
 SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
 SAND_upload_url = "https://sandbox.wis-tns.org/api/"
 SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
@@ -633,12 +634,14 @@ def tns_feedback(reprt_id):
     if feedback_code == 200:
         return True
     elif feedback_code == 404:
-        print("Waiting and retrying...")
-        sleep(2)
-        try:
-            return tns_feedback(reprt_id)
-        except KeyboardInterrupt:
-            return False
+        print("probably OK")
+        # print("Waiting and retrying...")
+        # sleep(2)
+        # try:
+        #    return tns_feedback(reprt_id)
+        # except KeyboardInterrupt:
+        #    return False
+        return True
     elif feedback_code == 400:
         print(resp)
         return False
@@ -694,10 +697,9 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
 
     specfile = os.path.join(path, spectrum_name)
 
-    classifiers = 'A. Dahiwale, C. Fremling(Caltech) on behalf of the ' \
-                  'Zwicky Transient Facility (ZTF)'
-    source_group = 48  # Require source group id from drop down list, 0 is for
-                       # None
+    classifiers = 'SEDM Team(Caltech) on behalf of the Zwicky Transient '\
+                  'Facility (ZTF)'
+    source_group = 48  # ZTF source group number
 
     proprietary_period = '0'
     proprietary_units = "years"
