@@ -1,8 +1,6 @@
 import numpy as np
 from astropy.time import Time
 import os
-import sys
-import datetime
 import requests
 import json
 import argparse
@@ -10,7 +8,6 @@ from time import sleep
 
 from marshals.interface import api
 
-global TOKEN, BASEURL
 GETTOKEN = ''      # Fritz API Key, input your TOKEN from Fritz
 BASEURL = 'https://fritz.science/'                     # Fritz base url
 
