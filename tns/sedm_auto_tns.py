@@ -20,7 +20,6 @@ report_url = "https://www.wis-tns.org/api/bulk-report"
 reply_url = "https://www.wis-tns.org/api/bulk-report-reply"
 
 # SANDBOX URLs for TNS upload trials
-SAND_API_KEY = "604d60d302f86eb38fd1407abe41d05b438043bd"
 SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
 SAND_upload_url = "https://sandbox.wis-tns.org/api/"
 SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
@@ -162,28 +161,15 @@ def get_classification(ztf_name):
 
     if len(output) > 1:
 
-        classification = []
-        classification_date = []
-
         for si in range(len(output)):
 
+            author = resp['data'][si]['author_name']
             clss = resp['data'][si]['classification']
             classify_date = resp['data'][si]['created_at']
 
-            classification.append(clss)
-            classification_date.append(classify_date)
-
-        for si in range(len(classification)):
-
-            print((si+1), ")", "Classification: ", classification[si],
-                  "\t Classification date:",
-                  classification_date[si].split('T')[0])
-
-        class_pick = input("Choose classification: ")
-
-        classification = classification[int(class_pick)-1]
-        classification_date = classification_date[
-            int(class_pick)-1].split('T')[0]
+            if author == 'sedm-robot':
+                classification = clss
+                classification_date = classify_date
 
     return classification, classification_date
 
