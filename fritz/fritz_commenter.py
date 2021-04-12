@@ -108,7 +108,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
 
 
 def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
-                                   testing=False):
+                                   testing=False, upload_tns=False):
     """
     adds autoannotations with SNIASCORE and error
     if SNIASCORE > 0.9, also adds SNIASCORE redshift and error
@@ -118,6 +118,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     object_id: (str)
     spec_id: (int)
     testing: (bool)
+    upload_tns: (bool)
 
     returns: True if autoannotation works, False
             (and it'll exit early) otherwise
@@ -147,10 +148,14 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
                                         testing=testing):
             print("POSTed Ia classification to fritz")
             # Attempt to post to TNS
-            if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
-                print("Uploaded SNIa classification to TNS")
-            else:
-                print("Unable to upload SNIa classification to TNS")
+            if upload_tns:
+                try:
+                    if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
+                        print("Uploaded SNIa classification to TNS")
+                    else:
+                        print("Unable to upload SNIa classification to TNS")
+                except:
+                    print("Problems connecting")
         else:
             print("Unable to post Ia classification to fritz")
         # Generate annotation dictionary
