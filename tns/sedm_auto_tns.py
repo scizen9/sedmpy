@@ -1,14 +1,10 @@
-import numpy as np
-from astropy.time import Time
 import os
 import requests
 import json
 import argparse
-from time import sleep
 
 from marshals.interface import api
 
-GETTOKEN = ''      # Fritz API Key, input your TOKEN from Fritz
 BASEURL = 'https://fritz.science/'                     # Fritz base url
 
 API_KEY = "54916f1700966b3bd325fc1189763d86512bda1d"     # TNS API Key
@@ -36,29 +32,6 @@ def get_source_api(ztf_name):
     return resp['data']
 
 
-def get_group_ids(groupnames=None):
-    """ Info : Query group ids of groups specified
-        Input : Name or names of groups in an array []
-        Returns : List of group  names and their group ids
-    """
-
-    if groupnames is None:
-        groupnames = ['Redshift Completeness Factor',
-                      'Census of the Local Universe Caltech']
-
-    url = BASEURL+'api/groups'
-    headers = {'Authorization': 'token {}'.format(GETTOKEN)}
-    groupnames = np.atleast_1d(groupnames)
-    grpids = []
-    for grpname in groupnames:
-        resp = requests.request('GET', url, params={'name': grpname},
-                                headers=headers).json()
-        answer = str(grpname)+' = '+str(resp['data'][0]['id'])
-        grpids.append(answer)
-
-    return grpids
-
-
 def get_number_of_sources(group_id, date):
     """ Info : Query number of sources saved in a group after a certain date
         Input : group id, date [yyyy-mm-dd]
@@ -70,56 +43,6 @@ def get_number_of_sources(group_id, date):
         '&savedAfter='+date+'T00:00:00.000001'
     resp = api('GET', url).json()
     return len(resp['data']['sources'])
-
-
-def get_group_sources(group_id, date):
-    """ Info : Query all sources saved in a group after a certain date
-        Input : group id, date [yyyy-mm-dd]
-        Returns : List of jsons of all sources in group(s)
-        Comment : Takes a little time based on the date
-    """
-
-    srces = []
-
-    for si in range(get_number_of_sources(group_id, date)):
-
-        url = BASEURL+'api/sources?saveSummary=true&group_ids=' + group_id + \
-              '&savedAfter='+date+'T00:00:00.000001'
-        resp = api('GET', url).json()
-        ztf_name = resp['data']['sources'][si]['obj_id']
-        srces.append(ztf_name)
-
-    return srces
-
-
-def get_total_number_of_sources(group_id):
-    """ Info : Query total number of sources saved in a group
-        Input : group id
-        Returns : Total number of sources saved in a group
-    """
-
-    url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id
-    resp = api('GET', url).json()
-    return len(resp['data']['sources'])
-
-
-def get_all_group_sources(group_id):
-    """ Info : Query all sources saved in a group
-        Input : group id
-        Returns : List of jsons of all sources in group(s)
-        Comment : Takes a long time
-    """
-
-    srces = []
-
-    for si in range(get_number_of_sources(group_id)):
-
-        url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id
-        resp = api('GET', url).json()
-        ztf_name = resp['data']['sources'][si]['obj_id']
-        srces.append(ztf_name)
-
-    return srces
 
 
 def get_iau_name(ztf_name):
@@ -223,12 +146,6 @@ def get_tns_information(ztf_name):
         redshift = ('redshift:'+str(redshift))
 
     return ztf_name, iau, clss, redshift
-
-
-def convert_to_jd(date):
-
-    dd = Time(date, format='fits')
-    return dd.jd
 
 
 def get_spectrum_api(spectrum_id):
@@ -432,39 +349,6 @@ def get_pprint(item, indent=0, tab=' '*4, maxwidth=float('inf')):
     result = '\n'.join(lines)
 
     return result
-
-
-def get_number(group_id, date):
-    """ Info : Query number of sources saved in a group after a certain date
-        Input : group id, date [yyyy-mm-dd]
-        Returns : Number of sources saved after a given date to
-                the specified group
-    """
-
-    url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id + \
-        '&savedAfter='+date+'T00:00:00.000001'
-    response = api('GET', url).json()
-    return len(response['data']['sources'])
-
-
-def get_sources(group_id, date):
-    """ Info : Query all sources saved in a group after a certain date
-        Input : group id, date [yyyy-mm-dd]
-        Returns : List of jsons of all sources in group(s)
-        Comment : Takes a little time based on the date
-    """
-
-    sources = []
-
-    for i in range(get_number(group_id, date)):
-
-        url = BASEURL + 'api/sources?saveSummary=true&group_ids=' + group_id + \
-              '&savedAfter='+date+'T00:00:00.000001'
-        response = api('GET', url).json()
-        ztf_name = response['data']['sources'][i]['obj_id']
-        sources.append(ztf_name)
-
-    return sources
 
 
 def get_tns_classification_id(classification):
