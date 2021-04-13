@@ -3,7 +3,13 @@ import requests
 import json
 import argparse
 
-from marshals.interface import api
+SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
+
+with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
+                       'marshals.json')) as data_file:
+    params = json.load(data_file)
+
+token = params['marshals']['fritz']['token']
 
 BASEURL = 'https://fritz.science/'                     # Fritz base url
 
@@ -22,13 +28,23 @@ SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
 SAND_reply_url = "https://sandbox.wis-tns.org/api/bulk-report-reply"
 
 
+def api(method, endpoint, data=None, verbose=False):
+    headers = {'Authorization': 'token {}'.format(token)}
+    response = requests.request(method, endpoint, json=data, headers=headers)
+    print('HTTP code: {}, {}'.format(response.status_code, response.reason))
+    if response.status_code in (200, 400) and verbose:
+        print(response.text)
+
+    return response.json()
+
+
 def get_source_api(ztf_name):
     """ Info : Query a single source, takes input ZTF name
         Returns : all basic data of that source (excludes photometry and
          spectra, includes redshift, classification, comments, etc.)
     """
     url = BASEURL+'api/sources/'+ztf_name+'?includeComments=true'
-    resp = api('GET', url).json()
+    resp = api('GET', url)
     return resp['data']
 
 
@@ -41,7 +57,7 @@ def get_number_of_sources(group_id, date):
 
     url = BASEURL+'api/sources?saveSummary=true&group_ids=' + group_id + \
         '&savedAfter='+date+'T00:00:00.000001'
-    resp = api('GET', url).json()
+    resp = api('GET', url)
     return len(resp['data']['sources'])
 
 
@@ -53,7 +69,7 @@ def get_iau_name(ztf_name):
     """
 
     url = BASEURL + 'api/alerts/ztf/' + ztf_name + '/aux'
-    resp = api('GET', url).json()
+    resp = api('GET', url)
     return resp["data"]["cross_matches"]["TNS"]
 
 
@@ -67,7 +83,7 @@ def get_classification(ztf_name):
     """
 
     url = BASEURL + 'api/sources/' + ztf_name + '/classifications'
-    resp = api('GET', url).json()
+    resp = api('GET', url)
     output = resp['data']
 
     classification = None
@@ -105,7 +121,7 @@ def get_redshift(ztf_name):
     """
 
     url = BASEURL + 'api/sources/' + ztf_name
-    resp = api('GET', url).json()
+    resp = api('GET', url)
 
     redshift = resp['data']['redshift']
 
@@ -118,7 +134,7 @@ def get_redshift(ztf_name):
 def get_tns_information(ztf_name):
 
     # url = BASEURL+'api/sources/'+ztf_name
-    # resp = api('GET', url).json()
+    # resp = api('GET', url)
 
     iau = get_iau_name(ztf_name)
 
@@ -153,14 +169,14 @@ def get_spectrum_api(spectrum_id):
         Returns : list of spectrum jsons
     """
     url = BASEURL + 'api/spectrum/' + str(spectrum_id)
-    resp = api('GET', url).json()
+    resp = api('GET', url)
     return resp
 
 
 def get_all_spectra_len(ztf_name):
 
     url = BASEURL+'api/sources/'+ztf_name+'/spectra'
-    resp = api('GET', url).json()
+    resp = api('GET', url)
     return len(resp['data']['spectra'])
 
 
@@ -174,7 +190,7 @@ def get_all_spectra_id(ztf_name):
     for si in range(get_all_spectra_len(ztf_name)):
 
         url = BASEURL + 'api/sources/' + ztf_name + '/spectra'
-        resp = api('GET', url).json()
+        resp = api('GET', url)
 
         sid = resp['data']['spectra'][si]['id']
         spec_id.append(sid)
@@ -250,7 +266,7 @@ def post_comment(ztf_name, text):
 
     url = BASEURL + 'api/comment'
 
-    resp = api('POST', url, data=data).json()
+    resp = api('POST', url, data=data)
 
     return resp
 
