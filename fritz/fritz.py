@@ -246,6 +246,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
     # Return values
     spec_ret = None
     status_ret = None
+    status_tns = False
     return_link = None
     spec_stat = ''
     # Look in the SEDM Db
@@ -340,10 +341,9 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 try:
                     ret_data = spec_ret['data']
                     spec_id = ret_data['id']
-                    ia_annots_posted = add_ia_annots(spectra_file,
-                                                     object_id=object_name,
-                                                     spec_id=spec_id,
-                                                     testing=testing)
+                    ia_annots_posted, status_tns = add_ia_annots(
+                        spectra_file, object_id=object_name, spec_id=spec_id,
+                        testing=testing)
                 except KeyError:
                     ia_annots_posted = False
                     print("ERROR - unable to upload SNIascore annotations")
@@ -366,7 +366,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         print("Send to %s at %s\nRequest status = %s\n%s" %
               (username, email, status, return_link))
 
-    return return_link, spec_ret, status_ret, spec_id
+    return return_link, spec_ret, status_ret, spec_id, status_tns
 
           
 def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
@@ -453,7 +453,7 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
             if upfil not in fi:
                 continue
         # Upload
-        r, spec, stat, spec_id = update_target_by_request_id(
+        r, spec, stat, spec_id, tns = update_target_by_request_id(
             req_id, add_status=True, status='Completed', add_spectra=True,
             spectra_file=fi, search_db=dbase, reducedby=reducedby,
             testing=testing)
@@ -479,10 +479,15 @@ def parse_ztf_by_dir(target_dir, upfil=None, dbase=None, reducedby=None,
                 out.write("       -1 ")
             if r:
                 print("URL: " + r)
-                out.write("%s\n" % r)
+                out.write("%s " % r)
             else:
                 print("URL: None")
-                out.write("None\n")
+                out.write("None ")
+            if tns:
+                print("Uploaded to TNS")
+                out.write("TNS\n")
+            else:
+                out.write("\n")
 
     # Close log file
     out.close()

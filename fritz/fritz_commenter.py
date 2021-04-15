@@ -124,6 +124,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
             (and it'll exit early) otherwise
     """
 
+    tns_upl = False
     file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
@@ -152,6 +153,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
                 try:
                     if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
                         print("Uploaded SNIa classification to TNS")
+                        tns_upl = True
                     else:
                         print("Unable to upload SNIa classification to TNS")
                 except:
@@ -172,7 +174,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     # construct origin
     origin = 'SNIascore:spc%d' % spec_id
 
-    return add_spec_autoannot(object_id, andic, origin=origin, testing=testing)
+    return add_spec_autoannot(object_id, andic, origin=origin, testing=testing), tns_upl
 
 
 def add_SNIascore_classification(fname, object_id=None, testing=False):
