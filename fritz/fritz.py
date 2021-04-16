@@ -263,7 +263,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                                              {"id": request_id})[0]
         except IndexError:
             print("Unable to retrieve ids from database")
-            return return_link, spec_ret, status_ret, spec_id
+            return return_link, spec_ret, status_ret, spec_id, status_tns
         marshal_id = res[0]
         object_id = res[1]
         user_id = res[2]
@@ -272,7 +272,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         # is this a Fritz object?
         if external_id != 2 and external_id != 4:
             print("Not a Fritz object!")
-            return return_link, spec_ret, status_ret, spec_id
+            return return_link, spec_ret, status_ret, spec_id, status_tns
         else:
             if external_id == 4:
                 print("AMPEL trigger")
@@ -288,7 +288,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
             res = search_db.get_from_object(["name"], {"id": object_id})[0]
         except IndexError:
             print("Unable to retrieve object_name from database")
-            return return_link, spec_ret, status_ret, spec_id
+            return return_link, spec_ret, status_ret, spec_id, status_tns
         object_name = res[0]
         # get user name and email
         try:
@@ -296,7 +296,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                                            {"id": user_id})[0]
         except IndexError:
             print("Unable to retrieve username, email from database")
-            return return_link, spec_ret, status_ret, spec_id
+            return return_link, spec_ret, status_ret, spec_id, status_tns
         username = res[0]
         email = res[1]
     else:
