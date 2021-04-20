@@ -1017,13 +1017,15 @@ def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
         lab = "Science"
     else:
         lab = "STD"
-    cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs")
+    cmd = ("ccd_to_cube.py", datestr, "--build", fn, "--solvewcs",
+           "--ncore", "8")
     if hdr:
         # Check for moving target: no guider image for those
         if 'RA_RATE' in hdr and 'DEC_RATE' in hdr:
             if hdr['RA_RATE'] != 0. or hdr['DEC_RATE'] != 0.:
                 logging.info("Non-sidereal object")
-                cmd = ("ccd_to_cube.py", datestr, "--build", fn)
+                cmd = ("ccd_to_cube.py", datestr, "--build", fn,
+                       "--ncore", "8")
 
     proccubefn = "e3d_%s_*.fits" % fn.split('.')[0]
     procedcube = glob.glob(os.path.join(destdir, proccubefn))
