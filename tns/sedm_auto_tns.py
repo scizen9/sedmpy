@@ -68,7 +68,7 @@ def get_iau_name(ztf_name):
         Returns : ATname
     """
 
-    url = BASEURL + 'api/alerts/ztf/' + ztf_name + '/aux'
+    url = BASEURL + 'api/alerts_aux/' + ztf_name
     resp = api('GET', url)
     return resp["data"]["cross_matches"]["TNS"]
 
