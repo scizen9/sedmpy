@@ -149,7 +149,7 @@ def plot_image(image, verbose=False, ut_id=None):
             logger.info("Exists: %s", outfig)
 
 
-def reduce_on_the_fly(photdir, nocopy=False):
+def reduce_on_the_fly(photdir, nocopy=False, proc_na=False):
     """
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
@@ -311,6 +311,12 @@ def reduce_on_the_fly(photdir, nocopy=False):
                                                  channel=SLACK_CHANNEL)
                         else:
                             print("Cannot push: %s" % imgf)
+                elif "NA" in imtype.upper() and proc_na:
+                    if fitsutils.get_par(n, "EXPTIME") > 30.:
+                        do_cosmic = True
+                    else:
+                        do_cosmic = False
+                    reduced = rcred.reduce_image(n, cosmic=do_cosmic)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
@@ -330,6 +336,8 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('-p', '--nocopy', action="store_true",
                         help='do not copy to transient', default=False)
+    parser.add_argument('-p', '--proc_na', action="store_true",
+                        help='process NA image types', default=False)
 
     args = parser.parse_args()
 
@@ -340,4 +348,5 @@ if __name__ == '__main__':
     else:
         pdir = args.photdir
 
-    reduce_on_the_fly(os.path.abspath(pdir), nocopy=args.nocopy)
+    reduce_on_the_fly(os.path.abspath(pdir), nocopy=args.nocopy,
+                      proc_na=args.proc_na)
