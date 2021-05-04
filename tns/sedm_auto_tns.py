@@ -565,6 +565,10 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
         print(info[2])
         return False
 
+    if 'Not report to TNS' in info[1]:
+        print(info[1])
+        return False
+
     class_date = info[2].split(',')[-1].split(':')[-1].strip()
     classify = info[2].split(',')[0].split(':')[-1].strip()
 
