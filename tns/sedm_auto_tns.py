@@ -565,7 +565,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
         print(info[2])
         return False
 
-    if 'Not report to TNS' in info[1]:
+    if 'Not reported to TNS' in info[1]:
         print(info[1])
         return False
 
