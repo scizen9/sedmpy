@@ -538,7 +538,8 @@ def tns_feedback(reprt_id):
         return False
 
 
-def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
+def sedm_tns_classify(spec_file, ztfname=None, specid=None,
+                      iau_name=None, testing=False):
     """Verify the input source, prepare a classification report and
     upload to TNS"""
 
@@ -565,7 +566,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
         print(info[2])
         return False
 
-    if 'Not reported to TNS' in info[1]:
+    if 'Not reported to TNS' in info[1] and iau_name is None:
         print(info[1])
         return False
 
@@ -605,7 +606,10 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None, testing=False):
         ' ' + str((header['UTC']).split('T')[1])
 
     classification_report = TNSClassificationReport()
-    classification_report.name = get_iau_name(ztfname)[0]['name'][3:]
+    if iau_name is None:
+        classification_report.name = get_iau_name(ztfname)[0]['name'][3:]
+    else:
+        classification_report.name = iau_name
     classification_report.fitsName = ''
     classification_report.asciiName = spectrum_name
     classification_report.classifierName = classifiers
@@ -660,6 +664,8 @@ Uploads classification report to the TNS website.
     parser.add_argument('--data_file', type=str, default=None,
                         help='Data file to upload: '
                              '/scr2/sedmdrp/redux/YYYYMMDD/spec_*.txt')
+    parser.add_argument('--iau_name', type=str, default=None,
+                        help='IAU designation: YYYYabc')
     parser.add_argument('--testing', action="store_true", default=False,
                         help='Do not actually post to TNS (for testing)')
     args = parser.parse_args()
@@ -671,4 +677,4 @@ Uploads classification report to the TNS website.
         print("File not found: %s" % infile)
     else:
         print("Uploading from %s" % infile)
-        sedm_tns_classify(infile, testing=args.testing)
+        sedm_tns_classify(infile, iau_name=args.iau_name, testing=args.testing)
