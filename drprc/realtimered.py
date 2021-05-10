@@ -334,9 +334,9 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--photdir', type=str, dest="photdir",
                         help='Fits directory file with tonight images.',
                         default=None)
-    parser.add_argument('-p', '--nocopy', action="store_true",
+    parser.add_argument('-n', '--nocopy', action="store_true",
                         help='do not copy to transient', default=False)
-    parser.add_argument('-n', '--proc_na', action="store_true",
+    parser.add_argument('-p', '--proc_na', action="store_true",
                         help='process NA image types', default=False)
 
     args = parser.parse_args()
