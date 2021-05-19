@@ -21,6 +21,11 @@ upload_url = "https://www.wis-tns.org/api/file-upload"
 report_url = "https://www.wis-tns.org/api/bulk-report"
 reply_url = "https://www.wis-tns.org/api/bulk-report-reply"
 
+TNS_HEADERS = {
+    'User-Agent': 'tns_marker{"tns_id":48869, "type":"bot",'
+                  ' "name":"ZTF_Bot1"}'
+}
+
 # SANDBOX URLs for TNS upload trials
 SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
 SAND_upload_url = "https://sandbox.wis-tns.org/api/"
@@ -477,7 +482,8 @@ def upload_to_tns(filename, base_url=upload_url, api_key=API_KEY,
         files = None
 
     if files is not None:
-        response = requests.post(url, data=data, files=files)
+        response = requests.post(url, headers=TNS_HEADERS, data=data,
+                                 files=files)
         try:
             return response.json()
         except:
@@ -494,7 +500,7 @@ def tns_classify(classification_report, base_url=report_url, api_key=API_KEY):
     url = base_url
     data = {'api_key': api_key,
             'data': classification_report.classification_json()}
-    resp = requests.post(url, data=data).json()
+    resp = requests.post(url, headers=TNS_HEADERS, data=data).json()
     if not resp:
         return False
 
@@ -514,7 +520,7 @@ def tns_classify(classification_report, base_url=report_url, api_key=API_KEY):
 def tns_feedback(reprt_id):
     data = {'api_key': API_KEY, 'report_id': reprt_id}
     resp = requests.post(TNS_BASE_URL + 'bulk-report-reply',
-                         data=data).json()
+                         headers=TNS_HEADERS, data=data).json()
     feedback_code = resp['id_code']
     print(feedback_code, resp['id_message'], "feedback finished")
     if feedback_code == 200:
