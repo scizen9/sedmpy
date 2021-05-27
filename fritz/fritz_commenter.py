@@ -57,7 +57,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
         if 'success' in r['status']:
             r_data = r['data']
             if 'comment_id' in r_data:
-                print("Comment id = %d" % r_data['comment_id'])
+                print("Comment id = %d" % int(r_data['comment_id']))
             print('{} uploaded'.format(fname.split('/')[-1]))
             return True
         else:
@@ -98,7 +98,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         if 'success' in r['status']:
             r_data = r['data']
             if 'annotation_id' in r_data:
-                print("annotation id = %d" % r_data['annotation_id'])
+                print("annotation id = %d" % int(r_data['annotation_id']))
             print('{}: {} posted'.format(obj_id, origin))
             return True
         else:
@@ -151,7 +151,8 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
             # Attempt to post to TNS
             if upload_tns:
                 try:
-                    if tns.sedm_tns_classify(fname, ztfname=object_id, testing=testing):
+                    if tns.sedm_tns_classify(fname, ztfname=object_id,
+                                             testing=testing):
                         print("Uploaded SNIa classification to TNS")
                         tns_upl = True
                     else:
@@ -174,7 +175,8 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     # construct origin
     origin = 'SNIascore:spc%d' % spec_id
 
-    return add_spec_autoannot(object_id, andic, origin=origin, testing=testing), tns_upl
+    return add_spec_autoannot(object_id, andic, origin=origin,
+                              testing=testing), tns_upl
 
 
 def add_SNIascore_classification(fname, object_id=None, testing=False):
@@ -191,7 +193,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
     """
 
     error_dict = {'status': 'Error', 'message': 'ConnectionError',
-                     'data': None}
+                  'data': None}
     file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
@@ -231,7 +233,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 r_data = r['data']
                 if 'classification_id' in r_data:
                     print("classification id = %d" %
-                          r_data['classification_id'])
+                          int(r_data['classification_id']))
                 print('{}: Ia classification posted'.format(object_id))
                 # now add redshift
                 if 'SNIASCORE_Z' in header and 'SNIASCORE_ZERR' in header:
@@ -258,7 +260,11 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                                 new_z_round = 1
                             new_z = round(new_redshift,
                                           1 if new_z_round < 1 else new_z_round)
-                            rsdict = {"redshift": new_z}
+                            new_error = round(new_redshift_error,
+                                              1 if new_z_round < 1 else
+                                              new_z_round)
+                            rsdict = {"redshift": new_z,
+                                      "redshift_error": new_error}
                             try:
                                 rr = api("PATCH",
                                          fritz_redshift_update_url + object_id,
@@ -275,7 +281,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                                 print(rr['data'])
                         else:
                             print('Redshift for %s already set to %.4f' %
-                                  (object_id, rc_data['redshift']))
+                                  (object_id, float(rc_data['redshift'])))
                     else:
                         print('error getting current redshift for %s' %
                               object_id)
