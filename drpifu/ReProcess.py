@@ -868,7 +868,7 @@ def doab(destdir='./', datestr=None, posdic=None, manual=False):
 
 
 def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
-          stds_only=False):
+          stds_only=False, manual=False):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -883,6 +883,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
         posdic (dict): position dictionary from get_extract_pos function
         oldext (bool): True to use old extract_star instead of new extractstar
         stds_only (bool): True to extract only standard stars
+        manual (bool): True to use --display
 
     Returns:
         int: Number of ifu images actually copied
@@ -1017,10 +1018,13 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
                     pos_key = fn.split('_', 2)[-1].split('.')[0]
                     if pos_key not in posdic:
                         logging.info("No position for %s" % fn)
-                        if oldext:
-                            ccmd = ["--maxpos"]
+                        if manual:
+                            ccmd = ["--display"]
                         else:
-                            ccmd = ["--centroid", "brightest"]
+                            if oldext:
+                                ccmd = ["--maxpos"]
+                            else:
+                                ccmd = ["--centroid", "brightest"]
                     else:
                         # Position
                         xpos = posdic[pos_key][0]
@@ -1226,7 +1230,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         logging.info("Calibrations present in %s" % outdir)
         # Process observations
         nextr = dosci(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic,
-                      oldext=oldext, stds_only=stds_only)
+                      oldext=oldext, stds_only=stds_only, manual=manual)
         logging.info("%d single spectra extracted." % nextr)
         # Check for A/B observations
         abp_file = os.path.join(outdir, 'abpairs.tab')
