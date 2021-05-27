@@ -1018,18 +1018,17 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
                     pos_key = fn.split('_', 2)[-1].split('.')[0]
                     if pos_key not in posdic:
                         logging.info("No position for %s" % fn)
-                        if manual:
-                            ccmd = ["--display"]
+                        if oldext:
+                            ccmd = ["--maxpos"]
                         else:
-                            if oldext:
-                                ccmd = ["--maxpos"]
-                            else:
-                                ccmd = ["--centroid", "brightest"]
+                            ccmd = ["--centroid", "brightest"]
                     else:
                         # Position
                         xpos = posdic[pos_key][0]
                         ypos = posdic[pos_key][1]
                         ccmd = ["--centroid", "%.2f" % xpos, "%.2f" % ypos]
+                    if manual:
+                        ccmd.extend(["--display"])
                     # Get seeing
                     seeing = rcimg.get_seeing(imfile=fn, destdir=destdir,
                                               save_fig=True)
