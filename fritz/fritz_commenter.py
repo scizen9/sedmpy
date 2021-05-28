@@ -253,7 +253,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                             new_redshift = float(header['SNIASCORE_Z'])
                             new_redshift_error = float(header['SNIASCORE_ZERR'])
                             try:
-                                new_z_round = round(abs(
+                                new_z_round = math.ceil(abs(
                                     math.log10(new_redshift_error)))
                             # Handle negative, NaN, Inf, None and <str> values
                             except (ValueError, OverflowError, TypeError):
