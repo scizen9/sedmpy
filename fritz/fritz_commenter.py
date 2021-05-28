@@ -272,8 +272,9 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                             except requests.exceptions.ConnectionError:
                                 rr = error_dict
                             if 'success' in rr['status']:
-                                print("redshift for %s updated to %.4f" %
-                                      (object_id, rsdict['redshift']))
+                                print("redshift for %s updated to %.4f +- %.4f"
+                                      % (object_id, rsdict['redshift'],
+                                         rsdict['redshift_error']))
                             else:
                                 print('error updating %s redshift' % object_id)
                                 print(rr['status'])
