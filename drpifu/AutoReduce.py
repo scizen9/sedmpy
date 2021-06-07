@@ -2132,6 +2132,12 @@ def clean_post_redux(odir):
                     rute.startswith('guider_crr_b'):
                 subprocess.call(["gzip", fl])
                 ngzip += 1
+    # Compress calib files
+    flist = glob.glob(os.path.join(odir, "*dome.fits"))
+    flist.extend(glob.glob(os.path.join(odir, '??.fits')))
+    for fl in flist:
+        subprocess.call(["gzip", fl])
+        ngzip += 1
 
     return ndel, ngzip
 
