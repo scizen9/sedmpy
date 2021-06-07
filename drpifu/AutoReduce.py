@@ -2103,6 +2103,39 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
         update_spec(file)
 
 
+def clean_post_redux(odir):
+    """Remove/compress unused files after reduction"""
+    # Remove intermediate processing files
+    flist = glob.glob(os.path.join(odir, "b_ifu*.fits"))
+    for fl in flist:
+        os.remove(fl)
+    ndel = len(flist)
+    # Remove calib files, compress others
+    ngzip = 0
+    flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
+    for fl in flist:
+        ff = pf.open(fl)
+        hdr = ff[0].header
+        ff.close()
+        try:
+            obj = hdr['OBJECT']
+        except KeyError:
+            obj = 'Test'
+        if 'Calib' in obj:
+            os.remove(fl)
+            ndel += 1
+        else:
+            rute = fl.split('/')[-1]
+            if rute.startswith('maskcrr_') or rute.startswith('crr_b_ifu') or \
+                    rute.startswith('bkgd_crr_b_ifu') or \
+                    rute.startswith('forcepsf') or \
+                    rute.startswith('guider_crr_b'):
+                subprocess.call(["gzip", fl])
+                ngzip += 1
+
+    return ndel, ngzip
+
+
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
        check_precal=True, indate=None, piggyback=False, local=False,
        nopush_marshal=False, nopush_slack=False, nodb=False, oldext=False):
