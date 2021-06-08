@@ -2277,11 +2277,21 @@ if __name__ == '__main__':
                         help='Do not update SEDM Db')
     parser.add_argument('--oldext', action="store_true", default=False,
                         help='Use extract_star.py instead of extractstar.py')
+    parser.add_argument('--clean', action="store_true", default=False,
+                        help='Clean UTDate directory')
 
     args = parser.parse_args()
 
     if args.update:
         update(red_dir=args.reduxdir, ut_dir=args.update)
+    elif args.clean:
+        if args.date is not None:
+            odir = os.path.join(args.reduxdir, args.date)
+            nrm, ngzip = clean_post_redux(odir)
+            print("%d intermediate files removed, %d files gzipped" %
+                  (nrm, ngzip))
+        else:
+            print("Error: Must provide a UTDate to clean with --date")
     else:
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
