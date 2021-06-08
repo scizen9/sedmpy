@@ -2110,7 +2110,7 @@ def clean_post_redux(odir):
     for fl in flist:
         os.remove(fl)
     ndel = len(flist)
-    # Remove calib files, compress others
+    # Remove intermediate calib files, compress others
     ngzip = 0
     flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
     for fl in flist:
@@ -2135,6 +2135,7 @@ def clean_post_redux(odir):
     # Compress calib files
     flist = glob.glob(os.path.join(odir, "*dome.fits"))
     flist.extend(glob.glob(os.path.join(odir, '??.fits')))
+    flist.extend(glob.glob(os.path.join(odir, 'bias*.fits')))
     for fl in flist:
         subprocess.call(["gzip", fl])
         ngzip += 1
