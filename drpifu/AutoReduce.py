@@ -2287,6 +2287,7 @@ if __name__ == '__main__':
     elif args.clean:
         if args.date is not None:
             odir = os.path.join(args.reduxdir, args.date)
+            print("Cleaning %s" % odir)
             nrm, ngzip = clean_post_redux(odir)
             print("%d intermediate files removed, %d files gzipped" %
                   (nrm, ngzip))
