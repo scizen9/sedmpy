@@ -2114,6 +2114,8 @@ def clean_post_redux(odir):
     ngzip = 0
     flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
     for fl in flist:
+        if 'failed' in fl:
+            continue
         ff = pf.open(fl)
         hdr = ff[0].header
         ff.close()
