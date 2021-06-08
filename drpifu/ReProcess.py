@@ -561,6 +561,8 @@ def clean_raw_data(odir):
     for fl in flist:
         os.remove(fl)
     ndel = len(flist)
+    # Compress bias files
+    subprocess.call(["gzip", "bias*.fits"])
     # Remove calib files
     flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
     for fl in flist:
