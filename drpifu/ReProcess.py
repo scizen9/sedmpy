@@ -1247,6 +1247,10 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         cmd = ["gzip crr_b_ifu%s*.fits" % ut_date]
         logging.info(cmd)
         subprocess.call(cmd, shell=True)
+        # gzip psf files
+        cmd = ["gzip forcepsf*.fits"]
+        logging.info(cmd)
+        subprocess.call(cmd, shell=True)
         # gzip guider images
         cmd = ["gzip guider*.fits"]
         logging.info(cmd)
