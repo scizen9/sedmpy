@@ -566,6 +566,10 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
         print("Already uploaded to TNS")
         return False
 
+    if 'Do not upload to TNS' in comments:
+        print("TNS upload blocked")
+        return False
+
     info = get_tns_information(ztfname)
 
     if info[2] == 'Not classified yet':         # Check if classified
