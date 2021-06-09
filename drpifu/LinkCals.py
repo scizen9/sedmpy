@@ -27,8 +27,7 @@ def bias_ready(caldir='./'):
 
     ret = False
 
-    # Do we have all the calibration files?
-    # Check biases first
+    # Check biases
     fb = os.path.exists(os.path.join(caldir, 'bias0.1.fits'))
     f2 = os.path.exists(os.path.join(caldir, 'bias2.0.fits'))
     logging.info("Biases ready?: bias0.1: %d, bias2.0: %d" % (fb, f2))
@@ -200,8 +199,8 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
     ncw = find_recent(redd, '_WaveSolution.pkl', outdir, cur_date_str)
     ncf = find_recent(redd, '_Flat.fits', outdir, cur_date_str)
     if not bias_ready(outdir):
-        ncb = find_recent_bias(redd, 'bias0.1.fits', outdir, cur_date_str)
-        nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir, cur_date_str)
+        ncb = find_recent_bias(redd, 'bias0.1.fits*', outdir, cur_date_str)
+        nc2 = find_recent_bias(redd, 'bias2.0.fits*', outdir, cur_date_str)
     else:
         ncb = True
         nc2 = True
