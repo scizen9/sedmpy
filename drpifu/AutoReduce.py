@@ -2139,6 +2139,8 @@ def clean_post_redux(odir):
     flist.extend(glob.glob(os.path.join(odir, '??.fits')))
     flist.extend(glob.glob(os.path.join(odir, 'bias*.fits')))
     for fl in flist:
+        if os.path.islink(fl):
+            continue
         subprocess.call(["gzip", fl])
         ngzip += 1
 
