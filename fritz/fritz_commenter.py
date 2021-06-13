@@ -175,6 +175,8 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     # construct origin
     origin = 'SNIascore:spc%d' % spec_id
 
+    print(andic)
+
     return add_spec_autoannot(object_id, andic, origin=origin,
                               testing=testing), tns_upl
 
