@@ -28,7 +28,7 @@ with codecs.open(configfile, 'r') as f:
 _reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 
-def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
+def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000., overwrite=False):
     """
     Calculates S/N from the input file.
     """
@@ -37,6 +37,10 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
     if spec_file is not None:
         # Open fits file
         ff = pf.open(spec_file.replace('.txt', '.fits'), mode='update')
+        # Have we already calculated S/N?
+        if 'S2NMED' in ff[0].header and not overwrite:
+            ff.close()
+            return None
         # get S/N ratio
         flux = ff[0].data
         noise = np.sqrt(ff[1].data)
@@ -108,14 +112,17 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--end_wave', type=float, dest='s1',
                         help='ending wavelength in Angstroms',
                         default=8000.)
+    parser.add_argument('-o', '--overwrite', action="store_true",
+                        default=False, help="set to overwrite calculation")
 
     args = parser.parse_args()
 
     if args.specfile is not None:
         s2n = calc_s2n(spec_file=args.specfile, start_wave=args.s0,
-                       end_wave=args.s1)
-        print("S/N(%.1f-%.1f A) = %.2f in %s" % (args.s0, args.s1, float(s2n),
-                                                 args.specfile))
+                       end_wave=args.s1, overwrite=args.overwrite)
+        if s2n is not None:
+            print("S/N(%.1f-%.1f A) = %.2f in %s" % (args.s0, args.s1,
+                                                     float(s2n), args.specfile))
 
     elif args.indir is not None:
 
@@ -126,8 +133,9 @@ if __name__ == '__main__':
         if len(flist) > 0:
             for fl in flist:
                 s2n = calc_s2n(spec_file=fl, start_wave=args.s0,
-                               end_wave=args.s1)
-                print("S/N(%.1f-%.1f A) = %.2f in %s" %
-                      (args.s0, args.s1, float(s2n), fl))
+                               end_wave=args.s1, overwrite=args.overwrite)
+                if s2n is not None:
+                    print("S/N(%.1f-%.1f A) = %.2f in %s" %
+                          (args.s0, args.s1, float(s2n), fl))
     else:
         print("unknown params: try CalcS2N.py --help")
