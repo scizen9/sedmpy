@@ -198,6 +198,7 @@ PYF = ~/sedmpy/fritz
 IMCOMBINE = $(PY) $(PYC)/Imcombine.py
 REPORT = $(PY) $(PYC)/DrpReport.py
 CLASS = $(PY) $(PYC)/Classify.py
+SIG2NOISE = $(PY) $(PYC)/CalcS2N.py
 ZTFUPLOAD = $(PY) $(PYG)/growth.py
 FRITZUPLOAD = $(PY) $(PYF)/fritz.py
 
@@ -244,6 +245,7 @@ fritzupload:
 	$(FRITZUPLOAD) $(current_dir)
 
 classify:
+	$(SIG2NOISE) --indir $(current_dir)
 	$(CLASS) --specdir $(dir $(mkfile_path))
 	$(REPORT) | tee report.txt
 
