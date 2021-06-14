@@ -1338,6 +1338,10 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
         else:
             logging.info("No A/B pairs found.")
 
+        flist = glob.glob(os.path.join(destdir, 'bkgd_*.fits'))
+        for fl in flist:
+            subprocess.call(["gzip", fl])
+
     return ncube
     # END: re_cube
 
