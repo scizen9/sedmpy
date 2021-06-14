@@ -57,11 +57,11 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
             ff[0].header['S2NWHI'] = (sw1, 'End wave for S/N Calc')
 
             spec_lines.insert(comment_lines_count,
-                              "# SN2_WL_END: " + str(sw1) + "\n")
+                              "# S2N_WL_END: " + str(sw1) + "\n")
             spec_lines.insert(comment_lines_count,
-                              "# SN2_WL_START: " + str(sw0) + "\n")
+                              "# S2N_WL_START: " + str(sw0) + "\n")
             spec_lines.insert(comment_lines_count,
-                              "# SN2_MEDIAN: " + str(s2nmed) + "\n")
+                              "# S2N_MEDIAN: " + str(s2nmed) + "\n")
 
         # Write out updated files
         with open(spec_file, "w") as specOut:
