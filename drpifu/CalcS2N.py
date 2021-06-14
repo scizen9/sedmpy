@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
         """, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('indir', type=str, default=None,
+    parser.add_argument('-d', '--indir', type=str, default=None,
                         help='input directory (UT date as YYYYMMDD')
     parser.add_argument('-f', '--specfile', type=str, dest="specfile",
                         help='spec_*.txt ascii spectrum file.',
