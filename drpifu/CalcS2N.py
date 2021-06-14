@@ -5,9 +5,27 @@ Created on Mon Jun 14 11:22:00 2021
 @author: neill
 """
 
+import os
+import glob
 import argparse
 import astropy.io.fits as pf
 import numpy as np
+from configparser import ConfigParser
+import codecs
+
+cfg_parser = ConfigParser()
+
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              '../config/sedmconfig.cfg')
+
+# Open the file with the correct encoding
+with codecs.open(configfile, 'r') as f:
+    cfg_parser.read_file(f)
+
+_reduxpath = cfg_parser.get('paths', 'reduxpath')
 
 
 def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
@@ -17,7 +35,7 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
 
     s2nmed = None
     if spec_file is not None:
-        # Update fits file
+        # Open fits file
         ff = pf.open(spec_file.replace('.txt', '.fits'), mode='update')
         # get S/N ratio
         flux = ff[0].data
@@ -73,14 +91,15 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=
-                                     """
+    parser = argparse.ArgumentParser(description="""
 
-        Calculates S/N for SEDM spectrum and records it in fits and ascii file.
+        Calculates S/N for SEDM spectra and records it in fits and ascii file.
 
         """, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-d', '--specfile', type=str, dest="specfile",
+    parser.add_argument('indir', type=str, default=None,
+                        help='input directory (UT date as YYYYMMDD')
+    parser.add_argument('-f', '--specfile', type=str, dest="specfile",
                         help='spec_*.txt ascii spectrum file.',
                         default=None)
     parser.add_argument('-s', '--start_wave', type=float, dest='s0',
@@ -92,8 +111,23 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # Calculate S/N ratio from extracted spectra and record results in specfile
-    print("Calcuating S/N from and recording results in %s" % args.specfile)
-    s2n = calc_s2n(spec_file=args.specfile, start_wave=args.s0,
-                   end_wave=args.s1)
-    print("Median S/N is %f" % s2n)
+    if args.specfile is not None:
+        s2n = calc_s2n(spec_file=args.specfile, start_wave=args.s0,
+                       end_wave=args.s1)
+        print("S/N(%.1f-%.1f A) = %.2f in %s", (args.s0, args.s1, s2n,
+                                                args.specfile))
+
+    elif args.indir is not None:
+
+        indir = os.path.join(_reduxpath, args.indir)
+
+        flist = glob.glob(os.path.join(indir, 'spec_*.txt'))
+
+        if len(flist) > 0:
+            for fl in flist:
+                s2n = calc_s2n(spec_file=fl, start_wave=args.s0,
+                               end_wave=args.s1)
+                print("S/N(%.1f-%.1f A) = %.2f in %s",
+                      (args.s0, args.s1, s2n, fl))
+    else:
+        print("unknown params: try CalcS2N.py --help")
