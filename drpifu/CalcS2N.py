@@ -28,7 +28,7 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
         dw = ff[0].header['CDELT1']
         npx = ff[0].header['NAXIS1']
         w1 = w0 + dw * float(npx - 1)
-        wave = np.arange(start=w0, end=w1, step=dw)
+        wave = np.arange(start=w0, stop=w1, step=dw)
         # Get wavelength range
         if start_wave < w0:
             sw0 = w0
