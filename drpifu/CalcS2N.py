@@ -63,6 +63,11 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000.):
             spec_lines.insert(comment_lines_count,
                               "# SN2_MEDIAN: " + str(s2nmed) + "\n")
 
+        # Write out updated files
+        with open(spec_file, "w") as specOut:
+            specOut.write("".join(spec_lines))
+        ff.close()
+
     return s2nmed
     # END calc_s2n
 
