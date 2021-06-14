@@ -114,8 +114,8 @@ if __name__ == '__main__':
     if args.specfile is not None:
         s2n = calc_s2n(spec_file=args.specfile, start_wave=args.s0,
                        end_wave=args.s1)
-        print("S/N(%.1f-%.1f A) = %.2f in %s", (args.s0, args.s1, s2n,
-                                                args.specfile))
+        print("S/N(%.1f-%.1f A) = %.2f in %s" % (args.s0, args.s1, float(s2n),
+                                                 args.specfile))
 
     elif args.indir is not None:
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
             for fl in flist:
                 s2n = calc_s2n(spec_file=fl, start_wave=args.s0,
                                end_wave=args.s1)
-                print("S/N(%.1f-%.1f A) = %.2f in %s",
-                      (args.s0, args.s1, s2n, fl))
+                print("S/N(%.1f-%.1f A) = %.2f in %s" %
+                      (args.s0, args.s1, float(s2n), fl))
     else:
         print("unknown params: try CalcS2N.py --help")
