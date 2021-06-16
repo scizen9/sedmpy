@@ -2138,6 +2138,8 @@ def clean_post_redux(odir):
     flist = glob.glob(os.path.join(odir, "*dome.fits"))
     flist.extend(glob.glob(os.path.join(odir, '??.fits')))
     flist.extend(glob.glob(os.path.join(odir, 'bias*.fits')))
+    # Compress rainbow cam images
+    flist.extend(glob.glob(os.path.join(odir, 'rc*.fits')))
     for fl in flist:
         if os.path.islink(fl):
             continue

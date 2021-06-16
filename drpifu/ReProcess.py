@@ -1342,6 +1342,11 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
         for fl in flist:
             subprocess.call(["gzip", fl])
 
+        flist = glob.glob(os.path.join(destdir, 'rc%s_*.fits' % ut_date))
+        for fl in flist:
+            if not os.path.islink(fl):
+                subprocess.call(["gzip", fl])
+
     return ncube
     # END: re_cube
 
