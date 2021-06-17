@@ -271,6 +271,7 @@ def sedm_fix_header(fname):
                 ff[0].header['AIRMASS'] = (1.0, 'bogus airmass')
     except KeyError:
         print("Missing AIRMASS header keyword")
+        ff[0].header['AIRMASS'] = (1.0, 'bogus airmass')
     # END values
     if 'ENDAIR' not in ff[0].header:
         if 'AIRMASS' in ff[0].header:
