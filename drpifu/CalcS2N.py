@@ -63,6 +63,7 @@ def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000., overwrite=False):
         sample_range = [i for i, w in enumerate(wave) if sw0 < w < sw1]
         s2nmed = np.nanmedian(s2nspec[sample_range])
         if s2nmed != s2nmed:
+            print("Warning - bad s2nmed!")
             s2nmed = 1.0
 
         # Update ascii file
