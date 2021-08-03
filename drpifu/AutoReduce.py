@@ -142,7 +142,7 @@ def cube_ready(caldir='./', cur_date_str=None, avrmslim=35.0):
             logging.warning("Wavelength stats failed, moved cube to 'bad'")
             # Send email
             msg = EmailMessage()
-            msg['To'] = "rsw@astro.caltech.edu,neill@srl.caltech.edu"
+            msg['To'] = "neill@srl.caltech.edu,"
             msg['Subject'] = "SEDM Error - Wave solution failure for %s" \
                              % cur_date_str
             msg['From'] = 'No_reply_sedm_robot@astro.caltech.edu'
