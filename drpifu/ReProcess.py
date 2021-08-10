@@ -730,7 +730,7 @@ def archive_old_kpy_files(odir):
     flist.extend(glob.glob(os.path.join(odir, 'filtered_Hg.fit*')))
     flist.extend(glob.glob(os.path.join(odir, 'flat-field-values.pdf')))
     flist.extend(glob.glob(os.path.join(odir, 'rough.reg')))
-    flist.extend(glob.glob(os.path.join(odir, 'Standard_Correction.pdf')))
+    flist.extend(glob.glob(os.path.join(odir, 'Standard_Correction.*')))
     flist.extend(glob.glob(os.path.join(odir, 'run.log')))
     # Move them into the archive
     nfilemv = 0
