@@ -39,7 +39,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     with open(fname, 'rb') as image_file:
         encoded = base64.b64encode(image_file.read()).decode('ascii')
     # create payload
-    ddict = {'obj_id': obj_id,   # 'commentable_id': spec_id,
+    ddict = {'obj_id': obj_id, 'spectrum_id': spec_id,
              'text': comment,
              'attachment': {'body': encoded,
                             'name': fname.split('/')[-1]}}
@@ -80,7 +80,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
     return: True if success, False if not
     """
 
-    ddict = {'obj_id': obj_id,  # 'commentable_id': spec_id,
+    ddict = {'obj_id': obj_id,  # 'spectrum_id': spec_id,
              'origin': origin,
              'data': andic}
 
@@ -173,12 +173,12 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
             'SNIascore': header['SNIASCORE'],
             'SNIascore_err': header['SNIASCORE_ERR']}
     # construct origin
-    origin = 'SNIascore:spc%d' % spec_id
+    origin = 'SNIascore:spc%d' % spec_id   # origin = 'SNIascore'
 
     print(andic)
 
-    return add_spec_autoannot(object_id, andic, origin=origin,
-                              testing=testing), tns_upl
+    return add_spec_autoannot(object_id, andic, spec_id=spec_id,
+                              origin=origin, testing=testing), tns_upl
 
 
 def add_SNIascore_classification(fname, object_id=None, testing=False):
@@ -370,9 +370,10 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
     for key in andic:
         andic[key] = header['snidmatch' + key]
     # construct origin
-    origin = 'sedm:spc%d' % spec_id
+    origin = 'sedm:spc%d' % spec_id   # origin = 'sedm'
 
-    if not add_spec_autoannot(object_id, andic, origin=origin, testing=testing):
+    if not add_spec_autoannot(object_id, andic, spec_id=spec_id,
+                              origin=origin, testing=testing):
         return False
 
     if pr_posted:

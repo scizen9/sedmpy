@@ -40,6 +40,7 @@ import sys
 import os
 import re
 import subprocess
+from subprocess import Popen, PIPE
 import astropy.io.fits as pf
 import logging
 import argparse
@@ -2275,7 +2276,7 @@ if __name__ == '__main__':
                         help='UTDate directory to update')
     parser.add_argument('--local', action="store_true", default=False,
                         help='Process data locally only (no push to marshal or '
-                             'slack')
+                             'slack)')
     parser.add_argument('--nopush_marshal', action="store_true", default=False,
                         help='Do not push to marshal')
     parser.add_argument('--nopush_slack', action="store_true", default=False,
