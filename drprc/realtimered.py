@@ -84,6 +84,7 @@ def plot_image(image, verbose=False, ut_id=None):
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
     filt = h.get('FILTER', 'NA')
+    focpos = h.get('FOCPOS', 0.)
 
     # Sub-dir
     subdir = imtype.lower().strip()
@@ -136,10 +137,18 @@ def plot_image(image, verbose=False, ut_id=None):
 
         plt.imshow(d, vmin=-pltstd, vmax=2.*pltstd,
                    cmap=plt.get_cmap('Greys_r'))
-        if ut_id is not None:
-            plt.title("{%s} %s %s %s-band [%ds] " % (imtype, ut_id, name, filt, exptime))
+        if 'FOCUS' in imtype.upper():
+            if ut_id is not None:
+                plt.title("{%s} %s %.2f %s-band [%ds] " % (
+                          imtype, ut_id, focpos, filt, exptime))
+            else:
+                plt.title("{%s} %.2f %s-band [%ds] " % (
+                          imtype, focpos, filt, exptime))
         else:
-            plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
+            if ut_id is not None:
+                plt.title("{%s} %s %s %s-band [%ds] " % (imtype, ut_id, name, filt, exptime))
+            else:
+                plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
         plt.colorbar()
         logger.info("As %s", outfig)
         plt.savefig(outfig)
@@ -183,7 +192,8 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False):
     while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
         for wl in whatl:
             fl = wl.split()[0]
-            plot_image(os.path.join(photdir, fl))
+            utid = "_".join(fl.split("_")[1:]).split(".")[0]
+            plot_image(os.path.join(photdir, fl), ut_id=utid)
         logger.info("No acquisition yet (bright or weather), waiting 10 min...")
         time.sleep(600)
         with open(whatf, 'r') as wtf:
