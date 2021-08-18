@@ -501,7 +501,7 @@ def analyze_img(sexfile, arcsecpix=0.394, is_rcam=True,mag_quantile=0.8,
     df = df[(df['MAG_BEST'] < mag) & (df['ELLIPTICITY'] < ellip)]
     df = df[(df['Y_IMAGE'] < y_max) & (df['Y_IMAGE'] > y_min)]
     nextract = len(df)
-    avgfwhm = df['FWHM_IMAGE'].mean()
+    avgfwhm = df['FWHM_IMAGE'].mean() * arcsecpix
     avgellip = df['ELLIPTICITY'].mean()
     avgbkg = df['BACKGROUND'].mean()
     return nextract, avgfwhm, avgellip, avgbkg
