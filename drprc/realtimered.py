@@ -139,16 +139,18 @@ def plot_image(image, verbose=False, ut_id=None):
                    cmap=plt.get_cmap('Greys_r'))
         if 'FOCUS' in imtype.upper():
             if ut_id is not None:
-                plt.title("{%s} %s %.2f %s-band [%ds] " % (
-                          imtype, ut_id, focpos, filt, exptime))
+                plt.title("{%s} %.2f %s %s-band [%ds] " %
+                          (imtype, focpos, ut_id, filt, exptime))
             else:
-                plt.title("{%s} %.2f %s-band [%ds] " % (
-                          imtype, focpos, filt, exptime))
+                plt.title("{%s} %.2f %s-band [%ds] " %
+                          (imtype, focpos, filt, exptime))
         else:
             if ut_id is not None:
-                plt.title("{%s} %s %s %s-band [%ds] " % (imtype, ut_id, name, filt, exptime))
+                plt.title("{%s} %s %s %s-band [%ds] " %
+                          (imtype, ut_id, name, filt, exptime))
             else:
-                plt.title("{%s} %s %s-band [%ds] " % (imtype, name, filt, exptime))
+                plt.title("{%s} %s %s-band [%ds] " %
+                          (imtype, name, filt, exptime))
         plt.colorbar()
         logger.info("As %s", outfig)
         plt.savefig(outfig)
