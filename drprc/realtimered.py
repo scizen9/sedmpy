@@ -160,7 +160,7 @@ def plot_image(image, verbose=False, ut_id=None):
             logger.info("Exists: %s", outfig)
 
 
-def reduce_on_the_fly(photdir, nocopy=False, proc_na=False):
+def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
     """
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
@@ -259,23 +259,27 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False):
                     else:
                         do_cosmic = False
                     reduced = rcred.reduce_image(n, cosmic=do_cosmic)
-                    # perform quick photometry
-                    for rf in reduced:
-                        if fitsutils.get_par(rf, "ONTARGET"):
-                            target_object = fitsutils.get_par(rf, "OBJECT")
-                            target_filter = target_object.split()[-1]
-                            target_name = target_object.split()[0]
-                            logger.info("Getting quick %s-band mag for %s in %s"
-                                        % (target_filter, target_name, rf))
-                            target_mag, target_magerr, std_zp = get_target_mag(rf, zeropoint=phot_zp)
-                            if target_mag is None or target_magerr is None:
-                                logger.warning("Quick mag failed!")
-                            else:
-                                logger.info("Quick MAG = %.3f +- %.3f" % (target_mag, target_magerr))
-                            if std_zp is not None:
-                                logger.info("Quick MAG_ZP: %.3f" % std_zp)
-                                if phot_zp[target_filter] is None:
-                                    phot_zp[target_filter] = std_zp
+                    # perform quick photometry if requested
+                    if do_phot:
+                        for rf in reduced:
+                            if fitsutils.get_par(rf, "ONTARGET"):
+                                target_object = fitsutils.get_par(rf, "OBJECT")
+                                target_filter = target_object.split()[-1]
+                                target_name = target_object.split()[0]
+                                logger.info(
+                                    "Getting quick %s-band mag for %s in %s" %
+                                    (target_filter, target_name, rf))
+                                target_mag, target_magerr, std_zp = \
+                                    get_target_mag(rf, zeropoint=phot_zp)
+                                if target_mag is None or target_magerr is None:
+                                    logger.warning("Quick mag failed!")
+                                else:
+                                    logger.info("Quick MAG = %.3f +- %.3f" %
+                                                (target_mag, target_magerr))
+                                if std_zp is not None:
+                                    logger.info("Quick MAG_ZP: %.3f" % std_zp)
+                                    if phot_zp[target_filter] is None:
+                                        phot_zp[target_filter] = std_zp
                     if nocopy:
                         logger.info("Skipping copies to transient")
                     else:
