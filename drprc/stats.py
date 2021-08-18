@@ -106,7 +106,7 @@ def get_sextractor_stats(files):
                     else:
                         weather_string += '%.2f' % in_hum
                     # get image stats
-                    ns, fwhm, ellipticity, bkg = sextractor.analyse_image(sf)
+                    ns, fwhm, ellipticity, bkg = sextractor.analyze_img(sf)
                     out.write(
                         "%s,%s,%.3f,%d,%.2f,%.3f,%.3f,%.2f,%s\n"
                         % (os.path.abspath(ff), obj, jd, ns, fwhm, ellipticity,

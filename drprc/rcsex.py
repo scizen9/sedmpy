@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import numpy as np
 from astropy.io import fits as pf
+from astropy.io import ascii
 
 import datetime
 try:
@@ -483,6 +484,27 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False):
         plt.close("all")
 
     return x[np.argmax(p(x))], coefs[0]
+
+
+def analyze_img(sexfile, arcsecpix=0.394, is_rcam=True,mag_quantile=0.8,
+                ellp_quantile=0.25, radius=10, y_min=50, y_max=2000):
+
+    if not os.path.exists(sexfile):
+        print("File not found: %s" % sexfile)
+        return 0, 0, 0, 0
+
+    data = ascii.read(sexfile)
+    df = data.to_pandas()
+
+    mag = df['MAG_BEST'].quantile(mag_quantile)
+    ellip = df['ELLIPTICITY'].quantile(ellp_quantile)
+    df = df[(df['MAG_BEST'] < mag) & (df['ELLIPTICITY'] < ellip)]
+    df = df[(df['Y_IMAGE'] < y_max) & (df['Y_IMAGE'] > y_min)]
+    nextract = len(df)
+    avgfwhm = df['FWHM_IMAGE'].mean()
+    avgellip = df['ELLIPTICITY'].mean()
+    avgbkg = df['BACKGROUND'].mean()
+    return nextract, avgfwhm, avgellip, avgbkg
 
 
 def analyse_image(sexfile, arcsecpix=0.394, is_rccam=True):

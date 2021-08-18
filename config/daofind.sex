@@ -12,7 +12,7 @@ PARAMETERS_NAME  $SEDMPY/config/daofind.param  # name of the file containing cat
 #------------------------------- Extraction ----------------------------------
  
 DETECT_TYPE      CCD            # CCD (linear) or PHOTO (with gamma correction)
-DETECT_MINAREA   5              # minimum number of pixels above threshold
+DETECT_MINAREA   10              # minimum number of pixels above threshold
 DETECT_THRESH    1.5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH  1.5            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
