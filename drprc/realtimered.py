@@ -338,7 +338,6 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         deltime = time_curr - time_ini
         # Update file count
         nfiles = nfilesnew
-    logger.info("Concluding RC image processing for %s." % dayname)
 
 
 if __name__ == '__main__':
@@ -364,5 +363,9 @@ if __name__ == '__main__':
     else:
         pdir = args.photdir
 
-    reduce_on_the_fly(os.path.abspath(pdir), nocopy=args.nocopy,
-                      proc_na=args.proc_na)
+    photdir = os.path.abspath(pdir)
+
+    reduce_on_the_fly(photdir, nocopy=args.nocopy, proc_na=args.proc_na)
+
+    dayname = os.path.basename(photdir)
+    logger.info("Concluding RC image processing for %s." % dayname)
