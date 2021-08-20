@@ -108,7 +108,7 @@ def get_sextractor_stats(files):
                     # get image stats
                     ns, fwhm, ellipticity, bkg = sextractor.analyze_img(sf)
                     out.write(
-                        "%s,%s,%.3f,%d,%.2f,%.3f,%.3f,%.2f,%s\n"
+                        "%s,%s,%.5f,%d,%.2f,%.3f,%.3f,%.2f,%s\n"
                         % (os.path.abspath(ff), obj, jd, ns, fwhm, ellipticity,
                            bkg, airmass, weather_string))
                 except Exception as e:
