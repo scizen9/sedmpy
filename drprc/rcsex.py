@@ -486,7 +486,7 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False):
     return x[np.argmax(p(x))], coefs[0]
 
 
-def analyze_img(sexfile, arcsecpix=0.394, is_rcam=True,mag_quantile=0.8,
+def analyze_img(sexfile, arcsecpix=0.394, is_rcam=True, mag_quantile=0.8,
                 ellp_quantile=0.25, radius=10, y_min=50, y_max=2000):
 
     if not os.path.exists(sexfile):
@@ -501,9 +501,9 @@ def analyze_img(sexfile, arcsecpix=0.394, is_rcam=True,mag_quantile=0.8,
     df = df[(df['MAG_BEST'] < mag) & (df['ELLIPTICITY'] < ellip)]
     df = df[(df['Y_IMAGE'] < y_max) & (df['Y_IMAGE'] > y_min)]
     nextract = len(df)
-    avgfwhm = df['FWHM_IMAGE'].mean() * arcsecpix
-    avgellip = df['ELLIPTICITY'].mean()
-    avgbkg = df['BACKGROUND'].mean()
+    avgfwhm = df['FWHM_IMAGE'].median() * arcsecpix
+    avgellip = df['ELLIPTICITY'].median()
+    avgbkg = df['BACKGROUND'].median()
     return nextract, avgfwhm, avgellip, avgbkg
 
 
