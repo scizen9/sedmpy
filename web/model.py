@@ -1945,7 +1945,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 ###############################################################################
 def get_active_visibility(userid):
     sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
-                 'inidate': datetime.datetime.utcnow() - datetime.timedelta(days=7, hours=8)}
+                 'inidate': datetime.datetime.utcnow() - datetime.timedelta(days=3, hours=8)}
 
     # 1. Get a dataframe of all requests for the current user
     requests = get_requests_for_user(userid, sedm_dict['inidate'], sedm_dict['enddate'])
