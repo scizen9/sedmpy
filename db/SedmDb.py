@@ -446,8 +446,8 @@ class SedmDB:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(keys):  # remove any extraneous keys
-            if key not in ['id', 'name', 'designator', 'group_id', 'PI', 'color'
-                                                                         'time_allocated', 'priority', 'inidate',
+            if key not in ['id', 'name', 'designator', 'group_id', 'PI',
+                           'color', 'time_allocated', 'priority', 'inidate',
                            'enddate']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
@@ -1502,7 +1502,7 @@ class SedmDB:
         """
         # TODO: get a better description of cadence/phasesamples/sampletolerance
         param_types = {'id': int, 'object_id': int, 'user_id': int, 'allocation_id': int, 'exptime': str,
-                       'priority': float,
+                       'priority': float, 'external_id': int, 'shareid': int,
                        'inidate': 'date', 'enddate': 'date', 'marshal_id': int, 'maxairmass': float, 'cadence': float,
                        'phasesamples': float, 'sampletolerance': float, 'nexposures': str, 'obs_seq': str,
                        'max_fwhm': float, 'min_moon_dist': float, 'max_moon_illum': float, 'max_cloud_cover': float,
@@ -1556,7 +1556,7 @@ class SedmDB:
             if key not in ['id', 'object_id', 'user_id', 'allocation_id', 'exptime', 'priority', 'status',
                            'inidate', 'enddate', 'marshal_id', 'maxairmass', 'cadence', 'seq_completed',
                            'phasesamples', 'sampletolerance', 'nexposures', 'obs_seq', 'seq_repeats',
-                           'max_fwhm', 'min_moon_dist', 'max_moon_illum', 'max_cloud_cover']:
+                           'max_fwhm', 'min_moon_dist', 'max_moon_illum', 'max_cloud_cover', 'external_id', 'shareid']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
