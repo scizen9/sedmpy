@@ -1,6 +1,10 @@
 *.json
 *growth_creds*
 web/static/scheduler/scheduler.html
+web/static/request_*
+web/static/fritz_*
+web/static/new_*
+web/new_*
 scheduler_table.html
 .DS_Store
 *.fits
