@@ -7,7 +7,7 @@ from web.forms import *
 import json
 import os
 import web.model as model
-from werkzeug.datastructures import ImmutableMultiDict
+# from werkzeug.datastructures import ImmutableMultiDict
 from bokeh.resources import INLINE
 from marshals import watcher
 resources = INLINE
@@ -163,26 +163,31 @@ def data_static_r(filename):
 @app.route('/data/<path:filename>')
 # @flask_login.login_required
 def data_static(filename):
-    '''
+    """
      Get files from the archive
     :param filename:
     :return:
-    '''
+    """
     _p, _f = os.path.split(filename)
     if _f.startswith('finder') and 'ACQ' in _f:
-        if os.path.exists(os.path.join(config['path']['path_archive'], _p, 'finders', _f)):
-            return send_from_directory(os.path.join(config['path']['path_archive'], _p, 'finders'), _f)
+        if os.path.exists(os.path.join(config['path']['path_archive'], _p,
+                                       'finders', _f)):
+            return send_from_directory(
+                os.path.join(config['path']['path_archive'], _p, 'finders'), _f)
         else:
-            return send_from_directory(os.path.join(config['path']['path_phot'], _p, 'finders'), _f)
+            return send_from_directory(os.path.join(config['path']['path_phot'],
+                                                    _p, 'finders'), _f)
     elif _f.startswith('rc') or _f.startswith('finder') or 'ACQ' in _f:
         # print("In rc path")
         # print(_p, _f)
         if _f.startswith('rc'):
             if 'redux' in _p:
-                return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
+                return send_from_directory(
+                    os.path.join(config['path']['path_phot'], _p), _f)
             else:
                 # print("USING THE HERE")
-                base_obspath = os.path.join(config['path']['path_redux_phot'], _p, 'pngraw')
+                base_obspath = os.path.join(config['path']['path_redux_phot'],
+                                            _p, 'pngraw')
                 pathlist = ['acquisition', 'bias', 'dome', 'focus',
                             'guider', 'science', 'twilight']
                 for i in pathlist:
@@ -190,9 +195,11 @@ def data_static(filename):
                     if os.path.exists(os.path.join(test_path, _f)):
                         return send_from_directory(test_path, _f)
         else:
-            return send_from_directory(os.path.join(config['path']['path_phot'], _p), _f)
+            return send_from_directory(os.path.join(config['path']['path_phot'],
+                                                    _p), _f)
     else:
-        return send_from_directory(os.path.join(config['path']['path_archive'], _p), _f)
+        return send_from_directory(os.path.join(config['path']['path_archive'],
+                                                _p), _f)
 
 
 @app.route('/visibility')
@@ -225,15 +232,15 @@ def add_growth():
     if x:
         content = json.loads(x)
         output = open(
-            '/scr2/sedm/sedmpy/web/static/request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"),
-            'w')
+            '/scr2/sedm/sedmpy/web/static/request_%s.txt' %
+            datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return ('Content-type: text/html\n <title>Test CGI</title>')
+        return 'Content-type: text/html\n <title>Test CGI</title>'
     else:
         print('Not a json file')
-        return ('ERROR')
+        return 'ERROR'
 
 
 @app.route('/add_request', methods=['GET', 'POST'])
@@ -250,7 +257,8 @@ def add_request():
         data = request.files['jsonfile'].read()
         content = json.loads(data)
     else:
-        return ('Content-type: text/html\n <title>Invalid Formatting of Request</title>')
+        return 'Content-type: text/html\n ' \
+               '<title>Invalid Formatting of Request</title>'
 
     # Next add the origins url to determine where the request came from
     content['origins_url'] = origin_url
@@ -261,14 +269,15 @@ def add_request():
         print(str(e))
 
     # Now write the request to file
-    output = open('new_request_%s.txt' %
-                  datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+    output = open(
+        'new_request_%s.txt'
+        % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
 
     data = json.dumps(content)
     output.write(data)
     output.close()
 
-    return ('Content-type: text/html\n <title>Accepted Request</title>')
+    return 'Content-type: text/html\n <title>Accepted Request</title>'
 
 
 @app.route('/add_fritz', methods=['GET', 'POST'])
@@ -279,48 +288,55 @@ def add_fritz():
     if request.data:
         content = json.loads(request.data)
         content['origins_url'] = origin_url
-        #output = open('fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
+        # output = open('fritz_request_%s.txt' %
+        # datetime.datetime.utcnow().strftime(
         #    "%Y%m%d_%H_%M_%S.%f"), 'w')
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
-            "%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(
+            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
+            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
 
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
     if request.is_json:
         content = json.loads(request.get_json())
         content['origins_url'] = origin_url
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(
+            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
+            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
     if request.form:
         content = request.form.to_dict(flat=True)
         content['origins_url'] = origin_url
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(
+            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
+            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
 
     if 'jsonfile' in request.files:
         x = request.files['jsonfile'].read()
     else:
-        return ("No json file")
+        return "No json file"
     if x:
         content = json.loads(x)
         content['origins_url'] = origin_url
-        output = open('/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt' % datetime.datetime.utcnow().strftime(
-            "%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(
+            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
+            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
         data = json.dumps(content)
         output.write(data)
         output.close()
-        return ('Content-type: text/html\n <title>Accepted Fritz CGI</title>')
+        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
     else:
         print('Not a json file')
-        return ('ERROR')
+        return 'ERROR'
 
 
 @app.route('/get_marshal_id', methods=['GET', 'POST'])
@@ -465,7 +481,8 @@ def login_change():
         else:
             return render_template('change_pass.html', sedm_dict=out, form=form)
 
-    return render_template('change_pass.html', sedm_dict={'message': ''}, form=form)
+    return render_template('change_pass.html', sedm_dict={'message': ''},
+                           form=form)
 
 
 @app.route("/logout")

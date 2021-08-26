@@ -11,14 +11,15 @@ class LoginForm(FlaskForm):
 
 
 class PassChangeForm(FlaskForm):
-    password = fields.PasswordField('Old Password',
-                                    validators=[validators.input_required()])
-    pass_new = fields.PasswordField('New Password',
-                                    validators=[validators.input_required(),
-                                                validators.EqualTo('pass_conf',
-                                                                   message='Passwords must match')] )
+    password = fields.PasswordField(
+        'Old Password', validators=[validators.input_required()])
+    pass_new = fields.PasswordField(
+        'New Password', validators=[
+            validators.input_required(),
+            validators.EqualTo('pass_conf', message='Passwords must match')])
     pass_conf = fields.PasswordField('Confirm New Password',
                                      validators=[validators.input_required()])
+
 
 class AddCSVRequest(FlaskForm):
     """
@@ -28,8 +29,10 @@ class AddCSVRequest(FlaskForm):
     submit = fields.SubmitField("Submit Request")
     textbox = fields.TextAreaField("Add CSV Request")
 
+
 class FindObject(FlaskForm):
     object_name = fields.StringField("Enter object name")
+
 
 class AddFixedRequest(FlaskForm):
     # object data
@@ -79,38 +82,42 @@ class AddFixedRequest(FlaskForm):
     i_repeats = fields.IntegerField('# Repeats', default=1)
     u_repeats = fields.IntegerField('# Repeats', default=1)
 
-    rc_use_mag = fields.BooleanField('Use object magnitude to set exposure time')
+    rc_use_mag = fields.BooleanField(
+        'Use object magnitude to set exposure time')
     seq_repeats = fields.IntegerField('# of Repeated Sequences', default=1)
-    seq_completed = fields.IntegerField('# of Sequences Already Completed', default=0)
+    seq_completed = fields.IntegerField('# of Sequences Already Completed',
+                                        default=0)
     ifu = fields.BooleanField('Take IFU Exposure')
     rc = fields.BooleanField('Take RC Exposure')
-    ifu_use_mag = fields.BooleanField('Use object magnitude to set exposure time')
-    ifu_exptime = fields.IntegerField('Enter Total IFU Exposure Time in seconds')
+    ifu_use_mag = fields.BooleanField(
+        'Use object magnitude to set exposure time')
+    ifu_exptime = fields.IntegerField(
+        'Enter Total IFU Exposure Time in seconds')
     ab = fields.BooleanField('Select For AB pair')
 
     cadence = fields.FloatField('cadence', default=None)
 
-    min_moon_dist = fields.FloatField('minimum moon distance (degrees)',
-                                      validators=(validators.Optional(),
-                                                  validators.number_range(0., 180.)),
-                                      default=30)
+    min_moon_dist = fields.FloatField(
+        'minimum moon distance (degrees)',
+        validators=(validators.Optional(),
+                    validators.number_range(0., 180.)), default=30)
 
-    max_moon_illum = fields.FloatField('Maximum Moon Illumination (fractional 0 to 1)',
-                                       validators=(validators.Optional(),
-                                                   validators.number_range(0., 1.)),
-                                       default=1)
-    maxairmass = fields.FloatField('Maximum Airmass',
-                                   validators=(validators.Optional(),
-                                               validators.number_range(1, 5)),
-                                   default=2.5)
-    max_cloud_cover = fields.FloatField('Maximum Cloud Cover (fractional)',
-                                        validators=(validators.Optional(),
-                                                    validators.number_range(0., 1.)),
-                                        default=1)
-    max_fwhm = fields.FloatField('Maximum FWHM',
-                                        validators=(validators.Optional(),
-                                                    validators.number_range(0., 10.)),
-                                        default=10)
+    max_moon_illum = fields.FloatField(
+        'Maximum Moon Illumination (fractional 0 to 1)',
+        validators=(validators.Optional(),
+                    validators.number_range(0., 1.)), default=1)
+    maxairmass = fields.FloatField(
+        'Maximum Airmass',
+        validators=(validators.Optional(),
+                    validators.number_range(1, 5)), default=2.5)
+    max_cloud_cover = fields.FloatField(
+        'Maximum Cloud Cover (fractional)',
+        validators=(validators.Optional(),
+                    validators.number_range(0., 1.)), default=1)
+    max_fwhm = fields.FloatField(
+        'Maximum FWHM',
+        validators=(validators.Optional(),
+                    validators.number_range(0., 10.)), default=10)
     phasesamples = fields.FloatField('samples per period', default=None)
     sampletolerance = fields.FloatField('samples tolerance', default=None)
     inidate = fields.DateField('start date (Y-m-d)',

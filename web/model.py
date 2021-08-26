@@ -1,4 +1,4 @@
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash
 from db.SedmDb import SedmDB
 from db.SedmDb_tools import DbTools
 import datetime
@@ -22,7 +22,8 @@ from bokeh.plotting import figure
 from bokeh.embed import components
 from astropy.time import Time
 import astropy.units as u
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun, get_moon
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun,\
+    get_moon
 from scheduler.scheduler import ScheduleNight
 
 superuser_list = ['SEDm_admin', 2, 20180523190352189]
@@ -58,9 +59,12 @@ request_form_values = ['request_id', 'object_id', 'marshal_id',
 rc_filter_list = ['r', 'g', 'i', 'u']
 schedule = ScheduleNight()
 
-# this all needs to go in some sort of config file instead of changing the source code constantly
-computer = os.uname()[1] # a quick fix
+# this all needs to go in some sort of config file instead of changing the
+# source code constantly
+computer = os.uname()[1]  # a quick fix
 
+port = 0
+host = 'none'
 if computer == 'pele':
     raw_dir = '/scr/rsw/sedm/raw/'
     phot_dir = '/scr/rsw/sedm/phot/'
@@ -92,14 +96,6 @@ elif computer == 'ether':
 
 print(computer, port, host, "inputs")
 db = SedmDB(host=host, dbname='sedmdb', port=port)
-
-
-def get_db():
-    return SedmDB(host=host, dbname='sedmdb', port=port)
-
-
-def tools():
-    return DbTools(db)
 
 
 def get_from_users(user_id):
@@ -156,40 +152,48 @@ def get_object_info(name=None, ra=None, dec=None, radius=5, out_type='html'):
         df = pd.DataFrame(obj_list, columns=object_values)
 
         df['Select'] = df['id'].apply(add_link)
-        return {'message': df.to_html(escape=False, classes='table', index=False)}
+        return {'message': df.to_html(escape=False, classes='table',
+                                      index=False)}
     else:
         return obj_list
 
+
 def fancy_request_table(df):
-    '''
+    """
     df: pandas dataframe
-        intended for tables of requests from get_requests_for_user, ie with columns:
-            ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority','status', 'lastmodified', 'UPDATE']
-        
+        intended for tables of requests from get_requests_for_user,
+        ie with columns:
+            ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date',
+             'priority','status', 'lastmodified', 'UPDATE']
+
     returns: IPython HTML object
         the html for df but with the following changes:
             -if 'RA' and 'Dec' mean it won't rise tonight, both fields are red
             -'name' column now has links to the growth marshal
-            -table width is 100%, which is important for the fancy tables to display right
-            -priority is an int, I don't know why it was ever a float  --> it is a float to allow finer 
-                                                                           tuning of the scheduler(rsw)
-    '''
+            -table width is 100%,
+             which is important for the fancy tables to display right
+            -priority is a float to allow finer tuning of the scheduler
+    """
 
-    def highlight_set(row, color='#ff9999'):
-        '''makes 'RA' and 'DEC' fields highlighted if it won't get high when it's dark out
-        meant for tables with both 'RA' and 'DEC' columns
-        '''
+    def highlight_set(hrow, color='#ff9999'):
+        """
+        makes 'RA' and 'DEC' fields highlighted if it won't get high when
+        it's dark out meant for tables with both 'RA' and 'DEC' columns
+        """
         red = 'background-color: {}'.format(color)
         try:
-            best_ra = ((Time.now().mjd - 58382.) * 360/365.)  # peak at longitude-based midnight, approx
-            if 180 - abs(180 - (best_ra - float(row['RA'])) % 360) > 120:  # more than 8h from midnight 
-                return [red if i == 'RA' else '' for i in row.index.values]
-            if row['DEC'] < -15.: # red if it'll never go above ~40deg
-                return [red if i == 'DEC' else '' for i in row.index.values]
+            # peak at longitude-based midnight, approx
+            best_ra = ((Time.now().mjd - 58382.) * 360/365.)
+            # more than 8h from midnight
+            if 180 - abs(180 - (best_ra - float(hrow['RA'])) % 360) > 120:
+                return [red if i == 'RA' else '' for i in hrow.index.values]
+            # red if it'll never go above ~40deg
+            if hrow['DEC'] < -15.:
+                return [red if i == 'DEC' else '' for i in hrow.index.values]
             else:
-                return ['' for i in row.index.values]
+                return ['' for _ in hrow.index.values]
         except KeyError:
-            return ['' for i in row.index.values]
+            return ['' for _ in hrow.index.values]
 
     def improve_obs_seq(li):
         """
@@ -217,7 +221,8 @@ def fancy_request_table(df):
             return "ERROR,PARSING_THE_FILTER_STRING"
 
     df['status'] = [i.lower() for i in df['status']]
-    df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '') for i in df['allocation']]
+    df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '')
+                        for i in df['allocation']]
     for col in ('obs_seq', 'exptime'):
         df[col] = [improve_obs_seq(i) for i in df[col]]
 
@@ -225,40 +230,48 @@ def fancy_request_table(df):
                .apply(highlight_set, axis=1)\
                .format({'object': '<a href="https://fritz.science/source/'
                                   '{0}">{0}</a>', 'RA': '{:.3f}',
-                        'DEC': '{:.3f}', 'priority': '{:.0f}', 'start date': '{:%b %d}',
-                        'end date': '{:%b %d}', 'lastmodified': '{:%b %d %H:%M}',
+                        'DEC': '{:.3f}', 'priority': '{:.0f}',
+                        'start date': '{:%b %d}',
+                        'end date': '{:%b %d}',
+                        'lastmodified': '{:%b %d %H:%M}',
                         'UPDATE': '<a href="request?request_id={}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
-               .set_table_attributes('style="width:100%" class="dataframe_fancy table '\
+               .set_table_attributes('style="width:100%"'
+                                     ' class="dataframe_fancy table '
                                      'table-striped nowrap"')\
                .set_table_styles(
                     [{'selector': '.row_heading',
-                         'props': [('display', 'none')]},
+                      'props': [('display', 'none')]},
                      {'selector': '.blank.level0',
                          'props': [('display', 'none')]}])
-    # this .replace() thing is super bad form but it's faster for now than finding the right way              
+    # this .replace() thing is super bad form but it's faster for now than
+    # finding the right way
     return styled.render()\
-                 .replace('RA</th>', '<a href="#" data-toggle="tooltip" '\
+                 .replace('RA</th>', '<a href="#" data-toggle="tooltip" '
                           'title="red if peaks >8h from midnight">RA</a></th>')\
-                 .replace('DEC</th>', '<a href="#" data-toggle="tooltip" '\
+                 .replace('DEC</th>', '<a href="#" data-toggle="tooltip" '
                           'title="red if peaks below 40deg">dec</a></th>')
 
 
 def get_homepage(userid, username):
-    sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
-                 'inidate': datetime.datetime.utcnow() - datetime.timedelta(days=7, hours=8)}
+    sedm_dict = {'enddate':
+                 datetime.datetime.utcnow() + datetime.timedelta(days=1),
+                 'inidate':
+                 datetime.datetime.utcnow() - datetime.timedelta(days=7,
+                                                                 hours=8)}
 
     # 1. Get a dataframe of all requests for the current user
-    requests = get_requests_for_user(userid, sedm_dict['inidate'], sedm_dict['enddate'])
+    reqs = get_requests_for_user(userid, sedm_dict['inidate'],
+                                 sedm_dict['enddate'])
 
     # organize requests into dataframes by whether they are completed or not
-    complete = requests[(requests['status'] == 'COMPLETED') |
-                        (requests['status'] == 'OBSERVED') |
-                        (requests['status'] == 'OBSERVED')]
-    active = requests[(requests['status'] == 'PENDING') |
-                      (requests['status'] == 'ACTIVE')]
-    expired = requests[(requests['status'] == 'EXPIRED')]
-    failed = requests[(requests['status'] == 'FAILED')]
+    complete = reqs[(reqs['status'] == 'COMPLETED') |
+                    (reqs['status'] == 'OBSERVED') |
+                    (reqs['status'] == 'OBSERVED')]
+    active = reqs[(reqs['status'] == 'PENDING') |
+                  (reqs['status'] == 'ACTIVE')]
+    expired = reqs[(reqs['status'] == 'EXPIRED')]
+    failed = reqs[(reqs['status'] == 'FAILED')]
 
     # retrieve information about the user's allocations
     ac = get_allocations_user(userid)
@@ -274,14 +287,12 @@ def get_homepage(userid, username):
                             'title': 'Expired in the last 7 days'}
 
     sedm_dict['failed'] = {'table': fancy_request_table(failed),
-                            'title': 'Failed Exposures in the last 7 days'}
+                           'title': 'Failed Exposures in the last 7 days'}
 
-
-    sedm_dict['allocations'] = {'table': ac.to_html(escape=False,
-                                                    classes='table table-striped',
-                                                    index=False,
-                                                    col_space=10),
-                                'title': 'Your Active Allocations'}
+    sedm_dict['allocations'] = {
+        'table': ac.to_html(escape=False, classes='table table-striped',
+                            index=False, col_space=10),
+        'title': 'Your Active Allocations'}
 
     sedm_dict['visibility'] = {'title': 'Visibilities for active requests',
                                'url':   '/visibility'}
@@ -289,6 +300,7 @@ def get_homepage(userid, username):
     # Make a greeting statement
     sedm_dict['greeting'] = 'Hello %s!' % username
     return sedm_dict
+
 
 ###############################################################################
 # THIS SECTION HANDLES EXPIRED TARGETS.                                       #
@@ -299,6 +311,7 @@ def show_expired(days=7):
 
     :return:
     """
+    print(days)
 
 
 ###############################################################################
@@ -313,7 +326,7 @@ def get_schedule(start_time="", end_time="", return_type='table'):
     :param end_time:
     :return:
     """
-
+    print(start_time, end_time, return_type)
     with open('static/scheduler/scheduler.html', 'r') as myfile:
         data = myfile.read().replace('\n', '')
 
@@ -390,7 +403,8 @@ def populate_form(content, form):
         # it doesn't set the proper select option.
         ret_dict['status_id'] = ret_dict['status']
 
-        ret_dict.update(parse_db_target_filters(ret_dict['obs_seq'], ret_dict['exptime']))
+        ret_dict.update(parse_db_target_filters(ret_dict['obs_seq'],
+                                                ret_dict['exptime']))
     elif 'object_id' in content:
         ret_dict = get_object_values(objid=content['object_id'][0])
 
@@ -505,7 +519,7 @@ def parse_db_target_filters(obs_seq, exptime):
     :return:
     """
     # Prep the variables
-    rc_filter_list = ['r', 'g', 'i', 'u']
+    rc_filters = ['r', 'g', 'i', 'u']
 
     return_dict = {
         'do_ifu': False, 'ifu_exptime': 0,
@@ -547,7 +561,7 @@ def parse_db_target_filters(obs_seq, exptime):
 
         # 4a. After parsing the indivual elements we need to check that they are
         # valid values
-        if flt in rc_filter_list:
+        if flt in rc_filters:
             if 0 < flt_exptime < 600:
                 if 0 < flt_repeat < 100:
                     return_dict['do_%s' % flt] = True
@@ -576,7 +590,6 @@ def add_object_to_db(content):
             c = SkyCoord(ra=ra, dec=dec, unit=(u.hourangle, u.deg))
             ra = c.ra.degree
             dec = c.dec.degree
-
 
         if content['obj_epoch']:
             epoch = content['obj_epoch']
@@ -650,7 +663,8 @@ def process_request_form(content, form, userid):
 
     request_dict['object_id'] = int(objid)
 
-    # 2. Now let's put together the request by getting all the values into a dictionary
+    # 2. Now let's put together the request
+    # by getting all the values into a dictionary
     obs_seq_key_list = ['ifu', 'rc', 'ab', 'do_r', 'do_i', 'do_u', 'do_g',
                         'r_repeats', 'g_repeats', 'i_repeats', 'u_repeats',
                         'r_exptime', 'g_exptime', 'i_exptime', 'u_exptime',
@@ -668,8 +682,8 @@ def process_request_form(content, form, userid):
                 request_dict['allocation_id'] = content[key]
             # This section should handle all the observation data such as if
             # we want ifu/rc follow-up and exposure times.  Note that because
-            # of the database format we must handle this data outside the request
-            # dictionary.
+            # of the database format we must handle this data outside
+            # the request dictionary.
             elif key in obs_seq_key_list:
                 if key in content:
                     obs_seq_dict[key] = content[key]
@@ -680,7 +694,7 @@ def process_request_form(content, form, userid):
         except Exception as e:
             print(str(e), key, 't')
             pass
-    #print("I made it here")
+    # print("I made it here")
     # 3. Now we need to create the obs_seq and exptime entries
     #    We need to also make sure and add the object magnitude
     #    to calculate exposure times
@@ -705,17 +719,19 @@ def process_request_form(content, form, userid):
             for k, v in request_dict.items():
                 if not v:
                     request_dict[k] = -1
-            ret = db.update_request(request_dict)
+            # ret = db.update_request(request_dict)
+            db.update_request(request_dict)
         else:
-            #print("I AN HERE NOW")
+            # print("I AM HERE NOW")
             if 'request_id' in request_dict:
                 request_dict.pop('request_id')
             request_dict['user_id'] = int(request_dict['user_id'])
-            #print(request_dict)
+            # print(request_dict)
             if 'external_id' in content:
                 request_dict['external_id'] = content['external_id']
-            ret = db.add_request(request_dict)
-            #print(ret)
+            # ret = db.add_request(request_dict)
+            db.add_request(request_dict)
+            # print(ret)
     return process_dict, form
 
 
@@ -728,7 +744,7 @@ def get_add_csv(user_id, form, content):
     :return: 
     """
 
-    return {'test': 'test'}, form
+    return {'test': 'test'}, form, user_id, content
 
 
 def process_add_csv(content, form, user_id):
@@ -740,7 +756,7 @@ def process_add_csv(content, form, user_id):
     :return: 
     """
 
-    return {'test': 'test'}, form
+    return {'test': 'test'}, form, content, user_id
 
 
 def make_obs_seq(obs_seq_dict):
@@ -769,7 +785,8 @@ def make_obs_seq(obs_seq_dict):
         # There may be case in the future where people want more than one IFU
         # at a time.  In which case this code will need to be changed.
         if obs_seq_dict['ifu_use_mag']:
-            if obs_seq_dict['ifu_exptime'] and int(obs_seq_dict['ifu_exptime']) > 0:
+            if obs_seq_dict['ifu_exptime'] and \
+                    int(obs_seq_dict['ifu_exptime']) > 0:
                 ret_dict["proc_message"] += ("You should know that you "
                                              "supplied a non-zero value "
                                              "in the ifu exposure time "
@@ -795,11 +812,11 @@ def make_obs_seq(obs_seq_dict):
                 ret_dict['proc_message'] += ("For some reason I couldn't "
                                              "process your magnitude.  If you "
                                              "didn't add one then that is on "
-                                             "you. Otherwise there is something "
-                                             "wrong with this '%s' value.  For "
-                                             "the record here is the error "
-                                             "message %s--" % (obs_seq_dict['obj_mag'],
-                                                               str(e)))
+                                             "you. Otherwise there is something"
+                                             " wrong with this '%s' value.  For"
+                                             " the record here is the error "
+                                             "message %s--" %
+                                             (obs_seq_dict['obj_mag'], str(e)))
 
                 ifu_exptime = False
         else:
@@ -810,18 +827,19 @@ def make_obs_seq(obs_seq_dict):
                 else:
 
                     ret_dict['proc_message'] += ("I don't know what you are "
-                                                 "trying to but %s is not an "
-                                                 "acceptable IFU exposure time. "
-                                                 "It's either less than 0 or "
-                                                 "more than two hours.--" %
-                                                 str(ifu_exptime))
+                                                 "trying to do but %s is not an"
+                                                 " acceptable IFU exposure "
+                                                 "time. It's either less than "
+                                                 " 0 or more than two hours.--"
+                                                 % str(ifu_exptime))
                     ifu_exptime = False
             except Exception as e:
                 ret_dict['proc_message'] += ("There is something wrong with "
                                              "your exposure time value.  '%s' "
                                              "is not a proper value.  Here is "
                                              "the error message return: %s--" %
-                                             (obs_seq_dict['ifu_exptime'], str(e)))
+                                             (obs_seq_dict['ifu_exptime'],
+                                              str(e)))
 
                 ifu_exptime = False
 
@@ -829,7 +847,7 @@ def make_obs_seq(obs_seq_dict):
             filters_list.append("1ifu")
             exptime_list.append(str(ifu_exptime))
 
-    #print(obs_seq_dict)
+    # print(obs_seq_dict)
     if obs_seq_dict['rc'].lower() in ['y', 'yes', 'true']:
         for flt in rc_filter_list:
             if obs_seq_dict['do_%s' % flt]:
@@ -884,10 +902,12 @@ def make_obs_seq(obs_seq_dict):
 
 
 def get_allocations_user(user_id, return_type=''):
-    res = db.execute_sql(""" SELECT a.id, a.designator, p.designator, g.designator, a.time_allocated, a.time_spent
-                            FROM allocation a, program p, groups g, usergroups ug
-                            WHERE a.program_id = p.id AND p.group_id = g.id 
-                            AND g.id = ug.group_id AND a.active is True AND ug.user_id = %d""" % user_id)
+    res = db.execute_sql(""" SELECT a.id, a.designator, p.designator,
+                        g.designator, a.time_allocated, a.time_spent
+                        FROM allocation a, program p, groups g, usergroups ug
+                        WHERE a.program_id = p.id AND p.group_id = g.id 
+                        AND g.id = ug.group_id AND a.active is True AND
+                        ug.user_id = %d""" % user_id)
 
     # create the dataframe and set the allocation names to be linked
     if return_type == 'list':
@@ -895,7 +915,9 @@ def get_allocations_user(user_id, return_type=''):
         for i in res:
             data.append(i[0])
     else:
-        data = pd.DataFrame(res, columns=['id', 'allocation', 'program', 'group', 'time allocated', 'time spent'])
+        data = pd.DataFrame(res, columns=['id', 'allocation', 'program',
+                                          'group', 'time allocated',
+                                          'time spent'])
 
     return data
 
@@ -909,28 +931,33 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
     :return: 
     """
     if not inidate:
-        inidate = datetime.datetime.utcnow() - datetime.timedelta(days=7, hours=8)
+        inidate = datetime.datetime.utcnow() - datetime.timedelta(days=7,
+                                                                  hours=8)
     if not enddate:
         enddate = datetime.datetime.utcnow() + datetime.timedelta(days=1)
 
-    request_query = ("""SELECT a.designator, o.name, o.ra, o.dec, r.inidate, r.enddate, r.priority, r.status, r.lastmodified, r.obs_seq, r.exptime, r.id 
-                        FROM request r, object o, allocation a 
-                        WHERE o.id = r.object_id AND a.id = r.allocation_id  
-                            AND ( r.enddate > DATE('%s') AND r.inidate <= DATE('%s') )
-                            AND r.allocation_id IN
-                           (SELECT a.id
-                            FROM allocation a, groups g, usergroups ug, users u, program p
-                            WHERE ug.user_id = u.id AND ug.group_id = g.id AND u.id = %d AND p.group_id = g.id AND a.program_id = p.id
-                            ) ORDER BY r.lastmodified DESC;""" % (inidate, enddate, user_id))
+    request_query = ("""SELECT a.designator, o.name, o.ra, o.dec, r.inidate,
+     r.enddate, r.priority, r.status, r.lastmodified, r.obs_seq, r.exptime, r.id 
+    FROM request r, object o, allocation a 
+    WHERE o.id = r.object_id AND a.id = r.allocation_id  
+        AND ( r.enddate > DATE('%s') AND r.inidate <= DATE('%s') )
+        AND r.allocation_id IN
+        (SELECT a.id
+            FROM allocation a, groups g, usergroups ug, users u, program p
+            WHERE ug.user_id = u.id AND ug.group_id = g.id AND u.id = %d AND 
+            p.group_id = g.id AND a.program_id = p.id
+        ) ORDER BY r.lastmodified DESC;""" % (inidate, enddate, user_id))
 
     data = db.execute_sql(request_query)
     data = pd.DataFrame(data,
-                        columns=['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority', 'status',
-                                 'lastmodified', 'obs_seq', 'exptime', 'UPDATE'])
+                        columns=['allocation', 'object', 'RA', 'DEC',
+                                 'start date', 'end date', 'priority', 'status',
+                                 'lastmodified', 'obs_seq', 'exptime',
+                                 'UPDATE'])
 
     if user_id in superuser_list:
         pass
-        #data['UPDATE'] = data['UPDATE'].apply(convert_to_link)
+        # data['UPDATE'] = data['UPDATE'].apply(convert_to_link)
     else:
         data.drop(columns=['RA', 'DEC'])
 
@@ -940,6 +967,7 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
 def convert_to_link(reqid):
     return """http://pharos.caltech.edu/request?request_id=%s""" % reqid
 
+
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE OBJECT PAGE.                 #
 # KEYWORD:OBJECT                                                              #
@@ -948,10 +976,12 @@ def get_object(object_name, user_id):
     """
     
     :param object_name: 
-    :param user_id: 
+    :param user_id:
     :return: 
     """
 
+    if user_id:
+        pass
     # 1. Start by getting the requested object
     objects = get_object_info(object_name, out_type='html')
 
@@ -959,9 +989,9 @@ def get_object(object_name, user_id):
     if not objects:
         return {'message': 'Could not find any targets with that name under '
                            'your allocation'}
-
     else:
         return {'message': objects}
+
 
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE LOGIN PAGE.                  #
@@ -975,9 +1005,10 @@ def check_login(username, password):
     :return: 
     """
 
-    user_pass = db.get_from_users(['username', 'password', 'id'], {'username': username})
+    user_pass = db.get_from_users(['username', 'password', 'id'],
+                                  {'username': username})
 
-    #print(user_pass)
+    # print(user_pass)
     if not user_pass:
         return False, 'Incorrect username or password!'
 
@@ -1016,6 +1047,7 @@ def password_change(form, user_id):
         message = "Incorrect username or password!"
         return {'message': message}
 
+
 ###############################################################################
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE STATS PAGE.                  #
 # KEYWORD:STATS                                                               #
@@ -1053,37 +1085,49 @@ def get_allocation_stats(user_id, inidate=None, enddate=None):
 
     If no user_id is provided, all active allocations are returned.
     """
-    if (user_id is None):
-        res = db.get_from_allocation(["designator", "time_allocated", "time_spent"], {"active": True})
-        df = pd.DataFrame(res, columns=["designator", "time_allocated", "time_spent"])
+    if user_id is None:
+        res = db.get_from_allocation(["designator", "time_allocated",
+                                      "time_spent"], {"active": True})
+        df = pd.DataFrame(res, columns=["designator", "time_allocated",
+                                        "time_spent"])
 
-        alloc_hours = np.array([ta.total_seconds() / 3600. for ta in df["time_allocated"]])
-        spent_hours = np.array([ts.total_seconds() / 3600. for ts in df["time_spent"]])
+        alloc_hours = np.array([ta.total_seconds() / 3600.
+                                for ta in df["time_allocated"]])
+        spent_hours = np.array([ts.total_seconds() / 3600.
+                                for ts in df["time_spent"]])
         free_hours = alloc_hours - spent_hours
 
-        df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours, free_hours=free_hours)
+        df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours,
+                       free_hours=free_hours)
 
     else:
-        if (inidate is None or enddate is None):
-            res = db.execute_sql(""" SELECT a.designator, a.time_allocated, a.time_spent
-                                    FROM allocation a, program p, groups g, usergroups ug
-                                    WHERE a.program_id = p.id AND p.group_id = g.id 
-                                    AND g.id = ug.group_id AND a.active is True AND ug.user_id = %d""" % (user_id))
+        if inidate is None or enddate is None:
+            res = db.execute_sql(""" SELECT a.designator, a.time_allocated,
+            a.time_spent
+            FROM allocation a, program p, groups g, usergroups ug
+            WHERE a.program_id = p.id AND p.group_id = g.id 
+            AND g.id = ug.group_id AND a.active is True 
+            AND ug.user_id = %d""" % user_id)
 
-            df = pd.DataFrame(res, columns=["designator", "time_allocated", "time_spent"])
+            df = pd.DataFrame(res, columns=["designator", "time_allocated",
+                                            "time_spent"])
 
-            alloc_hours = np.array([ta.total_seconds() / 3600. for ta in df["time_allocated"]])
-            spent_hours = np.array([ts.total_seconds() / 3600. for ts in df["time_spent"]])
+            alloc_hours = np.array([ta.total_seconds() / 3600.
+                                    for ta in df["time_allocated"]])
+            spent_hours = np.array([ts.total_seconds() / 3600.
+                                    for ts in df["time_spent"]])
             free_hours = alloc_hours - spent_hours
 
-            df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours, free_hours=free_hours)
-
+            df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours,
+                           free_hours=free_hours)
 
         else:
-            res = db.execute_sql(""" SELECT DISTINCT a.id, a.designator, a.time_allocated
-                                    FROM allocation a, program p, groups g, usergroups ug
-                                    WHERE a.program_id = p.id AND p.group_id = g.id 
-                                    AND g.id = ug.group_id AND a.active is True AND ug.user_id = %d;""" % (user_id))
+            res = db.execute_sql(""" SELECT DISTINCT a.id, a.designator,
+            a.time_allocated
+            FROM allocation a, program p, groups g, usergroups ug
+            WHERE a.program_id = p.id AND p.group_id = g.id 
+            AND g.id = ug.group_id AND a.active is True 
+            AND ug.user_id = %d;""" % user_id)
             allocdes = []
             spent_hours = []
             alloc = []
@@ -1094,10 +1138,13 @@ def get_allocation_stats(user_id, inidate=None, enddate=None):
                 alloc.append(ais[2])
             res = np.array([allocdes, alloc, spent_hours])
 
-            df = pd.DataFrame(res.T, columns=["designator", "time_allocated", "time_spent"])
-            alloc_hours = np.array([ta.total_seconds() / 3600. for ta in df["time_allocated"]])
+            df = pd.DataFrame(res.T, columns=["designator", "time_allocated",
+                                              "time_spent"])
+            alloc_hours = np.array([ta.total_seconds() / 3600.
+                                    for ta in df["time_allocated"]])
             free_hours = alloc_hours - spent_hours
-            df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours, free_hours=free_hours)
+            df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours,
+                           free_hours=free_hours)
 
     df = df.sort_values(by=["alloc_hours"], ascending=False)
 
@@ -1114,24 +1161,26 @@ def get_allocation_stats(user_id, inidate=None, enddate=None):
 
 def plot_stats_allocation(data):
     """
-    Plots in the shape of bars the time available and spent for each active allocation.
+    Plots in the shape of bars the time available and spent for each active
+    allocation.
     """
 
-    data = {key:np.nan_to_num(data[key]) for key in data}
+    data = {key: np.nan_to_num(data[key]) for key in data}
 
     # Create the first plot with the allocation hours
     alloc_names = data['allocations']
     categories = ["spent_hours", "free_hours"]
     colors = ["#e84d60", "darkgreen"]  # "#c9d9d3"
 
-    N = len(alloc_names)
+    n_names = len(alloc_names)
 
     source = ColumnDataSource(data=data)
     p = figure(x_range=alloc_names, plot_height=420, plot_width=80 * 8,
                title="Time spent/available for SEDM allocations this term",
                toolbar_location=None, tools="")
 
-    p.vbar_stack(categories, x='allocations', width=0.9, color=colors, source=source, legend=["Spent", "Available"])
+    p.vbar_stack(categories, x='allocations', width=0.9, color=colors,
+                 source=source, legend=["Spent", "Available"])
     p.y_range.start = 0
     p.x_range.range_padding = 0.1
     p.xgrid.grid_line_color = None
@@ -1146,19 +1195,22 @@ def plot_stats_allocation(data):
     alloc_names = data['allocations']
     percentage = (data["spent_hours"] / data["alloc_hours"]) * 100
 
-    colors = N * ['#084594']
+    colors = n_names * ['#084594']
     '''for i, p in enumerate(percentage):
         if p<50: colors[i] = '#22A784'
         elif p>50 and p<75: colors[i] = '#FD9F6C'
         else: colors[i] = '#DD4968'''
 
-    source = ColumnDataSource(data=dict(alloc_names=alloc_names, percentage=percentage, color=colors))
+    source = ColumnDataSource(data=dict(alloc_names=alloc_names,
+                                        percentage=percentage, color=colors))
 
-    p2 = figure(x_range=alloc_names, y_range=(0, 100), plot_height=420, plot_width=80 * 8,
+    p2 = figure(x_range=alloc_names, y_range=(0, 100), plot_height=420,
+                plot_width=80 * 8,
                 title="Percentage of time spent",
                 toolbar_location=None, tools="")
 
-    p2.vbar(x='alloc_names', top='percentage', width=0.9, color='color', source=source)
+    p2.vbar(x='alloc_names', top='percentage', width=0.9, color='color',
+            source=source)
 
     p2.xgrid.grid_line_color = None
     p2.legend.orientation = "horizontal"
@@ -1167,23 +1219,29 @@ def plot_stats_allocation(data):
     p2.xaxis.major_label_orientation = 0.3
 
     # Create the pie charts
-    pieColors = 10 * ["red", "green", "blue", "orange", "yellow", 'lime', 'brown', 'cyan',
-                      'magenta', 'olive', 'black', 'teal', 'gold', 'crimson', 'moccasin', 'greenyellow', 'navy',
-                      'ivory', 'lightpink']
+    pie_colors = 10 * ["red", "green", "blue", "orange", "yellow", 'lime',
+                       'brown', 'cyan', 'magenta', 'olive', 'black', 'teal',
+                       'gold', 'crimson', 'moccasin', 'greenyellow', 'navy',
+                       'ivory', 'lightpink']
 
     # First one with the time spent
 
     # define starts/ends for wedges from percentages of a circle
-    percents_only = np.round(np.array(list(data["spent_hours"] / np.sum(data["spent_hours"]))) * 100, 1)
-    percents = np.cumsum([0] + list(data["spent_hours"] / np.sum(data["spent_hours"])))
+    percents_only = np.round(np.array(list(data["spent_hours"] /
+                                           np.sum(data["spent_hours"])))
+                             * 100, 1)
+    percents = np.cumsum([0] + list(data["spent_hours"] /
+                                    np.sum(data["spent_hours"])))
     starts = [per * 2 * np.pi for per in percents[:-1]]
     ends = [per * 2 * np.pi for per in percents[1:]]
 
-    p3 = figure(x_range=(-1, 2.5), y_range=(-1.1, 1.1), plot_height=420, plot_width=600, title="% spent")
+    p3 = figure(x_range=(-1, 2.5), y_range=(-1.1, 1.1), plot_height=420,
+                plot_width=600, title="% spent")
 
     # Add individual wedges:
-    for i in range(N):
-        p3.wedge(x=0, y=0, radius=.9, start_angle=starts[i], end_angle=ends[i], color=pieColors[i],
+    for i in range(n_names):
+        p3.wedge(x=0, y=0, radius=.9, start_angle=starts[i], end_angle=ends[i],
+                 color=pie_colors[i],
                  legend="[{0}%] {1}".format(percents_only[i], alloc_names[i]))
 
     p3.xgrid.grid_line_color = None
@@ -1198,16 +1256,21 @@ def plot_stats_allocation(data):
     # Second one with the time allocated
 
     # define starts/ends for wedges from percentages of a circle
-    percents_only = np.round(np.array(list(data["alloc_hours"] / np.sum(data["alloc_hours"]))) * 100, 1)
-    percents = np.cumsum([0] + list(data["alloc_hours"] / np.sum(data["alloc_hours"])))
+    percents_only = np.round(np.array(list(data["alloc_hours"] /
+                                           np.sum(data["alloc_hours"])))
+                             * 100, 1)
+    percents = np.cumsum([0] + list(data["alloc_hours"] /
+                                    np.sum(data["alloc_hours"])))
     starts = [per * 2 * np.pi for per in percents[:-1]]
     ends = [per * 2 * np.pi for per in percents[1:]]
 
-    p4 = figure(x_range=(-1, 2.5), y_range=(-1.1, 1.1), plot_height=420, plot_width=600,
+    p4 = figure(x_range=(-1, 2.5), y_range=(-1.1, 1.1), plot_height=420,
+                plot_width=600,
                 title="% time allocated to each program")
     # Add individual wedges:
-    for i in range(N):
-        p4.wedge(x=0, y=0, radius=.9, start_angle=starts[i], end_angle=ends[i], color=pieColors[i],
+    for i in range(n_names):
+        p4.wedge(x=0, y=0, radius=.9, start_angle=starts[i], end_angle=ends[i],
+                 color=pie_colors[i],
                  legend="[{0}%] {1}".format(percents_only[i], alloc_names[i]))
 
     p4.xgrid.grid_line_color = None
@@ -1247,25 +1310,24 @@ def get_science_products(user_id="", obsdate="", camera_type=""):
     if not camera_type:
         camera_type = 'ifu'
 
-    data_dir = '%s%s/' % (redux_dir, obsdate)
     if camera_type == 'ifu':
         data_dir = '%s%s/' % (redux_dir, obsdate)
         return get_ifu_products(data_dir, user_id, obsdate)
     else:
-
         data_dir = '%s%s/' % (phot_dir, obsdate)
         new_data_dir = '%s%s/' % (new_phot_dir, obsdate)
-        #print(data_dir, "In the get science prods")
+        # print(data_dir, "In the get science prods")
         print(new_data_dir, "In the get science prods new")
         if os.path.exists(data_dir):
-            #print("Old data")
+            # print("Old data")
             return get_rc_products(data_dir, user_id, obsdate)
         elif os.path.exists(new_data_dir):
-            #print("New data")
+            # print("New data")
             return get_rc_redux_products(new_data_dir, user_id, obsdate)
         else:
-           #print("Default data")
+            # print("Default data")
             return get_rc_products(data_dir, user_id, obsdate)
+
 
 def get_ab_what(obsdir):
     """get a pseudo what list for A/B cubes"""
@@ -1291,10 +1353,13 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     :param obsdir: 
     :param user_id: 
     :param obsdate: 
-    :param product_type: 
+    :param product_type:
+    :param show_finder:
     :return: 
     """
-    ifu_dict = {}
+    # ifu_dict = {}
+    if product_type:
+        pass
 
     # Look first to make sure there is a data directory.
     if not os.path.exists(obsdir):
@@ -1326,14 +1391,15 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-    #print(calib_dict, 'calib products')
+    # print(calib_dict, 'calib products')
 
     div_str += """<div class="row">"""
     div_str += """<h4>Calibrations</h4>"""
     for k, v in calib_dict.items():
         impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
         impathlink = "/data/%s/%s" % (obsdate,
-                                      os.path.basename(v.replace('.png', '.pdf')))
+                                      os.path.basename(v.replace('.png',
+                                                                 '.pdf')))
         if not os.path.exists(impathlink):
             impathlink = impath
         div_str += """<div class="col-md-{0}">
@@ -1370,7 +1436,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             science_list.append(targ)
         elif 'STD' in targ:
             pass
-            #standard_list.append(targ)
+            # standard_list.append(targ)
         else:
             # There shouldn't be anything here but should put something in
             # later to verify this is the case
@@ -1395,13 +1461,13 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                 if len(object_ids) == 1:
                     object_id = object_ids[0][0]
                 elif len(object_ids) > 1:
-                    # TODO       what really needs to happen here is that we need to
+                    # TODO what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
-                    #print(object_ids)
+                    # print(object_ids)
                     object_id = object_ids[-1][0]
-                elif not object_ids and ('at' in targ_name.lower() \
-                                      or 'sn' in targ_name.lower()):
+                elif not object_ids and ('at' in targ_name.lower()
+                                         or 'sn' in targ_name.lower()):
                     # sometimes it's at 2018abc not at2018abc in the db
                     targ_name = targ_name[:2] + ' ' + targ_name[2:]
                     object_ids = db.get_object_id_from_name(targ_name)
@@ -1409,36 +1475,36 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                         object_id = object_ids[-1][0]
                     except IndexError:
                         object_id = False
-                        #print("There was an error. You can't see this")
+                        # print("There was an error. You can't see this")
 
-                # If we are not the admin then we need to check if the user can see the object
+                # If we are not the admin then we need to check
+                # if the user can see the object
 
                 if user_id not in [2, 20200227202025683]:
 
                     if object_id:
-                        target_requests = db.get_from_request(values=['allocation_id'],
-                                                          where_dict={'object_id':
-                                                                          object_id,
-                                                                      'status':
-                                                                          'COMPLETED'})
+                        target_requests = db.get_from_request(
+                            values=['allocation_id'],
+                            where_dict={'object_id': object_id,
+                                        'status': 'COMPLETED'})
 
                     if not target_requests:
-                        target_requests = db.get_from_request(values=['allocation_id'],
-                                                              where_dict={'object_id':
-                                                                              object_id,
-                                                                          'status':
-                                                                              'OBSERVED'})
+                        target_requests = db.get_from_request(
+                            values=['allocation_id'],
+                            where_dict={'object_id': object_id,
+                                        'status': 'OBSERVED'})
 
-                    #print("Object id", object_id)
+                    # print("Object id", object_id)
                     # Right now I am only seeing if there exists a match between
-                    # allocations of all request.  It's possible the request could
-                    # have been made by another group as another follow-up and thus
-                    # the user shouldn't be able to see it.  This should be able to
-                    # be fixed once all request are listed in the headers of the
-                    # science images.
+                    # allocations of all request.  It's possible the request
+                    # could have been made by another group as another follow-up
+                    # and thus the user shouldn't be able to see it.  This
+                    # should be able to be fixed once all request are listed in
+                    # the headers of the science images.
                     for req in target_requests:
-                        #print(sci_targ, targ_name)
-                        #print(allocation_id_list, "List of allocations this person can see")
+                        # print(sci_targ, targ_name)
+                        # print(allocation_id_list,
+                        # "List of allocations this person can see")
                         if req[0] in allocation_id_list:
                             show_list.append((sci_targ, targ_name))
                         else:
@@ -1446,7 +1512,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                 else:
                     show_list.append((sci_targ, targ_name))
             else:
-                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
+                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-',
+                                                                      '')
                 show_list.append((sci_targ, targ_name))
 
     if len(standard_list) >= 1:
@@ -1463,7 +1530,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         div_str = ''
 
         for targ in show_list:
-            #print(targ)
+            # print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
@@ -1473,13 +1540,16 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                           glob.glob('%simage_%s*.png' % (obsdir, name)))
 
             spec_list = (glob.glob('%s%s_SEDM.png' % (obsdir, name)) +
-                         glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,fits_file)) +
+                         glob.glob('%sspec_forcepsf*%s*.png' %
+                                   (obsdir, fits_file)) +
                          glob.glob('%sspec_auto*%s*.png' % (obsdir, fits_file)))
 
             e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
 
-            spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir, fits_file)) +
-                               glob.glob('%sspec_auto*%s*.txt' % (obsdir, fits_file)))
+            spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' %
+                                         (obsdir, fits_file)) +
+                               glob.glob('%sspec_auto*%s*.txt' % (obsdir,
+                                                                  fits_file)))
 
             fluxcals = (glob.glob('%sfluxcal_*%s*.fits' % (obsdir, fits_file)))
 
@@ -1492,16 +1562,15 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
-                science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
-                                                             'spec_list': spec_list,
-                                                             'e3d_list': e3d_list,
-                                                             'spec_ascii_list': spec_ascii_list,
-                                                             'fluxcals': fluxcals}
+                science_dict[name+'_xRx_%s' % str(count)] = {
+                    'image_list': image_list, 'spec_list': spec_list,
+                    'e3d_list': e3d_list, 'spec_ascii_list': spec_ascii_list,
+                    'fluxcals': fluxcals}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
 
-        count = 0
+        # count = 0
 
         for obj, obj_data in science_dict.items():
             if '_xRx_' in obj:
@@ -1541,8 +1610,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                 for i in obj_data['image_list']:
 
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    impathlink = "/data/%s/%s" % (obsdate,
-                                                  os.path.basename(i.replace('.png', '.pdf')))
+                    impathlink = "/data/%s/%s" % (
+                        obsdate, os.path.basename(i.replace('.png', '.pdf')))
                     if not os.path.exists(impathlink):
                         impathlink = impath
 
@@ -1567,19 +1636,21 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
                 if os.path.exists(finder_path):
                     finder_img = glob.glob(finder_path + '/*%s*.png' % obj)
                     if finder_img:
-                        impathlink = "/data/%s/%s" % (obsdate, os.path.basename(finder_img[-1]))
+                        impathlink = "/data/%s/%s" % (
+                            obsdate, os.path.basename(finder_img[-1]))
                         div_str += """<div class="col-md-{0}">
                                               <div class="thumbnail">
                                                 <a href="{1}">
                                                   <img src="{2}" width="{3}px" height="{4}px">
                                                 </a>
                                               </div>
-                                            </div>""".format(4, impathlink, impathlink, 250, 250)
+                                      </div>""".format(4, impathlink,
+                                                       impathlink, 250, 250)
             if obj_data['spec_list']:
                 for i in obj_data['spec_list']:
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    impathlink = "/data/%s/%s" % (obsdate,
-                                                  os.path.basename(i.replace('.png', '.pdf')))
+                    impathlink = "/data/%s/%s" % (
+                        obsdate, os.path.basename(i.replace('.png', '.pdf')))
                     if not os.path.exists(impathlink):
                         impathlink = impath
                     div_str += """<div class="col-lg-{0}">
@@ -1598,16 +1669,21 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
 
 
 def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
-                     product_type='all'):
+                    product_type='all'):
     """
 
     :param obsdir:
     :param user_id:
     :param obsdate:
+    :param show_finder:
     :param product_type:
     :return:
     """
-    #print(obsdir, 'rc')
+    # print(obsdir, 'rc')
+    if product_type:
+        pass
+    if show_finder:
+        pass
     # Look first to make sure there is a data directory.
     if not os.path.exists(obsdir):
         return {'message': 'No data directory could be located for %s UT' %
@@ -1632,14 +1708,15 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-    #print(calib_dict, 'calib products')
+    # print(calib_dict, 'calib products')
 
     div_str += """<div class="row">"""
     div_str += """<h4>Calibrations</h4>"""
     for k, v in calib_dict.items():
         impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
         impathlink = "/data/%s/%s" % (obsdate,
-                                      os.path.basename(v.replace('.png', '.pdf')))
+                                      os.path.basename(v.replace('.png',
+                                                                 '.pdf')))
         if not os.path.exists(impathlink):
             impathlink = impath
         div_str += """<div class="col-md-{0}">
@@ -1684,15 +1761,16 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
 
                 object_ids = db.get_object_id_from_name(targ_name)
 
+                object_id = None
                 if len(object_ids) == 1:
                     object_id = object_ids[0][0]
                 elif len(object_ids) > 1:
-                    # TODO       what really needs to happen here is that we need to
+                    # TODO what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
-                    #print(object_ids)
+                    # print(object_ids)
                     object_id = object_ids[-1][0]
-                elif not object_ids and ('at' in targ_name.lower() \
+                elif not object_ids and ('at' in targ_name.lower()
                                          or 'sn' in targ_name.lower()):
                     # sometimes it's at 2018abc not at2018abc in the db
                     targ_name = targ_name[:2] + ' ' + targ_name[2:]
@@ -1702,11 +1780,9 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
                     except IndexError:
                         print("There was an error. You can't see this")
 
-                target_requests = db.get_from_request(values=['allocation_id'],
-                                                      where_dict={'object_id':
-                                                                      object_id,
-                                                                  'status':
-                                                                      'COMPLETED'})
+                target_requests = db.get_from_request(
+                    values=['allocation_id'],
+                    where_dict={'object_id': object_id, 'status': 'COMPLETED'})
 
                 # Right now I am only seeing if there exists a match between
                 # allocations of all request.  It's possible the request could
@@ -1720,7 +1796,8 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
                     else:
                         print("You can't see this at target request 2")
             else:
-                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
+                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-',
+                                                                      '')
                 show_list.append((sci_targ, targ_name))
 
     if len(standard_list) >= 1:
@@ -1736,24 +1813,26 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
         count = 0
         div_str = ''
         for targ in show_list:
-            #print(targ)
+            # print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
 
-            image_list = (glob.glob('%sreduced/png/*%s*.png' % (obsdir, fits_file)))
+            image_list = (glob.glob('%sreduced/png/*%s*.png' % (obsdir,
+                                                                fits_file)))
 
             if name not in science_dict:
                 science_dict[name] = {'image_list': image_list}
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
-                science_dict[name + '_xRx_%s' % str(count)] = {'image_list': image_list}
+                science_dict[name + '_xRx_%s' % str(count)] = {
+                    'image_list': image_list}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
 
-        count = 0
+        # count = 0
 
         for obj, obj_data in science_dict.items():
             if '_xRx_' in obj:
@@ -1804,19 +1883,23 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
 
     return sedm_dict
 
+
 def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                           camera_type='rc'):
     """
-
-    :param obsdir:
-    :param user_id:
     :param obsdate:
-    :param product_type:
+    :param product:
+    :param user_id:
+    :param camera_type:
     :return:
     """
-    #print(product, 'product')
+    if user_id:
+        pass
+    if camera_type:
+        pass
+    # print(product, 'product')
     raw_png_dir = ['acquisition', 'bias', 'dome', 'focus',
-                   'guider_images','guider_movies', 'twilight',
+                   'guider_images', 'guider_movies', 'twilight',
                    'science_raw']
 
     sedm_dict = {}
@@ -1833,19 +1916,20 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     display_dict = {}
     ext = '*.png'
 
+    sci_path = None
     if product.lower() == 'science':
-        #print(new_phot_dir, obsdate)
+        # print(new_phot_dir, obsdate)
         sci_path = os.path.join(new_phot_dir, obsdate, 'reduced', 'png')
         if not os.path.exists(sci_path):
-            #print("Path doesn't exist", sci_path)
+            # print("Path doesn't exist", sci_path)
             sedm_dict['data'] = "No %s images found" % product
     elif product.lower() == 'acquisition':
         sci_path = os.path.join(new_phot_dir, obsdate, 'reduced', 'png')
         if not os.path.exists(sci_path):
-            #print("Path doesn't exist", sci_path)
+            # print("Path doesn't exist", sci_path)
             sedm_dict['data'] = "No %s images found" % product
     elif product.lower() in raw_png_dir:
-        #print(new_phot_dir, obsdate)
+        # print(new_phot_dir, obsdate)
         if 'guider' in product.lower():
             p_split = product.split("_")
             if p_split[-1] == 'movies':
@@ -1853,17 +1937,17 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
             product = 'guider'
 
         sci_path = os.path.join(new_phot_dir, obsdate,
-                                    'pngraw', product.lower().replace('_raw',''))
-       # print(sci_path, "Science path in alt")
+                                'pngraw', product.lower().replace('_raw', ''))
+        # print(sci_path, "Science path in alt")
         if not os.path.exists(sci_path):
             print("Path doesn't exist")
 
-    #print("Looking in directory:", sci_path)
+    # print("Looking in directory:", sci_path)
     find_path = os.path.join(sci_path, ext)
-    #print(find_path, 'find_path')
+    # print(find_path, 'find_path')
     files = glob.glob(find_path)
 
-    #print("Files found", files)
+    # print("Files found", files)
 
     for f in files:
         base_name = os.path.basename(f).replace(".png", "")
@@ -1901,33 +1985,35 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
         count = 100
         for i in sorted(display_dict['data']):
             i = i.replace(base_dir, '')
-            impath = "/data_r/%s" % (i)
+            impath = "/data_r/%s" % i
 
             if 'reduced' in i:
-                impathlink = "/data_r/%s" % i.replace('/png/', '/').replace('.png', '.fits')
+                impathlink = "/data_r/%s" % i.replace('/png/', '/').replace(
+                    '.png', '.fits')
             elif 'pngraw' in i and '.gif' not in i:
                 base_link = i.split('/pngraw/')
 
-                impathlink = "/data_r/%s" % os.path.join(base_link[0],
-                                                         os.path.basename(i).replace('_all.png', '.fits'))
+                impathlink = "/data_r/%s" % \
+                             os.path.join(base_link[0],
+                                          os.path.basename(i).replace(
+                                              '_all.png', '.fits'))
             else:
-                impathlink = "/data_r/%s" % (i)
+                impathlink = "/data_r/%s" % i
 
             div_str += """<div class="col-sm-4"><div class="card">
-                           
                             <a href="{1}?image={4}" data-toggle="lightbox" data-gallery="example-gallery">
                                 <img style="width:300px" class="card-img-top" src="{1}?image{4}" alt="Card image">
                             </a>
                             <div class="cardbody">
-                                
                                 <h6 class="card-title">{2}</h6>
                                 <a href="http://pharos.caltech.edu{0}" class="btn btn-primary">
                                     Download
                                 </a> 
                             </div>
 
-                        </div></div>""".format(impathlink, impath, os.path.basename(i), impath, count)
-
+                        </div></div>""".format(impathlink, impath,
+                                               os.path.basename(i), impath,
+                                               count)
 
             count += 1
 
@@ -1936,25 +2022,29 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     else:
         sedm_dict['data'] = "No %s images found" % product
 
-    #print(sedm_dict)
+    # print(sedm_dict)
     return sedm_dict
+
 
 ###############################################################################
 # THIS SECTION HANDLES THE ACTIVE_VISIBILITIES PAGE.                          #
 # KEYWORD:VISIBILITIES #???                                                   #
 ###############################################################################
 def get_active_visibility(userid):
-    sedm_dict = {'enddate': datetime.datetime.utcnow() + datetime.timedelta(days=1),
-                 'inidate': datetime.datetime.utcnow() - datetime.timedelta(days=3, hours=8)}
+    sedm_dict = {'enddate': datetime.datetime.utcnow() +
+                 datetime.timedelta(days=1),
+                 'inidate': datetime.datetime.utcnow() -
+                 datetime.timedelta(days=3, hours=8)}
 
     # 1. Get a dataframe of all requests for the current user
-    requests = get_requests_for_user(userid, sedm_dict['inidate'], sedm_dict['enddate'])
+    reqs = get_requests_for_user(userid, sedm_dict['inidate'],
+                                 sedm_dict['enddate'])
 
     # organize requests into dataframes by whether they are completed or not
-    active = requests[(requests['status'] == 'PENDING')]
+    active = reqs[(reqs['status'] == 'PENDING')]
 
     # retrieve information about the user's allocations
-    ac = get_allocations_user(userid)
+    # ac = get_allocations_user(userid)
 
     # Create html tables
     sedm_dict['active'] = {'table': fancy_request_table(active),
@@ -1965,92 +2055,112 @@ def get_active_visibility(userid):
 
 
 def plot_visibility(userid, sedm_dict, obsdate=None):
-    '''
-     plots visibilities for active requests at the current date. Will be adapted to plot previous observations and arbitrary objects
-    userid: user whose allocations will be shown in color with details. Others will be greyed out
-    sedm_dict: should have ['active']['table'] and ['enddate'] and ['inidate']
-    obsdate: <str> YYYYMMDD. if "None", will use current date
+    """
+    plots visibilities for active requests at the current date.
+    Will be adapted to plot previous observations and arbitrary objects userid:
+    user whose allocations will be shown in color with details. Others will be
+    greyed out sedm_dict: should have ['active']['table'] and ['enddate'] and
+    ['inidate'] obsdate: <str> YYYYMMDD. if "None", will use current date
 
     returns: components of a bokeh figure with the appropriate plot
-    '''
+    """
 
-    allocpalette = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a', '#b15928', '#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6', '#ffff99']
-    requests = get_requests_for_user(2, sedm_dict['inidate'], sedm_dict['enddate']) #admin
-    active = requests[(requests['status'] == 'PENDING') | (requests['status'] == 'ACTIVE')]
-    # ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date', 'priority', 'status', 'lastmodified', 'obs_seq', 'exptime', 'UPDATE']
+    allocpalette = ['#1f78b4', '#33a02c', '#e31a1c', '#ff7f00', '#6a3d9a',
+                    '#b15928', '#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f',
+                    '#cab2d6', '#ffff99']
+    reqs = get_requests_for_user(2,
+                                 sedm_dict['inidate'],
+                                 sedm_dict['enddate'])  # admin
+    active = reqs[(reqs['status'] == 'PENDING') | (reqs['status'] == 'ACTIVE')]
+    # ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date',
+    # 'priority', 'status', 'lastmodified', 'obs_seq', 'exptime', 'UPDATE']
 
     allowed_allocs = get_allocations_user(userid)
-    active['allocation'].mask(~np.in1d(active['allocation'], allowed_allocs['allocation']), other='other', inplace=True)
+    active['allocation'].mask(~np.in1d(active['allocation'],
+                                       allowed_allocs['allocation']),
+                              other='other', inplace=True)
 
-    programs = {i['allocation']:i['program'] for _, i in allowed_allocs.iterrows()}
+    programs = {i['allocation']: i['program']
+                for _, i in allowed_allocs.iterrows()}
     programs['other'] = 'other'
-    active.sort_values('allocation') # this needs to be alphabetical for the legend to look correct
+    # this needs to be alphabetical for the legend to look correct
+    active.sort_values('allocation')
 
     p = figure(plot_width=700, plot_height=500, toolbar_location='above',
                y_range=(0, 90), y_axis_location="right")
 
-    ### setup with axes, sun/moon, frames, background 
+    # setup with axes, sun/moon, frames, background
     # TODO Dima says to never ever use SkyCoord in production code
-    palomar_mountain = EarthLocation(lon=243.1361*u.deg, lat=33.3558*u.deg, height=1712*u.m)
+    palomar_mountain = EarthLocation(lon=243.1361*u.deg, lat=33.3558*u.deg,
+                                     height=1712*u.m)
     utcoffset = -7 * u.hour  # Pacific Daylight Time
 
-
-    if obsdate is None: # plotting a single object, or the pending objects in future
+    # plotting a single object, or the pending objects in future
+    if obsdate is None:
         time = (Time.now() - utcoffset).datetime # date is based on local time
         time = Time(datetime.datetime(time.year, time.month, time.day))
-    else: # past observations on a particular night
-        time = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]), int(obsdate[6:8])))
-        all_requests = all_requests[all_requests['status'] == 'COMPLETED']
-        all_requests = all_requests[time - 12 * u.hour <= all_requests['startdate'] < time + 12 * u.hour]
+    else:  # past observations on a particular night
+        time = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]),
+                                      int(obsdate[6:8])))
+        all_requests = reqs[reqs['status'] == 'COMPLETED']
+        all_requests = all_requests[time - 12 * u.hour
+                                    <= all_requests['startdate']
+                                    < time + 12 * u.hour]
     midnight = time - utcoffset # 7am local time of correct date, midnight UTC
 
     delta_midnight = np.linspace(-8, 8, 500) * u.hour
     t = midnight + delta_midnight
-    abstimes = np.asarray([i.datetime.strftime('%I:%M %p') for i in t + utcoffset])
+    abstimes = np.asarray([i.datetime.strftime('%I:%M %p')
+                           for i in t + utcoffset])
 
     frame = AltAz(obstime=t, location=palomar_mountain)
-    sun_alt  =  get_sun(t).transform_to(frame).alt
+    sun_alt = get_sun(t).transform_to(frame).alt
     moon_alt = get_moon(t).transform_to(frame).alt
 
     # shading for nighttime and twilight
-    dark_times    = delta_midnight[sun_alt < 0].value
-    twilit_times  = delta_midnight[sun_alt < -18 * u.deg].value
-    plotted_times = delta_midnight[sun_alt <   5 * u.deg].value
+    dark_times = delta_midnight[sun_alt < 0].value
+    twilit_times = delta_midnight[sun_alt < -18 * u.deg].value
+    plotted_times = delta_midnight[sun_alt < 5 * u.deg].value
 
-    twilight = BoxAnnotation(left=min(twilit_times), right=max(twilit_times), bottom=0,
-                             fill_alpha=0.15, fill_color='black', level='underlay')
-    night    = BoxAnnotation(left=min(dark_times),    right=max(dark_times),    bottom=0,
-                             fill_alpha=0.25, fill_color='black', level='underlay')
-    earth    = BoxAnnotation(top=0, fill_alpha=0.8, fill_color='sienna')
+    twilight = BoxAnnotation(left=min(twilit_times), right=max(twilit_times),
+                             bottom=0, fill_alpha=0.15, fill_color='black',
+                             level='underlay')
+    night = BoxAnnotation(left=min(dark_times),    right=max(dark_times),
+                          bottom=0, fill_alpha=0.25, fill_color='black',
+                          level='underlay')
+    earth = BoxAnnotation(top=0, fill_alpha=0.8, fill_color='sienna')
 
     p.add_layout(night)
     p.add_layout(twilight)
     p.add_layout(earth)
 
     # sun and moon
-    sun  = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun", legend='Sun', line_dash='dashed')
-    moon = p.line(delta_midnight, moon_alt, line_color='yellow', line_dash='dashed',
-                                                   name="Moon", legend='Moon')
+    sun = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun",
+                 legend='Sun', line_dash='dashed')
+    moon = p.line(delta_midnight, moon_alt, line_color='yellow',
+                  line_dash='dashed', name="Moon", legend='Moon')
     # labels and axes
-    p.title.text = "Visibility for %s UTC" %midnight
+    p.title.text = "Visibility for %s UTC" % midnight
     p.xaxis.axis_label = "Hours from PDT Midnight"
     p.x_range.start = min(plotted_times)
-    p.x_range.end   = max(plotted_times)
+    p.x_range.end = max(plotted_times)
     p.yaxis.axis_label = "Airmass"
 
     # primary airmass label on right
     airmasses = (1.01, 1.1, 1.25, 1.5, 2., 3., 6.)
     ticker = [90 - np.arccos(1./i) * 180/np.pi for i in airmasses]
     p.yaxis.ticker = ticker
-    p.yaxis.major_label_overrides = {tick: str(airmasses[i]) for i, tick in enumerate(ticker)}
+    p.yaxis.major_label_overrides = {tick: str(airmasses[i])
+                                     for i, tick in enumerate(ticker)}
 
     # add supplementary alt label on left
     p.extra_y_ranges = {"altitude": Range1d(0, 90)}
-    p.add_layout(LinearAxis(y_range_name="altitude", axis_label='Altitude [deg]'), 'left')
+    p.add_layout(LinearAxis(y_range_name="altitude",
+                            axis_label='Altitude [deg]'), 'left')
 
     ##########################################################################
-    ### adding data from the actual objects
-    #objs = SkyCoord(np.array(ras,  dtype=np.float),
+    # adding data from the actual objects
+    # objs = SkyCoord(np.array(ras,  dtype=np.float),
     #                np.array(decs, dtype=np.float), unit="deg")
 
     approx_midnight = int(Time.now().jd - .5) + .5 - utcoffset.value/24.
@@ -2063,52 +2173,72 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
         alloc_color[val['allocation']] = allocpalette[i % len(allocpalette)]
     alloc_color['other'] = 'lightgray'
 
-    tooltipped = [] # things with tooltips
-    tooltips = [('obj',        '@name'), # make it #name when we get to bokeh 0.13
+    tooltipped = []  # things with tooltips
+    # make it #name when we get to bokeh 0.13
+    tooltips = [('obj',        '@name'),
                 ('time',       '@abstime'),
                 ('altitude',   u"@alt\N{DEGREE SIGN}"),
                 ('airmass',    '@airmass')]
 
     for _, req in active.iterrows():
+        # iterrows doesn't preserve datatypes and turns ra, dec into decimals?
         req['ra'] = float(req['RA'])
-        req['dec'] = float(req['DEC']) # iterrows doesn't preserve datatypes and turns ra, dec into decimals?
+        req['dec'] = float(req['DEC'])
         color = alloc_color[req['allocation']]
-        # vvv I got this formula from some website for the navy but forgot to copy the url
-        alt = 180 / np.pi * np.arcsin(palo_cos_lat * \
-              np.cos(np.pi/180 * (palo_long - req['ra'] + 15 * (18.697374558 + 24.06570982 * (delta_midnight.value/24. + approx_midnight - 2451545)))) * \
-              np.cos(req['dec'] * np.pi/180) + palo_sin_lat * np.sin(req['dec'] * np.pi/180))
+        # vvv I got this formula from some website for the navy
+        # but forgot to copy the url
+        alt = 180 / np.pi * np.arcsin(palo_cos_lat *
+                                      np.cos(np.pi/180 *
+                                             (palo_long - req['ra'] + 15 *
+                                              (18.697374558 + 24.06570982 *
+                                               (delta_midnight.value/24. +
+                                                approx_midnight - 2451545)))) *
+                                      np.cos(req['dec'] * np.pi/180) +
+                                      palo_sin_lat * np.sin(req['dec'] *
+                                                            np.pi/180))
         airmass = 1./np.cos((90 - alt) * np.pi/180)
-        source = ColumnDataSource(    dict(times=delta_midnight,
-                                             alt=alt,
-                                         airmass=airmass,
-                                         abstime=abstimes,
-                                        priority=np.full(len(t), int(req['priority'])),
-                                           alloc=np.full(len(t), req['allocation'][6:]),
-                                            name=np.full(len(abstimes), req['object']))) # delete the name when we get to bokeh 0.13
-        if len(active) == 1: # single object
+        source = ColumnDataSource(dict(times=delta_midnight, alt=alt,
+                                       airmass=airmass, abstime=abstimes,
+                                       priority=np.full(len(t),
+                                                        int(req['priority'])),
+                                       alloc=np.full(len(t),
+                                                     req['allocation'][6:]),
+                                       name=np.full(len(abstimes),
+                                                    req['object'])))
+        # delete the name when we get to bokeh 0.13
+        if len(active) == 1:  # single object
             legend = req['object']
             line_width = 5
         else:
             legend = '{}'.format(programs[req['allocation']])
-            #tooltips += [('priority',   '@priority'), ('allocation', '@alloc')]
+            # tooltips += [('priority',   '@priority'),
+            # ('allocation', '@alloc')]
 
-            if req['status'] == 'COMPLETED': # plot that highlights observed part of the night
+            # plot that highlights observed part of the night
+            if req['status'] == 'COMPLETED':
                 # full path of the night
-                dotted = p.line('times', 'alt', color=color, source=source, line_dash='2 2',
-                                name=req['object'], line_width=1, legend=legend)
-                # manually crop the source so only thick observed part has tooltips
+                dotted = p.line('times', 'alt', color=color, source=source,
+                                line_dash='2 2', name=req['object'],
+                                line_width=1, legend=legend)
+                # manually crop the source so only thick observed
+                # part has tooltips
                 endtime = req['lastmodified']
-                exptime = {req['obs_seq'][i]:req['exptime'][i] for i in range(len(req['obs_seq']))}['1ifu'] #TODO sometimes it's 2ifu or no ifu
+                # TODO sometimes it's 2ifu or no ifu
+                exptime = {req['obs_seq'][i]: req['exptime'][i]
+                           for i in range(len(req['obs_seq']))}['1ifu']
                 initime = endtime - exptime * u.second
 
-                mask = np.logical_and(delta_midnight + midnight + utcoffset > initime,
-                                      delta_midnight + midnight + utcoffset < endtime)
+                mask = np.logical_and(
+                    delta_midnight + midnight + utcoffset > initime,
+                    delta_midnight + midnight + utcoffset < endtime)
                 source = ColumnDataSource(pd.DataFrame(source.data)[mask])
-                line_width = int(req['priority'] + 3) # all it changes is the line width
+                # all it changes is the line width
+                line_width = int(req['priority'] + 3)
             else:
                 line_width = int(req['priority'])
 
-        path = p.line('times', 'alt', color=color, source=source, name=''.format(req['object']),
+        path = p.line('times', 'alt', color=color, source=source,
+                      name=''.format(req['object']),
                       line_width=line_width, legend=legend)
         if not req['allocation'] == 'other':
             tooltipped.append(path)
@@ -2122,6 +2252,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
 
     return components(p)
 
+
 ###############################################################################
 # THIS SECTION IS THE WEATHER STATS SECTION.                                  #
 # KEYWORD:WEATHER_STATS                                                       #
@@ -2133,7 +2264,8 @@ def get_weather_stats(obsdate=None):
         statsfile, mydate = search_stats_file()
         stats_plot = plot_stats(statsfile, mydate)
         if stats_plot is None:
-            message += " No statistics log found up to 100 days prior to today... Weather has been terrible lately!"
+            message += " No statistics log found up to 100 days prior to" \
+                       " today... Weather has been terrible lately!"
             script, div = None, None
         else:
             message += " Weather statistics for last opened day: %s" % (
@@ -2143,9 +2275,10 @@ def get_weather_stats(obsdate=None):
         mydate_in = obsdate.replace("-", "")
 
         # Just making sure that we have only allowed digits in the date
-        mydate = re.findall(r"(2\d{3}[0-1]\d{1}[0-3]\d{1})", mydate_in)
+        mydate = re.findall(r"(2\d{3}[0-1]\d[0-3]\d)", mydate_in)
         if len(mydate) == 0:
-            message += "Incorrect format for the date! Your input is: %s. Shall be YYYYMMDD. \n" % mydate_in
+            message += "Incorrect format for the date! Your input is: %s." \
+                       " Shall be YYYYMMDD. \n" % mydate_in
             script, div = "", ""
         else:
             mydate = mydate[0]
@@ -2154,22 +2287,24 @@ def get_weather_stats(obsdate=None):
             statsfile, mydate_out = search_stats_file(mydate)
             stats_plot = plot_stats(statsfile, mydate)
             if not statsfile:
-                message = message + "No statistics log found for the date %s. Showing P18 data." % mydate
+                message = message + "No statistics log found for the date %s." \
+                                    " Showing P18 data." % mydate
                 script, div = components(stats_plot)
 
             else:
                 stats_plot = plot_stats(statsfile, mydate)
-                message = message + "Weather statistics for selected day: %s" % mydate
+                message = message + "Weather statistics for selected day: %s"\
+                    % mydate
                 script, div = components(stats_plot)
 
     return {'script': script, 'div': div, 'message': message}
 
 
 def search_stats_file(mydate=None):
-    '''
-    Returns the last stats file that is present in the system according to the present date.
-    It also returns a message stating what date that was.
-    '''
+    """
+    Returns the last stats file that is present in the system according to
+    the present date. It also returns a message stating what date that was.
+    """
     # If the date is specified, we will try to located the right file.
     # None will be returned if it does not exist.
     if mydate:
@@ -2194,7 +2329,8 @@ def search_stats_file(mydate=None):
         i = 0
         while i < 100:
             newdate = curdate
-            newdatedir = "%d%02d%02d" % (newdate.year, newdate.month, newdate.day)
+            newdatedir = "%d%02d%02d" % (newdate.year, newdate.month,
+                                         newdate.day)
             s = os.path.join(phot_dir, newdatedir, "stats/stats.log")
             s_new = os.path.join(new_phot_dir, newdatedir, "stats/stats.log")
             if os.path.exists(s):
@@ -2216,7 +2352,8 @@ def load_p48seeing(obsdate):
 
     time, seeing = get_p18obsdata(obsdate)
     day_frac_diff = datetime.timedelta(
-        np.ceil((datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
+        np.ceil((datetime.datetime.now() -
+                 datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
     local_date = np.array(time) + day_frac_diff
 
     d = pd.DataFrame({'date': local_date, 'seeing': seeing})
@@ -2226,45 +2363,62 @@ def load_p48seeing(obsdate):
 
 def load_stats(statsfile='stats.log'):
     data = pd.read_csv(statsfile, header=None,
-                       names=['path', 'obj', 'jd', 'ns', 'fwhm', 'ellipticity', 'bkg', 'airmass', 'in_temp', 'imtype',
-                              'out_temp', 'in_hum'])
+                       names=['path', 'obj', 'jd', 'ns', 'fwhm', 'ellipticity',
+                              'bkg', 'airmass', 'in_temp', 'imtype', 'out_temp',
+                              'in_hum'])
 
     jds = data['jd']
     t = Time(jds, format='jd', scale='utc')
     date = t.utc.datetime
     day_frac_diff = datetime.timedelta(
-        np.ceil((datetime.datetime.now() - datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
+        np.ceil((datetime.datetime.now() -
+                 datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
     local_date = date + day_frac_diff
 
     data2 = data.assign(localdate=local_date)
     data2.set_index('localdate')
 
     return pd.DataFrame(
-        {'date': data2['localdate'], 'ns': data2['ns'], 'fwhm': data2['fwhm'], 'ellipticity': data2['ellipticity'],
-         'bkg': data2['bkg'], 'airmass': data2['airmass'], 'in_temp': data2['in_temp'], 'imtype': data2['imtype'],
-         'out_temp': data2['out_temp'], 'in_hum': data2['in_hum']})
+        {'date': data2['localdate'], 'ns': data2['ns'], 'fwhm': data2['fwhm'],
+         'ellipticity': data2['ellipticity'], 'bkg': data2['bkg'],
+         'airmass': data2['airmass'], 'in_temp': data2['in_temp'],
+         'imtype': data2['imtype'], 'out_temp': data2['out_temp'],
+         'in_hum': data2['in_hum']})
 
 
 def plot_stats(statsfile, mydate):
     source = ColumnDataSource(
-        data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[], in_temp=[], imtype=[], out_temp=[],
-                  in_hum=[]))
+        data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[],
+                  in_temp=[], imtype=[], out_temp=[], in_hum=[]))
     source_static = ColumnDataSource(
-        data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[], in_temp=[], imtype=[], out_temp=[],
-                  in_hum=[]))
+        data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[],
+                  in_temp=[], imtype=[], out_temp=[], in_hum=[]))
 
-    viewScience = CDSView(source=source, filters=[GroupFilter(column_name='imtype', group='SCIENCE')])
-    viewAcquisition = CDSView(source=source, filters=[GroupFilter(column_name='imtype', group='ACQUISITION')])
-    viewGuider = CDSView(source=source, filters=[GroupFilter(column_name='imtype', group='GUIDER')])
-    viewFocus = CDSView(source=source, filters=[GroupFilter(column_name='imtype', group='FOCUS')])
+    view_science = CDSView(source=source,
+                           filters=[GroupFilter(column_name='imtype',
+                                                group='SCIENCE')])
+    view_acquisition = CDSView(source=source,
+                               filters=[GroupFilter(column_name='imtype',
+                                                    group='ACQUISITION')])
+    view_guider = CDSView(source=source,
+                          filters=[GroupFilter(column_name='imtype',
+                                               group='GUIDER')])
+    view_focus = CDSView(source=source,
+                         filters=[GroupFilter(column_name='imtype',
+                                              group='FOCUS')])
     source_p48 = ColumnDataSource(data=dict(date=[], seeing=[]))
 
     def update(selected=None):
 
+        if selected:
+            pass
+
         if statsfile:
             data = load_stats(statsfile)
-            source.data = source.from_df(data[['date', 'ns', 'fwhm', 'ellipticity', 'bkg', 'airmass', 'in_temp',
-                                               'imtype', 'out_temp', 'in_hum']])
+            source.data = source.from_df(data[['date', 'ns', 'fwhm',
+                                               'ellipticity', 'bkg', 'airmass',
+                                               'in_temp', 'imtype', 'out_temp',
+                                               'in_hum']])
             source_static.data = source.data
 
         p48 = load_p48seeing(mydate)
@@ -2274,55 +2428,76 @@ def plot_stats(statsfile, mydate):
     source_static_p48 = ColumnDataSource(data=dict(date=[], seeing=[]))
     tools = 'pan,box_zoom,reset'
 
-    p48seeing = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+    p48seeing = figure(plot_width=425, plot_height=250, tools=tools,
+                       x_axis_type='datetime', active_drag="box_zoom")
     p48seeing.circle('date', 'seeing', source=source_static_p48, color="black")
     p48seeing.title.text = "P18 seeing [arcsec]"
 
     if statsfile:
-        ns = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+        ns = figure(plot_width=425, plot_height=250, tools=tools,
+                    x_axis_type='datetime', active_drag="box_zoom")
         ns.line('date', 'ns', source=source_static)
-        ns.circle('date', 'ns', size=1, source=source, color=None, selection_color="orange")
+        ns.circle('date', 'ns', size=1, source=source, color=None,
+                  selection_color="orange")
         ns.title.text = "Number of bright sources extracted"
 
-        bkg = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+        bkg = figure(plot_width=425, plot_height=250, tools=tools,
+                     x_axis_type='datetime', active_drag="box_zoom")
         bkg.x_range = ns.x_range
         bkg.line('date', 'bkg', source=source_static)
-        bkg.circle('date', 'bkg', size=1, source=source, color=None, selection_color="orange")
+        bkg.circle('date', 'bkg', size=1, source=source, color=None,
+                   selection_color="orange")
         bkg.title.text = "Background (counts)"
 
-        temp = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+        temp = figure(plot_width=425, plot_height=250, tools=tools,
+                      x_axis_type='datetime', active_drag="box_zoom")
         temp.x_range = ns.x_range
-        temp.line('date', 'in_temp', source=source_static, color='blue', legend="Inside")
-        temp.line('date', 'out_temp', source=source_static, color='green', legend="Outside")
-        temp.circle('date', 'in_temp', size=1, source=source, color=None, selection_color="orange")
+        temp.line('date', 'in_temp', source=source_static, color='blue',
+                  legend="Inside")
+        temp.line('date', 'out_temp', source=source_static, color='green',
+                  legend="Outside")
+        temp.circle('date', 'in_temp', size=1, source=source, color=None,
+                    selection_color="orange")
         temp.title.text = "Temperature [C]"
 
-        fwhm = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+        fwhm = figure(plot_width=425, plot_height=250, tools=tools,
+                      x_axis_type='datetime', active_drag="box_zoom")
         fwhm.x_range = ns.x_range
-        fwhm.circle('date', 'fwhm', source=source_static, color="green", legend="Focus", view=viewFocus)
-        fwhm.circle('date', 'fwhm', source=source_static, color="red", legend="Science", view=viewScience)
-        fwhm.circle('date', 'fwhm', source=source_static, color="blue", legend="Acquisition", view=viewAcquisition)
-        fwhm.circle('date', 'fwhm', source=source_static, color="black", legend="Guider", view=viewGuider)
-        fwhm.circle('date', 'fwhm', size=1, source=source, color=None, selection_color="orange")
+        fwhm.circle('date', 'fwhm', source=source_static, color="green",
+                    legend="Focus", view=view_focus)
+        fwhm.circle('date', 'fwhm', source=source_static, color="red",
+                    legend="Science", view=view_science)
+        fwhm.circle('date', 'fwhm', source=source_static, color="blue",
+                    legend="Acquisition", view=view_acquisition)
+        fwhm.circle('date', 'fwhm', source=source_static, color="black",
+                    legend="Guider", view=view_guider)
+        fwhm.circle('date', 'fwhm', size=1, source=source, color=None,
+                    selection_color="orange")
         fwhm.title.text = "P60 FWHM [arcsec]"
 
-        airmass = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+        airmass = figure(plot_width=425, plot_height=250, tools=tools,
+                         x_axis_type='datetime', active_drag="box_zoom")
         airmass.x_range = ns.x_range
         airmass.line('date', 'airmass', source=source_static)
-        airmass.circle('date', 'airmass', size=1, source=source, color=None, selection_color="orange")
+        airmass.circle('date', 'airmass', size=1, source=source, color=None,
+                       selection_color="orange")
         airmass.title.text = "Airmass"
 
-        ellipticity = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime',
+        ellipticity = figure(plot_width=425, plot_height=250, tools=tools,
+                             x_axis_type='datetime',
                              active_drag="box_zoom")
         ellipticity.x_range = ns.x_range
         ellipticity.line('date', 'ellipticity', source=source_static)
-        ellipticity.circle('date', 'ellipticity', size=1, source=source, color=None, selection_color="orange")
+        ellipticity.circle('date', 'ellipticity', size=1, source=source,
+                           color=None, selection_color="orange")
         ellipticity.title.text = "Ellipticity"
 
-        humidity = figure(plot_width=425, plot_height=250, tools=tools, x_axis_type='datetime', active_drag="box_zoom")
+        humidity = figure(plot_width=425, plot_height=250, tools=tools,
+                          x_axis_type='datetime', active_drag="box_zoom")
         humidity.x_range = ns.x_range
         humidity.line('date', 'in_hum', source=source_static)
-        humidity.circle('date', 'in_hum', size=1, source=source, color=None, selection_color="orange")
+        humidity.circle('date', 'in_hum', size=1, source=source, color=None,
+                        selection_color="orange")
         humidity.title.text = "Inside Humidity [%]"
 
         p48seeing.x_range = ns.x_range
@@ -2346,10 +2521,13 @@ def plot_stats(statsfile, mydate):
 
 
 def plot_not_found_message(day):
-    not_found = figure(plot_width=900, plot_height=450, x_range=[0, 900], y_range=[0, 450])
-    not_found.image(image=[np.zeros([900, 450]) + 0.1], x=0, y=0, dw=900, dh=450)
+    not_found = figure(plot_width=900, plot_height=450, x_range=[0, 900],
+                       y_range=[0, 450])
+    not_found.image(image=[np.zeros([900, 450]) + 0.1], x=0, y=0, dw=900,
+                    dh=450)
     citation = Label(x=50, y=225, x_units='screen', y_units='screen',
-                     text='No statistics found for today \n (likely we were weathered out...)')
+                     text='No statistics found for today \n '
+                          '(likely we were weathered out...)')
     not_found.add_layout(citation)
     not_found.title.text = "Statistics not found for day %s" % day
 
@@ -2384,7 +2562,7 @@ def get_marshal_id(marshal='growth', request_id=None):
         return {'error': str(e)}
 
     ret = db.get_from_request(values=['marshal_id'],
-                               where_dict={'id': request_id})
+                              where_dict={'id': request_id})
     if not ret:
         return {'error': "No object found with that id number"}
 
@@ -2403,15 +2581,16 @@ def get_marshal_id(marshal='growth', request_id=None):
 def get_user_observations(username, password, obsdate):
     """
 
-    :param marshal:
-    :param request_id:
+    :param username:
+    :param password:
+    :param obsdate:
     :return:
     """
-    #print(username, type(username))
+    # print(username, type(username))
 
     ret = check_login(username, password)
 
-    #print(ret)
+    # print(ret)
     if not ret[0]:
         return {'message': "User name and password do not match"}
 
@@ -2420,10 +2599,10 @@ def get_user_observations(username, password, obsdate):
     obsdir = os.path.join(redux_dir, obsdate)
     obsdir += '/'
 
-    calib_files = ['Xe.fits', 'Hg.fits', 'Cd.fits', 'dome.fits', 'bkgd_dome.fits',
-                   'e3d_dome.fits', '%s_Flat.fits' % obsdate]
+    calib_files = ['Xe.fits', 'Hg.fits', 'Cd.fits', 'dome.fits',
+                   'bkgd_dome.fits', 'e3d_dome.fits', '%s_Flat.fits' % obsdate]
 
-    pkl_list = (glob.glob('%s*.pkl' % (obsdir)))
+    pkl_list = (glob.glob('%s*.pkl' % obsdir))
 
     master_calib_list = []
 
@@ -2433,7 +2612,7 @@ def get_user_observations(username, password, obsdate):
 
     master_calib_list += pkl_list
 
-    #print(master_calib_list, 'master')
+    # print(master_calib_list, 'master')
 
     # Look first to make sure there is a data directory.
     if not obsdate:
@@ -2444,8 +2623,7 @@ def get_user_observations(username, password, obsdate):
                            os.path.basename(os.path.normpath(obsdir)),
                 'obsdate': obsdate}
 
-    sedm_dict = {'obsdate': obsdate,
-                 'sci_data': ''}
+    # sedm_dict = {'obsdate': obsdate, 'sci_data': ''}
 
     # Now lets get the non-science products (i.e. calibrations)
     calib_dict = {'flat3d': os.path.join(obsdir, '%s_flat3d.png' % obsdate),
@@ -2468,17 +2646,17 @@ def get_user_observations(username, password, obsdate):
     if remove_list:
         for i in remove_list:
             calib_dict.pop(i)
-    #print(calib_dict, 'calib products')
+    # print(calib_dict, 'calib products')
 
     for v in master_calib_list:
         impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
         data_list.append(impath)
 
-
     for k, v in calib_dict.items():
         impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
         impathlink = "/data/%s/%s" % (obsdate,
-                                      os.path.basename(v.replace('.png', '.pdf')))
+                                      os.path.basename(v.replace('.png',
+                                                                 '.pdf')))
         if not os.path.exists(impathlink):
             impathlink = impath
 
@@ -2518,7 +2696,7 @@ def get_user_observations(username, password, obsdate):
         for sci_targ in science_list:
             # Start by pulling up all request that match the science target
             targ_name = sci_targ.split(':')[1].split()[0]
-            if user_id==2:
+            if user_id == 2:
                 show_list.append((sci_targ, targ_name))
                 continue
             if 'STD' not in targ_name:
@@ -2526,17 +2704,18 @@ def get_user_observations(username, password, obsdate):
 
                 object_ids = db.get_object_id_from_name(targ_name)
 
+                object_id = None
                 if len(object_ids) == 1:
                     object_id = object_ids[0][0]
 
                 elif len(object_ids) > 1:
-                    # TODO       what really needs to happen here is that we need to
+                    # TODO what really needs to happen here is that we need to
                     # TODO cont: find the id that is closest to the obsdate.
                     # TODO cont: For now I am just going to use last added
                     print(object_ids)
                     object_id = object_ids[-1][0]
-                elif not object_ids and ('at' in targ_name.lower() \
-                                      or 'sn' in targ_name.lower()):
+                elif not object_ids and ('at' in targ_name.lower()
+                                         or 'sn' in targ_name.lower()):
                     # sometimes it's at 2018abc not at2018abc in the db
                     targ_name = targ_name[:2] + ' ' + targ_name[2:]
                     object_ids = db.get_object_id_from_name(targ_name)
@@ -2545,19 +2724,15 @@ def get_user_observations(username, password, obsdate):
                     except IndexError:
                         print("There was an error. You can't see this")
 
-
-                target_requests = db.get_from_request(values=['allocation_id'],
-                                                      where_dict={'object_id':
-                                                                      object_id,
-                                                                  'status':
-                                                                      'COMPLETED'})
+                target_requests = db.get_from_request(
+                    values=['allocation_id'],
+                    where_dict={'object_id': object_id, 'status': 'COMPLETED'})
 
                 if not target_requests:
-                    target_requests = db.get_from_request(values=['allocation_id'],
-                                                          where_dict={'object_id':
-                                                                          object_id,
-                                                                      'status':
-                                                                          'OBSERVED'})
+                    target_requests = db.get_from_request(
+                        values=['allocation_id'],
+                        where_dict={'object_id': object_id,
+                                    'status': 'OBSERVED'})
                 # Right now I am only seeing if there exists a match between
                 # allocations of all request.  It's possible the request could
                 # have been made by another group as another follow-up and thus
@@ -2571,7 +2746,8 @@ def get_user_observations(username, password, obsdate):
                     else:
                         print("You can't see this at target request")
             else:
-                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-', '')
+                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-',
+                                                                      '')
                 show_list.append((sci_targ, targ_name))
 
     if len(standard_list) >= 1:
@@ -2582,42 +2758,47 @@ def get_user_observations(username, password, obsdate):
     # We have our list of targets that we can be shown, now lets actually find
     # the files that we will show on the web page.  To make this backwards
     # compatible I have to look for two types of files
-    #print(show_list, "Show list")
+    # print(show_list, "Show list")
     if len(show_list) >= 1:
         science_dict = {}
         count = 0
-        div_str = ''
+        # div_str = ''
 
         for targ in show_list:
-            #print(targ)
+            # print(targ)
             targ_params = targ[0].split()
             fits_file = targ_params[0].replace('.fits', '')
             name = targ[1]
-           #print(obsdir, fits_file)
-            #print('%s%s_SEDM.png' % (obsdir, name))
-            #print('%sspec_forcepsf*%s*.png' % (obsdir,fits_file))
-            #print('%sspec_auto*%s*.png' % (obsdir, fits_file))
+            # print(obsdir, fits_file)
+            # print('%s%s_SEDM.png' % (obsdir, name))
+            # print('%sspec_forcepsf*%s*.png' % (obsdir,fits_file))
+            # print('%sspec_auto*%s*.png' % (obsdir, fits_file))
 
             image_list = (glob.glob('%sifu_spaxels_*%s*.png' % (obsdir,
                                                                 fits_file)) +
                           glob.glob('%simage_%s*.png' % (obsdir, name)))
 
             spec_list = (glob.glob('%s%s_SEDM.png' % (obsdir, name)) +
-                         glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,fits_file)) +
+                         glob.glob('%sspec_forcepsf*%s*.png' % (obsdir,
+                                                                fits_file)) +
                          glob.glob('%sspec_auto*%s*.png' % (obsdir, fits_file)))
 
             spec_all_list = glob.glob("%sspec*%s*" % (obsdir, name))
 
             e3d_list = (glob.glob('%se3d*%s*.fits' % (obsdir, fits_file)))
 
-            spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt' % (obsdir, fits_file)) +
-                               glob.glob('%sspec_auto*%s*.txt' % (obsdir, fits_file)))
+            spec_ascii_list = (glob.glob('%sspec_forcepsf*%s*.txt'
+                                         % (obsdir, fits_file)) +
+                               glob.glob('%sspec_auto*%s*.txt' % (obsdir,
+                                                                  fits_file)))
 
             fluxcals = (glob.glob('%sfluxcal_*%s*.fits' % (obsdir, fits_file)))
 
-            background = (glob.glob('%sbkgd_crr_b_%s.fits' % (obsdir, fits_file)))
+            background = (glob.glob('%sbkgd_crr_b_%s.fits' % (obsdir,
+                                                              fits_file)))
 
-            astrom_list = (glob.glob('%sguider_crr_b_%s_astrom.fits' % (obsdir, fits_file)))
+            astrom_list = (glob.glob('%sguider_crr_b_%s_astrom.fits'
+                                     % (obsdir, fits_file)))
 
             if name not in science_dict:
 
@@ -2632,20 +2813,17 @@ def get_user_observations(username, password, obsdate):
             else:
                 # We do this to handle cases where there are two or more of
                 # the same object name
-                science_dict[name+'_xRx_%s' % str(count)] = {'image_list': image_list,
-                                                             'spec_list': spec_list,
-                                                             'e3d_list': e3d_list,
-                                                             'spec_ascii_list': spec_ascii_list,
-                                                             'fluxcals': fluxcals,
-                                                             'specall': spec_all_list,
-                                                             'background': background,
-                                                             'astrom': astrom_list}
+                science_dict[name+'_xRx_%s' % str(count)] = {
+                    'image_list': image_list, 'spec_list': spec_list,
+                    'e3d_list': e3d_list, 'spec_ascii_list': spec_ascii_list,
+                    'fluxcals': fluxcals, 'specall': spec_all_list,
+                    'background': background, 'astrom': astrom_list}
             count += 1
         # Alright now we build the table that will show the spectra, image file
         # and classification.
 
-        count = 0
-        #print(science_dict)
+        # count = 0
+        # print(science_dict)
         for obj, obj_data in science_dict.items():
             if '_xRx_' in obj:
                 obj = obj.split('_xRx_')[0]
@@ -2653,35 +2831,41 @@ def get_user_observations(username, password, obsdate):
             if obj_data['e3d_list']:
                 for j in obj_data['specall']:
                     if j.split('.')[-1] in ['fits', 'png', 'txt', 'pdf']:
-                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                        data_list.append("/data/%s/%s" % (obsdate,
+                                                          os.path.basename(j)))
                 for j in obj_data['e3d_list']:
-                    data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                    data_list.append("/data/%s/%s" % (obsdate,
+                                                      os.path.basename(j)))
 
                 if obj_data['spec_ascii_list']:
                     for j in obj_data['spec_ascii_list']:
-                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                        data_list.append("/data/%s/%s" % (obsdate,
+                                                          os.path.basename(j)))
 
                 if obj_data['fluxcals']:
                     for j in obj_data['fluxcals']:
-                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                        data_list.append("/data/%s/%s" % (obsdate,
+                                                          os.path.basename(j)))
                 if obj_data['background']:
                     for j in obj_data['background']:
-                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                        data_list.append("/data/%s/%s" % (obsdate,
+                                                          os.path.basename(j)))
                 if obj_data['astrom']:
                     for j in obj_data['astrom']:
-                        data_list.append("/data/%s/%s" % (obsdate, os.path.basename(j)))
+                        data_list.append("/data/%s/%s" % (obsdate,
+                                                          os.path.basename(j)))
 
             # ToDO: Grab data from somewhere to put in the meta data column
             if obj_data['image_list']:
                 for i in obj_data['image_list']:
 
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    impathlink = "/data/%s/%s" % (obsdate,
-                                                  os.path.basename(i.replace('.png', '.pdf')))
+                    impathlink = "/data/%s/%s" % \
+                                 (obsdate, os.path.basename(i.replace('.png',
+                                                                      '.pdf')))
                     if not os.path.exists(impathlink):
                         impathlink = impath
                     data_list.append(impathlink)
-
 
             # Check if finders exists in redux directory and if not then
             # log at the old phot directory location
@@ -2696,19 +2880,23 @@ def get_user_observations(username, password, obsdate):
             if os.path.exists(finder_path):
                 finder_img = glob.glob(finder_path + '/*%s*.png' % obj)
                 if finder_img:
-                    data_list.append("/data/%s/%s" % (obsdate, os.path.basename(finder_img[-1])))
+                    data_list.append("/data/%s/%s" %
+                                     (obsdate,
+                                      os.path.basename(finder_img[-1])))
 
             if obj_data['spec_list']:
                 for i in obj_data['spec_list']:
                     impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    impathlink = "/data/%s/%s" % (obsdate,
-                                                  os.path.basename(i.replace('.png', '.pdf')))
+                    impathlink = "/data/%s/%s" % \
+                                 (obsdate, os.path.basename(i.replace('.png',
+                                                                      '.pdf')))
                     if not os.path.exists(impathlink):
                         impathlink = impath
 
                     data_list.append(impathlink)
     return_dict = {'data': data_list}
     return return_dict
+
 
 def get_status():
     """
@@ -2719,8 +2907,10 @@ def get_status():
     with open(status_dir+'telstatus.json') as json_file:
         data = json.load(json_file)
     try:
-        rc_start_time = datetime.datetime.strptime(data['rc_LastStartTime'], '%Y-%m-%d %H:%M:%S.%f')
-        rc_end_time = rc_start_time + datetime.timedelta(seconds=float(data['rc_ExposureTime']))
+        rc_start_time = datetime.datetime.strptime(data['rc_LastStartTime'],
+                                                   '%Y-%m-%d %H:%M:%S.%f')
+        rc_end_time = rc_start_time + datetime.timedelta(
+            seconds=float(data['rc_ExposureTime']))
         data['rc_EndExposureTime'] = rc_end_time.strftime("%Y-%m-%d %H:%M:%S")
         data['rc_LastStartTime'] = rc_start_time.strftime("%Y-%m-%d %H:%M:%S")
     except:
@@ -2729,8 +2919,10 @@ def get_status():
         pass
 
     try:
-        ifu_start_time = datetime.datetime.strptime(data['ifu_LastStartTime'], '%Y-%m-%d %H:%M:%S.%f')
-        ifu_end_time = ifu_start_time + datetime.timedelta(seconds=float(data['ifu_ExposureTime']))
+        ifu_start_time = datetime.datetime.strptime(data['ifu_LastStartTime'],
+                                                    '%Y-%m-%d %H:%M:%S.%f')
+        ifu_end_time = ifu_start_time + datetime.timedelta(
+            seconds=float(data['ifu_ExposureTime']))
         data['ifu_EndExposureTime'] = ifu_end_time.strftime("%Y-%m-%d %H:%M:%S")
         data['ifu_LastStartTime'] = ifu_start_time.strftime("%Y-%m-%d %H:%M:%S")
     except:
@@ -2739,6 +2931,7 @@ def get_status():
         pass
 
     return data
+
 
 def get_obstimes():
     times = schedule.get_observing_times(return_type='json')
@@ -2851,33 +3044,40 @@ def get_p18obsdata(obsdate):
     p18date = []
     p18seeing = []
     if not obsdate:
-        f = datetime.datetime.strptime(obsdate, "%Y%m%d") - datetime.timedelta(days=1)
+        f = datetime.datetime.strptime(obsdate,
+                                       "%Y%m%d") - datetime.timedelta(days=1)
         obsd = datetime.datetime.strptime(obsdate, "%Y%m%d")
     elif "-" in obsdate:
-        f = datetime.datetime.strptime(obsdate, "%Y-%m-%d") - datetime.timedelta(days=1)
+        f = datetime.datetime.strptime(obsdate,
+                                       "%Y-%m-%d") - datetime.timedelta(days=1)
         obsd = datetime.datetime.strptime(obsdate, "%Y-%m-%d")
     else:
-        f = datetime.datetime.strptime(obsdate, "%Y%m%d") - datetime.timedelta(days=1)
+        f = datetime.datetime.strptime(obsdate,
+                                       "%Y%m%d") - datetime.timedelta(days=1)
         obsd = datetime.datetime.strptime(obsdate, "%Y%m%d")
 
     y, m, d = [f.strftime("%Y"), int(f.strftime("%m")), int(f.strftime("%d"))]
     p18obsdate = "%s-%s-%s" % (y, m, d)
 
     # 2. Get the data from the link
-    page = requests.get('http://nera.palomar.caltech.edu/P18_seeing/seeing_log_%s.log' % p18obsdate)
+    page = requests.get(
+        'http://nera.palomar.caltech.edu/P18_seeing/seeing_log_%s.log'
+        % p18obsdate)
     data = page.content.decode("ISO-8859-1")
 
     # 3. Split the page by newlines
     data = data.split('\n')
 
-    # 4. Loop through the data and only use points that have 4 or more seeing values to average
+    # 4. Loop through the data and only use points that have
+    # 4 or more seeing values to average
     for i in data:
         try:
             i = i.split()
 
             if len(i) > 5 and int(i[5]) > 4:
                 d = '%s %s' % (i[1], i[0])
-                p18date.append(datetime.datetime.strptime(d, "%m/%d/%Y %H:%M:%S")
+                p18date.append(datetime.datetime.strptime(d,
+                                                          "%m/%d/%Y %H:%M:%S")
                                + datetime.timedelta(hours=8))
                 p18seeing.append(float(i[4]))
         except Exception as e:
