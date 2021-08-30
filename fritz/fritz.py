@@ -167,6 +167,8 @@ def update_allocation(alloc_id, pi=None, proposal_id=None,
               " and instrument id")
         return None
 
+    alloc_url = fritz_alloc_url + "/%d" % alloc_id
+
     submission_dict = {}
 
     # create payload
@@ -185,13 +187,14 @@ def update_allocation(alloc_id, pi=None, proposal_id=None,
         submission_dict['end_date'] = end_date
     # Are we just testing?
     if testing:
+        print(alloc_url)
         print(submission_dict)
         ret = {"message": "string", "status": "success"}
         return ret
     else:
         # post the spectrum
         try:
-            ret = api("POST", fritz_alloc_url, data=submission_dict)
+            ret = api("POST", alloc_url, data=submission_dict)
         except requests.exceptions.ConnectionError:
             ret = {
                 'status': 'Error', 'message': 'ConnectionError',
