@@ -144,13 +144,12 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
         return ret
 
 
-def create_allocation(alloc_id, pi=None, proposal_id=None,
+def create_allocation(pi=None, proposal_id=None,
                       start_date=None, end_date=None, hours_allocated=None,
                       group_id=None, inst_id=2, testing=False):
     """
     Create an allocation on the fritz marshal
 
-    :param alloc_id:
     :param pi:
     :param proposal_id:
     :param start_date:
@@ -162,9 +161,8 @@ def create_allocation(alloc_id, pi=None, proposal_id=None,
 
     :return:
     """
-    if not alloc_id or not hours_allocated or not group_id or not inst_id:
-        print("Must have allocation id, hours allocated, group id,"
-              " and instrument id")
+    if not hours_allocated or not group_id or not inst_id:
+        print("Must have hours allocated, group id, and instrument id")
         return None
 
     submission_dict = {}
