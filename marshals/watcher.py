@@ -1,8 +1,8 @@
 from marshals import interface
-import glob
-import os
-import time
-import datetime
+# import glob
+# import os
+# import time
+# import datetime
 import json
 import db.SedmDb
 
@@ -11,16 +11,22 @@ sedmdb = db.SedmDb.SedmDB()
 
 
 def process_new_request(request, isfile=True, status='ACCEPTED', add2db=True,
-                        check_rejection=False, archive=True, create_request=True,
-                        update_source=True, archive_dir='archived/', request_date=''):
+                        check_rejection=False, archive=True,
+                        create_request=True, update_source=True,
+                        archive_dir='archived/', request_date=''):
     """
 
+    :param request: request string path
+    :param isfile:
+    :param status:
     :param add2db:
     :param check_rejection:
     :param archive:
+    :param create_request:
+    :param update_source:
     :param archive_dir:
     :param request_date:
-    :param request: request string path
+
     :param status:
     :return:
     """
@@ -60,19 +66,20 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=True,
         ret = add_request_to_db(req_dict)
         print(ret)
 
-    #if update_source and create_request:
-        #try:
-        #    interface.update_status_request("ACCEPTED", req_dict['requestid'], "fritz")
-        #except Exception as e:
+    # if update_source and create_request:
+        # try:
+        #    interface.update_status_request("ACCEPTED",
+        #                                    req_dict['requestid'], "fritz")
+        # except Exception as e:
         #    print(str(e))
         #    pass
 
 
 def delete_request_entry(request_dict):
     # a. start by trying to get the request id from the marshal id
-    sedm_requestid = sedmdb.get_from_request(values=['id'],
-                                             where_dict={'marshal_id': request_dict['requestid'],
-                                                         'external_id': 2})
+    sedm_requestid = sedmdb.get_from_request(
+        values=['id'], where_dict={'marshal_id': request_dict['requestid'],
+                                   'external_id': 2})
 
     if not sedm_requestid:
         print("No request matching that id")
@@ -95,16 +102,19 @@ def add_request_to_db(request_dict):
 
     # Convert previous photmetry to json string
     try:
-        request_dict['prior_photometry'] = json.dumps(request_dict['prior_photometry'])
+        request_dict['prior_photometry'] = json.dumps(
+            request_dict['prior_photometry'])
     except Exception as e:
         print(str(e))
         request_dict['prior_photometry'] = '{"error": "conversion error"}'
 
-    columns = ', '.join(str(x).replace('/', '_').lower() for x in request_dict.keys())
-    values = ', '.join("'" + str(x).replace('/', '_') + "'" for x in request_dict.values())
+    columns = ', '.join(str(x).replace('/', '_').lower()
+                        for x in request_dict.keys())
+    values = ', '.join("'" + str(x).replace('/', '_') + "'"
+                       for x in request_dict.values())
 
-
-    insert_statement = 'INSERT INTO marshal_requests (%s) VALUES (%s)' % (columns, values)
+    insert_statement = 'INSERT INTO marshal_requests (%s) VALUES (%s)' % (
+        columns, values)
     try:
         ret = sedmdb.execute_sql(insert_statement)
         return ret
@@ -120,8 +130,12 @@ def create_request_entry(request, custom_dict=None,
     :param request:
     :param custom_dict:
     :param fill_by_custom_dict:
+    :param add_raw_to_db:
     :return:
     """
+
+    if add_raw_to_db:
+        pass
 
     # 0. If delete request, cancel it from the database if it has an entry
     if request['status'].lower() == 'delete':
@@ -129,7 +143,8 @@ def create_request_entry(request, custom_dict=None,
         sedm_requestid = sedmdb.get_from_request(
             values=['id'], where_dict={'marshal_id': request['requestid']})
 
-        # b. if no request id was found then it means the target was not in there
+        # b. if no request id was found then
+        # it means the target was not in there
         if not sedm_requestid:
             print("No request matching that id")
             return False
@@ -155,14 +170,15 @@ def create_request_entry(request, custom_dict=None,
         object_id = custom_dict['object_id']
         priority = custom_dict['priority']
         allocation_id = custom_dict['allocation_id']
+        objdict = {'magnitude': 18.5}
     else:
         # 1a. Get the username
-
         try:
             user_id = sedmdb.get_from_users(
                 values=['id'],
                 where_dict={'username': request['username']})[0][0]
-        except Exception:
+        except Exception as e:
+            print(str(e))
             user_id = 189
             # 1b. Create an entry in the database
         objdict = {
@@ -261,15 +277,27 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'X-ray Counterparts':
             name = 'X-Ray Counterparts'
             shareid = 2
+        elif request['programname'] == 'SEDM Team':
+            name = 'SEDM Czar Discretionary Time'
+            shareid = 2
+        elif request['programname'] == 'Asteroids':
+            name = 'Astrometric Follow-up of 10 m scale asteroids'
+            shareid = 2
+        elif request['programname'] == 'Lensed SNe':
+            name = 'Identifying gravitationally lensed supernovae'
+            shareid = 2
+        elif request['programname'] == 'Sollerman Research Group':
+            name = 'An unbiased stripped-envelope supernova sample from ZTF'
+            shareid = 2
+        elif request['programname'] == 'Young Type Ia Supernovae':
+            name = 'SEDm follow-up of Type Ia supernovae with early spectra'
+            shareid = 2
         else:
             name = 'ZTF commissioning'
             shareid = 0
 
-
-
-
-        program_id = sedmdb.get_from_program(
-            values=['id'], where_dict={'name': name})[0][0]
+        program_id = sedmdb.get_from_program(values=['id'],
+                                             where_dict={'name': name})[0][0]
 
         try:
             allocation_id = sedmdb.get_from_allocation(
@@ -284,8 +312,6 @@ def create_request_entry(request, custom_dict=None,
             # TODO add an email alert indicating an unknown
             # program has been added
             allocation_id = 1
-
-
 
     start_date = request['startdate']
     end_date = request['enddate']
@@ -316,6 +342,7 @@ def create_request_entry(request, custom_dict=None,
         'shareid': shareid,
         'marshal_id': int(request['requestid'])
     }
+    print(external_id)
     print(request_dict)
     print(sedmdb.add_request(request_dict))
 
@@ -476,10 +503,11 @@ def get_exptime(obsfilter, mag):
 
 
 if __name__ == "__main__":
-    request = "/home/rsw/PycharmProjects/sedmpy/growth/archived/test.json"
-    request_dict = interface.read_request(request)
-    #ret = process_new_request(request, isfile=True, check_rejection=True, add2db=True)
-    print(delete_request_entry(request_dict))
+    request_test = "/home/rsw/PycharmProjects/sedmpy/growth/archived/test.json"
+    request_test_dict = interface.read_request(request_test)
+    # ret = process_new_request(request, isfile=True,
+    # check_rejection=True, add2db=True)
+    print(delete_request_entry(request_test_dict))
 
     """
     # 4. Check if we are adding it to the SEDm DB if not continue
