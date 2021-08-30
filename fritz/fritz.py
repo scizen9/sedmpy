@@ -144,6 +144,64 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
         return ret
 
 
+def create_allocation(alloc_id, pi=None, proposal_id=None,
+                      start_date=None, end_date=None, hours_allocated=None,
+                      group_id=None, inst_id=2, testing=False):
+    """
+    Create an allocation on the fritz marshal
+
+    :param alloc_id:
+    :param pi:
+    :param proposal_id:
+    :param start_date:
+    :param end_date:
+    :param hours_allocated:
+    :param group_id:
+    :param inst_id:
+    :param testing:
+
+    :return:
+    """
+    if not alloc_id or not hours_allocated or not group_id or not inst_id:
+        print("Must have allocation id, hours allocated, group id,"
+              " and instrument id")
+        return None
+
+    submission_dict = {}
+
+    # create payload
+    submission_dict.update(
+        {'hours_allocated': hours_allocated,
+         'group_id': group_id,
+         'instrument_id': inst_id}
+    )
+    if pi is not None:
+        submission_dict['pi'] = pi
+    if proposal_id is not None:
+        submission_dict['proposal_id'] = proposal_id
+    if start_date is not None:
+        submission_dict['start_date'] = start_date
+    if end_date is not None:
+        submission_dict['end_date'] = end_date
+    # Are we just testing?
+    if testing:
+        print(fritz_alloc_url)
+        print(submission_dict)
+        ret = {"message": "string", "status": "success"}
+        return ret
+    else:
+        # post the new allocation
+        try:
+            ret = api("POST", fritz_alloc_url, data=submission_dict)
+        except requests.exceptions.ConnectionError:
+            ret = {
+                'status': 'Error', 'message': 'ConnectionError',
+                'data': None
+            }
+
+    return ret.json()
+
+
 def update_allocation(alloc_id, pi=None, proposal_id=None,
                       start_date=None, end_date=None, hours_allocated=None,
                       group_id=None, inst_id=2, testing=False):
@@ -192,9 +250,9 @@ def update_allocation(alloc_id, pi=None, proposal_id=None,
         ret = {"message": "string", "status": "success"}
         return ret
     else:
-        # post the spectrum
+        # put the update
         try:
-            ret = api("POST", alloc_url, data=submission_dict)
+            ret = api("PUT", alloc_url, data=submission_dict)
         except requests.exceptions.ConnectionError:
             ret = {
                 'status': 'Error', 'message': 'ConnectionError',
