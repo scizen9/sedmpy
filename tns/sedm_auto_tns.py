@@ -472,10 +472,10 @@ def upload_to_tns(filename, base_url=upload_url, api_key=API_KEY,
     url = base_url
     data = {'api_key': api_key}
 
-    if filetype is 'ascii':
+    if filetype == 'ascii':
         files = [('files[]', (filename, open(filename), 'text/plain'))]
 
-    elif filetype is 'fits':
+    elif filetype == 'fits':
         files = [('files[0]', (filename, open(filename, 'rb'),
                                'application/fits'))]
     else:
