@@ -10,7 +10,8 @@
 
   "marshals": {
     "fritz": {"instrument_id": 0,
-              "token": "1c78a823-6670-4da3-b305-08b8f46298ae",
+              "token": "-----token-------",
+              "alloc_token": "----alloc_token------",
               "status_url": "https://fritz.science/api/facility"
     },
     "growth": {"instrument_id": 0,
