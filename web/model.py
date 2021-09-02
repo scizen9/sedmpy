@@ -1,6 +1,5 @@
 from werkzeug.security import check_password_hash
 from db.SedmDb import SedmDB
-from db.SedmDb_tools import DbTools
 import datetime
 import os
 import json
@@ -2135,10 +2134,10 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     p.add_layout(earth)
 
     # sun and moon
-    sun = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun",
-                 legend='Sun', line_dash='dashed')
-    moon = p.line(delta_midnight, moon_alt, line_color='yellow',
-                  line_dash='dashed', name="Moon", legend='Moon')
+    # sun = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun",
+    #             legend='Sun', line_dash='dashed')
+    # moon = p.line(delta_midnight, moon_alt, line_color='yellow',
+    #              line_dash='dashed', name="Moon", legend='Moon')
     # labels and axes
     p.title.text = "Visibility for %s UTC" % midnight
     p.xaxis.axis_label = "Hours from PDT Midnight"

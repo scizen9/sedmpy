@@ -13,7 +13,7 @@ import psycopg2.extras
 import smtplib
 
 from email.message import EmailMessage
-from email.utils import make_msgid
+# from email.utils import make_msgid
 
 if sys.version_info > (3,):
     long = int
@@ -23,18 +23,19 @@ SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 json_url = os.path.join(SITE_ROOT, 'config.json')
 
 
-
 # Singleton/SingletonPattern.py
 
 class SedmDB:
     class __SedmDB:
-        def __init__(self, dbname, host, port=5432, supply_pass=False, passwd=None):
+        def __init__(self, dbname, host, port=5432, supply_pass=False,
+                     passwd=None):
             """
             Creates the instance of db connections.
             Needs the username as a parameter.
             The password for SedmDB must be stored in ~/.pgpass
             """
-            cmd = "cat ~/.pgpass | grep sedmdbtest | grep -v '#' | awk -F ':' '{print $4}' | head -n 1"
+            cmd = "cat ~/.pgpass | grep sedmdbtest | grep -v '#' | " \
+                  "awk -F ':' '{print $4}' | head -n 1"
 
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
             self.user_sedmdb = p.stdout.read().decode("utf-8").replace('\n', '')
@@ -43,7 +44,9 @@ class SedmDB:
             self.port = port
             self.supply_pass = supply_pass
             self.passwd = passwd
-            self.pool_sedmdb = pool.QueuePool(self.__getSedmDBConn__, max_overflow=10, pool_size=2, recycle=True)
+            self.pool_sedmdb = pool.QueuePool(self.__getSedmDBConn__,
+                                              max_overflow=10, pool_size=2,
+                                              recycle=True)
 
         def __str__(self):
             return repr(self)
@@ -53,22 +56,27 @@ class SedmDB:
             Creates the connection to SedmDB.
             """
             if not self.supply_pass:
-                sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
+                sedmdbcon = psycopg2.connect(host=self.host, port=self.port,
+                                             dbname=self.dbname,
                                              user=self.user_sedmdb)
             else:
-                sedmdbcon = psycopg2.connect(host=self.host, port=self.port, dbname=self.dbname,
-                                             user=self.user_sedmdb, password=self.passwd)
+                sedmdbcon = psycopg2.connect(host=self.host, port=self.port,
+                                             dbname=self.dbname,
+                                             user=self.user_sedmdb,
+                                             password=self.passwd)
 
             return sedmdbcon
 
     instance = None
 
-    def __init__(self, dbname='sedmdb', host='localhost', port=5432, supply_pass=False, passwd=None):
+    def __init__(self, dbname='sedmdb', host='localhost', port=5432,
+                 supply_pass=False, passwd=None):
         """
         Makes sure only one instance is created.
         """
         if not SedmDB.instance:
-            SedmDB.instance = SedmDB.__SedmDB(dbname, host, port, supply_pass, passwd)
+            SedmDB.instance = SedmDB.__SedmDB(dbname, host, port, supply_pass,
+                                              passwd)
 
         self.sso_objects = None
         # Email templates
@@ -131,13 +139,14 @@ class SedmDB:
             (id (long), "User added") if the user was added
         """
         # no need to check parameter value types as they are all strings
-        id = _id_from_time()
-        pardic['id'] = id
+        uid = _id_from_time()
+        pardic['id'] = uid
         keys = list(pardic.keys())
         if 'username' not in keys:
             return -1, "ERROR: no username provided!"
         # check for duplicate username
-        usernames = [user[0] for user in self.execute_sql('SELECT username FROM users')]
+        usernames = [user[0] for user in
+                     self.execute_sql('SELECT username FROM users')]
         if pardic['username'] in usernames:
             return -1, "ERROR: user with that username exists!"
         if 'password' in keys:
@@ -149,10 +158,12 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_user sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_user sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_user sql command failed with a ProgrammingError!"
-        return id, "User added"
+            return -1, "ERROR: add_user sql command failed with " \
+                       "a ProgrammingError!"
+        return uid, "User added"
 
     def update_user(self, pardic):
         """
@@ -170,20 +181,23 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if it failed to update
 
-            (id (long), "User updated, columns 'column_names'") if the user is updated successfully
+            (id (long), "User updated, columns 'column_names'")
+             if the user is updated successfully
         """
         param_types = {'id': int, 'name': str, 'email': str, 'password': str}
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
 
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM users;')]:
+        elif pardic['id'] not in [ux[0] for ux in
+                                  self.execute_sql('SELECT id FROM users;')]:
             return -1, "ERROR: no user with the id!"
         keys.remove('id')
         if 'password' in keys:
             pardic['password'] = generate_password_hash(pardic['password'])
 
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
+        # remove any keys that are invalid or not allowed to be updated
+        for key in reversed(keys):
             if key not in ['name', 'email', 'password']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
@@ -196,9 +210,11 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_user sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_user sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_user sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_user sql command failed with " \
+                       "a ProgrammingError!"
         return pardic['id'], "User updated, columns " + str(keys)[1:-1]
 
     def remove_user(self, pardic):
@@ -213,33 +229,41 @@ class SedmDB:
                     'id': (str)
 
         Returns:
-            (-1, "ERROR...") if there was an issue (user doesn't exist, not enough information in pardic)
+            (-1, "ERROR...") if there was an issue
+            (user doesn't exist, not enough information in pardic)
 
             (0, "User removed") if the removal was successful
         """
         if 'username' in pardic.keys():
-            user_id = self.get_from_users(['id'], {'username': pardic['username']})
+            user_id = self.get_from_users(['id'],
+                                          {'username': pardic['username']})
             if user_id:
                 if user_id[0] == -1:  # if get_from_users failed
                     return user_id
-                self.execute_sql("DELETE FROM usergroups WHERE user_id='%s'" % (user_id[0][0],))
-                self.execute_sql("DELETE FROM users WHERE id='%s';" % (user_id[0][0],))
+                self.execute_sql("DELETE FROM usergroups WHERE user_id='%s'"
+                                 % (user_id[0][0],))
+                self.execute_sql("DELETE FROM users WHERE id='%s';"
+                                 % (user_id[0][0],))
                 return 0, "User removed"
             else:
                 return -1, "ERROR: no user with that username!"
         elif 'id' in pardic.keys():
-            if not (isinstance(pardic['id'], int) or isinstance(pardic['id'], long)):
+            if not (isinstance(pardic['id'], int) or isinstance(pardic['id'],
+                                                                long)):
                 return -1, "ERROR: id must be of type 'int'"
-            if pardic['id'] in [x[0] for x in self.execute_sql('SELECT id FROM users;')]:
-                self.execute_sql("DELETE FROM usergroups WHERE user_id='%s'" % (pardic['id'],))
-                self.execute_sql("DELETE FROM users WHERE id='%s';" % (pardic['id'],))
+            if pardic['id'] in [ux[0] for ux in
+                                self.execute_sql('SELECT id FROM users;')]:
+                self.execute_sql("DELETE FROM usergroups WHERE user_id='%s'"
+                                 % (pardic['id'],))
+                self.execute_sql("DELETE FROM users WHERE id='%s';"
+                                 % (pardic['id'],))
                 return 0, "User removed"
             else:
                 return -1, "ERROR: no user with that id!"
         else:
             return -1, "ERROR: username or id required!"
 
-    def get_from_users(self, values, where_dict={}, compare_dict={}):
+    def get_from_users(self, values, where_dict=None, compare_dict=None):
         """
         select values from `users`
 
@@ -265,6 +289,10 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {'id': int, 'username': str, 'name': str, 'email': str,
                           'password': str}
         sql = _generate_select_sql(values, where_dict, allowed_params,
@@ -290,24 +318,29 @@ class SedmDB:
                     'designator' (str)
 
         Returns:
-            (-1, "ERROR...") if no designator was provided or there is already a group with it
+            (-1, "ERROR...") if no designator was provided or
+             there is already a group with it
 
             (id (long), "Group added") if the adding was successful
         """
-        id = _id_from_time()
-        pardic['id'] = id
+        gid = _id_from_time()
+        pardic['id'] = gid
         if 'designator' not in pardic.keys():
             return -1, 'ERROR: no group designator provided!'
-        groups = [des[0] for des in self.execute_sql('SELECT designator FROM groups;')]
+        groups = [des[0] for des in
+                  self.execute_sql('SELECT designator FROM groups;')]
         if pardic['designator'] not in groups:
-            sql = ("INSERT INTO groups (id, designator) VALUES ('%s', '%s')" % (pardic['id'], pardic['designator']))
+            sql = ("INSERT INTO groups (id, designator) VALUES ('%s', '%s')"
+                   % (pardic['id'], pardic['designator']))
             try:
                 self.execute_sql(sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_group sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_group sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_group sql command failed with a ProgrammingError!"
-            return id, "Group added"
+                return -1, "ERROR: add_group sql command failed with " \
+                           "a ProgrammingError!"
+            return gid, "Group added"
         else:
             return -1, "ERROR: group exists!"
 
@@ -326,21 +359,27 @@ class SedmDB:
 
             (id of user, "User added to group") if the adding was successful
         """
-        if user not in [user_id[0] for user_id in self.execute_sql('SELECT id FROM users')]:
+        if user not in [user_id[0] for user_id in
+                        self.execute_sql('SELECT id FROM users')]:
             return -1, "ERROR: user does not exist!"
-        if group not in [group_id[0] for group_id in self.execute_sql('SELECT id FROM groups')]:
+        if group not in [group_id[0] for group_id in
+                         self.execute_sql('SELECT id FROM groups')]:
             return -1, "ERROR: group does not exist!"
-        usergroups = self.execute_sql('SELECT user_id, group_id FROM usergroups')
+        usergroups = self.execute_sql(
+            'SELECT user_id, group_id FROM usergroups')
         if (user, group) in usergroups:
             return -1, "ERROR: user already in group!"
         else:
-            sql = "INSERT INTO usergroups (user_id, group_id) VALUES ('%s','%s')" % (user, group)
+            sql = "INSERT INTO usergroups (user_id, group_id) VALUES " \
+                  "('%s','%s')" % (user, group)
             try:
                 self.execute_sql(sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_to_group sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_to_group sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_to_group sql command failed with a ProgrammingError!"
+                return -1, "ERROR: add_to_group sql command failed with " \
+                           "a ProgrammingError!"
             return user, "User added to group"
 
     def remove_from_group(self, user, group):
@@ -358,24 +397,30 @@ class SedmDB:
 
             (0, "User removed from group") if the removal was successful
         """
-        if user not in [user_id[0] for user_id in self.execute_sql('SELECT id FROM users')]:
+        if user not in [user_id[0] for user_id in
+                        self.execute_sql('SELECT id FROM users')]:
             return -1, "ERROR: user does not exist!"
-        if group not in [group_id[0] for group_id in self.execute_sql('SELECT id FROM groups')]:
+        if group not in [group_id[0] for group_id in
+                         self.execute_sql('SELECT id FROM groups')]:
             return -1, "ERROR: group does not exist!"
-        usergroups = self.execute_sql('SELECT user_id, group_id FROM usergroups')
+        usergroups = self.execute_sql(
+            'SELECT user_id, group_id FROM usergroups')
         if (user, group) not in usergroups:
             return -1, "ERROR: user not in group!"
         else:
-            sql = "DELETE FROM usergroups WHERE user_id='%s' AND group_id='%s'" % (user, group)
+            sql = "DELETE FROM usergroups WHERE " \
+                  "user_id='%s' AND group_id='%s'" % (user, group)
             try:
                 self.execute_sql(sql)
             except exc.IntegrityError:
-                return -1, "ERROR: remove_from_group sql command failed with an IntegrityError!"
+                return -1, "ERROR: remove_from_group sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: remove_from_group sql command failed with a ProgrammingError!"
+                return -1, "ERROR: remove_from_group sql command failed with " \
+                           "a ProgrammingError!"
             return 0, "User removed from group"
 
-    def get_from_usergroups(self, values, where_dict={}, compare_dict={}):
+    def get_from_usergroups(self, values, where_dict=None, compare_dict=None):
         """
         select values from `usergroups`
 
@@ -390,23 +435,31 @@ class SedmDB:
             values/keys options: ['user_id', 'group_id']
 
         Returns:
-            list of tuples containing the values for each usergroup matching the criteria
+            list of tuples containing the values for each usergroup
+            matching the criteria
 
             empty list if no usergroups match ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {'user_id': int, 'group_id': int}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'usergroups')
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'usergroups')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
         try:
             results = self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: get_from_usergroups sql command failed with an IntegrityError!"
+            return -1, "ERROR: get_from_usergroups sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: get_from_usergroups sql command failed with a ProgrammingError!"
+            return -1, "ERROR: get_from_usergroups sql command failed with " \
+                       "a ProgrammingError!"
         return results
 
     def add_program(self, pardic):
@@ -421,7 +474,8 @@ class SedmDB:
                     'group_id' (int/long)
                     'PI' (str)
                 optional:
-                    'time_allocated' (datetime.timedelta object or float/int seconds)
+                    'time_allocated' (datetime.timedelta object or
+                                      float/int seconds)
                     'priority' (float)
                     'inidate' ('year-month-day hour:minute:second')
                     'enddate' ('year-month-day hour:minute:second')
@@ -432,17 +486,22 @@ class SedmDB:
 
             (id (long), "Program added") if the program is added successfully
         """
-        param_types = {'id': int, 'name': str, 'designator': str, 'group_id': int, 'PI': str, 'color': str,
-                       'time_allocated': 'timedelta', 'priority': float, 'inidate': 'datetime', 'enddate': 'datetime'}
-        id = _id_from_time()
-        pardic['id'] = id
+        param_types = {'id': int, 'name': str, 'designator': str,
+                       'group_id': int, 'PI': str, 'color': str,
+                       'time_allocated': 'timedelta', 'priority': float,
+                       'inidate': 'datetime', 'enddate': 'datetime'}
+        pid = _id_from_time()
+        pardic['id'] = pid
         keys = list(pardic.keys())
 
         if 'designator' in keys:
-            if pardic['designator'] in [obj[0] for obj in self.execute_sql('SELECT designator FROM program')]:
-                return -1, "ERROR: a program with that designator already exists!"
-
-        for key in ['designator', 'name', 'group_id', 'PI']:  # check for required keys
+            if pardic['designator'] in [obj[0] for obj in
+                                        self.execute_sql(
+                                            'SELECT designator FROM program')]:
+                return -1, "ERROR: a program with that designator " \
+                           "already exists!"
+        # check for required keys
+        for key in ['designator', 'name', 'group_id', 'PI']:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(keys):  # remove any extraneous keys
@@ -458,10 +517,12 @@ class SedmDB:
         try:
             self.execute_sql(program_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_program sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_program sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_program sql command failed with a ProgrammingError!"
-        return id, "Program added"
+            return -1, "ERROR: add_program sql command failed with " \
+                       "a ProgrammingError!"
+        return pid, "Program added"
 
     def update_program(self, pardic):
         """
@@ -474,7 +535,8 @@ class SedmDB:
                 optional:
                     'name' (str)
                     'PI' (str)
-                    'time_allocated' (datetime.timedelta object or float/int seconds)
+                    'time_allocated' (datetime.timedelta object or
+                                      float/int seconds)
                     'priority' (float)
                     'inidate' ('year-month-day hour:minute:second')
                     'enddate' ('year-month-day hour:minute:second')
@@ -483,19 +545,24 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if it failed to update
 
-            (id (long), "Program updated, columns 'column_names'") if the program is updated successfully
+            (id (long), "Program updated, columns 'column_names'")
+            if the program is updated successfully
         """
-        param_types = {'id': int, 'time_allocated': 'timedelta', 'name': str, 'PI': str, 'priority': float,
-                       'inidate': 'datetime', 'enddate': 'datetime', 'color': str}
+        param_types = {'id': int, 'time_allocated': 'timedelta', 'name': str,
+                       'PI': str, 'priority': float, 'inidate': 'datetime',
+                       'enddate': 'datetime', 'color': str}
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
 
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM program;')]:
+        elif pardic['id'] not in [px[0] for px in
+                                  self.execute_sql('SELECT id FROM program;')]:
             return -1, "ERROR: no program with the id!"
         keys.remove('id')
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
-            if key not in ['time_allocated', 'name', 'PI', 'priority', 'inidate', 'enddate', 'color']:
+        # remove any keys that are invalid or not allowed to be updated
+        for key in reversed(keys):
+            if key not in ['time_allocated', 'name', 'PI', 'priority',
+                           'inidate', 'enddate', 'color']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
             return -1, "ERROR: no parameters given to update!"
@@ -507,9 +574,11 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_program sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_program sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_program sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_program sql command failed with " \
+                       "a ProgrammingError!"
         return pardic['id'], "Program updated, columns " + str(keys)[1:-1]
 
     def update_object(self, pardic):
@@ -533,18 +602,22 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if it failed to update
 
-            (id (long), "Object updated, columns 'column_names'") if the program is updated successfully
+            (id (long), "Object updated, columns 'column_names'")
+            if the program is updated successfully
         """
-        param_types = {'id': int, 'marshal_id': int, 'name': str, 'iauname': str, 'ra': float, 'dec': float,
-                       'epoch': str, 'magnitude': float, 'creationdate': 'datetime'}
+        param_types = {'id': int, 'marshal_id': int, 'name': str,
+                       'iauname': str, 'ra': float, 'dec': float, 'epoch': str,
+                       'magnitude': float, 'creationdate': 'datetime'}
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
 
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM object;')]:
+        elif pardic['id'] not in [ox[0] for ox in
+                                  self.execute_sql('SELECT id FROM object;')]:
             return -1, "ERROR: no object with the id!"
         keys.remove('id')
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
+        # remove any keys that are invalid or not allowed to be updated
+        for key in reversed(keys):
             if key not in param_types.keys():
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
@@ -557,12 +630,14 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_program sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_program sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_program sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_program sql command failed with " \
+                       "a ProgrammingError!"
         return pardic['id'], "Program updated, columns " + str(keys)[1:-1]
 
-    def get_from_program(self, values, where_dict={}, compare_dict={}):
+    def get_from_program(self, values, where_dict=None, compare_dict=None):
         """
         select values from `program`
 
@@ -574,30 +649,40 @@ class SedmDB:
             compare_dict (dict): default is {}
                 'param': 'inequality' (i.e. '>', '<', '>=', '<=', '<>', '!='))
                 if no inequality is provided, '=' is assumed
-            values/keys options: ['id', 'designator', 'name', 'group_id', 'PI', 'time_allocated',
-                                  'priority', 'inidate', 'enddate', 'color']
+            values/keys options: ['id', 'designator', 'name', 'group_id', 'PI',
+                                  'time_allocated', 'priority', 'inidate',
+                                  'enddate', 'color']
 
         Returns:
-            list of tuples containing the values for each program matching the criteria
+            list of tuples containing the values for each program
+            matching the criteria
 
             empty list if no programs match ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'name': str, 'designator': str, 'group_id': int, 'PI': str, 'color': str,
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'id': int, 'name': str, 'designator': str,
+                          'group_id': int, 'PI': str, 'color': str,
                           'time_allocated': 'timedelta', 'priority': float,
                           'inidate': 'datetime', 'enddate': 'datetime'}
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'program')
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'program')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
         try:
             results = self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: get_from_program sql command failed with an IntegrityError!"
+            return -1, "ERROR: get_from_program sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: get_from_program sql command failed with a ProgrammingError!"
+            return -1, "ERROR: get_from_program sql command failed with " \
+                       "a ProgrammingError!"
         return results
 
     def add_allocation(self, pardic):
@@ -610,8 +695,10 @@ class SedmDB:
                     'program_id' (int) (id of associated program)
                     'designator' (str) (e.g. 2016A-I0001)
                 optional:
-                    'time_allocated' (datetime.timedelta object or float/int seconds)
-                    'time_spent' (datetime.timedelta object or float/int seconds)
+                    'time_allocated' (datetime.timedelta object or
+                                      float/int seconds)
+                    'time_spent' (datetime.timedelta object or
+                                  float/int seconds)
                     'inidate' ('year-month-day hour:minute:second')
                     'enddate' ('year-month-day hour:minute:second')
                     'color' (hex color code)
@@ -621,22 +708,26 @@ class SedmDB:
 
             (id (long), "Allocation added") if the program is added successfully
         """
-        param_types = {'id': int, 'program_id': int, 'designator': str, 'time_allocated': 'timedelta',
-                       'time_spent': 'timedelta',
-                       'inidate': 'datetime', 'enddate': 'datetime', 'color': str, 'active': bool}
-        id = _id_from_time()
-        pardic['id'] = id
+        param_types = {'id': int, 'program_id': int, 'designator': str,
+                       'time_allocated': 'timedelta', 'time_spent': 'timedelta',
+                       'inidate': 'datetime', 'enddate': 'datetime',
+                       'color': str, 'active': bool}
+        aid = _id_from_time()
+        pardic['id'] = aid
         keys = list(pardic.keys())
 
         if 'program_id' in keys:
-            if pardic['program_id'] not in [obj[0] for obj in self.execute_sql('SELECT id FROM program;')]:
+            if pardic['program_id'] not in [obj[0] for obj in
+                                            self.execute_sql(
+                                                'SELECT id FROM program;')]:
                 return -1, "ERROR: no program with that id exists!"
 
         for key in ['program_id', 'designator']:
             if key not in keys:  # check for required key
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(keys):  # remove any extraneous keys
-            if key not in ['id', 'program_id', 'designator', 'time_allocated', 'time_spent', 'inidate', 'enddate',
+            if key not in ['id', 'program_id', 'designator', 'time_allocated',
+                           'time_spent', 'inidate', 'enddate',
                            'color', 'active']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
@@ -647,10 +738,12 @@ class SedmDB:
         try:
             self.execute_sql(program_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_program sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_program sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_program sql command failed with a ProgrammingError!"
-        return id, "Allocation added"
+            return -1, "ERROR: add_program sql command failed with " \
+                       "a ProgrammingError!"
+        return aid, "Allocation added"
 
     def update_allocation(self, pardic):
         """
@@ -661,8 +754,10 @@ class SedmDB:
                 required:
                     'id' (int/long)
                 optional:
-                    'time_allocated' (datetime.timedelta object or float/int seconds)
-                    'time_spent' (datetime.timedelta object or float/int seconds)
+                    'time_allocated' (datetime.timedelta object or
+                                      float/int seconds)
+                    'time_spent' (datetime.timedelta object or
+                                  float/int seconds)
                     'inidate' ('year-month-day hour:minute:second')
                     'enddate' ('year-month-day hour:minute:second')
                     'color' (hex color code)
@@ -671,19 +766,25 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if it failed to update
 
-            (id (long), "Allocation updated, columns 'column_names'") if the allocation is updated successfully
+            (id (long), "Allocation updated, columns 'column_names'")
+             if the allocation is updated successfully
         """
-        param_types = {'id': int, 'time_allocated': 'timedelta', 'time_spent': 'timedelta',
-                       'inidate': 'datetime', 'enddate': 'datetime', 'color': str, 'active': bool}
+        param_types = {'id': int, 'time_allocated': 'timedelta',
+                       'time_spent': 'timedelta', 'inidate': 'datetime',
+                       'enddate': 'datetime', 'color': str, 'active': bool}
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
 
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM allocation;')]:
+        elif pardic['id'] not in [ax[0] for ax in
+                                  self.execute_sql(
+                                      'SELECT id FROM allocation;')]:
             return -1, "ERROR: no allocation with the id!"
         keys.remove('id')
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
-            if key not in ['time_allocated', 'time_spent', 'inidate', 'enddate', 'color', 'active']:
+        # remove any keys that are invalid or not allowed to be updated
+        for key in reversed(keys):
+            if key not in ['time_allocated', 'time_spent', 'inidate',
+                           'enddate', 'color', 'active']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
             return -1, "ERROR: no parameters given to update!"
@@ -700,12 +801,14 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_allocation sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_allocation sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_allocation sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_allocation sql command failed with " \
+                       "a ProgrammingError!"
         return pardic['id'], "Allocation updated, columns " + str(keys)[1:-1]
 
-    def get_from_allocation(self, values, where_dict={}, compare_dict={}):
+    def get_from_allocation(self, values, where_dict=None, compare_dict=None):
         """
         select values from `allocation`
 
@@ -717,28 +820,40 @@ class SedmDB:
             compare_dict (dict): default is {}
                 'param': 'inequality' (i.e. '>', '<', '>=', '<=', '<>', '!='))
                 if no inequality is provided, '=' is assumed
-            values/keys options: ['id', 'designator', 'program_id, 'time_spent', 'time_allocated', 'inidate', 'enddate', 'color', 'active']
+            values/keys options: ['id', 'designator', 'program_id, 'time_spent',
+                                  'time_allocated', 'inidate', 'enddate',
+                                  'color', 'active']
 
         Returns:
-            list of tuples containing the values for each program matching the criteria
+            list of tuples containing the values for each program
+             matching the criteria
 
             empty list if no programs match ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'program_id': int, 'designator': str, 'time_spent': 'timedelta', 'color': str,
-                          'time_allocated': 'timedelta', 'inidate': 'datetime', 'enddate': 'datetime', 'active': bool}
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'id': int, 'program_id': int, 'designator': str,
+                          'time_spent': 'timedelta', 'color': str,
+                          'time_allocated': 'timedelta', 'inidate': 'datetime',
+                          'enddate': 'datetime', 'active': bool}
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'allocation')
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'allocation')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
         try:
             results = self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: get_from_allocation sql command failed with an IntegrityError!"
+            return -1, "ERROR: get_from_allocation sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: get_from_allocation sql command failed with a ProgrammingError!"
+            return -1, "ERROR: get_from_allocation sql command failed with " \
+                       "a ProgrammingError!"
         return results
 
     def add_object(self, pardic):
@@ -760,31 +875,39 @@ class SedmDB:
                     'marshal_id' (int/long)
 
                 'typedesig' should be one of:
-                    'f' (fixed), 'v' (periodic fixed), 'P' (built-in planet or satellite name), 'e' (heliocentric elliptical),
-                    'h' (heliocentric hyperbolic), 'p' (heliocentric parabolic), 'E' (geocentric elliptical)
+                    'f' (fixed), 'v' (periodic fixed),
+                    'P' (built-in planet or satellite name),
+                    'e' (heliocentric elliptical),
+                    'h' (heliocentric hyperbolic), 'p' (heliocentric parabolic),
+                    'E' (geocentric elliptical)
 
         Returns:
             (-1, "ERROR...") if it failed to add
 
             (id (long), "Object added") if the object is added successfully
         """
-        param_types = {'id': int, 'name': str, 'typedesig': str, 'ra': float, 'dec': float, 'epoch': str,
-                       'iauname': str, 'marshal_id': int, 'magnitude': float}
-        id = _id_from_time()
-        pardic['id'] = id
+        param_types = {'id': int, 'name': str, 'typedesig': str, 'ra': float,
+                       'dec': float, 'epoch': str, 'iauname': str,
+                       'marshal_id': int, 'magnitude': float}
+        oid = _id_from_time()
+        pardic['id'] = oid
         obj_keys = list(pardic.keys())
         if 'marshal_id' in obj_keys:
-            if pardic['marshal_id'] in [obj[0] for obj in self.execute_sql('SELECT marshal_id FROM object')]:
+            if pardic['marshal_id'] in [obj[0] for obj in
+                                        self.execute_sql(
+                                            'SELECT marshal_id FROM object')]:
                 return -1, "ERROR: object exists!"
         if 'epoch' not in obj_keys:
             obj_keys.append('epoch')
             pardic['epoch'] = 'J2000'
 
-        for key in ['name', 'typedesig']:  # check if 'name' and 'typedesig' are provided
+        # check if 'name' and 'typedesig' are provided
+        for key in ['name', 'typedesig']:
             if key not in obj_keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(obj_keys):  # remove any extraneous keys
-            if key not in ['id', 'name', 'typedesig', 'ra', 'dec', 'epoch', 'marshal_id', 'iauname', 'magnitude']:
+            if key not in ['id', 'name', 'typedesig', 'ra', 'dec', 'epoch',
+                           'marshal_id', 'iauname', 'magnitude']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(obj_keys, pardic, param_types)
         if type_check:
@@ -794,77 +917,100 @@ class SedmDB:
             for key in ['ra', 'dec']:
                 if key not in obj_keys:
                     return -1, "ERROR: %s not provided!" % (key,)
-            dup = self.execute_sql("SELECT id, name FROM object WHERE q3c_radial_query(ra, dec, '%s', '%s', .000278)"
+            dup = self.execute_sql("SELECT id, name FROM object "
+                                   "WHERE q3c_radial_query(ra, dec,"
+                                   " '%s', '%s', .000278)"
                                    % (pardic['ra'], pardic['dec']))
             if dup:  # if there is already an object within an arcsecond
-                if pardic['name'] in [x[1] for x in dup]:  # check for same coords, same name
-                    lis = [x[1] for x in dup]
+                # check for same coords, same name
+                if pardic['name'] in [dx[1] for dx in dup]:
+                    lis = [dx[1] for dx in dup]
                     idx = lis.index(pardic['name'])
-                    return (-1, "ERROR: The object '%s' is already in the database with id %s"
+                    return (-1, "ERROR: The object '%s' is already "
+                                "in the database with id %s"
                             % (pardic['name'], dup[idx][0]))
-                print("there is already an object within 1 arcsec of given coordinates with "
-                      "id: %s, name: %s" % (dup[0][0], dup[0][1]))
+                print("there is already an object within 1 arcsec "
+                      "of given coordinates with id: %s, name: %s"
+                      % (dup[0][0], dup[0][1]))
 
             obj_sql = _generate_insert_sql(pardic, obj_keys, 'object')
             try:
                 self.execute_sql(obj_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_object sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_object sql command failed with a ProgrammingError!"
-            return id, "Fixed object added"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "a ProgrammingError!"
+            return oid, "Fixed object added"
         elif pardic['typedesig'] == 'v':
             for key in ['ra', 'dec']:
                 if key not in obj_keys:
                     return -1, "ERROR: %s not provided!" % (key,)
-            dup = self.execute_sql("SELECT id, name FROM object WHERE q3c_radial_query(ra, dec, '%s', '%s', .000278)"
+            dup = self.execute_sql("SELECT id, name FROM object "
+                                   "WHERE q3c_radial_query(ra, dec, "
+                                   "'%s', '%s', .000278)"
                                    % (pardic['ra'], pardic['dec']))
             if dup:  # if there is already an object within an arcsecond
-                if pardic['name'] in [x[1] for x in dup]:  # check for same coords, same name
-                    lis = [x[1] for x in dup]
+                # check for same coords, same name
+                if pardic['name'] in [dx[1] for dx in dup]:
+                    lis = [dx[1] for dx in dup]
                     idx = lis.index(pardic['name'])
-                    return (-1, "ERROR: The object '%s' is already in the database with id %s"
+                    return (-1, "ERROR: The object '%s' is already in the "
+                                "database with id %s"
                             % (pardic['name'], dup[idx][0]))
-                print("there is already an object within 1 arcsec of given coordinates with "
-                      "id: %s, name: %s" % (dup[0][0], dup[0][1]))
+                print("there is already an object within 1 arcsec "
+                      "of given coordinates with id: %s, name: %s"
+                      % (dup[0][0], dup[0][1]))
 
             obj_sql = _generate_insert_sql(pardic, obj_keys, 'object')
             try:
                 self.execute_sql(obj_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_object sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_object sql command failed with a ProgrammingError!"
-            return id, "Fixed object added, input period data into table `periodic`"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "a ProgrammingError!"
+            return id, "Fixed object added, input period data " \
+                       "into table `periodic`"
 
         elif pardic['typedesig'] in ['h', 'E', 'e', 'p']:
-            function_dict = {'e': 'add_elliptical_heliocentric', 'h': 'add_hyperbolic_heliocentric',
-                             'p': 'add_parabolic_heliocentric', 'E': 'add_earth_satellite'}
+            function_dict = {'e': 'add_elliptical_heliocentric',
+                             'h': 'add_hyperbolic_heliocentric',
+                             'p': 'add_parabolic_heliocentric',
+                             'E': 'add_earth_satellite'}
 
             obj_sql = _generate_insert_sql(pardic, obj_keys, 'object')
             try:
                 self.execute_sql(obj_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_object sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_object sql command failed with a ProgrammingError!"
-            return (id, "Non-fixed object added, orbit parameters can be added with `%s`"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "a ProgrammingError!"
+            return (id, "Non-fixed object added, orbit parameters "
+                        "can be added with `%s`"
                     % (function_dict[pardic['typedesig']],))
         elif pardic['typedesig'] == 'P':
             obj_sql = _generate_insert_sql(pardic, obj_keys, 'object')
             try:
                 self.execute_sql(obj_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_object sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_object sql command failed with a ProgrammingError!"
+                return -1, "ERROR: add_object sql command failed with " \
+                           "a ProgrammingError!"
             return id, "Non-fixed object added"
         else:
-            return -1, "ERROR: typedesig provided was invalid, it must be one of ['f', 'h', 'E', 'e', 'p', 'P']!"
+            return -1, "ERROR: typedesig provided was invalid, " \
+                       "it must be one of ['f', 'h', 'E', 'e', 'p', 'P']!"
 
     # TODO: write update_object
 
-    def get_from_object(self, values, where_dict={}, compare_dict={}):
+    def get_from_object(self, values, where_dict=None, compare_dict=None):
         """
         select values from `objects`
 
@@ -876,18 +1022,26 @@ class SedmDB:
             compare_dict (dict): default is {}
                 'param': 'inequality' (i.e. '>', '<', '>=', '<=', '<>', '!='))
                 if no inequality is provided, '=' is assumed
-            values/keys options: ['id', 'marshal_id', 'name', 'iauname', 'ra', 'dec', 'typedesig', 'epoch']
+            values/keys options: ['id', 'marshal_id', 'name', 'iauname', 'ra',
+                                  'dec', 'typedesig', 'epoch']
 
         Returns:
-            list of tuples containing the values for each user matching the criteria
+            list of tuples containing the values
+            for each user matching the criteria
 
             empty list if no objects match ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'marshal_id': int, 'name': str, 'iauname': str, 'ra': float, 'dec': float,
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'id': int, 'marshal_id': int, 'name': str,
+                          'iauname': str, 'ra': float, 'dec': float,
                           'typedesig': str, 'epoch': float, 'magnitude': float}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'object')
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'object')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -899,7 +1053,7 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def get_objects_near(self, ra, dec, radius, values=['id', 'name', 'epoch']):
+    def get_objects_near(self, ra, dec, radius, values=None):
         """
         get object entries with coordinates within a radius
 
@@ -908,7 +1062,8 @@ class SedmDB:
             dec (float or int): dec in degrees of the object
             radius (float or int): radius in arcseconds
             values (list): which parameters to return
-                    options: 'id', 'marshal_id', 'name', 'iauname', 'ra', 'dec', 'typedesig', 'epoch'
+                    options: 'id', 'marshal_id', 'name', 'iauname', 'ra', 'dec',
+                     'typedesig', 'epoch'
                     defaults to ['id', 'name', 'epoch']
 
         Returns:
@@ -918,18 +1073,25 @@ class SedmDB:
 
             (-1, "ERROR...") if there is an issue
         """
+        if values is None:
+            values = ['id', 'name', 'epoch']
         for value in values[::-1]:
-            if value not in ['id', 'marshal_id', 'name', 'iauname', 'ra', 'dec', 'typedesig', 'epoch']:
+            if value not in ['id', 'marshal_id', 'name', 'iauname', 'ra', 'dec',
+                             'typedesig', 'epoch']:
                 return -1, "ERROR: %s is an invalid column name!" % (value,)
         if not (isinstance(ra, float) or isinstance(ra, int)):
-            return -1, "ERROR: parameter ra must be of type 'float' or type 'int'!"
+            return -1, "ERROR: parameter ra must be of type 'float' " \
+                       "or type 'int'!"
         if not (isinstance(dec, float) or isinstance(dec, int)):
-            return -1, "ERROR: parameter dec must be of type 'float' or type 'int'!"
+            return -1, "ERROR: parameter dec must be of type 'float' " \
+                       "or type 'int'!"
         if not (isinstance(radius, float) or isinstance(radius, int)):
-            return -1, "ERROR: parameter radius must be of type 'float' or type 'int'!"
+            return -1, "ERROR: parameter radius must be of type 'float' " \
+                       "or type 'int'!"
 
         objects = self.execute_sql("SELECT id, name, epoch FROM object WHERE "
-                                   "q3c_radial_query(ra, dec, '%s', '%s', '%s')" % (ra, dec, .000278 * radius))
+                                   "q3c_radial_query(ra, dec, '%s', '%s', '%s')"
+                                   % (ra, dec, .000278 * radius))
         return objects
 
     def get_object_id_from_name(self, object_name):
@@ -940,12 +1102,14 @@ class SedmDB:
             object_name (str): part of the name of an object
 
         Returns:
-            list of tuples [(id, full name)] for each object with a matching name
+            list of tuples [(id, full name)] for each object with
+            a matching name
 
             [] if no matching object name is found
         """
         object_name = object_name.lower()
-        sql = "SELECT id, name FROM object WHERE LOWER(name) LIKE '%s%s%s'" % ('%', object_name, '%')
+        sql = "SELECT id, name FROM object WHERE LOWER(name) LIKE '%s%s%s'" \
+              % ('%', object_name, '%')
         obj = self.execute_sql(sql)
         return obj
 
@@ -967,42 +1131,50 @@ class SedmDB:
                     'mjdepoch' (float) (epoch, time of 'M'),
                     'D': (float) (equinox year),
                     'M1' (float),
-                    'M2' (float) (first and second components of magnitude model)
+                    'M2' (float) (first and second components
+                                  of magnitude model)
                 optional:
                     's' (float) (angular size at 1 AU)
 
         Returns:
 
         """
-        param_types = {'id': int, 'object_id': int, 'inclination': float, 'longascnode_O': float, 'perihelion_o': float,
-                       'a': float, 'n': float, 'e': float, 'M': float, 'mjdepoch': float, 'D': float, 'M1': float,
+        param_types = {'id': int, 'object_id': int, 'inclination': float,
+                       'longascnode_O': float, 'perihelion_o': float,
+                       'a': float, 'n': float, 'e': float, 'M': float,
+                       'mjdepoch': float, 'D': float, 'M1': float,
                        'M2': float, 's': float}
-        id = _id_from_time()
-        orbit_params['id'] = id
+        eid = _id_from_time()
+        orbit_params['id'] = eid
         # TODO: query associated table for object already existing, test
         orb_keys = list(orbit_params.keys())
-        for key in ['inclination', 'longascnode_O', 'perihelion_o', 'a', 'n', 'e',
-                    'M', 'mjdepoch', 'D', 'M1', 'M2', 'object_id']:
+        for key in ['inclination', 'longascnode_O', 'perihelion_o', 'a', 'n',
+                    'e', 'M', 'mjdepoch', 'D', 'M1', 'M2', 'object_id']:
             if key not in orb_keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(orb_keys):
-            if key not in ['id', 'inclination', 'longascnode_O', 'perihelion_o', 'a', 'n', 'e',
-                           'M', 'mjdepoch', 'D', 'M1', 'M2', 's', 'object_id']:
+            if key not in ['id', 'inclination', 'longascnode_O', 'perihelion_o',
+                           'a', 'n', 'e', 'M', 'mjdepoch', 'D', 'M1', 'M2', 's',
+                           'object_id']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(orb_keys, orbit_params, param_types)
         if type_check:
             return -1, type_check
 
-        orb_sql = _generate_insert_sql(orbit_params, orb_keys, 'elliptical_heliocentric')
+        orb_sql = _generate_insert_sql(orbit_params, orb_keys,
+                                       'elliptical_heliocentric')
         try:
             self.execute_sql(orb_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_elliptical_orbit sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_elliptical_orbit sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_elliptical_orbit sql command failed with a ProgrammingError!"
-        return id, "Elliptical heliocentric orbit added"
+            return -1, "ERROR: add_elliptical_orbit sql command failed with " \
+                       "a ProgrammingError!"
+        return eid, "Elliptical heliocentric orbit added"
 
-    def get_from_elliptical_heliocentric(self, values, where_dict={}, compare_dict={}):
+    def get_from_elliptical_heliocentric(self, values, where_dict=None,
+                                         compare_dict=None):
         """
         select values from `elliptical_heliocentric`
 
@@ -1031,16 +1203,24 @@ class SedmDB:
                 's' (float) (angular size at 1 AU)
 
         Returns:
-            list of tuples containing the values for each orbit matching the criteria,
+            list of tuples containing the values for each orbit matching
+            the criteria,
 
             empty list if no orbits match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'object_id': int, 'inclination': float, 'longascnode_O': float, 'perihelion_o': float,
-                          'a': float, 'n': float, 'e': float, 'M': float, 'mjdepoch': float, 'D': float, 'M1': float,
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'object_id': int, 'inclination': float,
+                          'longascnode_O': float, 'perihelion_o': float,
+                          'a': float, 'n': float, 'e': float, 'M': float,
+                          'mjdepoch': float, 'D': float, 'M1': float,
                           'M2': float, 's': float, 'id': int}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'elliptical_heliocentric')
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'elliptical_heliocentric')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -1068,7 +1248,8 @@ class SedmDB:
                     'q' (float) (perihelion distance AU),
                     'D': (float) (equinox year),
                     'M1' (float),
-                    'M2' (float) (first and second components of magnitude model)
+                    'M2' (float) (first and second components
+                                  of magnitude model)
 
                 optional:
                     's' (float) (angular size at 1 AU)
@@ -1076,35 +1257,41 @@ class SedmDB:
         Returns:
 
         """
-        param_types = {'id': int, 'object_id': int, 'T': 'date', 'e': float, 'inclination': float,
-                       'longascnode_O': float,
-                       'perihelion_o': float, 'q': float, 'D': float, 'M1': float, 'M2': float, 's': float}
-        id = _id_from_time()
-        orbit_params['id'] = id
+        param_types = {'id': int, 'object_id': int, 'T': 'date', 'e': float,
+                       'inclination': float, 'longascnode_O': float,
+                       'perihelion_o': float, 'q': float, 'D': float,
+                       'M1': float, 'M2': float, 's': float}
+        hid = _id_from_time()
+        orbit_params['id'] = hid
         # TODO: query associated table for object already existing, test
         orb_keys = list(orbit_params.keys())
-        for key in ['T', 'inclination', 'longascnode_O', 'perihelion_o', 'e', 'q', 'D',
-                    'M1', 'M2', 'object_id']:
+        for key in ['T', 'inclination', 'longascnode_O', 'perihelion_o', 'e',
+                    'q', 'D', 'M1', 'M2', 'object_id']:
             if key not in orb_keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(orb_keys):
-            if key not in ['id', 'T', 'inclination', 'longascnode_O', 'perihelion_o', 'e', 'q', 'D',
-                           'M1', 'M2', 's', 'object_id']:
+            if key not in ['id', 'T', 'inclination', 'longascnode_O',
+                           'perihelion_o', 'e', 'q', 'D', 'M1', 'M2', 's',
+                           'object_id']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(orb_keys, orbit_params, param_types)
         if type_check:
             return -1, type_check
 
-        orb_sql = _generate_insert_sql(orbit_params, orb_keys, 'hyperbolic_heliocentric')
+        orb_sql = _generate_insert_sql(orbit_params, orb_keys,
+                                       'hyperbolic_heliocentric')
         try:
             self.execute_sql(orb_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_hyperbolic_orbit sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_hyperbolic_orbit sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_hyperbolic_orbit sql command failed with a ProgrammingError!"
-        return id, "Hyperbolic heliocentric orbit added"
+            return -1, "ERROR: add_hyperbolic_orbit sql command failed with " \
+                       "a ProgrammingError!"
+        return hid, "Hyperbolic heliocentric orbit added"
 
-    def get_from_hyperbolic_heliocentric(self, values, where_dict={}, compare_dict={}):
+    def get_from_hyperbolic_heliocentric(self, values, where_dict=None,
+                                         compare_dict=None):
         """
         select values from `hyperbolic_heliocentric`
 
@@ -1131,16 +1318,24 @@ class SedmDB:
                 's' (float) (angular size at 1 AU)
 
         Returns:
-            list of tuples containing the values for each orbit matching the criteria,
+            list of tuples containing the values for each orbit
+            matching the criteria,
 
             empty list if no orbits match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'object_id': int, 'T': 'date', 'e': float, 'inclination': float, 'longascnode_O': float,
-                          'perihelion_o': float, 'q': float, 'D': float, 'M1': float, 'M2': float, 's': float,
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'object_id': int, 'T': 'date', 'e': float,
+                          'inclination': float, 'longascnode_O': float,
+                          'perihelion_o': float, 'q': float, 'D': float,
+                          'M1': float, 'M2': float, 's': float,
                           'id': int}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'hyperbolic_heliocentric')
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'hyperbolic_heliocentric')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -1167,7 +1362,8 @@ class SedmDB:
                     'longascnode_O' (float) (lon. of ascending node),
                     'D': (float) (equinox year),
                     'M1' (float),
-                    'M2' (float) (first and second components of magnitude model)
+                    'M2' (float) (first and second components
+                                  of magnitude model)
 
                 optional:
                     's' (float) (angular size at 1 AU)
@@ -1175,34 +1371,41 @@ class SedmDB:
         Returns:
 
         """
-        param_types = {'id': int, 'object_id': int, 'T': 'date', 'inclination': float, 'longascnode_O': float,
-                       'perihelion_o': float, 'q': float, 'D': float, 'M1': float, 'M2': float, 's': float}
-        id = _id_from_time()
-        orbit_params['id'] = id
+        param_types = {'id': int, 'object_id': int, 'T': 'date',
+                       'inclination': float, 'longascnode_O': float,
+                       'perihelion_o': float, 'q': float, 'D': float,
+                       'M1': float, 'M2': float, 's': float}
+        pid = _id_from_time()
+        orbit_params['id'] = pid
         # TODO: query associated table for object already existing, test
         orb_keys = list(orbit_params.keys())
-        for key in ['T', 'inclination', 'longascnode_O', 'perihelion_o', 'q', 'D',
-                    'M1', 'M2', 'object_id']:
+        for key in ['T', 'inclination', 'longascnode_O', 'perihelion_o', 'q',
+                    'D', 'M1', 'M2', 'object_id']:
             if key not in orb_keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(orb_keys):
-            if key not in ['id', 'T', 'inclination', 'longascnode_O', 'perihelion_o', 'q', 'D',
-                           'M1', 'M2', 's', 'object_id']:
+            if key not in ['id', 'T', 'inclination', 'longascnode_O',
+                           'perihelion_o', 'q', 'D', 'M1', 'M2', 's',
+                           'object_id']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(orb_keys, orbit_params, param_types)
         if type_check:
             return -1, type_check
 
-        orb_sql = _generate_insert_sql(orbit_params, orb_keys, 'parabolic_heliocentric')
+        orb_sql = _generate_insert_sql(orbit_params, orb_keys,
+                                       'parabolic_heliocentric')
         try:
             self.execute_sql(orb_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_parabolic_orbit sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_parabolic_orbit sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_parabolic_orbit sql command failed with a ProgrammingError!"
-        return id, "Parabolic heliocentric orbit added"
+            return -1, "ERROR: add_parabolic_orbit sql command failed with " \
+                       "a ProgrammingError!"
+        return pid, "Parabolic heliocentric orbit added"
 
-    def get_from_parabolic_heliocentric(self, values, where_dict={}, compare_dict={}):
+    def get_from_parabolic_heliocentric(self, values, where_dict=None,
+                                        compare_dict=None):
         """
         select values from `parabolic_heliocentric`
 
@@ -1228,16 +1431,23 @@ class SedmDB:
                 's' (float) (angular size at 1 AU)
 
         Returns:
-            list of tuples containing the values for each orbit matching the criteria,
+            list of tuples containing the values for each orbit
+            matching the criteria,
 
             empty list if no orbits match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'object_id': int, 'T': 'date', 'inclination': float, 'longascnode_O': float,
-                          'perihelion_o': float, 'q': float, 'D': float, 'M1': float, 'M2': float, 's': float,
-                          'id': int}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'parabolic_heliocentric')
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'object_id': int, 'T': 'date', 'inclination': float,
+                          'longascnode_O': float, 'perihelion_o': float,
+                          'q': float, 'D': float, 'M1': float, 'M2': float,
+                          's': float, 'id': int}
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'parabolic_heliocentric')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -1273,10 +1483,12 @@ class SedmDB:
         Returns:
 
         """
-        param_types = {'id': int, 'object_id': int, 'T': 'date', 'e': float, 'inclination': float, 'ra': float,
-                       'pedigree': float, 'M': float, 'n': float, 'decay': float, 'reforbit': int, 'drag': float}
-        id = _id_from_time()
-        orbit_params['id'] = id
+        param_types = {'id': int, 'object_id': int, 'T': 'date', 'e': float,
+                       'inclination': float, 'ra': float, 'pedigree': float,
+                       'M': float, 'n': float, 'decay': float, 'reforbit': int,
+                       'drag': float}
+        eid = _id_from_time()
+        orbit_params['id'] = eid
         # TODO: query associated table for object already existing, test
         orb_keys = list(orbit_params.keys())
         for key in ['T', 'inclination', 'ra', 'e', 'pedigree', 'M', 'n',
@@ -1284,23 +1496,27 @@ class SedmDB:
             if key not in orb_keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(orb_keys):
-            if key not in ['id', 'T', 'inclination', 'ra', 'e', 'pedigree', 'M', 'n',
-                           'decay', 'reforbit', 'drag', 'object_id']:
+            if key not in ['id', 'T', 'inclination', 'ra', 'e', 'pedigree',
+                           'M', 'n', 'decay', 'reforbit', 'drag', 'object_id']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(orb_keys, orbit_params, param_types)
         if type_check:
             return -1, type_check
 
-        orb_sql = _generate_insert_sql(orbit_params, orb_keys, 'earth_satellite')
+        orb_sql = _generate_insert_sql(orbit_params, orb_keys,
+                                       'earth_satellite')
         try:
             self.execute_sql(orb_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_earth_satellite_orbit sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_earth_satellite_orbit sql command failed " \
+                       "with an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_earth_satellite_orbit sql command failed with a ProgrammingError!"
-        return id, "Earth satellite orbit added"
+            return -1, "ERROR: add_earth_satellite_orbit sql command failed " \
+                       "with a ProgrammingError!"
+        return eid, "Earth satellite orbit added"
 
-    def get_from_earth_satellite(self, values, where_dict={}, compare_dict={}):
+    def get_from_earth_satellite(self, values, where_dict=None,
+                                 compare_dict=None):
         """
         select values from `earth_satellite`
 
@@ -1327,16 +1543,23 @@ class SedmDB:
                 'drag' (float) (drag coefficient, 1/(Earth radii))
 
         Returns:
-            list of tuples containing the values for each orbit matching the criteria,
+            list of tuples containing the values for each orbit
+            matching the criteria,
 
             empty list if no orbits match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'object_id': int, 'T': 'date', 'e': float, 'inclination': float, 'ra': float,
-                          'pedigree': float, 'M': float, 'n': float, 'decay': float, 'reforbit': int,
-                          'drag': float, 'id': int}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'earth_satellite')
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'object_id': int, 'T': 'date', 'e': float,
+                          'inclination': float, 'ra': float, 'pedigree': float,
+                          'M': float, 'n': float, 'decay': float,
+                          'reforbit': int, 'drag': float, 'id': int}
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'earth_satellite')
         print(sql)
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
@@ -1351,7 +1574,8 @@ class SedmDB:
 
     def add_periodic(self, pardic):
         """
-        Creates a new entry in the periodic table with the parameters specified in the dictionary.
+        Creates a new entry in the periodic table with the parameters
+        specified in the dictionary.
 
         Args:
             pardic:
@@ -1365,12 +1589,13 @@ class SedmDB:
         Returns:
             (-1: "ERROR...") if there is an issue
 
-            (id (long), "Periodic information added") if it completes successfully
+            (id (long), "Periodic information added")
+             if it completes successfully
         """
         param_types = {'id': int, 'object_id': int, 'mjd0': float,
                        'phi': float, 'phasedays': float}
-        id = _id_from_time()
-        pardic['id'] = id
+        pid = _id_from_time()
+        pardic['id'] = pid
         # TODO: which parameters are required? test
         keys = list(pardic.keys())
 
@@ -1393,14 +1618,14 @@ class SedmDB:
                            "overdetermined and inconsistent".format(**pardic)
             else:
                 print("mjd0 and phi differ by just %f periods" % phase_diff)
-                del pardic['phi'] # we really shouldn't overdetermine the db
+                del pardic['phi']  # we really shouldn't overdetermine the db
 
         elif 'mjd0' not in keys and 'phi' not in keys:
             # we can't be missing both
             return -1, "ERROR: mjd0 and phi both not provided!"
             
         # check we have no extraneous keys
-        for key in reversed(keys): # why are we reversing this? it's just a list
+        for key in reversed(keys):  # why are we reversing this?
             if key not in ['id', 'object_id', 'mjd0', 'phi', 'phasedays']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
@@ -1412,12 +1637,14 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_periodic sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_periodic sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_periodic sql command failed with a ProgrammingError!"
-        return id, "Periodic infomration added"
+            return -1, "ERROR: add_periodic sql command failed with " \
+                       "a ProgrammingError!"
+        return pid, "Periodic infomration added"
 
-    def get_from_periodic(self, values, where_dict={}, compare_dict={}):
+    def get_from_periodic(self, values, where_dict=None, compare_dict=None):
         """
         select values from `periodic`
 
@@ -1436,14 +1663,21 @@ class SedmDB:
                 'phasedays' (float)
 
         Returns:
-            list of tuples containing the values for each orbit matching the criteria,
+            list of tuples containing the values for each orbit
+            matching the criteria,
 
             empty list if no orbits match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'object_id': int, 'mjd0': float, 'phasedays': float, 'id': int}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'periodic')
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'object_id': int, 'mjd0': float, 'phasedays': float,
+                          'id': int}
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'periodic')
         print(sql)
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
@@ -1480,12 +1714,16 @@ class SedmDB:
                 optional:
                     'seq_repeats' (int) (defaults to 1),
                     'marshal_id' (int/long),
-                    'maxairmass' (float) (max allowable airmass for observation, default 2.5),
+                    'maxairmass' (float) (max allowable airmass
+                                          for observation, default 2.5),
                     'cadence' (float) (time between periods),
                     'phasesamples' (float) (how many samples in a period),
-                    'sampletolerance' (float) (how much tolerance in when the samples can be taken),
-                    'nexposures' (str '{# of ifu, # of u, # of g, # of r, # of i}'),
-                    'obs_seq' (str e.g. '{3g, 3r, 1i, 1ifu, 2i}' for 3 of g, then 3 of r, then 1 i, 1 ifu, 1 i),
+                    'sampletolerance' (float) (how much tolerance in when
+                                               the samples can be taken),
+                    'nexposures' (str '{# of ifu, # of u, # of g, # of r,
+                                        # of i}'),
+                    'obs_seq' (str e.g. '{3g, 3r, 1i, 1ifu, 2i}' for 3 of g,
+                               then 3 of r, then 1 i, 1 ifu, 1 i),
                     'max_fwhm' (float),
                     'min_moon_dist' (float) (default 45 deg?),
                     'max_moon_illum' (float) (fraction),
@@ -1501,22 +1739,32 @@ class SedmDB:
             (id (long), "Request added") if there are no errors
         """
         # TODO: get a better description of cadence/phasesamples/sampletolerance
-        param_types = {'id': int, 'object_id': int, 'user_id': int, 'allocation_id': int, 'exptime': str,
+        param_types = {'id': int, 'object_id': int, 'user_id': int,
+                       'allocation_id': int, 'exptime': str,
                        'priority': float, 'external_id': int, 'shareid': int,
-                       'inidate': 'date', 'enddate': 'date', 'marshal_id': int, 'maxairmass': float, 'cadence': float,
-                       'phasesamples': float, 'sampletolerance': float, 'nexposures': str, 'obs_seq': str,
-                       'max_fwhm': float, 'min_moon_dist': float, 'max_moon_illum': float, 'max_cloud_cover': float,
-                       'seq_repeats': int, 'seq_completed': int, 'status': str}
-        id = _id_from_time()
-        pardic['id'] = id
-        requests = self.execute_sql("SELECT object_id, allocation_id FROM request WHERE status != 'EXPIRED';")
+                       'inidate': 'date', 'enddate': 'date', 'marshal_id': int,
+                       'maxairmass': float, 'cadence': float,
+                       'phasesamples': float, 'sampletolerance': float,
+                       'nexposures': str, 'obs_seq': str, 'max_fwhm': float,
+                       'min_moon_dist': float, 'max_moon_illum': float,
+                       'max_cloud_cover': float, 'seq_repeats': int,
+                       'seq_completed': int, 'status': str}
+        rid = _id_from_time()
+        pardic['id'] = rid
+        requests = self.execute_sql(
+            "SELECT object_id, allocation_id FROM request "
+            "WHERE status != 'EXPIRED';")
         # check allocation_id, issue warning if it is a repeat, but allow
         if (pardic['object_id'], pardic['allocation_id']) in requests:
-            print("program %s has already requested object: %s" % (pardic['allocation_id'], pardic['object_id']))
+            print("program %s has already requested object: %s"
+                  % (pardic['allocation_id'], pardic['object_id']))
             # TODO: add to output
-        if pardic['object_id'] not in [obj[0] for obj in self.execute_sql('SELECT id FROM object;')]:
+        if pardic['object_id'] not in [obj[0] for obj in
+                                       self.execute_sql(
+                                           'SELECT id FROM object;')]:
             return -1, "ERROR: object does not exist!"
-        if pardic['user_id'] not in [user[0] for user in self.execute_sql('SELECT id FROM users;')]:
+        if pardic['user_id'] not in [user[0] for user in
+                                     self.execute_sql('SELECT id FROM users;')]:
             return -1, "ERROR: user does not exist!"
         if 'seq_repeats' not in pardic.keys():
             pardic['seq_repeats'] = 1
@@ -1535,28 +1783,35 @@ class SedmDB:
                     nexposure[3] += int(entry[0])
                 elif entry[1:] == 'i':
                     nexposure[4] += int(entry[0])
-            nexposure = [n * pardic['seq_repeats'] for n in nexposure]
+            # nexposure = [n * pardic['seq_repeats'] for n in nexposure]
             # make sure that 'nexposures' and 'obs_seq' are consistent
             # if 'nexposures' in pardic.keys():
-            #    if not '{%s, %s, %s, %s, %s}' % tuple(nexposure) == pardic['nexposures']:
-            #        return (-1, "ERROR: nexposures and obs_seq are inconsistent!")
+            #    if not '{
+            #   %s, %s, %s, %s, %s}' % tuple(nexposure) == pardic['nexposures']:
+            #        return (-1,
+            #                "ERROR: nexposures and obs_seq are inconsistent!")
             # else:
-            #    pardic['nexposures'] = '{%s, %s, %s, %s, %s}' % tuple(nexposure)
+            #    pardic['nexposures'] = '{
+            #           %s, %s, %s, %s, %s}' % tuple(nexposure)
 
         elif not ('nexposures' in pardic.keys() or 'obs_seq' in pardic.keys()):
             return -1, "ERROR: nexposures or obs_seq is required!"
 
         keys = list(pardic.keys())
-        default_params = ['object_id', 'user_id', 'allocation_id', 'exptime', 'priority',
-                          'inidate', 'enddate']
-        for param in default_params:  # check that all required values are provided
+        default_params = ['object_id', 'user_id', 'allocation_id', 'exptime',
+                          'priority', 'inidate', 'enddate']
+        # check that all required values are provided
+        for param in default_params:
             if param not in keys:
                 return -1, "ERROR: %s not in dictionary!" % (param,)
         for key in reversed(keys):  # remove any invalid keys
-            if key not in ['id', 'object_id', 'user_id', 'allocation_id', 'exptime', 'priority', 'status',
-                           'inidate', 'enddate', 'marshal_id', 'maxairmass', 'cadence', 'seq_completed',
-                           'phasesamples', 'sampletolerance', 'nexposures', 'obs_seq', 'seq_repeats',
-                           'max_fwhm', 'min_moon_dist', 'max_moon_illum', 'max_cloud_cover', 'external_id', 'shareid']:
+            if key not in ['id', 'object_id', 'user_id', 'allocation_id',
+                           'exptime', 'priority', 'status', 'inidate',
+                           'enddate', 'marshal_id', 'maxairmass', 'cadence',
+                           'seq_completed', 'phasesamples', 'sampletolerance',
+                           'nexposures', 'obs_seq', 'seq_repeats', 'max_fwhm',
+                           'min_moon_dist', 'max_moon_illum', 'max_cloud_cover',
+                           'external_id', 'shareid']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
@@ -1566,10 +1821,12 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_request sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_request sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_request sql command failed with a ProgrammingError!"
-        return id, "Request added"
+            return -1, "ERROR: add_request sql command failed with " \
+                       "a ProgrammingError!"
+        return rid, "Request added"
 
     def update_request(self, pardic):
         """
@@ -1591,35 +1848,48 @@ class SedmDB:
                     'inidate' ('year-month-day'),
                     'enddate' ('year-month-day'),
                     'last_obs_jd' (float)
-                Note: 'status' can be 'PENDING', 'ACTIVE', 'COMPLETED', 'REDUCED', 'CANCELED', or 'EXPIRED'
+                Note: 'status' can be 'PENDING', 'ACTIVE', 'COMPLETED',
+                                        'REDUCED', 'CANCELED', or 'EXPIRED'
 
         Returns:
             (-1, "ERROR...") if there was an issue with the updating
 
-            (id, "Requests updated, columns 'column_names'") if the update was successful
+            (id, "Requests updated, columns 'column_names'")
+                if the update was successful
         """
-        param_types = {'id': int, 'object_id': int, 'user_id': int, 'allocation_id': int, 'exptime': str,
-                       'priority': float,
-                       'inidate': 'date', 'enddate': 'date', 'marshal_id': int, 'maxairmass': float, 'cadence': float,
-                       'phasesamples': float, 'sampletolerance': float, 'nexposures': str, 'obs_seq': str,
-                       'max_fwhm': float, 'min_moon_dist': float, 'max_moon_illum': float, 'max_cloud_cover': float,
-                       'seq_repeats': int, 'seq_completed': int, 'status': str}
+        param_types = {'id': int, 'object_id': int, 'user_id': int,
+                       'allocation_id': int, 'exptime': str, 'priority': float,
+                       'inidate': 'date', 'enddate': 'date', 'marshal_id': int,
+                       'maxairmass': float, 'cadence': float,
+                       'phasesamples': float, 'sampletolerance': float,
+                       'nexposures': str, 'obs_seq': str, 'max_fwhm': float,
+                       'min_moon_dist': float, 'max_moon_illum': float,
+                       'max_cloud_cover': float, 'seq_repeats': int,
+                       'seq_completed': int, 'status': str}
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: no id provided!"
-        elif not (isinstance(pardic['id'], int) or isinstance(pardic['id'], long)):
+        elif not (isinstance(pardic['id'], int) or isinstance(pardic['id'],
+                                                              long)):
             return -1, "ERROR: parameter id must be of type 'int'!"
-        if pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM request;')]:
+        if pardic['id'] not in [rx[0] for rx in
+                                self.execute_sql('SELECT id FROM request;')]:
             return -1, "ERROR: request does not exist!"
         keys.remove('id')
         if 'status' in keys:
-            if pardic['status'] not in ['PENDING', 'ACTIVE', 'COMPLETED', 'CANCELED', 'OBSERVED', 'EXPIRED']:
-                return -1, "ERROR: %s is an invalid status value!" % (pardic['status'],)
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
-            if key not in ['id', 'object_id', 'user_id', 'allocation_id', 'exptime', 'priority', 'status',
-                           'inidate', 'enddate', 'marshal_id', 'maxairmass', 'cadence', 'seq_completed',
-                           'phasesamples', 'sampletolerance', 'nexposures', 'obs_seq', 'seq_repeats',
-                           'max_fwhm', 'min_moon_dist', 'max_moon_illum', 'max_cloud_cover']:
+            if pardic['status'] not in ['PENDING', 'ACTIVE', 'COMPLETED',
+                                        'CANCELED', 'OBSERVED', 'EXPIRED']:
+                return -1, "ERROR: %s is an invalid status value!" \
+                       % (pardic['status'],)
+        # remove any keys that are invalid or not allowed to be updated
+        for key in reversed(keys):
+            if key not in ['id', 'object_id', 'user_id', 'allocation_id',
+                           'exptime', 'priority', 'status', 'inidate',
+                           'enddate', 'marshal_id', 'maxairmass', 'cadence',
+                           'seq_completed', 'phasesamples', 'sampletolerance',
+                           'nexposures', 'obs_seq', 'seq_repeats', 'max_fwhm',
+                           'min_moon_dist', 'max_moon_illum',
+                           'max_cloud_cover']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
             return -1, "ERROR: no parameters given to update!"
@@ -1631,13 +1901,15 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_request sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_request sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_request sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_request sql command failed with " \
+                       "a ProgrammingError!"
 
         return pardic['id'], "Requests updated, columns " + str(keys)[1:-1]
 
-    def get_from_request(self, values, where_dict={}, compare_dict={}):
+    def get_from_request(self, values, where_dict=None, compare_dict=None):
         """
         select values from `request`
 
@@ -1680,20 +1952,32 @@ class SedmDB:
                 'last_obs_jd' (float)
 
         Returns:
-            list of tuples containing the values for each request matching the criteria,
+            list of tuples containing the values for each request
+            matching the criteria,
 
             empty list if no requests match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'id': int, 'object_id': int, 'user_id': int, 'allocation_id': int, 'exptime': str,
-                          'status': str, 'external_id': int, 'shareid': int,
-                          'priority': float, 'inidate': 'date', 'enddate': 'date', 'marshal_id': int,
-                          'maxairmass': float, 'cadence': float, 'phasesamples': float, 'sampletolerance': float,
-                          'filters': str, 'nexposures': str, 'obs_seq': str, 'creationdate': 'date',
-                          'lastmodified': 'date', 'seq_repeats': int, 'seq_completed': int, 'last_obs_jd': float,
-                          'max_fwhm': float, 'min_moon_dist': float, 'max_moon_illum': float, 'max_cloud_cover': float}
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'request')
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'id': int, 'object_id': int, 'user_id': int,
+                          'allocation_id': int, 'exptime': str, 'status': str,
+                          'external_id': int, 'shareid': int, 'priority': float,
+                          'inidate': 'date', 'enddate': 'date',
+                          'marshal_id': int, 'maxairmass': float,
+                          'cadence': float, 'phasesamples': float,
+                          'sampletolerance': float, 'filters': str,
+                          'nexposures': str, 'obs_seq': str,
+                          'creationdate': 'date', 'lastmodified': 'date',
+                          'seq_repeats': int, 'seq_completed': int,
+                          'last_obs_jd': float, 'max_fwhm': float,
+                          'min_moon_dist': float, 'max_moon_illum': float,
+                          'max_cloud_cover': float}
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'request')
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -1707,8 +1991,9 @@ class SedmDB:
 
     def expire_requests(self, send_alerts=False, update_growth=True):
         """
-        Updates the request table. For all the active requests that were not completed,
-            and had an expiry date before than NOW(), are marked as "EXPIRED".
+        Updates the request table. For all the active requests that were
+            not completed, and had an expiry date before than NOW(),
+            are marked as "EXPIRED".
 
         Returns:
             (0, "Requests expired")
@@ -1717,12 +2002,12 @@ class SedmDB:
         # TODO: make it more discerning of other statuses
         # tests written
         # 1. Get a list of request that are set to be expired.
-        ret = self.execute_sql("SELECT u.id, o.name, u.email, r.marshal_id  FROM request r "
+        ret = self.execute_sql("SELECT u.id, o.name, u.email, r.marshal_id "
+                               "FROM request r "
                                "INNER JOIN object o ON (object_id = o.id) "
                                "INNER JOIN users u ON (user_id = u.id) "
-                               "WHERE r.enddate < NOW() AND r.status ='PENDING';")
-        if update_growth:
-            from growth import growth
+                               "WHERE r.enddate < NOW() "
+                               "AND r.status ='PENDING';")
 
         if send_alerts:
 
@@ -1734,14 +2019,18 @@ class SedmDB:
                                            template_dict={'object_name': i[1]})
 
                 if update_growth:
-                    # if the entry is greater than 1000 then it should have come from the GROWTH MARSHAL
+                    from growth import growth
+                    # if the entry is greater than 1000
+                    # then it should have come from the GROWTH MARSHAL
 
                     if i[3] and i[3] > 1000:
-                        ret = growth.update_request(request_id=i[3], output_dir='/scr/rsw/',
+                        ret = growth.update_request(request_id=i[3],
+                                                    output_dir='/scr/rsw/',
                                                     status='EXPIRED')
                         print(ret)
 
-        sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() WHERE enddate < NOW() AND status ='PENDING';"
+        sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() " \
+              "WHERE enddate < NOW() AND status ='PENDING';"
         self.execute_sql(sql)
 
         return 0, "Requests expired"
@@ -1788,7 +2077,7 @@ class SedmDB:
         """
         header_types = {'id': int, 'object_id': int, 'request_id': int,
                         'mjd': float, 'airmass': float, 'airmass_end': float,
-                        'parang': float, 'parang_end':float, 'exptime': float,
+                        'parang': float, 'parang_end': float, 'exptime': float,
                         'fitsfile': str, 'lst': str, 'ra': float, 'dec': float,
                         'tel_az': float, 'tel_el': float, 'tel_pa': float,
                         'ra_off': float, 'dec_off': float, 'imtype': str,
@@ -1822,7 +2111,7 @@ class SedmDB:
                                                    {'fitsfile': '~'})
         if observation_id:
             return -1, "ERROR: %s already in database with id %d!" % \
-                   (header_dict['fitsfile'], observation_id[0][0])
+                   (header_dict['fitsfile'], int(observation_id[0][0]))
         else:
             sql = _generate_insert_sql(header_dict, header_keys, 'observation')
             try:
@@ -1881,7 +2170,7 @@ class SedmDB:
         """
         param_types = {'id': int, 'object_id': int, 'request_id': int,
                        'mjd': float, 'airmass': float, 'airmass_end': float,
-                       'parang': float, 'parang_end':float, 'exptime': float,
+                       'parang': float, 'parang_end': float, 'exptime': float,
                        'fitsfile': str, 'lst': str, 'ra': float, 'dec': float,
                        'tel_az': float, 'tel_el': float, 'tel_pa': float,
                        'ra_off': float, 'dec_off': float, 'imtype': str,
@@ -1891,7 +2180,7 @@ class SedmDB:
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
-        elif pardic['id'] not in [x[0] for x in self.execute_sql(
+        elif pardic['id'] not in [ox[0] for ox in self.execute_sql(
                 'SELECT id FROM observation;')]:
             return -1, "ERROR: observation does not exist!"
         keys.remove('id')
@@ -1919,7 +2208,7 @@ class SedmDB:
                        "ProgrammingError!"
         return pardic['id'], "Observation updated, columns " + str(keys)[1:-1]
 
-    def get_from_observation(self, values, where_dict={}, compare_dict={}):
+    def get_from_observation(self, values, where_dict=None, compare_dict=None):
         """
         select values from `observation`
 
@@ -1960,12 +2249,17 @@ class SedmDB:
                 'camera' (str)
 
         Returns:
-            list of tuples containing the values for each observation matching the criteria
+            list of tuples containing the values for each observation
+            matching the criteria
 
             empty list if no observations match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {'id': int, 'object_id': int, 'request_id': int,
                           'mjd': float, 'airmass': float, 'airmass_end': float,
                           'parang': float, 'parang_end': float,
@@ -2021,17 +2315,23 @@ class SedmDB:
 
             (id (long), "Telescope stats added") if successful
         """
-        telstat_types = {'id': int, 'date': 'date', 'dome_status': str, 'in_temp': float, 'in_humidity': float,
-                         'in_dew': float,
-                         'out_temp': float, 'out_humidity': float, 'out_dew': float, 'wind_dir': float,
-                         'wsp_cur': float, 'wsp_avg': float, 'mir_temp': float, 'top_air': float, 'pri_temp': float,
-                         'sec_temp': float, 'flo_temp': float, 'bot_temp': float, 'mid_temp': float, 'top_temp': float,
-                         'observation_id': int}
+        telstat_types = {'id': int, 'date': 'date', 'dome_status': str,
+                         'in_temp': float, 'in_humidity': float,
+                         'in_dew': float, 'out_temp': float,
+                         'out_humidity': float, 'out_dew': float,
+                         'wind_dir': float, 'wsp_cur': float, 'wsp_avg': float,
+                         'mir_temp': float, 'top_air': float, 'pri_temp': float,
+                         'sec_temp': float, 'flo_temp': float,
+                         'bot_temp': float, 'mid_temp': float,
+                         'top_temp': float, 'observation_id': int}
         stat_keys = list(tel_stats.keys())
         for key in reversed(stat_keys):
-            if key not in ['id', 'date', 'dome_status', 'in_temp', 'in_humidity', 'in_dew', 'out_temp', 'out_humidity',
-                           'out_dew', 'wind_dir', 'wsp_cur', 'wsp_avg', 'mir_temp', 'top_air', 'pri_temp', 'sec_temp',
-                           'flo_temp', 'bot_temp', 'mid_temp', 'top_temp', 'observation_id']:
+            if key not in ['id', 'date', 'dome_status', 'in_temp',
+                           'in_humidity', 'in_dew', 'out_temp', 'out_humidity',
+                           'out_dew', 'wind_dir', 'wsp_cur', 'wsp_avg',
+                           'mir_temp', 'top_air', 'pri_temp', 'sec_temp',
+                           'flo_temp', 'bot_temp', 'mid_temp', 'top_temp',
+                           'observation_id']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(stat_keys, tel_stats, telstat_types)
         if type_check:
@@ -2041,15 +2341,18 @@ class SedmDB:
         try:
             self.execute_sql(stat_sql)
         except exc.IntegrityError:
-            return -1, "ERROR: adding tel_stats sql command failed with an IntegrityError!"
+            return -1, "ERROR: adding tel_stats sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: adding tel_stats sql command failed with a ProgrammingError!"
+            return -1, "ERROR: adding tel_stats sql command failed with " \
+                       "a ProgrammingError!"
 
         return id, "Telescope stats added"
 
     # TODO: write update_observation() and update_telescope_stats()
 
-    def get_from_telescope_stats(self, values, where_dict={}, compare_dict={}):
+    def get_from_telescope_stats(self, values, where_dict=None,
+                                 compare_dict=None):
         """
         select values from `telescope_stats`
 
@@ -2085,21 +2388,31 @@ class SedmDB:
                 'top_temp' (float)
 
         Returns:
-            list of tuples containing the values for telescope stats matching the criteria
+            list of tuples containing the values for telescope stats
+            matching the criteria
 
-            empty list if no telescope_stats entries match the ``where_dict`` criteria
+            empty list if no telescope_stats entries match
+            the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'date': 'date', 'dome_status': str, 'in_temp': float, 'in_humidity': float, 'in_dew': float,
-                          'out_temp': float, 'out_humidity': float, 'out_dew': float, 'wind_dir': float,
-                          'wsp_cur': float, 'wsp_avg': float, 'mir_temp': float, 'top_air': float, 'pri_temp': float,
-                          'sec_temp': float, 'flo_temp': float, 'bot_temp': float, 'mid_temp': float, 'top_temp': float,
-                          'observation_id': int, 'id': int}
-
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict,
-                                   'telescope_stats')  # checks type and
-        if sql[0] == 'E':  # if the sql generation returned an error
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'date': 'date', 'dome_status': str, 'in_temp': float,
+                          'in_humidity': float, 'in_dew': float,
+                          'out_temp': float, 'out_humidity': float,
+                          'out_dew': float, 'wind_dir': float,
+                          'wsp_cur': float, 'wsp_avg': float, 'mir_temp': float,
+                          'top_air': float, 'pri_temp': float,
+                          'sec_temp': float, 'flo_temp': float,
+                          'bot_temp': float, 'mid_temp': float,
+                          'top_temp': float, 'observation_id': int, 'id': int}
+        # checks type and if the sql generation returned an error
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'telescope_stats')
+        if sql[0] == 'E':
             return -1, sql
 
         try:
@@ -2113,7 +2426,8 @@ class SedmDB:
     # TODO: separate add_phot/spec and update_phot/spec
     def add_phot(self, pardic):
         """
-        Adds reduced photometry or, if the observation already has photometry, updates it
+        Adds reduced photometry or, if the observation already has photometry,
+        updates it
 
         Args:
             pardic (dict):
@@ -2131,25 +2445,31 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if there was an issue
 
-            (id (long), "Photometry added") if the photometry was added successfully
+            (id (long), "Photometry added") if the photometry was
+                    added successfully
 
-            (id (long), "Photometry updated for observation_id ...") if the photometry existed and was updated
+            (id (long), "Photometry updated for observation_id ...")
+                if the photometry existed and was updated
         """
-        param_types = {'id': int, 'observation_id': int, 'astrometry': 'bool', 'filter': str, 'reducedfile': str,
-                       'sexfile': str,
-                       'maskfile': str, 'pipeline': str, 'marshal_phot_id': int, 'phot_calib_id': int}
-        id = _id_from_time()
-        pardic['id'] = id
+        param_types = {'id': int, 'observation_id': int, 'astrometry': 'bool',
+                       'filter': str, 'reducedfile': str, 'sexfile': str,
+                       'maskfile': str, 'pipeline': str, 'marshal_phot_id': int,
+                       'phot_calib_id': int}
+        pid = _id_from_time()
+        pardic['id'] = pid
         keys = list(pardic.keys())
         if 'observation_id' not in keys:
             return -1, "ERROR: observation_id not provided!"
-        phot_id = self.get_from_phot(['id'], {'observation_id': pardic['observation_id']})
-        if phot_id:  # if there is already an entry for that observation, update instead
+        phot_id = self.get_from_phot(
+            ['id'], {'observation_id': pardic['observation_id']})
+        # if there is already an entry for that observation, update instead
+        if phot_id:
             if phot_id[0] == -1:
                 return phot_id
             for key in reversed(keys):  # TODO: test the updating
                 if key not in ['astrometry', 'filter', 'reducedfile', 'sexfile',
-                               'maskfile', 'pipeline', 'marshal_phot_id', 'phot_calib_id']:
+                               'maskfile', 'pipeline', 'marshal_phot_id',
+                               'phot_calib_id']:
                     return -1, "ERROR: %s is an invalid key!" % (key,)
             pardic['id'] = phot_id[0][0]
             type_check = _data_type_check(keys, pardic, param_types)
@@ -2160,13 +2480,17 @@ class SedmDB:
             try:
                 self.execute_sql(update_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_reduced_photometry update sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_reduced_photometry update sql command " \
+                           "failed with an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_reduced_photometry update sql command failed with a ProgrammingError!"
-            return (phot_id[0][0], "Photometry updated for observation_id %s, columns " % (pardic['observation_id'],)
+                return -1, "ERROR: add_reduced_photometry update sql command " \
+                           "failed with a ProgrammingError!"
+            return (phot_id[0][0], "Photometry updated for observation_id "
+                                   "%s, columns " % (pardic['observation_id'],)
                     + str(keys)[1:-1])
 
-        obs = self.get_from_observation(['fitsfile'], {'id': pardic['observation_id']})
+        obs = self.get_from_observation(['fitsfile'],
+                                        {'id': pardic['observation_id']})
         if not obs:
             return -1, "ERROR: no observation with the observation_id"
         elif obs[0] == -1:
@@ -2175,20 +2499,23 @@ class SedmDB:
             pass
             # TODO: generate the filter here?
 
-        phot_calib = self.get_from_phot_calib(['id'], {'id': pardic['phot_calib_id']})
+        phot_calib = self.get_from_phot_calib(['id'],
+                                              {'id': pardic['phot_calib_id']})
         if not phot_calib:
             return -1, "ERROR: no phot_calib with the phot_calib_id"
         elif phot_calib[0] == -1:
             return phot_calib
 
-        for key in ['observation_id', 'astrometry', 'filter', 'reducedfile', 'sexfile',
-                    'maskfile', 'pipeline', 'phot_calib_id']:  # include 'marshal_phot_id'?
+        for key in ['observation_id', 'astrometry', 'filter', 'reducedfile',
+                    'sexfile', 'maskfile', 'pipeline',
+                    'phot_calib_id']:  # include 'marshal_phot_id'?
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
 
         for key in reversed(keys):  # remove any invalid keys
-            if key not in ['id', 'observation_id', 'astrometry', 'filter', 'reducedfile', 'sexfile',
-                           'maskfile', 'pipeline', 'marshal_phot_id', 'phot_calib_id']:
+            if key not in ['id', 'observation_id', 'astrometry', 'filter',
+                           'reducedfile', 'sexfile', 'maskfile', 'pipeline',
+                           'marshal_phot_id', 'phot_calib_id']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
@@ -2198,11 +2525,13 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_reduced_photometry sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_reduced_photometry sql command failed " \
+                       "with an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_reduced_photometry sql command failed with a ProgrammingError!"
+            return -1, "ERROR: add_reduced_photometry sql command failed " \
+                       "with a ProgrammingError!"
 
-    def get_from_phot(self, values, where_dict={}, compare_dict={}):
+    def get_from_phot(self, values, where_dict=None, compare_dict=None):
         """
         select values from `phot`
 
@@ -2227,17 +2556,25 @@ class SedmDB:
                 'marshal_phot_id' (int/long)
 
         Returns:
-            list of tuples containing the values for phot entries matching the criteria
+            list of tuples containing the values for phot entries
+            matching the criteria
 
             empty list if no phot entries match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'observation_id': int, 'astrometry': 'bool', 'filter': str, 'reducedfile': str,
-                          'sexfile': str,
-                          'maskfile': str, 'pipeline': str, 'marshal_phot_id': int, 'phot_calib_id': int, 'id': int}
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'observation_id': int, 'astrometry': 'bool',
+                          'filter': str, 'reducedfile': str, 'sexfile': str,
+                          'maskfile': str, 'pipeline': str,
+                          'marshal_phot_id': int, 'phot_calib_id': int,
+                          'id': int}
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'phot')  # checks type and
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'phot')  # checks type and
         if sql[0] == 'E':  # if the sql generation returned an error
             return -1, sql
 
@@ -2300,7 +2637,8 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if there was an issue
 
-            (id (long), "Spectrum added")  if the spectrum was added successfully
+            (id (long), "Spectrum added")  if the spectrum
+                                            was added successfully
 
             (id (long), "Spectrum updated for observation_id ...")
                         if the spectrum existed and was updated
@@ -2400,7 +2738,7 @@ class SedmDB:
                            "ProgrammingError!"
             return new_spec_id, "Spectrum added with columns " + str(keys)[1:-1]
 
-    def get_from_spec(self, values, where_dict={}, compare_dict={}):
+    def get_from_spec(self, values, where_dict=None, compare_dict=None):
         """
         select values from `spec`
 
@@ -2460,6 +2798,10 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {'id': int, 'spec_calib_id': int,
                           'observation_id': int, 'asciifile': str,
                           'npyfile': str, 'fitsfile': str, 'imgset': str,
@@ -2509,24 +2851,30 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if there was an issue
 
-            (id (long), "Photometry metrics updated for phot_id ...") if it updated existing metrics
+            (id (long), "Photometry metrics updated for phot_id ...")
+                            if it updated existing metrics
 
-            (id (long), "Photometry metrics added") if the metrics were added successfully
+            (id (long), "Photometry metrics added") if the metrics
+                            were added successfully
         """
-        param_types = {'id': int, 'phot_id': int, 'fwhm': float, 'background': float, 'zp': float,
-                       'zperr': float, 'ellipticity': float, 'nsources': int}
-        id = _id_from_time()
-        pardic['id'] = id
+        param_types = {'id': int, 'phot_id': int, 'fwhm': float,
+                       'background': float, 'zp': float, 'zperr': float,
+                       'ellipticity': float, 'nsources': int}
+        mid = _id_from_time()
+        pardic['id'] = mid
         # TODO: which parameters are required? test
         keys = list(pardic.keys())
         if 'phot_id' not in keys:
             return -1, "ERROR: phot_id not provided!"
-        metric_id = self.get_from_metrics_phot(['id'], {'phot_id': pardic['phot_id']})
-        if metric_id:  # if there is already an entry for that observation, update instead
+        metric_id = self.get_from_metrics_phot(['id'],
+                                               {'phot_id': pardic['phot_id']})
+        # if there is already an entry for that observation, update instead
+        if metric_id:
             if metric_id[0] == -1:
                 return metric_id
             for key in reversed(keys):  # TODO: test the updating
-                if key not in ['fwhm', 'background', 'zp', 'zperr', 'ellipticity', 'nsources']:
+                if key not in ['fwhm', 'background', 'zp', 'zperr',
+                               'ellipticity', 'nsources']:
                     return -1, "ERROR: %s is an invalid key!" % (key,)
             pardic['id'] = metric_id[0][0]
             type_check = _data_type_check(keys, pardic, param_types)
@@ -2537,10 +2885,13 @@ class SedmDB:
             try:
                 self.execute_sql(update_sql)
             except exc.IntegrityError:
-                return -1, "ERROR: add_metrics_phot update sql command failed with an IntegrityError!"
+                return -1, "ERROR: add_metrics_phot update sql command " \
+                           "failed with an IntegrityError!"
             except exc.ProgrammingError:
-                return -1, "ERROR: add_metrics_phot update sql command failed with a ProgrammingError!"
-            return (metric_id[0][0], "Photometry metrics updated for phot_id %s, columns " % (pardic['phot_id'],)
+                return -1, "ERROR: add_metrics_phot update sql command " \
+                           "failed with a ProgrammingError!"
+            return (metric_id[0][0], "Photometry metrics updated for phot_"
+                                     "id %s, columns " % (pardic['phot_id'],)
                     + str(keys)[1:-1])
         ph_id = self.get_from_phot(['id'], {'id': pardic['phot_id']})
         if not ph_id:
@@ -2548,12 +2899,14 @@ class SedmDB:
         elif ph_id[0] == -1:
             return ph_id
 
-        for key in ['fwhm', 'background', 'zp', 'zperr', 'ellipticity', 'nsources']:  # phot_id already tested
+        for key in ['fwhm', 'background', 'zp', 'zperr', 'ellipticity',
+                    'nsources']:  # phot_id already tested
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
 
         for key in reversed(keys):
-            if key not in ['id', 'phot_id', 'fwhm', 'background', 'zp', 'zperr', 'ellipticity', 'nsources']:
+            if key not in ['id', 'phot_id', 'fwhm', 'background', 'zp', 'zperr',
+                           'ellipticity', 'nsources']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         type_check = _data_type_check(keys, pardic, param_types)
         if type_check:
@@ -2563,12 +2916,14 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_metrics_phot sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_metrics_phot sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_metrics_phot sql command failed with a ProgrammingError!"
-        return id, "Photometry metrics added"
+            return -1, "ERROR: add_metrics_phot sql command failed with " \
+                       "a ProgrammingError!"
+        return mid, "Photometry metrics added"
 
-    def get_from_metrics_phot(self, values, where_dict):
+    def get_from_metrics_phot(self, values, where_dict=None, compare_dict=None):
         """
         select values from `metrics_phot`
 
@@ -2577,6 +2932,9 @@ class SedmDB:
                 values to be returned
             where_dict (dict):
                 'param':'value' to be used as WHERE clauses
+            compare_dict (dict): default is {}
+                'param': 'inequality' (i.e. '>', '<', '>=', '<=', '<>', '!='))
+                if no inequality is provided, '=' is assumed
             values/keys options:
                 'id' (int/long),
                 'phot_id' (int/long),
@@ -2588,17 +2946,26 @@ class SedmDB:
                 'nsources' (int)
 
         Returns:
-            list of tuples containing the values for metrics matching the criteria
+            list of tuples containing the values for metrics
+            matching the criteria
 
-            empty list if no metrics_phot entries match the ``where_dict`` criteria
+            empty list if no metrics_phot entries match
+            the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
-        allowed_params = {'phot_id': int, 'fwhm': float, 'background': float, 'zp': float,
-                          'zperr': float, 'ellipticity': float, 'nsources': int, 'id': int}
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
+        allowed_params = {'phot_id': int, 'fwhm': float, 'background': float,
+                          'zp': float, 'zperr': float, 'ellipticity': float,
+                          'nsources': int, 'id': int}
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, 'metrics_phot')  # checks type and
-        if sql[0] == 'E':  # if the sql generation returned an error
+        # checks type and if the sql generation returned an error
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'metrics_phot')
+        if sql[0] == 'E':
             return -1, sql
 
         try:
@@ -2611,7 +2978,8 @@ class SedmDB:
 
     def add_phot_calib(self, pardic):
         """
-        Creates a new object in the phot calib table with the parameters specified in the dictionary.
+        Creates a new object in the phot calib table with the parameters
+        specified in the dictionary.
 
         Args:
             pardic:
@@ -2622,11 +2990,12 @@ class SedmDB:
         Returns:
             (-1: "ERROR...") if there is an issue
 
-            (id (long), "Photometry calibration added") if it completes successfully
+            (id (long), "Photometry calibration added")
+                                if it completes successfully
         """
         param_types = {'id': int, 'bias': str, 'flat': str}
-        id = _id_from_time()
-        pardic['id'] = id
+        cid = _id_from_time()
+        pardic['id'] = cid
         keys = list(pardic.keys())
 
         for key in ['bias', 'flat']:  # phot_id already tested
@@ -2645,10 +3014,12 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: add_phot_calib sql command failed with an IntegrityError!"
+            return -1, "ERROR: add_phot_calib sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: add_phot_calib sql command failed with a ProgrammingError!"
-        return id, "Photometry calibration added"
+            return -1, "ERROR: add_phot_calib sql command failed with " \
+                       "a ProgrammingError!"
+        return cid, "Photometry calibration added"
 
     def update_phot_calib(self, pardic):
         """
@@ -2665,17 +3036,21 @@ class SedmDB:
         Returns:
             (-1, "ERROR...") if it failed to update
 
-            (id (long), "Phot_calib updated, columns 'column_names'") if the entry is updated successfully
+            (id (long), "Phot_calib updated, columns 'column_names'")
+                            if the entry is updated successfully
         """
         param_types = {'id': int, 'bias': str, 'flat': str}
         keys = list(pardic.keys())
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
 
-        elif pardic['id'] not in [x[0] for x in self.execute_sql('SELECT id FROM phot_calib;')]:
+        elif pardic['id'] not in [cx[0] for cx in
+                                  self.execute_sql(
+                                      'SELECT id FROM phot_calib;')]:
             return -1, "ERROR: no phot_calib entry with the id!"
         keys.remove('id')
-        for key in reversed(keys):  # remove any keys that are invalid or not allowed to be updated
+        # remove any keys that are invalid or not allowed to be updated
+        for key in reversed(keys):
             if key not in ['bias', 'flat']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
         if len(keys) == 0:
@@ -2688,12 +3063,14 @@ class SedmDB:
         try:
             self.execute_sql(sql)
         except exc.IntegrityError:
-            return -1, "ERROR: update_phot_calib sql command failed with an IntegrityError!"
+            return -1, "ERROR: update_phot_calib sql command failed with " \
+                       "an IntegrityError!"
         except exc.ProgrammingError:
-            return -1, "ERROR: update_phot_calib sql command failed with a ProgrammingError!"
+            return -1, "ERROR: update_phot_calib sql command failed with " \
+                       "a ProgrammingError!"
         return pardic['id'], "Phot_calib updated, columns " + str(keys)[1:-1]
 
-    def get_from_phot_calib(self, values, where_dict={}, compare_dict={}):
+    def get_from_phot_calib(self, values, where_dict=None, compare_dict=None):
         """
         select values from `phot_calib`
 
@@ -2710,16 +3087,24 @@ class SedmDB:
                 'bias' (abspath str)
                 'flat' (abspath str)
         Returns:
-            list of tuples containing the values for calibration matching the criteria
+            list of tuples containing the values for calibration
+            matching the criteria
 
-            empty list if no phot_calib entries match the ``where_dict`` criteria
+            empty list if no phot_calib entries
+            match the ``where_dict`` criteria
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {'id': int, 'bias': str, 'flat': str}
 
-        sql = _generate_select_sql(values, where_dict, allowed_params, compare_dict, 'phot_calib')  # checks type and
-        if sql[0] == 'E':  # if the sql generation returned an error
+        # checks type and if the sql generation returned an error
+        sql = _generate_select_sql(values, where_dict, allowed_params,
+                                   compare_dict, 'phot_calib')
+        if sql[0] == 'E':
             return -1, sql
 
         try:
@@ -2856,8 +3241,8 @@ class SedmDB:
                 return -1, "ERROR: add_spec_calib sql command failed with a " \
                            "ProgrammingError!"
             except psycopg2.IntegrityError:
-                return -1, "ERROR(psycopg2): inserting spec_calib sql command " \
-                           "failed with an IntegrityError!"
+                return -1, "ERROR(psycopg2): inserting spec_calib sql " \
+                           "command failed with an IntegrityError!"
             return new_spec_calib_id, "Spectrum calibration added"
 
     def update_spec_calib(self, pardic):
@@ -2919,7 +3304,7 @@ class SedmDB:
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
         # Test if id exists
-        elif pardic['id'] not in [x[0] for x in self.execute_sql(
+        elif pardic['id'] not in [sx[0] for sx in self.execute_sql(
                 'SELECT id FROM spec_calib;')]:
             return -1, "ERROR: no spec_calib entry with the id!"
         keys.remove('id')
@@ -2949,7 +3334,7 @@ class SedmDB:
                        "failed with an IntegrityError!"
         return pardic['id'], "Spec_calib updated, columns " + str(keys)[1:-1]
 
-    def get_from_spec_calib(self, values, where_dict={}, compare_dict={}):
+    def get_from_spec_calib(self, values, where_dict=None, compare_dict=None):
         """
         select values from `spec_calib`
 
@@ -2997,6 +3382,10 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {'id': int, 'dome_master': str,
                           'bias_slow_master': str, 'bias_fast_master': str,
                           'flat': str, 'cosmic_filter': bool, 'drpver': str,
@@ -3127,7 +3516,7 @@ class SedmDB:
         if 'id' not in keys:
             return -1, "ERROR: id not provided!"
         # Test if id exists
-        elif pardic['id'] not in [x[0] for x in self.execute_sql(
+        elif pardic['id'] not in [cx[0] for cx in self.execute_sql(
                 'SELECT id FROM cube;')]:
             return -1, "ERROR: no cube entry with the id!"
         keys.remove('id')
@@ -3154,7 +3543,7 @@ class SedmDB:
                        "ProgrammingError!"
         return pardic['id'], "Cube updated, columns " + str(keys)[1:-1]
 
-    def get_from_cube(self, values, where_dict={}, compare_dict={}):
+    def get_from_cube(self, values, where_dict=None, compare_dict=None):
         """
         select values from `flexure`
 
@@ -3185,6 +3574,10 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {
             'id': int, 'observation_id': int,
             'ccd_x_flex_corr': bool, 'ccd_x_flex_px': float,
@@ -3402,7 +3795,8 @@ class SedmDB:
                        "a ProgrammingError!"
         return class_id, "Classification updated, columns " + str(keys)[1:-1]
 
-    def get_from_classification(self, values, where_dict={}, compare_dict={}):
+    def get_from_classification(self, values, where_dict=None,
+                                compare_dict=None):
         """
         select values from `classification`
 
@@ -3439,6 +3833,10 @@ class SedmDB:
 
             (-1, "ERROR...") if there was an issue
         """
+        if where_dict is None:
+            where_dict = {}
+        if compare_dict is None:
+            compare_dict = {}
         allowed_params = {
                 'id': int, 'spec_id': int, 'object_id': int,
                 'classification': str, 'redshift': float, 'auto': bool,
@@ -3467,7 +3865,8 @@ class SedmDB:
 
     def update_allocation_time(self, allocation_id):
         """
-        Searches for all the completed requests under that allocation and updates the time take to execute it.
+        Searches for all the completed requests under that allocation and
+        updates the time take to execute it.
         Updates the field" time_spent
 
         Args:
@@ -3477,19 +3876,23 @@ class SedmDB:
 
         exptime = self.execute_sql("""SELECT exptime 
                                     FROM request 
-                                    WHERE status ='COMPLETED' and allocation_id = %d;""" % allocation_id)
+                                    WHERE status ='COMPLETED' 
+                                    AND allocation_id = %d;""" % allocation_id)
 
         if len(exptime) == 0:
-            self.update_allocation({"id": allocation_id, "time_spent": timedelta(days=0.0)})
+            self.update_allocation({"id": allocation_id,
+                                    "time_spent": timedelta(days=0.0)})
         else:
             reqsum = [np.sum(e) for e in exptime]
             time_spent = np.sum(reqsum)
 
-            self.update_allocation({"id": allocation_id, "time_spent": time_spent})
+            self.update_allocation({"id": allocation_id,
+                                    "time_spent": time_spent})
 
     def get_allocation_spent_time(self, allocation_id, inidate, enddate):
         """
-        Searches for all the completed requests under that allocation and updates the time take to execute it.
+        Searches for all the completed requests under that allocation and
+        updates the time take to execute it.
         Updates the field" time_spent
 
         Args:
@@ -3497,7 +3900,7 @@ class SedmDB:
                 Id of the allocation to update.
 
             inidate: datetime
-                Beginning of the time to compute the spent time for the allocation.
+                Starting time to compute the spent time for the allocation.
 
             enddate: datetime
                 End of the time to compute the spent time for the allocation.
@@ -3505,9 +3908,11 @@ class SedmDB:
 
         exptime = self.execute_sql("""SELECT exptime 
                                     FROM request 
-                                    WHERE status ='COMPLETED' AND allocation_id = %d
-                                    AND lastmodified>DATE('%s') AND lastmodified<DATE('%s');""" % (
-        allocation_id, inidate, enddate))
+                                    WHERE status ='COMPLETED' 
+                                    AND allocation_id = %d
+                                    AND lastmodified>DATE('%s') 
+                                    AND lastmodified<DATE('%s');"""
+                                   % (allocation_id, inidate, enddate))
 
         if len(exptime) == 0:
             time_spent = 0
@@ -3527,14 +3932,15 @@ class SedmDB:
             print(int(a[0]))
             self.update_allocation_time(int(a[0]))
 
-    def send_email_by_request(self, requestid=None,userid=None,
-                              to=None, msg=None, subject=None,
+    def send_email_by_request(self, requestid=None, to=None, subject=None,
                               template='', template_dict=None):
         """
         Allow 
-        :param requestid: 
-        :param msg: 
-        :param use_html: 
+        :param requestid:
+        :param to:
+        :param subject:
+        :param template:
+        :param template_dict:
         :return: 
         """
         msg = EmailMessage()
@@ -3545,8 +3951,8 @@ class SedmDB:
             msg['To'] = to
         else:
             try:
-                userid = self.get_from_request(values=['user_id'],
-                                            where_dict={'id': requestid})[0][0]
+                userid = self.get_from_request(
+                    values=['user_id'], where_dict={'id': requestid})[0][0]
             except IndexError:
                 return "Unable to retrieve userid from database"
 
@@ -3585,6 +3991,7 @@ class SedmDB:
         with smtplib.SMTP('smtp-server.astro.caltech.edu') as s:
             s.send_message(msg)
 
+
 def _data_type_check(keys, pardic, value_types):
     """
     make sure the values given match the data types required in the database
@@ -3592,7 +3999,8 @@ def _data_type_check(keys, pardic, value_types):
     Args:
         keys (list): keys to be tested
         pardic (dict): keys and keys' values
-        value_types (dict): keys and types the values should be (e.g. {'ra': float})
+        value_types (dict): keys and types the values should be
+                            (e.g. {'ra': float})
 
         types are: str, float, int, 'date', 'datetime', 'bool'
 
@@ -3616,32 +4024,39 @@ def _data_type_check(keys, pardic, value_types):
             try:
                 pardic[key] = long(pardic[key])
             except (ValueError, TypeError):
-                return "ERROR: %s must be of %s or %s!" % (key, str(int)[1:-1], str(long)[1:-1])
+                return "ERROR: %s must be of %s or %s!" % (key, str(int)[1:-1],
+                                                           str(long)[1:-1])
         elif value_types[key] == 'date':
             try:
                 pardic[key] = str(Time(pardic[key])).split(' ')[0]
             except (ValueError, TypeError):
-                return "ERROR: %s must be of the format 'year-month-day'!" % (key,)
+                return "ERROR: %s must be of the format 'year-month-day'!" \
+                       % (key,)
         elif value_types[key] == 'datetime':
             try:
                 pardic[key] = str(Time(pardic[key]))
             except (ValueError, TypeError):
-                return "ERROR: %s must be of the format 'year-month-day hour:minute:second'!" % (key,)
+                return "ERROR: %s must be of " \
+                       "the format 'year-month-day hour:minute:second'!" \
+                       % (key,)
         elif value_types[key] == 'timedelta':
             if not isinstance(pardic[key], timedelta):
                 try:
                     pardic[key] = timedelta(0, pardic[key])
                 except (TypeError, ValueError):
-                    return "ERROR: %s must be a datetime.timedelta object or a float(seconds)!" % (key,)
+                    return "ERROR: %s must be a datetime.timedelta object " \
+                           "or a float(seconds)!" % (key,)
         elif value_types[key] == 'bool':
             if not (pardic[key] == 'false' or pardic[key] == 'true'):
                 return "ERROR: %s must be either 'true' or 'false'" % (key,)
         elif not isinstance(pardic[key], value_types[key]):
-            return "ERROR: parameter %s must be of %s!" % (key, str(value_types[key])[1:-1])
+            return "ERROR: parameter %s must be of %s!" % (
+                key, str(value_types[key])[1:-1])
     return None
 
 
-def _generate_select_sql(values, where_dict, allowed_params, compare_dict, table):
+def _generate_select_sql(values, where_dict, allowed_params, compare_dict,
+                         table):
     """
     generate the sql for a select query
 
@@ -3651,7 +4066,8 @@ def _generate_select_sql(values, where_dict, allowed_params, compare_dict, table
         where_dict (dict):
             {'param':'value',...} adds WHERE param='value'...
         allowed_params (dict):
-            the parameters of the table to be queried and their type {'param':type,...}
+            the parameters of the table to be queried and their type
+             {'param':type,...}
         compare_dict (dict): default is {}
             {'param': 'inequality',...} (i.e. '>', '<', '>=', '<=', '<>', '!='))
             if no inequality is provided, '=' is assumed
@@ -3669,7 +4085,8 @@ def _generate_select_sql(values, where_dict, allowed_params, compare_dict, table
     where_keys = list(where_dict.keys())
     for param in reversed(where_keys):
         if param not in allowed_params:
-            return "ERROR: requested condition on nonexistent column '%s'!" % (param,)
+            return "ERROR: requested condition on nonexistent column '%s'!" % (
+                param,)
     type_check = _data_type_check(where_keys, where_dict, allowed_params)
     if type_check:
         return type_check
@@ -3685,7 +4102,8 @@ def _generate_select_sql(values, where_dict, allowed_params, compare_dict, table
     if where_keys:
         sql += " WHERE"
         for key in where_keys:
-            sql += " %s %s '%s' AND" % (key, compare_dict.get(key, '='), where_dict[key])
+            sql += " %s %s '%s' AND" % (key, compare_dict.get(key, '='),
+                                        where_dict[key])
         sql = sql[:-4] + ";"
     return sql
 
@@ -3742,21 +4160,22 @@ def _generate_update_sql(pardic, param_list, table, lastmodified=False):
 def _id_from_time():
     """Generate an id from the current time of format YYYYMMDDHHMMSSsss"""
     time = Time.now()
-    id = time.iso
-    id = id.replace('-', '').replace(' ', '').replace(':', '').replace('.', '')
-    return long(id)
+    tid = time.iso
+    tid = tid.replace(
+        '-', '').replace(' ', '').replace(':', '').replace('.', '')
+    return long(tid)
+
 
 if __name__ == "__main__":
-    import datetime
+    # import datetime
     x = SedmDB(host="pharos.caltech.edu")
     print(x.expire_requests())
-    
 
-    #print(x.add_user(d))
+    # print(x.add_user(d))
 
-    #(20191015210231397, 'cbarbarino')
-    #(20191015210513512, 'tleonardo')
-    #20170826174800000
+    # (20191015210231397, 'cbarbarino')
+    # (20191015210513512, 'tleonardo')
+    # 20170826174800000
     """obsdict = {
         'object_id': 20190811030012746,
         'user_id': 189,
