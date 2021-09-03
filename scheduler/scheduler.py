@@ -321,14 +321,14 @@ class ScheduleNight:
                       ]
         for row in target_list.itertuples():
             print(start_time.iso, end_time.iso)
-            x = astroplan.is_observable(constraint, self.obs_site,
-                                        row.FixedObject,
-                                        times=[start_time, end_time])
-            y = astroplan.is_event_observable(constraint, self.obs_site,
-                                              row.FixedObject,
-                                              times=[start_time, end_time])
-            print(x, y)
-            if not x:
+            tx = astroplan.is_observable(constraint, self.obs_site,
+                                         row.FixedObject,
+                                         times=[start_time, end_time])
+            ty = astroplan.is_event_observable(constraint, self.obs_site,
+                                               row.FixedObject,
+                                               times=[start_time, end_time])
+            print(tx, ty)
+            if not tx:
                 print(row.objname)
                 target_list = target_list[target_list.req_id != row.req_id]
 

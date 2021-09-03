@@ -2105,7 +2105,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
         all_requests = all_requests[time - 12 * u.hour
                                     <= all_requests['startdate']
                                     < time + 12 * u.hour]
-    midnight = time - utcoffset # 7am local time of correct date, midnight UTC
+    midnight = time - utcoffset  # 7am local time of correct date, midnight UTC
 
     delta_midnight = np.linspace(-8, 8, 500) * u.hour
     t = midnight + delta_midnight

@@ -90,11 +90,11 @@ def get_keywords_from_file(inputfile, keywords, sep=':'):
     return return_dict
 
 
-def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
+def upload_phot(phot_file, inst_id=65, request_id='', testing=False):
     """
 
     :param phot_file:
-    :param instrument_id:
+    :param inst_id:
     :param request_id:
     :param testing:
     :return:
@@ -127,7 +127,7 @@ def upload_phot(phot_file, instrument_id=65, request_id='', testing=False):
         photometry_list.append(new_dict)
 
         submission_dict = {
-            'photometry_list': photometry_list, 'instrument_id': instrument_id,
+            'photometry_list': photometry_list, 'instrument_id': inst_id,
             'request_id': request_id
         }
 
