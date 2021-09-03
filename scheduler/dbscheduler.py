@@ -10,100 +10,122 @@ import os
 import psycopg2.extras
 import psycopg2
 import time
-import sys
-sys.path.append('/scr2/sedm/SEDMv5')
-from utils import obstimes
-#from utils import sedmpy_import
+
+import obstimes
 import sqlite3
-from sky.growth.marshal import interface
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
+from configparser import ConfigParser
+import codecs
+
+# Get scheduler configuration
+cfg_parser = ConfigParser()
+# Find config file: default is sedmpy/config/schedulerconfig.cfg
+try:
+    configfile = os.environ["SEDMSCHEDULERCONFIG"]
+except KeyError:
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              "../config/schedulerconfig.cfg")
+with codecs.open(configfile, 'r') as f:
+    cfg_parser.read_file(f)
+_dbconn = {"host": cfg_parser.get("dbconn", "host"),
+           "port": cfg_parser.get("dbconn", "port"),
+           "dbname": cfg_parser.get("dbconn", "dbname"),
+           "user": cfg_parser.get("dbconn", "user"),
+           "password": cfg_parser.get("dbconn", "password")
+           }
+
+_standard_db = cfg_parser.get("paths", "standard_db")
+_target_dir = cfg_parser.get("paths", "target_dir")
+_schedule = cfg_parser.get("paths", "schedule")
 
 
-# noinspection SqlNoDataSourceInspection
 class Scheduler:
-    def __init__(self, config='schedulerconfig.json',
-                 site_name='Palomar', obsdatetime=None,
+    def __init__(self, site_name='Palomar', obsdatetime=None,
                  save_as="targets.json"):
 
-        self.scheduler_config_file = config
-        with open(os.path.join(SITE_ROOT, 'config', config)) as data_file:
-            params = json.load(data_file)
-        self.path = params["standard_db"]
-        self.target_dir = params["target_dir"]
+        self.scheduler_config_file = configfile
+        # Open the file with the correct encoding
+
+        self.standard_db = _standard_db
+        self.target_dir = _target_dir
         self.standard_dict = {}
         self.standard_star_list = []
 
         self.site_name = site_name
         self.times = obstimes.ScheduleNight()
         self.obs_times = self.times.get_observing_times_by_date()
+        self.running_obs_time = None
         self.site = EarthLocation.of_site(self.site_name)
-        self.obs_site_plan = astroplan.Observer.at_site(site_name=self.site_name)
+        self.obs_site_plan = astroplan.Observer.at_site(
+            site_name=self.site_name)
         self.obsdatetime = obsdatetime
         self.save_as = save_as
-        self.dbconn = psycopg2.connect(**params["dbconn"])
-        #self.ph_db = sedmpy_import.dbconnect()
-        self.growth = interface()
-        self.query = Template("SELECT r.id AS req_id, r.object_id AS obj_id, \n"
-                              "r.user_id, r.marshal_id, r.exptime, r.maxairmass,\n"
-                              "r.max_fwhm, r.min_moon_dist, r.max_moon_illum, \n"
-                              "r.max_cloud_cover, r.status, \n"
-                              "r.priority AS reqpriority, r.inidate, r.enddate,\n"
-                              "r.cadence, r.phasesamples, r.sampletolerance, \n"
-                              "r.filters, r.nexposures, r.obs_seq, r.seq_repeats,\n"
-                              "r.seq_completed, r.last_obs_jd, r.creationdate,\n"
-                              "r.lastmodified, r.allocation_id, r.marshal_id, \n"
-                              "o.id AS obj_id, o.name AS objname, o.iauname, o.ra, o.\"dec\",\n"
-                              "o.typedesig, o.epoch, o.magnitude, o.creationdate, \n"
-                              "u.id, u.email, a.id AS allocation_id, \n"
-                              "a.inidate, a.enddate, a.time_spent, a.designator as p60prid, \n"
-                              "a.time_allocated, a.program_id, a.active, \n"
-                              "p.designator, p.name, p.group_id, p.pi,\n"
-                              "p.time_allocated, r.priority, p.inidate,\n"
-                              "p.enddate, pe.mjd0, pe.phasedays, pe.phi,\n"
-                              "r.phase, r.sampletolerance\n"
-                              "FROM \"public\".request r\n"
-                              "INNER JOIN \"public\".\"object\" o ON (r.object_id = o.id)\n"
-                              "INNER JOIN \"public\".users u ON (r.user_id = u.id)\n"
-                              "INNER JOIN \"public\".allocation a ON (r.allocation_id = a.id)\n"
-                              "INNER JOIN \"public\".program p ON (a.program_id = p.id)\n"
-                              "LEFT JOIN \"public\".periodic pe on (pe.object_id=o.id)\n"
-                              "${where_statement}\n"
-                              "${and_statement}\n"
-                              "${group_statement}\n"
-                              "${order_statement}")
+        self.dbconn = psycopg2.connect(_dbconn)
+        # self.ph_db = sedmpy_import.dbconnect()
+        self.query = Template(
+            "SELECT r.id AS req_id, r.object_id AS obj_id, \n"
+            "r.user_id, r.marshal_id, r.exptime, r.maxairmass,\n"
+            "r.max_fwhm, r.min_moon_dist, r.max_moon_illum, \n"
+            "r.max_cloud_cover, r.status, \n"
+            "r.priority AS reqpriority, r.inidate, r.enddate,\n"
+            "r.cadence, r.phasesamples, r.sampletolerance, \n"
+            "r.filters, r.nexposures, r.obs_seq, r.seq_repeats,\n"
+            "r.seq_completed, r.last_obs_jd, r.creationdate,\n"
+            "r.lastmodified, r.allocation_id, r.marshal_id, \n"
+            "o.id AS obj_id, o.name AS objname, o.iauname, o.ra, o.\"dec\",\n"
+            "o.typedesig, o.epoch, o.magnitude, o.creationdate, \n"
+            "u.id, u.email, a.id AS allocation_id, \n"
+            "a.inidate, a.enddate, a.time_spent, a.designator as p60prid, \n"
+            "a.time_allocated, a.program_id, a.active, \n"
+            "p.designator, p.name, p.group_id, p.pi,\n"
+            "p.time_allocated, r.priority, p.inidate,\n"
+            "p.enddate, pe.mjd0, pe.phasedays, pe.phi,\n"
+            "r.phase, r.sampletolerance\n"
+            "FROM \"public\".request r\n"
+            "INNER JOIN \"public\".\"object\" o ON (r.object_id = o.id)\n"
+            "INNER JOIN \"public\".users u ON (r.user_id = u.id)\n"
+            "INNER JOIN \"public\".allocation a ON (r.allocation_id = a.id)\n"
+            "INNER JOIN \"public\".program p ON (a.program_id = p.id)\n"
+            "LEFT JOIN \"public\".periodic pe on (pe.object_id=o.id)\n"
+            "${where_statement}\n"
+            "${and_statement}\n"
+            "${group_statement}\n"
+            "${order_statement}"
+        )
 
-        self.tr_row = Template("""<tr id="${allocation}">
-                               <td>${obstime}</td>
-                               <td>${objname}</td>
-                               <td>${priority}</td>
-                               <td>${project}</td>
-                               <td>${ra}</td>
-                               <td>${dec}</td>
-                               <td>${start_ha}</td>
-                               <td>${end_ha}</td>
-                               <td>${ifu_exptime}</td>
-                               <td>Filters:${rc_seq}<br>Exptime:${rc_exptime}</td>
-                               <td>${total}</td>
-                               <td><a href='request?request_id=${request_id}'>+</a></td>
-                               <td>${rejects}</td>
-                               </tr>""")
+        self.tr_row = Template(
+            """<tr id="${allocation}">
+               <td>${obstime}</td>
+               <td>${objname}</td> 
+               <td>${priority}</td> 
+               <td>${project}</td> 
+               <td>${ra}</td> 
+               <td>${dec}</td> 
+               <td>${start_ha}</td> 
+               <td>${end_ha}</td> 
+               <td>${ifu_exptime}</td> 
+               <td>Filters:${rc_seq}<br>Exptime:${rc_exptime}</td> 
+               <td>${total}</td> 
+               <td><a href='request?request_id=${request_id}'>+</a></td> 
+               <td>${rejects}</td> 
+               </tr>"""
+        )
 
-    def __load_targets_from_db(self):
+    def __load_standards_from_db(self):
         """
         Open the sqlite database of targets
-        pacfic
 
         :return:
         """
-        print(self.path)
-        conn = sqlite3.connect(self.path)
+        print(self.standard_db)
+        conn = sqlite3.connect(self.standard_db)
         cur = conn.cursor()
 
         results = cur.execute("SELECT * FROM standards")
         standards = results.fetchall()
         for s in standards:
-            name, ra, dec, exptime = s[0].rstrip().encode('utf8'), s[3], s[4], s[5]
+            name, ra, dec, exptime = s[0].rstrip().encode('utf8'), s[3], s[4],\
+                                     s[5]
 
             if name.upper() == 'LB227':
                 continue
@@ -121,13 +143,12 @@ class Scheduler:
         """
         If the name is not given find the closest standard star to zenith
         :param name:
-        :param ra:
-        :param dec:
+        :param obsdate:
         :return:
         """
         print("Choosing a standard")
         start = time.time()
-        self.__load_targets_from_db()
+        self.__load_standards_from_db()
         if not obsdate:
             obsdate = datetime.datetime.utcnow()
 
@@ -140,7 +161,7 @@ class Scheduler:
                 print(standard)
                 airmass = self.obs_site_plan.altaz(obsdate, standard).secz
 
-                if airmass < sairmass and airmass > 0:
+                if sairmass > airmass > 0:
                     target = standard
                     sairmass = airmass
                     name = target.name
@@ -153,7 +174,7 @@ class Scheduler:
         """
         Parse database target scheme
 
-        :param target:
+        :param row:
         :return:
         """
 
@@ -176,7 +197,7 @@ class Scheduler:
         exptime = list(exp_time_list)
 
         # 2. Remove ifu observations first if they exist
-        index = [i for i, s in enumerate(seq) if 'ifu' in s]
+        index = [i for i, sq in enumerate(seq) if 'ifu' in sq]
 
         if index:
             for j in index:
@@ -297,9 +318,9 @@ class Scheduler:
                                                   horizon=15 * u.degree,
                                                   which="next")
 
-    def _convert_row_to_json(self, row, fields=('name', 'ra', 'dec',
-                                               'obj_id', 'req_id',
-                                               'email', 'objname', 'pi')):
+    def _convert_row_to_json(self, row):    # , fields=('name', 'ra', 'dec',
+                                            #     'obj_id', 'req_id',
+                                            #     'email', 'objname', 'pi')):
         """
 
         :param row:
@@ -316,7 +337,8 @@ class Scheduler:
     def simulate_night(self, start_time='', end_time='', do_focus=True,
                        do_standard=True, target_list=None,
                        get_current_observation=True,
-                       return_type='html', sort_columns=('priority', 'start_alt'),
+                       return_type='html',
+                       sort_columns=('priority', 'start_alt'),
                        sort_order=(False, False), ):
         """
 
@@ -324,9 +346,11 @@ class Scheduler:
         :param end_time:
         :param do_focus:
         :param do_standard:
-        :param block_list:
-        :param add_columns:
-        :param save_as:
+        :param target_list:
+        :param get_current_observation:
+        :param return_type:
+        :param sort_columns:
+        :param sort_order:
         :return:
         """
 
@@ -383,7 +407,8 @@ class Scheduler:
 
         while current_time <= end_time:
             targets = self.update_targets_coords(targets, current_time)['data']
-            targets = targets.sort_values(list(sort_columns), ascending=list(sort_order))
+            targets = targets.sort_values(list(sort_columns),
+                                          ascending=list(sort_order))
             print("Using input datetime of: ", current_time.iso)
             # Include focus time?
             if do_focus:
@@ -400,33 +425,40 @@ class Scheduler:
 
             self.running_obs_time = current_time
 
-            z = self.get_next_observable_target(targets, obsdatetime=current_time,
+            z = self.get_next_observable_target(targets,
+                                                obsdatetime=current_time,
                                                 update_coords=False,
-                                                return_type=return_type, do_sort=False)
+                                                return_type=return_type,
+                                                do_sort=False)
 
-            # targets = self.remove_setting_targets(targets, start_time=current_time,
-            #                                      end_time=end_time)
+            # targets = self.remove_setting_targets(targets,
+            #                                       start_time=current_time,
+            #                                       end_time=end_time)
 
             idx, t = z
 
             if not idx:
                 print(len(targets))
                 if return_type == 'html':
-                    html_str += self.tr_row.substitute({'allocation': "",
-                                                        'obstime': current_time.iso,
-                                                        'objname': "Standard",
-                                                        'priority': "",
-                                                        'project': "Calib",
-                                                        'ra': "",
-                                                        'dec': "",
-                                                        'start_ha': "",
-                                                        'end_ha': "",
-                                                        'ifu_exptime': 300,
-                                                        'rc_seq': "",
-                                                        'rc_exptime': "",
-                                                        'total': 300,
-                                                        'request_id': "NA",
-                                                        'rejects': ""})
+                    html_str += self.tr_row.substitute(
+                        {
+                            'allocation': "",
+                            'obstime': current_time.iso,
+                            'objname': "Standard",
+                            'priority': "",
+                            'project': "Calib",
+                            'ra': "",
+                            'dec': "",
+                            'start_ha': "",
+                            'end_ha': "",
+                            'ifu_exptime': 300,
+                            'rc_seq': "",
+                            'rc_exptime': "",
+                            'total': 300,
+                            'request_id': "NA",
+                            'rejects': ""
+                        }
+                    )
                 current_time += TimeDelta(300, format='sec')
             else:
                 if return_type == 'html':
@@ -434,10 +466,12 @@ class Scheduler:
                     t = t[0]
 
                 targets = targets[targets.req_id != idx]
-                current_time += TimeDelta(t['total']*1.2 + 120, format='sec')  # Adding overhead
+                # Adding overhead
+                current_time += TimeDelta(t['total']*1.2 + 120, format='sec')
 
         if return_type == 'html':
-            html_str += "</table><br>Last Updated:%s UT" % datetime.datetime.utcnow()
+            html_str += "</table><br>Last Updated:%s UT" \
+                        % datetime.datetime.utcnow()
             return html_str
 
     def get_active_targets(self, startdate=None, enddate=None,
@@ -449,7 +483,8 @@ class Scheduler:
 
         if not startdate:
             if datetime.datetime.utcnow().hour >= 14:
-                startdate = (datetime.datetime.utcnow() + datetime.timedelta(days=1))
+                startdate = (datetime.datetime.utcnow() +
+                             datetime.timedelta(days=1))
             else:
                 startdate = datetime.datetime.utcnow()
 
@@ -597,11 +632,13 @@ class Scheduler:
         print("Using time:", obsdatetime.iso)
 
         if update_coords:
-            target_list = self.update_targets_coords(target_list, obsdatetime)['data']
+            target_list = self.update_targets_coords(target_list,
+                                                     obsdatetime)['data']
 
         # Remove targets outside of HA range
         if do_sort:
-            target_list = target_list.sort_values(list(sort_columns), ascending=list(sort_order))
+            target_list = target_list.sort_values(list(sort_columns),
+                                                  ascending=list(sort_order))
         rej_html = ""
         target_reorder = False
         print(target_list['typedesig'])
@@ -612,19 +649,22 @@ class Scheduler:
                                        format='sec')
             if row.priority <= 2 and not target_reorder:
                 print(target_list.keys())
-                target_list = target_list.sort_values('start_ha', ascending=False)
+                target_list = target_list.sort_values('start_ha',
+                                                      ascending=False)
                 target_reorder = True
                 continue
 
             # Force altitude constraint
-            constraint = [astroplan.AltitudeConstraint(min=altitude_min * u.deg)]
+            constraint = [astroplan.AltitudeConstraint(
+                min=altitude_min * u.deg)]
 
             if do_airmass:
                 constraint.append(astroplan.AirmassConstraint(min=airmass[0],
-                                                      max=airmass[1]))
+                                                              max=airmass[1]))
 
             if do_moon_sep:
-                constraint.append(astroplan.MoonSeparationConstraint(min=moon_sep[0] * u.degree))
+                constraint.append(astroplan.MoonSeparationConstraint(
+                    min=moon_sep[0] * u.degree))
 
             if row.typedesig == 'f':
                 print(row.objname)
@@ -633,38 +673,46 @@ class Scheduler:
                                            times=[start, finish],
                                            time_grid_resolution=0.1 * u.hour):
                     print(type(row.start_ha))
-                    s_ha = float(row.start_ha.to_string(unit=u.hour, decimal=True))
-                    e_ha = float(row.end_ha.to_string(unit=u.hour, decimal=True))
+                    s_ha = float(row.start_ha.to_string(unit=u.hour,
+                                                        decimal=True))
+                    e_ha = float(row.end_ha.to_string(unit=u.hour,
+                                                      decimal=True))
 
                     if 18.75 > s_ha > 5.75:
                         continue
                     if 18.75 > e_ha > 5.75:
                         continue
 
-                    print(row.objname, row.priority, row.ra, row.dec, row.start_ha, row.end_ha, row.start_obs)
+                    print(row.objname, row.priority, row.ra, row.dec,
+                          row.start_ha, row.end_ha, row.start_obs)
                     if return_type == 'html':
                         if row.obs_seq['rc']:
                             rc_seq = row.obs_seq['rc_obs_dict']['obs_order'],
-                            rc_exptime = row.obs_seq['rc_obs_dict']['obs_exptime'],
+                            rc_exptime = row.obs_seq[
+                                             'rc_obs_dict']['obs_exptime'],
                         else:
                             rc_seq = 'NA'
                             rc_exptime = 'NA'
 
-                        html = self.tr_row.substitute({'allocation': row.allocation_id,
-                                                       'obstime': start.iso,
-                                                       'objname': row.objname,
-                                                       'priority': row.priority,
-                                                       'project': row.designator,
-                                                       'ra': row.ra,
-                                                       'dec': row.dec,
-                                                       'start_ha': row.start_ha,
-                                                       'end_ha': row.end_ha,
-                                                       'ifu_exptime': row.obs_seq['ifu_exptime'],
-                                                       'rc_seq': rc_seq,
-                                                       'rc_exptime': rc_exptime,
-                                                       'total': row.obs_seq['total'],
-                                                       'request_id': row.req_id,
-                                                       'rejects': rej_html})
+                        html = self.tr_row.substitute(
+                            {
+                                'allocation': row.allocation_id,
+                                'obstime': start.iso,
+                                'objname': row.objname,
+                                'priority': row.priority,
+                                'project': row.designator,
+                                'ra': row.ra,
+                                'dec': row.dec,
+                                'start_ha': row.start_ha,
+                                'end_ha': row.end_ha,
+                                'ifu_exptime': row.obs_seq['ifu_exptime'],
+                                'rc_seq': rc_seq,
+                                'rc_exptime': rc_exptime,
+                                'total': row.obs_seq['total'],
+                                'request_id': row.req_id,
+                                'rejects': rej_html
+                            }
+                        )
                         return row.req_id, (row.obs_seq, html)
                     elif return_type == 'json':
                         print(rej_html)
@@ -673,9 +721,11 @@ class Scheduler:
 
                         if save:
                             if not save_as:
-                                save_as = os.path.join(self.target_dir,
-                                                       "next_target_%s.json" %
-                                                       datetime.datetime.utcnow().strftime("%Y%m%d"))
+                                save_as = os.path.join(
+                                    self.target_dir,
+                                    "next_target_%s.json" %
+                                    datetime.datetime.utcnow().strftime(
+                                        "%Y%m%d"))
 
                                 with open(save_as, 'w') as outfile:
                                     outfile.write(json.dumps(targ))
@@ -689,9 +739,10 @@ class Scheduler:
                         count = 1
                         num = []
                         for i in constraint:
-                            ret = astroplan.is_observable([i], self.obs_site_plan,
-                                                       row.fixed_object, times=[start, finish],
-                                                       time_grid_resolution=0.1 * u.hour)
+                            ret = astroplan.is_observable(
+                                [i], self.obs_site_plan, row.fixed_object,
+                                times=[start, finish],
+                                time_grid_resolution=0.1 * u.hour)
                             print(ret, i)
                             if ret:
                                 num.append(str(count))
@@ -758,7 +809,7 @@ class Scheduler:
         """
 
         :param obsdatetime:
-        :param dec:
+        :param camera:
         :return:
         """
         start = time.time()
@@ -845,8 +896,9 @@ class Scheduler:
                         'seq_repeats': '1',
                         'seq_completed': '0'}
         request_id = self.ph_db.add_request(request_dict)[0]
-        return {'elaptime': time.time() - start, 'data': {'object_id': object_id,
-                                                          'request_id': request_id}}
+        return {'elaptime': time.time() - start,
+                'data': {'object_id': object_id,
+                         'request_id': request_id}}
 
     def get_calib_request_id(self, camera='ifu', N=1, object_id="", exptime=0):
         """
@@ -890,8 +942,7 @@ class Scheduler:
 
         return {'elaptime': time.time() - start, 'data': ret_id}
 
-    def update_request(self, request_id, status="PENDING",
-                       check_growth=True):
+    def update_request(self, request_id, status="PENDING"):
         """
 
         :param request_id:
@@ -903,43 +954,21 @@ class Scheduler:
                                          'status': status})
 
         print(ret)
-        if check_growth:
-            ret = self.growth.get_marshal_id_from_pharos(request_id)
-            print(ret)
-            if 'data' in ret:
-                ret = self.growth.update_growth_status(growth_id=ret['data'], message=status)
-                print(ret)
-            else:
-                return {'elaptime': time.time()-start, 'data': "No growth prescence"}
+
         return {'elaptime': time.time()-start, 'data': ret['data']}
 
 
 if __name__ == "__main__":
-    scheduler_path = '/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html'
-    s = time.time()
-    x = Scheduler()
-    #print(x.get_next_observable_target(return_type='json', do_moon_sep=False))
-    #time.sleep(111)
-    #print(x.simulate_night())
-    r = x.simulate_night(do_focus=True, do_standard=True)
-    data = open(scheduler_path, 'w')
-    data.write(r)
+
+    # s = time.time()
+    planner = Scheduler()
+
+    schedule = planner.simulate_night(do_focus=True, do_standard=True)
+    data = open(_schedule, 'w')
+    data.write(schedule)
     data.close()
 
-    data = open("/scr2/sedm/scheduler/scheduler.%s.html" % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"), 'w')
-    data.write(r)
+    data = open("/scr2/sedm/scheduler/scheduler.%s.html"
+                % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"), 'w')
+    data.write(schedule)
     data.close()
-
-    #x.update_request(-51465165, "PENDING")
-    #print(x.get_standard())
-    """z = Time(datetime.datetime.utcnow() + datetime.timedelta(hours=6, minutes=15))
-    
-    #print(x.get_calib_request_id())
-    ret = x.get_next_observable_target(do_sort=True, obsdatetime=z, save=True,
-                                       update_coords=True, return_type="json")
-    print(ret)
-    print(x.ph_db)
-    r = x.simulate_night()
-    data = open(scheduler_path, 'w')
-    data.write(r)
-    data.close()"""
