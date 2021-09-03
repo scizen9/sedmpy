@@ -60,7 +60,7 @@ class Scheduler:
             site_name=self.site_name)
         self.obsdatetime = obsdatetime
         self.save_as = save_as
-        self.dbconn = psycopg2.connect(_dbconn)
+        self.dbconn = psycopg2.connect(**_dbconn)
         # self.ph_db = sedmpy_import.dbconnect()
         self.query = Template(
             "SELECT r.id AS req_id, r.object_id AS obj_id, \n"
