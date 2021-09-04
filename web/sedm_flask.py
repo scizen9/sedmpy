@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
-import sys
+# import sys
 
-sys.path.append('/scr2/sedm/sedmpy/')
+# sys.path.append('/scr2/sedm/sedmpy/')
 import flask_login
 from web.forms import *
 import json
