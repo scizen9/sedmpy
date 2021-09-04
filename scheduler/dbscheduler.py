@@ -968,7 +968,7 @@ if __name__ == "__main__":
     data.write(schedule)
     data.close()
 
-    data = open("/scr2/sedm/scheduler/scheduler.%s.html"
+    data = open("/scr2/sedm/scheduler/test_scheduler.%s.html"
                 % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S"), 'w')
     data.write(schedule)
     data.close()
