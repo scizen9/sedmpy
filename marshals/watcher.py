@@ -289,7 +289,7 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Sollerman Research Group':
             name = 'An unbiased stripped-envelope supernova sample from ZTF'
             shareid = 2
-        elif request['programname'] == 'Young Type Ia Supernovae':
+        elif request['programname'] == 'Type Ia Supernovae':
             name = 'SEDm follow-up of Type Ia supernovae with early spectra'
             shareid = 2
         else:
