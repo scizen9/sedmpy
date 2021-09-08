@@ -214,7 +214,7 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
             name = 'ToO GRB+GW'
             shareid = 2
-        elif request['programname'] == 'Electromagnetic Counterparts to Neutrinos':
+        elif request['programname'] == 'Neutrino follow-up':
             name = 'ToO neutrinos'
             shareid = 2
         elif request['programname'] == 'Infant Supernovae':
