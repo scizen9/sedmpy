@@ -61,9 +61,9 @@ if __name__ == "__main__":
 
         os.chdir(reduxdir)
 
-        print("Making finder for object: %s" % objnam)
+        print("Making guider movie for object: %s" % objnam)
         print("Changed to directory where the reduced data is: %s" % reduxdir)
-        print("Getting acquisition images from directory: %s" % rcdir)
+        print("Getting guider images from directory: %s" % rcdir)
 
         # We gather all RC images to locate the Guider ones.
         files = glob.glob(os.path.join(rcdir, "rc*[0-9].fit*"))
