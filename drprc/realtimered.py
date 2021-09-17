@@ -13,6 +13,7 @@ import glob
 import os
 import time
 import argparse
+import json
 try:
     import fitsutils
 except ImportError:
@@ -302,9 +303,13 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                                 imgf = png_dir + basename + '.png'
                                 title = "RC image: %s | %s" % (basename, imtype)
                                 if slack is not None:
-                                    slack.push_image(imgf, caption="",
-                                                     title=title,
-                                                     channel=SLACK_CHANNEL)
+                                    try:
+                                        slack.push_image(imgf, caption="",
+                                                         title=title,
+                                                         channel=SLACK_CHANNEL)
+                                    except json.decoder.JSONDecodeError:
+                                        print("json error, cannot push %s"
+                                              % imgf)
                                 else:
                                     print("Cannot push: %s" % imgf)
                 elif "POINTING" in imtype.upper():
