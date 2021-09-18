@@ -98,39 +98,39 @@ class AddFixedRequest(FlaskForm):
     cadence = fields.FloatField('Cadence', default=None)
 
     min_moon_dist = fields.FloatField(
-        'Min moon dist. (deg)',
+        ' Min moon dist. (deg)',
         validators=(validators.Optional(),
                     validators.number_range(0., 180.)), default=30)
 
     max_moon_illum = fields.FloatField(
-        'Max moon phase (0. to 1.)',
+        ' Max moon phase (0. to 1.)',
         validators=(validators.Optional(),
                     validators.number_range(0., 1.)), default=1)
     maxairmass = fields.FloatField(
-        'Max airmass',
+        ' Max airmass',
         validators=(validators.Optional(),
                     validators.number_range(1, 5)), default=2.5)
     max_cloud_cover = fields.FloatField(
-        'Max cloud cover (0. to 1.)',
+        ' Max cloud cover (0. to 1.)',
         validators=(validators.Optional(),
                     validators.number_range(0., 1.)), default=1)
     max_fwhm = fields.FloatField(
-        'Max FWHM (asec)',
+        ' Max FWHM (asec)',
         validators=(validators.Optional(),
                     validators.number_range(0., 10.)), default=10)
-    phasesamples = fields.FloatField('Samples per period', default=None)
-    sampletolerance = fields.FloatField('Samples tolerance', default=None)
-    inidate = fields.DateField('Start date (Y-m-d)',
+    phasesamples = fields.FloatField(' Samples per period', default=None)
+    sampletolerance = fields.FloatField(' Samples tolerance', default=None)
+    inidate = fields.DateField(' Start date (Y-m-d)',
                                validators=[validators.input_required()],
                                format='%Y-%m-%d',
                                default=datetime.datetime.utcnow())
 
-    enddate = fields.DateField('End date (Y-m-d)',
+    enddate = fields.DateField(' End date (Y-m-d)',
                                validators=[validators.input_required()],
                                format='%Y-%m-%d',
                                default=(datetime.datetime.utcnow() +
                                         datetime.timedelta(days=3)))
     creationdate = fields.Label('creationdate', 'Creation date')
     lastmodified = fields.Label('lastmodified', 'Last modified')
-    last_obs_jd = fields.Label('last_obs_jd', 'Last observation')
+    last_obs_jd = fields.Label('last_obs_jd', ' Last observation')
     submit_req = fields.SubmitField('Submit request')
