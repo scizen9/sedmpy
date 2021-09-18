@@ -94,14 +94,16 @@
             </div>
             <div id="requestConstraint">
                 <h3>Request Constraint Options</h3>
-                {{ form.maxairmass }}{{ form.maxairmass.label  }}
-                {{ form.min_moon_dist }}{{ form.min_moon_dist.label  }}
-                {{ form.max_moon_illum }}{{ form.max_moon_illum.label  }}
-                {{ form.max_fwhm }}{{ form.max_fwhm.label  }}
-                {{ form.max_cloud_cover }}{{ form.max_cloud_cover.label  }}
-                {{ form.phasesamples }}{{ form.phasesamples.label }}
-                {{ form.sampletolerance }}{{ form.sampletolerance.label }}
-                {{ form.last_obs_jd }}
+                <ul class="list-group">
+                    <li>{{ form.maxairmass }}{{ form.maxairmass.label  }}</li>
+                    <li>{{ form.min_moon_dist }}{{ form.min_moon_dist.label  }}</li>
+                    <li>{{ form.max_moon_illum }}{{ form.max_moon_illum.label  }}</li>
+                    <li>{{ form.max_fwhm }}{{ form.max_fwhm.label  }}</li>
+                    <li>{{ form.max_cloud_cover }}{{ form.max_cloud_cover.label  }}</li>
+                    <li>{{ form.phasesamples }}{{ form.phasesamples.label }}</li>
+                    <li>{{ form.sampletolerance }}{{ form.sampletolerance.label }}</li>
+                    <li>{{ form.last_obs_jd }}</li>
+                </ul>
             </div>
         {{ form.submit_req }}
         </div>
