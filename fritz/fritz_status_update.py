@@ -31,8 +31,13 @@ def ifu_present(sequence):
     return ret
 
 
-def update_rc_status(request_id=None, status='COMPLETED', testing=False):
+def update_fritz_status(request_id=None, status='COMPLETED',
+                        ifu=False, testing=False):
 
+    if ifu:
+        chan = 'ifu'
+    else:
+        chan = 'rc'
     # Return values
     image_ret = None
     status_ret = None
@@ -57,8 +62,11 @@ def update_rc_status(request_id=None, status='COMPLETED', testing=False):
         external_id = res[3]
         obs_seq = res[4]
         # does ifu status override?
-        if ifu_present(obs_seq):
+        if ifu_present(obs_seq) and not ifu:
             print("IFU status overrides RC status!")
+            return return_link, image_ret, status_ret
+        if not ifu_present(obs_seq) and ifu:
+            print("No IFU obs in this request!")
             return return_link, image_ret, status_ret
         # is this a Fritz object?
         if external_id != 2 and external_id != 4:
@@ -93,9 +101,8 @@ def update_rc_status(request_id=None, status='COMPLETED', testing=False):
     if marshal_id is None:
         print("Unable to find marshal id for target %s" % object_name)
     else:
-        print("Updating rc request status for %s using marshal id %d" %
-              (object_name, marshal_id))
-
+        print("Updating %s request status for %s using marshal id %d" %
+              (chan, object_name, marshal_id))
         try:
             status_ret = update_status_request(status, marshal_id, 'fritz',
                                                testing=testing)
@@ -114,7 +121,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="""
                          
-Updates RC results to the fritz marshal.
+Updates IFU/RC results to the fritz marshal.
                          
 """,
         formatter_class=argparse.RawTextHelpFormatter)
@@ -124,6 +131,8 @@ Updates RC results to the fritz marshal.
                         help="Request ID to update (int)")
     parser.add_argument('-s', '--status', type=str, default=None,
                         help="New status for request (str)")
+    parser.add_argument('-i', '--ifu', action="store_true", default=False,
+                        help='Update IFU status on fritz (else update RC)')
     args = parser.parse_args()
 
     # resu = sedmdb.get_from_request(["id", "obs_seq"],
@@ -138,8 +147,9 @@ Updates RC results to the fritz marshal.
 
     if args.request_id is not None:
         if args.status is not None:
-            update_rc_status(args.request_id, status=args.status)
+            update_fritz_status(args.request_id, status=args.status,
+                                ifu=args.ifu)
         else:
-            update_rc_status(args.request_id)
+            update_fritz_status(args.request_id, ifu=args.ifu)
     else:
         print("Must specify request id!")
