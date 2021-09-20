@@ -120,14 +120,26 @@ Updates RC results to the fritz marshal.
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--testing', action="store_true", default=False,
                         help='Do not actually post to marshal (for testing)')
+    parser.add_argument('-r', '--request_id', type=int, default=None,
+                        help="Request ID to update (int)")
+    parser.add_argument('-s', '--status', type=str, default=None,
+                        help="New status for request (str)")
     args = parser.parse_args()
 
-    resu = sedmdb.get_from_request(["id", "obs_seq"],
-                                   {"status": "COMPLETED", "external_id": 2})
+    # resu = sedmdb.get_from_request(["id", "obs_seq"],
+    #                               {"status": "COMPLETED", "external_id": 2})
 
-    print("Found %d rows" % len(resu))
+    # print("Found %d rows" % len(resu))
 
-    for r in resu:
-        if ifu_present(r[1]):
-            continue
-        update_rc_status(r[0], testing=args.testing)
+    # for r in resu:
+    #    if ifu_present(r[1]):
+    #        continue
+    #    update_rc_status(r[0], testing=args.testing)
+
+    if args.request_id is not None:
+        if args.status is not None:
+            update_rc_status(args.request_id, status=args.status)
+        else:
+            update_rc_status(args.request_id)
+    else:
+        print("Must specify request id!")
