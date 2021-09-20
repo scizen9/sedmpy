@@ -122,14 +122,12 @@ Updates RC results to the fritz marshal.
                         help='Do not actually post to marshal (for testing)')
     args = parser.parse_args()
 
-    rows = sedmdb.get_from_request(["request_id", "obs_seq"],
-                                   {"status": "COMPLETED", "external_id": 2})[0]
+    resu = sedmdb.get_from_request(["id", "obs_seq"],
+                                   {"status": "COMPLETED", "external_id": 2})
 
-    rids = rows[0]
-    seq_list = rows[1]
-    print("Found %d rows" % len(rids))
+    print("Found %d rows" % len(resu))
 
-    for i, seq in enumerate(seq_list):
-        if ifu_present(seq):
+    for r in resu:
+        if ifu_present(r[1]):
             continue
-        update_rc_status(rids[i], testing=args.testing)
+        update_rc_status(r[0], testing=args.testing)
