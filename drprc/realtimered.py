@@ -22,6 +22,10 @@ try:
     from target_mag import get_target_mag
 except ImportError:
     from drprc.target_mag import get_target_mag
+try:
+    from fritz_rc_update import update_rc_status
+except ImportError:
+    from fritz.fritz_rc_update import update_rc_status
 
 try:
     from pysedmpush import slack
@@ -250,6 +254,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                         continue
                 # Make a plot of image
                 imtype = fitsutils.get_par(n, "IMGTYPE")
+                req_id = fitsutils.get_par(n, "REQ_ID")
                 imname = os.path.basename(n).replace(".fits", "")
                 utid = "_".join(imname.split("_")[1:])
                 plot_image(n, ut_id=utid)
@@ -312,6 +317,8 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                                               % imgf)
                                 else:
                                     print("Cannot push: %s" % imgf)
+                    if "SCIENCE" in imtype:
+                        update_rc_status(request_id=req_id)
                 elif "POINTING" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:
                         do_cosmic = True
