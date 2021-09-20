@@ -4,22 +4,11 @@ import argparse
 from marshals.interface import update_status_request
 import db.SedmDb
 
-# Path constants
-pharos_spec_dir = '/scr2/sedmdrp/redux/'
-pharos_phot_dir = '/scr2/sedmrp/redux/phot/'
 # URL constants
 fritz_base_url = 'https://fritz.science/'
-fritz_spec_url = fritz_base_url + 'api/spectrum/ascii'
-fritz_phot_url = fritz_base_url + 'api/photometry'
 fritz_view_source_url = fritz_base_url + 'source'
-fritz_alloc_url = fritz_base_url + 'api/allocation'
-
-default_id = 37
-instrument_id = 2
-telescope_id = 37
 
 # Use the database
-
 sedmdb = db.SedmDb.SedmDB()
 
 
@@ -87,7 +76,7 @@ def update_fritz_status(request_id=None, status='COMPLETED',
         # get user name and email
         try:
             res = sedmdb.get_from_users(["name", "email"],
-                                           {"id": user_id})[0]
+                                        {"id": user_id})[0]
         except IndexError:
             print("Unable to retrieve username, email from database")
             return return_link, image_ret, status_ret
