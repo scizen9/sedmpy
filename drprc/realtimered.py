@@ -317,7 +317,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                                               % imgf)
                                 else:
                                     print("Cannot push: %s" % imgf)
-                    if "SCIENCE" in imtype:
+                    if "SCIENCE" in imtype.upper():
                         t_now = datetime.datetime.now()
                         stat_str = "Complete %4d%02d%02d %02d_%02d_%02d" % (
                             t_now.year, t_now.month, t_now.day,
