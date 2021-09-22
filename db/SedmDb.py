@@ -12,6 +12,8 @@ import psycopg2.extras
 
 import smtplib
 
+from marshals.interface import update_status_request
+
 from email.message import EmailMessage
 # from email.utils import make_msgid
 
@@ -1989,51 +1991,85 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def expire_requests(self, send_alerts=False, update_growth=True):
+    def expire_requests(self, send_alerts=False, update_growth=True,
+                        testing=False, update_fritz=True):
         """
         Updates the request table. For all the active requests that were
             not completed, and had an expiry date before than NOW(),
             are marked as "EXPIRED".
 
         Returns:
-            (0, "Requests expired")
+            (N, "Requests expired")
         """
-        # TODO: move to logic layer? (requires sql "knowledge")
-        # TODO: make it more discerning of other statuses
         # tests written
         # 1. Get a list of request that are set to be expired.
-        ret = self.execute_sql("SELECT u.id, o.name, u.email, r.marshal_id "
+        ret = self.execute_sql("SELECT u.id, o.name, u.email, r.marshal_id, "
+                               "r.external_id, r.id "
                                "FROM request r "
                                "INNER JOIN object o ON (object_id = o.id) "
                                "INNER JOIN users u ON (user_id = u.id) "
                                "WHERE r.enddate < NOW() "
-                               "AND r.status ='PENDING';")
+                               "AND r.status ='PENDING' AND r.marshal_id > 0;")
 
-        if send_alerts:
+        n_expired = len(ret)
 
-            for i in ret:
-                self.send_email_by_request(to=i[2],
-                                           subject='Target for request %s '
-                                                   'has expired' % i[1],
-                                           template='expired_request',
-                                           template_dict={'object_name': i[1]})
+        if testing:
+            return n_expired, "Testing"
 
+        for items in ret:
+            # Reset DB status in request table
+            sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() " \
+                  "WHERE id=%d;" % items[5]
+            self.execute_sql(sql)
+            print("Request %d status set to EXPIRED in database" % items[5])
+
+            # Which marshal are we from?
+            if items[4] == 2:    # Fritz request
+                print("Expiring Fritz request %d for target %s" % (items[3],
+                                                                   items[1]))
+                if send_alerts:
+                    print("Sending email to %s" % items[2])
+                    self.send_email_by_request(
+                        to=items[2],
+                        subject='Fritz request for target %s '
+                                'has expired' % items[1],
+                        template='expired_request',
+                        template_dict={'object_name': items[1]}
+                    )
+                if update_fritz:
+                    print("Updating Fritz marshal")
+                    res = update_status_request("Expired", items[3], 'fritz')
+                    print(res)
+
+            else:               # Growth request
+                print("Expiring Growth request %d for target %s" % (items[3],
+                                                                    items[1]))
+                if send_alerts:
+                    print("Sending email to %s" % items[2])
+                    self.send_email_by_request(
+                        to=items[2],
+                        subject='Growth request for target %s '
+                                'has expired' % items[1],
+                        template='expired_request',
+                        template_dict={'object_name': items[1]}
+                    )
                 if update_growth:
                     from growth import growth
                     # if the entry is greater than 1000
                     # then it should have come from the GROWTH MARSHAL
 
-                    if i[3] and i[3] > 1000:
-                        ret = growth.update_request(request_id=i[3],
+                    if items[3] and items[3] > 1000:
+                        print("Updating Growth marshal")
+                        res = growth.update_request(request_id=items[3],
                                                     output_dir='/scr/rsw/',
                                                     status='EXPIRED')
-                        print(ret)
+                        print(res)
 
-        sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() " \
-              "WHERE enddate < NOW() AND status ='PENDING';"
-        self.execute_sql(sql)
+        # sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() " \
+        #      "WHERE enddate < NOW() AND status ='PENDING';"
+        # self.execute_sql(sql)
 
-        return 0, "Requests expired"
+        return n_expired, "Requests expired"
 
     def add_observation(self, header_dict):
         """
@@ -4168,8 +4204,8 @@ def _id_from_time():
 
 if __name__ == "__main__":
     # import datetime
-    x = SedmDB(host="pharos.caltech.edu")
-    print(x.expire_requests())
+    sedmdb = SedmDB(host="pharos.caltech.edu")
+    print(sedmdb.expire_requests())
 
     # print(x.add_user(d))
 
