@@ -132,5 +132,4 @@ class AddFixedRequest(FlaskForm):
                                         datetime.timedelta(days=3)))
     creationdate = fields.Label('creationdate', 'Creation date')
     lastmodified = fields.Label('lastmodified', 'Last modified')
-    last_obs_jd = fields.Label('last_obs_jd', ' Last observation')
     submit_req = fields.SubmitField('Submit request')
