@@ -4204,7 +4204,8 @@ def _id_from_time():
 
 if __name__ == "__main__":
     # import datetime
-    sedmdb = SedmDB(host="pharos.caltech.edu")
+    # sedmdb = SedmDB(host="pharos.caltech.edu")
+    sedmdb = SedmDB()
     print(sedmdb.expire_requests())
 
     # print(x.add_user(d))
