@@ -1,15 +1,31 @@
 import requests
 import argparse
 
-from marshals.interface import update_status_request
+from marshals.interface import api, update_status_request
 import db.SedmDb
 
 # URL constants
 fritz_base_url = 'https://fritz.science/'
 fritz_view_source_url = fritz_base_url + 'source'
+fritz_req_url = fritz_base_url + 'api/followup_request/'
 
 # Use the database
 sedmdb = db.SedmDb.SedmDB()
+
+
+def get_fritz_req_status(marshal_id):
+    """Query fritz for followup request status"""
+    try:
+        res = api('GET', fritz_req_url+str(marshal_id)).json()
+    except requests.exceptions.ConnectionError:
+        res = {'status': 'Error', 'message': 'ConnectionError', 'data': None}
+
+    if 'success' in res['status']:
+        data = res['data']
+    else:
+        data = None
+
+    return data
 
 
 def ifu_present(sequence):
