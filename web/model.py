@@ -280,7 +280,7 @@ def get_homepage(userid, username):
                            'title': 'Active Request'}
 
     sedm_dict['pending'] = {'table': fancy_request_table(pending),
-                            'title': 'Pending Requests for the last 7 days'}
+                            'title': 'Pending Requests'}
 
     sedm_dict['complete'] = {'table': fancy_request_table(complete),
                              'title': 'Completed Requests in the last 7 days'}
@@ -2099,15 +2099,15 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
 
     # plotting a single object, or the pending objects in future
     if obsdate is None:
-        time = (Time.now() - utcoffset).datetime # date is based on local time
+        time = (Time.now() - utcoffset).datetime  # date is based on local time
         time = Time(datetime.datetime(time.year, time.month, time.day))
     else:  # past observations on a particular night
         time = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]),
                                       int(obsdate[6:8])))
-        all_requests = reqs[reqs['status'] == 'COMPLETED']
-        all_requests = all_requests[time - 12 * u.hour
-                                    <= all_requests['startdate']
-                                    < time + 12 * u.hour]
+        # all_requests = reqs[reqs['status'] == 'COMPLETED']
+        # all_requests = all_requests[time - 12 * u.hour
+        #                            <= all_requests['startdate']
+        #                            < time + 12 * u.hour]
     midnight = time - utcoffset  # 7am local time of correct date, midnight UTC
 
     delta_midnight = np.linspace(-8, 8, 500) * u.hour
@@ -2139,8 +2139,8 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     # sun and moon
     # sun = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun",
     #             legend='Sun', line_dash='dashed')
-    # moon = p.line(delta_midnight, moon_alt, line_color='yellow',
-    #              line_dash='dashed', name="Moon", legend='Moon')
+    moon = p.line(delta_midnight, moon_alt, line_color='yellow',
+                  line_dash='dashed', name="Moon", legend='Moon')
     # labels and axes
     p.title.text = "Visibility for %s UTC" % midnight
     p.xaxis.axis_label = "Hours from PDT Midnight"
