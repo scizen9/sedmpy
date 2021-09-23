@@ -26,6 +26,18 @@ if __name__ == '__main__':
         description="""
                          
 Expires outdated requests on the fritz marshal.
+
+Download the file from the web url:
+
+https://fritz.science/api/followup_request
+
+and save the output to the file followup_request.json
+
+in /scr2/sedmdrp/fritz
+
+cd into that directory and run:
+
+~/spy ~/sedmpy/fritz/fritz_requests_bulk_expire.py
                          
 """,
         formatter_class=argparse.RawTextHelpFormatter)
