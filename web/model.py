@@ -279,7 +279,7 @@ def get_homepage(userid, username):
     sedm_dict['active'] = {'table': fancy_request_table(active),
                            'title': 'Active Request'}
 
-    sedm_dict['pending'] = {'table': fancy_request_table(active),
+    sedm_dict['pending'] = {'table': fancy_request_table(pending),
                             'title': 'Pending Requests for the last 7 days'}
 
     sedm_dict['complete'] = {'table': fancy_request_table(complete),
@@ -296,7 +296,7 @@ def get_homepage(userid, username):
                             index=False, col_space=10),
         'title': 'Your Active Allocations'}
 
-    sedm_dict['visibility'] = {'title': 'Visibilities for active requests',
+    sedm_dict['visibility'] = {'title': 'Visibilities for pending requests',
                                'url':   '/visibility'}
 
     # Make a greeting statement
