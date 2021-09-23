@@ -267,8 +267,8 @@ def get_homepage(userid, username):
     complete = reqs[(reqs['status'] == 'COMPLETED') |
                     (reqs['status'] == 'OBSERVED') |
                     (reqs['status'] == 'OBSERVED')]
-    active = reqs[(reqs['status'] == 'PENDING') |
-                  (reqs['status'] == 'ACTIVE')]
+    active = reqs[(reqs['status'] == 'ACTIVE')]
+    pending = reqs[(reqs['status'] == 'PENDING')]
     expired = reqs[(reqs['status'] == 'EXPIRED')]
     failed = reqs[(reqs['status'] == 'FAILED')]
 
@@ -277,7 +277,10 @@ def get_homepage(userid, username):
 
     # Create html tables
     sedm_dict['active'] = {'table': fancy_request_table(active),
-                           'title': 'Active Requests for the last 7 days'}
+                           'title': 'Active Request'}
+
+    sedm_dict['pending'] = {'table': fancy_request_table(active),
+                            'title': 'Pending Requests for the last 7 days'}
 
     sedm_dict['complete'] = {'table': fancy_request_table(complete),
                              'title': 'Completed Requests in the last 7 days'}

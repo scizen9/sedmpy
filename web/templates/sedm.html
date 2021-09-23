@@ -9,6 +9,10 @@
 	    <a href="{{sedm_dict.visibility.url}}">{{sedm_dict.visibility.title}}</a>
             {{ sedm_dict.active.table | safe }}
         </div>
+        <div class="pending-requests">
+            <h4>{{sedm_dict.pending.title}}</h4>
+            {{ sedm_dict.pending.table | safe }}
+        </div>
         <div class="completed-requests">
             <h4>{{sedm_dict.complete.title}}</h4>
             {{ sedm_dict.complete.table | safe }}
