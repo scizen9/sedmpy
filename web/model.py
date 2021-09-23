@@ -468,8 +468,8 @@ def populate_form(content, form):
         form.creationdate.data = ret_dict['creationdate']
     if 'lastmodified' in ret_dict:
         form.lastmodified.data = ret_dict['lastmodified']
-    if 'last_obs_jd' in ret_dict:
-        form.last_obs_jd.data = ret_dict['last_obs_jd']
+    # if 'last_obs_jd' in ret_dict:
+    #    form.last_obs_jd.data = ret_dict['last_obs_jd']
     if 'do_ifu' in ret_dict:
         form.ifu.data = ret_dict['do_ifu']
     if 'ifu_exptime' in ret_dict:
