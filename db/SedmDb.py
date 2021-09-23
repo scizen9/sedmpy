@@ -4215,19 +4215,16 @@ if __name__ == "__main__":
     sedmdb = SedmDB()
     print(sedmdb.expire_requests(send_alerts=True))
 
-    # print(x.add_user(d))
-
-    # (20191015210231397, 'cbarbarino')
-    # (20191015210513512, 'tleonardo')
-    # 20170826174800000
-    """obsdict = {
-        'object_id': 20190811030012746,
-        'user_id': 189,
-        'allocation_id': 20180131224646741,
-        'exptime': '{2400}',
-        'priority': 3.05,
-        'inidate': '2019-08-09',
-        'enddate': '2019-08-12',
-        'obs_seq': '{1ifu}'
-    }
-    print(x.add_request(obsdict))"""
+    # How to add a request by hand (better to use web form)
+    #
+    # obsdict = {
+    #    'object_id': 20190811030012746,
+    #    'user_id': 189,
+    #    'allocation_id': 20180131224646741,
+    #    'exptime': '{2400}',
+    #    'priority': 3.05,
+    #    'inidate': '2019-08-09',
+    #    'enddate': '2019-08-12',
+    #    'obs_seq': '{1ifu}'
+    # }
+    # print(x.add_request(obsdict))
