@@ -2245,6 +2245,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
         if not req['allocation'] == 'other':
             tooltipped.append(path)
 
+    tooltipped.append(moon)
     p.legend.click_policy = 'hide'
     p.legend.location = 'bottom_right'
     p.add_tools(HoverTool(renderers=tooltipped, tooltips=tooltips))
