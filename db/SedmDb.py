@@ -1992,7 +1992,7 @@ class SedmDB:
         return results
 
     def expire_requests(self, send_alerts=False, update_growth=True,
-                        testing=False, update_fritz=True):
+                        testing=False, update_fritz=True, interactive=False):
         """
         Updates the request table. For all the active requests that were
             not completed, and had an expiry date before than NOW(),
@@ -2009,9 +2009,10 @@ class SedmDB:
                                "INNER JOIN object o ON (object_id = o.id) "
                                "INNER JOIN users u ON (user_id = u.id) "
                                "WHERE r.enddate < NOW() "
-                               "AND r.status ='PENDING' AND r.marshal_id > 0;")
+                               "AND r.status ='PENDING';")
 
         n_expired = len(ret)
+        print("Found %d expiring requests" % n_expired)
 
         if testing:
             return n_expired, "Testing"
@@ -2023,8 +2024,11 @@ class SedmDB:
             self.execute_sql(sql)
             print("Request %d status set to EXPIRED in database" % items[5])
 
+            if items[3] < 0:
+                print("Calib request %s expired." % items[1])
+
             # Which marshal are we from?
-            if items[4] == 2:    # Fritz request
+            elif items[4] == 2:    # Fritz request
                 print("Expiring Fritz request %d for target %s" % (items[3],
                                                                    items[1]))
                 if send_alerts:
@@ -2064,6 +2068,10 @@ class SedmDB:
                                                     output_dir='/scr/rsw/',
                                                     status='EXPIRED')
                         print(res)
+            if interactive:
+                q = input("next: ")
+                if "Q" in q.upper():
+                    break
 
         # sql = "UPDATE request SET status='EXPIRED', lastmodified=NOW() " \
         #      "WHERE enddate < NOW() AND status ='PENDING';"
