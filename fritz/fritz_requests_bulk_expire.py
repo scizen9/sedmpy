@@ -25,6 +25,7 @@ def get_all_fritz_reqests():
     if 'success' in res['status']:
         data = res['data']
     else:
+        print(res)
         data = None
 
     return data
