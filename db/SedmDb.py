@@ -1991,8 +1991,8 @@ class SedmDB:
             return -1, "ERROR: sql command failed with a ProgrammingError!"
         return results
 
-    def expire_requests(self, send_alerts=False, update_growth=True,
-                        testing=False, update_fritz=True, interactive=False):
+    def expire_requests(self, update_growth=True, update_fritz=True,
+                        send_alerts=False, testing=False, interactive=False):
         """
         Updates the request table. For all the active requests that were
             not completed, and had an expiry date before than NOW(),
@@ -4211,10 +4211,9 @@ def _id_from_time():
 
 
 if __name__ == "__main__":
-    # import datetime
-    # sedmdb = SedmDB(host="pharos.caltech.edu")
+
     sedmdb = SedmDB()
-    print(sedmdb.expire_requests())
+    print(sedmdb.expire_requests(send_alerts=True))
 
     # print(x.add_user(d))
 
