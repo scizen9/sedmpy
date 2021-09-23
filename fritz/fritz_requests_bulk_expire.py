@@ -42,7 +42,9 @@ Expires outdated requests on the fritz marshal.
                         help='Do not actually post to marshal (for testing)')
     args = parser.parse_args()
 
+    print("Getting all the requests from Fritz...")
     reqs = get_all_fritz_reqests()
+    print("Done")
 
     for r in reqs:
         if 'submitted' in r['status']:
@@ -50,6 +52,7 @@ Expires outdated requests on the fritz marshal.
             end_date = pay['end_date']
             if datetime.date(*[int(du) for du in
                                end_date.split('-')]) < datetime.date.today():
+                print("Expiring outdated request for %s" % r['obj_id'])
                 marshal_req_id = r['id']
                 res = update_status_request('Expired', marshal_req_id, 'fritz',
                                             testing=True)
