@@ -2907,7 +2907,11 @@ def get_status():
     """
 
     with open(status_dir+'telstatus.json') as json_file:
-        data = json.load(json_file)
+        try:
+            data = json.load(json_file)
+        except json.decoder.JSONDecodeError:
+            print("JSON decode error")
+            data = {}
     try:
         rc_start_time = datetime.datetime.strptime(data['rc_LastStartTime'],
                                                    '%Y-%m-%d %H:%M:%S.%f')
