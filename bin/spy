@@ -1,6 +1,6 @@
 #!/bin/bash -f
 
-source activate astroconda
+source $HOME/miniconda3/bin/activate astroconda
 
 SEDMPATH=$HOME/sedmpy
 
