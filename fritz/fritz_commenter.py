@@ -49,11 +49,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
                                                  len(encoded)))
         return True
     else:
-        try:
-            r = api("POST", fritz_comment_url, data=ddict).json()
-        except requests.exceptions.ConnectionError:
-            r = {'status': 'Error', 'message': 'ConnectionError',
-                 'data': None}
+        r = api("POST", fritz_comment_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
             if 'comment_id' in r_data:
@@ -63,6 +59,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
         else:
             print('error submitting comment with attachment')
             print(r['status'])
+            print(r['message'])
             return False
 
 
@@ -89,12 +86,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         print(ddict)
         return True
     else:
-        try:
-            r = api("POST", fritz_annotation_url, data=ddict).json()
-        except requests.exceptions.ConnectionError:
-            r = {'status': 'Error', 'message': 'ConnectionError',
-                 'data': None}
-
+        r = api("POST", fritz_annotation_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
             if 'annotation_id' in r_data:
@@ -104,6 +96,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         else:
             print('error submitting comment')
             print(r['status'])
+            print(r['message'])
             return False
 
 
@@ -194,8 +187,6 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
             (and it'll exit early) otherwise
     """
 
-    error_dict = {'status': 'Error', 'message': 'ConnectionError',
-                  'data': None}
     file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
@@ -227,10 +218,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
             print(cldict)
             return True
         else:
-            try:
-                r = api("POST", fritz_classification_url, data=cldict).json()
-            except requests.exceptions.ConnectionError:
-                r = error_dict
+            r = api("POST", fritz_classification_url, data=cldict)
             if 'success' in r['status']:
                 r_data = r['data']
                 if 'classification_id' in r_data:
@@ -240,11 +228,7 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 # now add redshift
                 if 'SNIASCORE_Z' in header and 'SNIASCORE_ZERR' in header:
                     # What is the current redshift set to?
-                    try:
-                        rc = api("GET",
-                                 fritz_redshift_update_url + object_id).json()
-                    except requests.exceptions.ConnectionError:
-                        rc = error_dict
+                    rc = api("GET", fritz_redshift_update_url + object_id)
                     if 'success' in rc['status']:
                         rc_data = rc['data']
                         current_redshift = None
@@ -267,12 +251,9 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                                               new_z_round)
                             rsdict = {"redshift": new_z,
                                       "redshift_error": new_error}
-                            try:
-                                rr = api("PATCH",
-                                         fritz_redshift_update_url + object_id,
-                                         data=rsdict).json()
-                            except requests.exceptions.ConnectionError:
-                                rr = error_dict
+                            rr = api("PATCH",
+                                     fritz_redshift_update_url + object_id,
+                                     data=rsdict)
                             if 'success' in rr['status']:
                                 print("redshift for %s updated to %.4f +- %.4f"
                                       % (object_id, rsdict['redshift'],
@@ -281,7 +262,6 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                                 print('error updating %s redshift' % object_id)
                                 print(rr['status'])
                                 print(rr['message'])
-                                print(rr['data'])
                         else:
                             print('Redshift for %s already set to %.4f' %
                                   (object_id, float(rc_data['redshift'])))
@@ -296,7 +276,6 @@ def add_SNIascore_classification(fname, object_id=None, testing=False):
                 print('error submitting classification')
                 print(r['status'])
                 print(r['message'])
-                print(r['data'])
                 return False
 
     return False
