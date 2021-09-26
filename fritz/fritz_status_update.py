@@ -17,7 +17,8 @@ def get_fritz_req_status(marshal_id):
     """Query fritz for followup request status"""
     try:
         res = api('GET', fritz_req_url+str(marshal_id)).json()
-    except requests.exceptions.ConnectionError:
+    except (requests.exceptions.ConnectionError,
+            requests.exceptions.RetryError):
         res = {'status': 'Error', 'message': 'ConnectionError', 'data': None}
 
     if 'success' in res['status']:
