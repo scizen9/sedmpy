@@ -111,7 +111,9 @@ def update_status_request(status, request_id, marshal_name, save=False,
         print(status_payload)
     else:
         ret = api("POST", params["marshals"][marshal_name]['status_url'],
-                  data=status_payload).json()
+                  data=status_payload)
+        if not isinstance(ret, dict):
+            ret = ret.json()
         if 'success' in ret['status']:
             print('Status for request %d updated to %s' % (request_id, status))
         else:
