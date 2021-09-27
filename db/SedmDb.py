@@ -2013,7 +2013,8 @@ class SedmDB:
                                "INNER JOIN object o ON (object_id = o.id) "
                                "INNER JOIN users u ON (user_id = u.id) "
                                "WHERE r.enddate < NOW() "
-                               "AND r.status ='PENDING';")
+                               "AND (r.status = 'PENDING' "
+                               "OR r.status = 'ACTIVE');")
 
         n_expired = len(ret)
         print("Found %d expiring requests" % n_expired)
