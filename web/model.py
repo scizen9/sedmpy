@@ -25,6 +25,8 @@ from astropy.coordinates import EarthLocation, SkyCoord, AltAz, get_sun,\
     get_moon
 from scheduler.scheduler import ScheduleNight
 
+pd.options.mode.chained_assignment = None   # default='warn'
+
 superuser_list = ['SEDm_admin', 2, 20180523190352189]
 
 pd.set_option('display.max_colwidth', -1)
@@ -356,7 +358,7 @@ def get_request_page(userid, form1, content=None):
     alloc = get_allocations_user(userid)
 
     if alloc is None or len(alloc) == 0:
-        choices = [(0, "You have none active!")]
+        choices = [(0, "You have no active allocations!")]
     else:
         choices = [z for z in zip(alloc['id'], alloc['allocation'])]
         choices.insert(0, (0, '------'))
@@ -646,7 +648,7 @@ def process_request_form(content, form, userid):
     alloc = get_allocations_user(int(userid))
 
     if alloc is None or len(alloc) == 0:
-        choices = [(0, "You have none active!")]
+        choices = [(0, "You have no active allocations!")]
     else:
         choices = [z for z in zip(alloc['id'], alloc['allocation'])]
         choices.insert(0, (0, '------'))
@@ -2061,11 +2063,16 @@ def get_pending_visibility(userid):
 
 def plot_visibility(userid, sedm_dict, obsdate=None):
     """
-    plots visibilities for active requests at the current date.
+    plots visibilities for pending/active requests at the current date.
     Will be adapted to plot previous observations and arbitrary objects userid:
     user whose allocations will be shown in color with details. Others will be
-    greyed out sedm_dict: should have ['active']['table'] and ['enddate'] and
-    ['inidate'] obsdate: <str> YYYYMMDD. if "None", will use current date
+    greyed out
+
+    userid: <int>
+    sedm_dict: <dict>
+        should have ['active']['table'] and ['enddate'] and ['inidate']
+    obsdate: <str> YYYYMMDD
+        if "None", will use current date
 
     returns: components of a bokeh figure with the appropriate plot
     """
