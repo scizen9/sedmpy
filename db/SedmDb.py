@@ -23,6 +23,10 @@ if sys.version_info > (3,):
 
 SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 json_url = os.path.join(SITE_ROOT, 'config.json')
+fritz_base_url = 'https://fritz.science/'
+fritz_view_source_url = fritz_base_url + 'source/'
+growth_base_url = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
+growth_view_source_url = growth_base_url + 'view_source.cgi?name='
 
 
 # Singleton/SingletonPattern.py
@@ -2038,7 +2042,9 @@ class SedmDB:
                         subject='Fritz request for target %s '
                                 'has expired' % items[1],
                         template='expired_request',
-                        template_dict={'object_name': items[1]}
+                        template_dict={
+                            'object_name': items[1],
+                            'marshal_url': fritz_view_source_url}
                     )
                 if update_fritz:
                     print("Updating Fritz marshal")
@@ -2055,7 +2061,9 @@ class SedmDB:
                         subject='Growth request for target %s '
                                 'has expired' % items[1],
                         template='expired_request',
-                        template_dict={'object_name': items[1]}
+                        template_dict={
+                            'object_name': items[1],
+                            'marshal_url': growth_view_source_url}
                     )
                 if update_growth:
                     from growth import growth
