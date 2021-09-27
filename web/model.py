@@ -157,13 +157,15 @@ def get_object_info(name=None, ra=None, dec=None, radius=5, out_type='html'):
         return obj_list
 
 
-def fancy_request_table(df):
+def fancy_request_table(df, solo=False):
     """
     df: pandas dataframe
         intended for tables of requests from get_requests_for_user,
         ie with columns:
             ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date',
              'priority','status', 'lastmodified', 'UPDATE']
+    solo: bool
+        set to True for single, active request display
 
     returns: IPython HTML object
         the html for df but with the following changes:
@@ -233,7 +235,8 @@ def fancy_request_table(df):
                         'start date': '{:%b %d}',
                         'end date': '{:%b %d}',
                         'lastmodified': '{:%b %d %H:%M}',
-                        'UPDATE': '<a href="request?request_id={}">+</a>'})\
+                        'UPDATE': '%s' % '-' if solo
+                        else '<a href="request?request_id={}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
                .set_table_attributes('style="width:100%"'
                                      ' class="dataframe_fancy table '
@@ -276,7 +279,7 @@ def get_homepage(userid, username):
     ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': fancy_request_table(active),
+    sedm_dict['active'] = {'table': fancy_request_table(active, solo=True),
                            'title': 'Active Request'}
 
     sedm_dict['pending'] = {'table': fancy_request_table(pending),
@@ -286,7 +289,7 @@ def get_homepage(userid, username):
                              'title': 'Completed Requests in the last 7 days'}
 
     sedm_dict['expired'] = {'table': fancy_request_table(expired),
-                            'title': 'Expired in the last 7 days'}
+                            'title': 'Expired Requests in the last 7 days'}
 
     sedm_dict['failed'] = {'table': fancy_request_table(failed),
                            'title': 'Failed Exposures in the last 7 days'}
@@ -2032,7 +2035,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 # THIS SECTION HANDLES THE ACTIVE_VISIBILITIES PAGE.                          #
 # KEYWORD:VISIBILITIES #???                                                   #
 ###############################################################################
-def get_active_visibility(userid):
+def get_pending_visibility(userid):
     sedm_dict = {'enddate': datetime.datetime.utcnow() +
                  datetime.timedelta(days=1),
                  'inidate': datetime.datetime.utcnow() -
@@ -2042,15 +2045,15 @@ def get_active_visibility(userid):
     reqs = get_requests_for_user(userid, sedm_dict['inidate'],
                                  sedm_dict['enddate'])
 
-    # organize requests into dataframes by whether they are completed or not
-    active = reqs[(reqs['status'] == 'PENDING')]
+    # organize requests into dataframes by whether they are pending or not
+    pending = reqs[(reqs['status'] == 'PENDING')]
 
     # retrieve information about the user's allocations
     # ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': fancy_request_table(active),
-                           'title': 'Active Requests for the last 7 days'}
+    sedm_dict['pending'] = {'table': fancy_request_table(pending),
+                           'title': 'Pending Requests'}
 
     sedm_dict['script'], sedm_dict['div'] = plot_visibility(userid, sedm_dict)
     return sedm_dict

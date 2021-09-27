@@ -204,8 +204,8 @@ def data_static(filename):
 
 @app.route('/visibility')
 def active_visibility():
-    sedm_dict = model.get_active_visibility(flask_login.current_user.id)
-    sedm_dict['js_resources'] = INLINE.render_js()  # TODO
+    sedm_dict = model.get_pending_visibility(flask_login.current_user.id)
+    sedm_dict['js_resources'] = INLINE.render_js()
     sedm_dict['css_resources'] = INLINE.render_css()
 
     return render_template('visibility.html', sedm_dict=sedm_dict)
