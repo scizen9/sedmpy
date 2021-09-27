@@ -225,29 +225,29 @@ def fancy_request_table(df, solo=False):
 
     df['status'] = [i.lower() for i in df['status']]
     df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '')
+                        .replace('2019B-', '').replace('2021B-', '')
                         for i in df['allocation']]
     for col in ('obs_seq', 'exptime'):
         df[col] = [improve_obs_seq(i) for i in df[col]]
 
     styled = df.style\
                .apply(highlight_set, axis=1)\
-               .format({'object': '<a href="https://fritz.science/source/'
-                                  '{0}">{0}</a>', 'RA': '{:.3f}',
-                        'DEC': '{:.3f}', 'priority': '{:.0f}',
-                        'start date': '{:%b %d}',
-                        'end date': '{:%b %d}',
-                        'lastmodified': '{:%b %d %H:%M}',
-                        'UPDATE': '%s' % '-' if solo
-                        else '<a href="request?request_id={}">+</a>'})\
+               .format(
+                {'object': '<a href="https://fritz.science/source/{0}">{0}</a>',
+                 'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.0f}',
+                 'start date': '{:%b %d}', 'end date': '{:%b %d}',
+                 'lastmodified': '{:%b %d %H:%M}',
+                 'UPDATE': '%s' % '-' if solo
+                 else '<a href="request?request_id={}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
-               .set_table_attributes('style="width:100%"'
-                                     ' class="dataframe_fancy table '
+               .set_table_attributes('style="width:100%" '
+                                     'class="dataframe_fancy table '
                                      'table-striped nowrap"')\
                .set_table_styles(
                     [{'selector': '.row_heading',
                       'props': [('display', 'none')]},
                      {'selector': '.blank.level0',
-                         'props': [('display', 'none')]}])
+                      'props': [('display', 'none')]}])
     # this .replace() thing is super bad form but it's faster for now than
     # finding the right way
     return styled.render()\
