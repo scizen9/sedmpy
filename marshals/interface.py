@@ -46,13 +46,25 @@ session.mount("http://", adapter)
 
 def api(method, endpoint, data=None, verbose=False):
     headers = {'Authorization': 'token {}'.format(token)}
-    response = session.request(method, endpoint, json=data, headers=headers)
-    print('HTTP code: {}, {}'.format(response.status_code, response.reason))
-    if response.status_code in (200, 400) and verbose:
-        print(response.text)
-        # print('JSON response: {}'.format(response.json()))
+    error_dict = {'status': 'Error', 'message': 'AnError', 'data': None}
+    try:
+        response = session.request(method, endpoint, json=data, headers=headers)
+        print('HTTP code: {}, {}'.format(response.status_code, response.reason))
+        if response.status_code in (200, 400) and verbose:
+            print(response.text)
+            # print('JSON response: {}'.format(response.json()))
+        ret = response.json()
+    except requests.exceptions.RetryError:
+        error_dict['message'] = 'RetryError'
+        ret = error_dict
+    except requests.exceptions.ConnectionError:
+        error_dict['message'] = 'ConnectionError'
+        ret = error_dict
+    except AttributeError:
+        error_dict['message'] = 'AttributeError'
+        ret = error_dict
 
-    return response
+    return ret
 
 
 def update_status_request(status, request_id, marshal_name, save=False,
@@ -107,7 +119,7 @@ def update_status_request(status, request_id, marshal_name, save=False,
         print(status_payload)
     else:
         ret = api("POST", params["marshals"][marshal_name]['status_url'],
-                  data=status_payload).json()
+                  data=status_payload)
         if 'success' in ret['status']:
             print('Status for request %d updated to %s' % (request_id, status))
         else:

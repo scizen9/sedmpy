@@ -15,10 +15,7 @@ sedmdb = db.SedmDb.SedmDB()
 
 def get_fritz_req_status(marshal_id):
     """Query fritz for followup request status"""
-    try:
-        res = api('GET', fritz_req_url+str(marshal_id)).json()
-    except requests.exceptions.ConnectionError:
-        res = {'status': 'Error', 'message': 'ConnectionError', 'data': None}
+    res = api('GET', fritz_req_url+str(marshal_id))
 
     if 'success' in res['status']:
         data = res['data']

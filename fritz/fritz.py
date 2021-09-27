@@ -204,13 +204,9 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
         return ret
     else:
         # post the spectrum
-        try:
-            ret = api("POST", fritz_spec_url, data=submission_dict)
-        except requests.exceptions.ConnectionError:
-            ret = {'status': 'Error', 'message': 'ConnectionError',
-                   'data': None}
+        ret = api("POST", fritz_spec_url, data=submission_dict)
 
-    return ret.json()
+    return ret
 
 
 def read_request(request_file):
