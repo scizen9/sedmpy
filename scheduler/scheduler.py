@@ -611,11 +611,14 @@ class ScheduleNight:
                 self.obs_site.moon_set_time(obstime),
         }
         moon_illum = float(self.obs_site.moon_illumination(obstime)) * 100.
+        moon_altaz = self.obs_site.moon_altaz(obstime)
 
         if return_type == 'json':
             json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
             json_dict['obsdate'] = ret['evening_astronomical'].iso.split()[0]
             json_dict['moon_illumination'] = "%.0f%%" % moon_illum
+            json_dict['moon_altitude'] = "%.3f deg" % moon_altaz.alt
+            json_dict['moon_azimuth'] = "%.3f deg" % moon_altaz.az
             return json_dict
         else:
             return ret
