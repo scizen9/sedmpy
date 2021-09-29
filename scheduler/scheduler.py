@@ -610,6 +610,7 @@ class ScheduleNight:
         if return_type == 'json':
             json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
             json_dict['obsdate'] = ret['evening_astronomical'].iso.split()[0]
+            json_dict['moon_illumination'] = self.obs_site.moon_illumination(obstime)
             return json_dict
         else:
             return ret
