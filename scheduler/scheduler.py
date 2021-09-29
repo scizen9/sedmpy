@@ -617,8 +617,9 @@ class ScheduleNight:
             json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
             json_dict['obsdate'] = ret['evening_astronomical'].iso.split()[0]
             json_dict['moon_illumination'] = "%.0f%%" % moon_illum
-            json_dict['moon_altitude'] = "%.3f deg" % float(moon_altaz.alt)
-            json_dict['moon_azimuth'] = "%.3f deg" % float(moon_altaz.az)
+            json_dict['moon_altitude'] = "%.3f deg" % float(
+                moon_altaz.alt.degree)
+            json_dict['moon_azimuth'] = "%.3f deg" % float(moon_altaz.az.degree)
             return json_dict
         else:
             return ret
