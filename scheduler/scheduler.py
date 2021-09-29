@@ -604,11 +604,7 @@ class ScheduleNight:
                 self.obs_site.twilight_morning_nautical(obstime, which=which),
             'morning_astronomical':
                 self.obs_site.twilight_morning_astronomical(obstime,
-                                                            which=which),
-            'moon_rise':
-                self.obs_site.moon_rise_time(obstime, which=which),
-            'moon_set':
-                self.obs_site.moon_set_time(obstime, which=which),
+                                                            which=which)
         }
         moon_ret = {
             'moon_illumination':
