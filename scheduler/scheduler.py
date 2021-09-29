@@ -605,15 +605,17 @@ class ScheduleNight:
             'morning_astronomical':
                 self.obs_site.twilight_morning_astronomical(obstime,
                                                             which=which),
+            'moon_rise':
+                self.obs_site.moon_rise_time(obstime),
             'moon_set':
                 self.obs_site.moon_set_time(obstime),
         }
+        moon_illum = float(self.obs_site.moon_illumination(obstime)) * 100.
 
         if return_type == 'json':
             json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
             json_dict['obsdate'] = ret['evening_astronomical'].iso.split()[0]
-            json_dict['moon_illumination'] = self.obs_site.moon_illumination(obstime)
-            json_dict['moon_rise'] = self.obs_site.moon_rise_time(obstime).iso.split()[-1]
+            json_dict['moon_illumination'] = "%.0f%%" % moon_illum
             return json_dict
         else:
             return ret
