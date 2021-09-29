@@ -14,15 +14,15 @@
             {{ sedm_dict.pending.table | safe }}
         </div>
         <div class="completed-requests">
-            <h4>{{sedm_dict.complete.title}}<a id="completed"></a></h4>
+            <h4><a id="completed">{{sedm_dict.complete.title}}</a></h4>
             {{ sedm_dict.complete.table | safe }}
         </div>
         <div class="expired-requests">
-            <h4>{{sedm_dict.expired.title}}</h4>
+            <h4><a id="expired">{{sedm_dict.expired.title}}</a></h4>
             {{ sedm_dict.expired.table | safe }}
         </div>
-        <div class="expired-requests">
-            <h4>{{sedm_dict.failed.title}}</h4>
+        <div class="failed-requests">
+            <h4><a id="failed">{{sedm_dict.failed.title}}</a></h4>
             {{ sedm_dict.failed.table | safe }}
         </div>
     </div>
