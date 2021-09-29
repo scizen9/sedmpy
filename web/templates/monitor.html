@@ -202,9 +202,20 @@
               <h6 class="card-title">Moon</h6>
           </div>
           <div class="card-body">
-              <td><span id="MnIllum">{{sedm_dict.moon_illumination}}</span><br>
-              <td><span id="MnRise">{{sedm_dict.moon_rise}}</span><br>
-              <td><span id="MnSet">{{sedm_dict.moon_set}}</span><br>
+              <ul class="list-group">
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Rise
+                    <span id="MnRise" class="badge badge-light ">{{sedm_dict.moon_rise}}</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Set
+                    <span id="MnSet" class="badge badge-light ">{{sedm_dict.moon_set}}</span>
+                  </li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Illumination(%)
+                    <span id="MnIllum" class="badge badge-light ">{{sedm_dict.moon_illumination}}</span>
+                  </li>
+              </ul>
           </div>
       </div>
 
