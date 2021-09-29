@@ -8,7 +8,7 @@ import datetime
 import pandas as pd
 import astroplan
 from astropy.time import Time, TimeDelta
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord, Angle, get_moon
 import astropy.units as u
 import numpy as np
 import os
@@ -612,6 +612,7 @@ class ScheduleNight:
         }
         moon_illum = float(self.obs_site.moon_illumination(obstime)) * 100.
         moon_altaz = self.obs_site.moon_altaz(obstime)
+        moon_radec = get_moon(obstime, location=self.obs_site.location)
 
         if return_type == 'json':
             json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
@@ -620,6 +621,8 @@ class ScheduleNight:
             json_dict['moon_altitude'] = "%.3f deg" % float(
                 moon_altaz.alt.degree)
             json_dict['moon_azimuth'] = "%.3f deg" % float(moon_altaz.az.degree)
+            json_dict['moon_ra'] = "%.3f deg" % float(moon_radec.ra.degree)
+            json_dict['moon_dec'] = "%.3f deg" % float(moon_radec.dec.degree)
             return json_dict
         else:
             return ret
