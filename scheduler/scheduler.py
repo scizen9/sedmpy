@@ -612,7 +612,7 @@ class ScheduleNight:
         }
         moon_ret = {
             'moon_illumination':
-                "%.1f%%" % self.obs_site.moon_illumination(obstime) * 100.,
+                "%.2f" % self.obs_site.moon_illumination(obstime),
         }
 
         if return_type == 'json':
