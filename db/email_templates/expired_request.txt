@@ -8,7 +8,7 @@ To re-submit this request visit
 
 To see the full list of expired targets for the last seven days, visit
 
-http://pharos.caltech.edu/expired/
+http://pharos.caltech.edu/ and scroll down to "Expired Requests in the last 7 days"
 
 This is an auto-generated alert.
 
