@@ -14,11 +14,11 @@
                 <h3>Request Target Information</h3>
                 {{ form.object_id }}
                 <ul class="list-group">
-                      <li class="list-group-item">{{ form.obj_name.label }}{{ form.obj_name }}</li>
-                      <li class="list-group-item">{{ form.obj_ra.label }}{{ form.obj_ra }}</li>
-                      <li class="list-group-item">{{ form.obj_dec.label }}{{ form.obj_dec }}</li>
-                     <li class="list-group-item"> {{ form.obj_epoch.label }}{{ form.obj_epoch }}</li>
-                     <li class="list-group-item">{{ form.obj_mag.label }}{{ form.obj_mag }}</li>
+                    <li class="list-group-item">{{ form.obj_name.label }}{{ form.obj_name }}</li>
+                    <li class="list-group-item">{{ form.obj_ra.label }}{{ form.obj_ra }}</li>
+                    <li class="list-group-item">{{ form.obj_dec.label }}{{ form.obj_dec }}</li>
+                    <li class="list-group-item"> {{ form.obj_epoch.label }}{{ form.obj_epoch }}</li>
+                    <li class="list-group-item">{{ form.obj_mag.label }}{{ form.obj_mag }}</li>
                 </ul>
 
                 <div id="searchPanel" class="panel-body">
@@ -37,7 +37,6 @@
             <div id="requestProgram" class="panel-body">
                 <h3>Request Program Options</h3>
                 {{ form.allocation.label }}{{ form.allocation }}
-
                 {{ form.status.label }}{{ form.status }}
             </div>
             </div>
@@ -45,9 +44,9 @@
             <div id="requestSetup">
                 <h3>Request Observation Options</h3>
                 <ul class="list-group">
-                      <li class="list-group-item">{{ form.inidate.label }}{{ form.inidate(class_="col-xs-3") }}</li>
-                      <li class="list-group-item">{{ form.enddate.label }}{{ form.enddate(class_="col-xs-3") }}</li>
-                      <li class="list-group-item">{{ form.priority.label }}{{ form.priority(class_="col-xs-2") }}</li>
+                    <li class="list-group-item">{{ form.inidate.label }}{{ form.inidate(class_="col-xs-3") }}</li>
+                    <li class="list-group-item">{{ form.enddate.label }}{{ form.enddate(class_="col-xs-3") }}</li>
+                    <li class="list-group-item">{{ form.priority.label }}{{ form.priority(class_="col-xs-2") }}</li>
                 </ul>
 
                 <div id="requestSetupIFU">
