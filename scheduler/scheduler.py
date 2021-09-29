@@ -606,7 +606,7 @@ class ScheduleNight:
                 self.obs_site.twilight_morning_astronomical(obstime,
                                                             which=which),
             'moon_set':
-                self.obs_site.sun_set_time(obstime)
+                self.obs_site.moon_set_time(obstime),
         }
 
         if return_type == 'json':
