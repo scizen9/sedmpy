@@ -288,7 +288,7 @@ def get_homepage(userid, username):
                             'title': 'Pending Requests'}
 
     sedm_dict['complete'] = {'table': fancy_request_table(complete),
-                             'title': '<a id="completed">Completed Requests in the last 7 days</a>'}
+                             'title': 'Completed Requests in the last 7 days'}
 
     sedm_dict['expired'] = {'table': fancy_request_table(expired),
                             'title': 'Expired Requests in the last 7 days'}
