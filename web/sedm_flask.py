@@ -1,7 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_from_directory
-# import sys
 
-# sys.path.append('/scr2/sedm/sedmpy/')
 import flask_login
 from web.forms import *
 import json
@@ -269,9 +267,11 @@ def add_request():
         print(str(e))
 
     # Now write the request to file
-    output = open(
-        'new_request_%s.txt'
-        % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+    output = open(os.path.join(config['path']['path_requests'],
+                               'new_request_%s.txt' %
+                               datetime.datetime.utcnow().strftime(
+                                   "%Y%m%d_%H_%M_%S.%f"), 'w')
+                  )
 
     data = json.dumps(content)
     output.write(data)

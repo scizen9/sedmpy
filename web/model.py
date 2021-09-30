@@ -72,6 +72,7 @@ if computer == 'pele':
     redux_dir = '/scr/rsw/sedm/data/redux/'
     new_phot_dir = '/scr/rsw/sedm/data/redux/phot/'
     status_dir = '/scr/rsw/'
+    requests_dir = '/scr/rsw/'
     base_dir = '/scr/rsw/'
     host = 'pharos.caltech.edu'
     port = 5432
@@ -82,6 +83,7 @@ elif computer == 'pharos':
     new_phot_dir = '/scr2/sedmdrp/redux/phot/'
     redux_dir = '/scr2/sedmdrp/redux/'
     status_dir = '/scr2/sedm/raw/telstatus/'
+    requests_dir = '/scr2/sedm/logs/requests/'
     host = 'localhost'
     base_dir = '/scr2/sedmdrp/'
     port = 5432
@@ -91,6 +93,7 @@ elif computer == 'ether':
     phot_dir = '/home/rsw/sedm/phot/'
     redux_dir = '/home/rsw/sedm_data/redux/'
     new_phot_dir = '/home/rsw/sedm_data/redux/phot/'
+    requests_dir = '/home/rsw/'
     base_dir = '/home/rsw/sedm_data/'
     host = 'localhost'
     port = 22222
@@ -2557,7 +2560,8 @@ def get_config_paths():
         'path_archive': redux_dir,
         'path_phot': phot_dir,
         'path_redux_phot': new_phot_dir,
-        'path_raw': raw_dir})
+        'path_raw': raw_dir,
+        'path_requests': requests_dir})
 
 
 def get_marshal_id(marshal='growth', request_id=None):
