@@ -606,9 +606,9 @@ class ScheduleNight:
                 self.obs_site.twilight_morning_astronomical(obstime,
                                                             which=which),
             'moon_rise':
-                self.obs_site.moon_rise_time(obstime),
+                self.obs_site.moon_rise_time(obstime, which='next'),
             'moon_set':
-                self.obs_site.moon_set_time(obstime),
+                self.obs_site.moon_set_time(obstime, which='next')
         }
         moon_illum = float(self.obs_site.moon_illumination(obstime)) * 100.
         moon_altaz = self.obs_site.moon_altaz(obstime)
