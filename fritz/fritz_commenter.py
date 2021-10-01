@@ -39,7 +39,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
     with open(fname, 'rb') as image_file:
         encoded = base64.b64encode(image_file.read()).decode('ascii')
     # create payload
-    ddict = {'obj_id': obj_id, 'spectrum_id': spec_id,
+    ddict = {'obj_id': obj_id, 'spectrum_id': spec_id,  # these go
              'text': comment,
              'attachment': {'body': encoded,
                             'name': fname.split('/')[-1]}}
@@ -49,7 +49,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
                                                  len(encoded)))
         return True
     else:
-        # fritz_comment_url = fritz_base_url + 'spectra/%d/comment' % spec_id
+        # fritz_comment_url = fritz_base_url + 'spectra/%d/comments' % spec_id
         r = api("POST", fritz_comment_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
@@ -78,7 +78,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
     return: True if success, False if not
     """
 
-    ddict = {'obj_id': obj_id,  # 'spectrum_id': spec_id,
+    ddict = {'obj_id': obj_id,  # This goes
              'origin': origin,
              'data': andic}
 
@@ -88,9 +88,9 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         return True
     else:
         # fritz_annotation_url = fritz_base_url +
-        # 'spectra/%d/annotation' % spec_id
+        # 'spectra/%d/annotations' % spec_id
         # fritz_annotation_url = fritz_base_url +
-        # 'sources/%s/annotation' % obj_id
+        # 'sources/%s/annotations' % obj_id
         r = api("POST", fritz_annotation_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
