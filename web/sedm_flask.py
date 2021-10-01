@@ -270,7 +270,7 @@ def add_request():
     output = open(os.path.join(config['path']['path_requests'],
                                'new_request_%s.txt' %
                                datetime.datetime.utcnow().strftime(
-                                   "%Y%m%d_%H_%M_%S.%f"), 'w')
+                                   "%Y%m%d_%H_%M_%S.%f")), 'w'
                   )
 
     data = json.dumps(content)
