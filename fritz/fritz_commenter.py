@@ -49,6 +49,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
                                                  len(encoded)))
         return True
     else:
+        # fritz_comment_url = fritz_base_url + 'spectra/%d/comment' % spec_id
         r = api("POST", fritz_comment_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
@@ -86,6 +87,10 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         print(ddict)
         return True
     else:
+        # fritz_annotation_url = fritz_base_url +
+        # 'spectra/%d/annotation' % spec_id
+        # fritz_annotation_url = fritz_base_url +
+        # 'sources/%s/annotation' % obj_id
         r = api("POST", fritz_annotation_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
