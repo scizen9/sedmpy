@@ -281,7 +281,7 @@ def get_homepage(userid, username):
     ac = get_allocations_user(userid)
 
     # Create html tables
-    sedm_dict['active'] = {'table': fancy_request_table(active, solo=True),
+    sedm_dict['active'] = {'table': fancy_request_table(active),
                            'title': 'Active Request'}
 
     sedm_dict['pending'] = {'table': fancy_request_table(pending),
