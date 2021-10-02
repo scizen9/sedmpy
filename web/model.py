@@ -162,15 +162,13 @@ def get_object_info(name=None, ra=None, dec=None, radius=5, out_type='html'):
         return obj_list
 
 
-def fancy_request_table(df, solo=False):
+def fancy_request_table(df):
     """
     df: pandas dataframe
         intended for tables of requests from get_requests_for_user,
         ie with columns:
             ['allocation', 'object', 'RA', 'DEC', 'start date', 'end date',
              'priority','status', 'lastmodified', 'UPDATE']
-    solo: bool
-        set to True for single, active request display
 
     returns: IPython HTML object
         the html for df but with the following changes:
@@ -240,8 +238,7 @@ def fancy_request_table(df, solo=False):
                  'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.0f}',
                  'start date': '{:%b %d}', 'end date': '{:%b %d}',
                  'lastmodified': '{:%b %d %H:%M}',
-                 'UPDATE': '%s' % '-' if solo
-                 else '<a href="request?request_id={}">+</a>'})\
+                 'UPDATE': '<a href="request?request_id={}">+</a>'})\
                .set_table_styles([{'text-align': 'left'}])\
                .set_table_attributes('style="width:100%" '
                                      'class="dataframe_fancy table '
