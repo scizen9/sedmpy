@@ -1,0 +1,9 @@
+1. How to check for duplicate pending requests in the database:
+
+        SELECT * FROM request r WHERE (SELECT Count(*) FROM request q WHERE
+        q.marshal_id = r.marshal_id AND q.obs_seq = r.obs_seq AND
+        q.status = 'PENDING' AND r.status = 'PENDING') > 1;
+
+        Note: It's OK to have duplicate requests if they aren't requesting the
+        same observations (obs_seq).  For example, one request might ask for
+        an ifu observation and another might ask for rc observations.
