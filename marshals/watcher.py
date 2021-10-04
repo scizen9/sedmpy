@@ -1,8 +1,4 @@
 from marshals import interface
-# import glob
-# import os
-# import time
-# import datetime
 import json
 import db.SedmDb
 
@@ -10,24 +6,16 @@ import db.SedmDb
 sedmdb = db.SedmDb.SedmDB()
 
 
-def process_new_request(request, isfile=True, status='ACCEPTED', add2db=True,
-                        check_rejection=False, archive=True,
-                        create_request=True, update_source=True,
-                        archive_dir='archived/', request_date=''):
+def process_new_request(request, isfile=True, add2db=True,
+                        check_rejection=False, create_request=True):
     """
 
     :param request: request string path
     :param isfile:
-    :param status:
     :param add2db:
     :param check_rejection:
-    :param archive:
     :param create_request:
-    :param update_source:
-    :param archive_dir:
-    :param request_date:
 
-    :param status:
     :return:
     """
     # 1. Open the request
@@ -50,10 +38,10 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=True,
             print("Target passed checker")
 
     # 4. Determine if a new request or if we need to update an old request
-    if req_dict['status'] == 'delete':
+    if req_dict['status'].lower() == 'delete':
         delete_request_entry(req_dict)
         create_request = False
-    elif req_dict['status'] == 'edit':
+    elif req_dict['status'].lower() == 'edit':
         delete_request_entry(req_dict)
 
     # 4. Now check to see if we are creating a request entry
@@ -65,14 +53,6 @@ def process_new_request(request, isfile=True, status='ACCEPTED', add2db=True,
     if add2db:
         ret = add_request_to_db(req_dict)
         print(ret)
-
-    # if update_source and create_request:
-        # try:
-        #    interface.update_status_request("ACCEPTED",
-        #                                    req_dict['requestid'], "fritz")
-        # except Exception as e:
-        #    print(str(e))
-        #    pass
 
 
 def delete_request_entry(request_dict):
@@ -113,6 +93,7 @@ def add_request_to_db(request_dict):
     values = ', '.join("'" + str(x).replace('/', '_') + "'"
                        for x in request_dict.values())
 
+    # This table is not currently used, AFAIK: neill 2021-Oct-04
     insert_statement = 'INSERT INTO marshal_requests (%s) VALUES (%s)' % (
         columns, values)
     try:
