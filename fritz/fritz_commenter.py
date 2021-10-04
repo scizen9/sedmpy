@@ -5,14 +5,10 @@ from glob import glob
 from getpass import getpass
 from pprint import pprint
 
-import requests.exceptions
-
 from marshals.interface import api
 import tns.sedm_auto_tns as tns
 
 fritz_base_url = 'https://fritz.science/api/'
-fritz_comment_url = fritz_base_url + 'comment'
-fritz_annotation_url = fritz_base_url + 'annotation'
 fritz_classification_url = fritz_base_url + 'classification'
 fritz_redshift_update_url = fritz_base_url + 'sources/'
 
@@ -49,7 +45,7 @@ def add_spec_attachment(obj_id, comment, fname, spec_id=None, testing=False):
                                                  len(encoded)))
         return True
     else:
-        # fritz_comment_url = fritz_base_url + 'spectra/%d/comments' % spec_id
+        fritz_comment_url = fritz_base_url + 'spectra/%d/comments' % spec_id
         r = api("POST", fritz_comment_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
@@ -89,8 +85,8 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
     else:
         # fritz_annotation_url = fritz_base_url +
         # 'spectra/%d/annotations' % spec_id
-        # fritz_annotation_url = fritz_base_url +
-        # 'sources/%s/annotations' % obj_id
+        fritz_annotation_url = \
+            fritz_base_url + 'sources/%s/annotations' % obj_id
         r = api("POST", fritz_annotation_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
