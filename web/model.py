@@ -2723,9 +2723,9 @@ def get_user_observations(username, password, obsdate):
 
                 elif len(object_ids) > 1:
                     # TODO what really needs to happen here is that we need to
-                    # TODO cont: find the id that is closest to the obsdate.
-                    # TODO cont: For now I am just going to use last added
-                    print(object_ids)
+                    # TODO find the id that is closest to the obsdate.
+                    # TODO For now I am just going to use last added
+                    # print(object_ids)
                     object_id = object_ids[-1][0]
                 elif not object_ids and ('at' in targ_name.lower()
                                          or 'sn' in targ_name.lower()):
