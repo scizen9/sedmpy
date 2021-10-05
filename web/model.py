@@ -2924,9 +2924,10 @@ def get_status():
         except json.decoder.JSONDecodeError:
             print("JSON decode error, trying again")
             json_file.close()
-            with open(status_dir + 'telstatus.json') as json_file:
+            time.sleep(1)
+            with open(status_dir + 'telstatus.json') as json_file2:
                 try:
-                    data = json.load(json_file)
+                    data = json.load(json_file2)
                 except json.decoder.JSONDecodeError:
                     print("JSON decode error")
                     data = {}
