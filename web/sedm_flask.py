@@ -129,6 +129,7 @@ def get_rc_redux_product():
 @app.route('/data_access/<path:instrument>', methods=['GET'])
 # @flask_login.login_required
 def data_access(instrument):
+    print("sedm_flask::data_access")
     if not flask_login.current_user.is_authenticated:
         return redirect('login')
 
