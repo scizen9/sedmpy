@@ -2953,7 +2953,7 @@ def get_status():
         data['ifu_EndExposureTime'] = "NA"
         data['ifu_LastStartTime'] = "NA"
 
-    print("Last IFU exp start time: %s" % data['ifu_LastStartTime'])
+    # print("Last IFU exp start time: %s" % data['ifu_LastStartTime'])
     return data
 
 

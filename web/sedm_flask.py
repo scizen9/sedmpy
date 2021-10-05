@@ -290,12 +290,11 @@ def add_fritz():
     if request.data:
         content = json.loads(request.data)
         content['origins_url'] = origin_url
-        # output = open('fritz_request_%s.txt' %
-        # datetime.datetime.utcnow().strftime(
-        #    "%Y%m%d_%H_%M_%S.%f"), 'w')
-        output = open(
-            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
-            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'fritz_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
+                      )
 
         data = json.dumps(content)
         output.write(data)
@@ -304,9 +303,11 @@ def add_fritz():
     if request.is_json:
         content = json.loads(request.get_json())
         content['origins_url'] = origin_url
-        output = open(
-            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
-            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'fritz_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
+                      )
         data = json.dumps(content)
         output.write(data)
         output.close()
@@ -314,9 +315,11 @@ def add_fritz():
     if request.form:
         content = request.form.to_dict(flat=True)
         content['origins_url'] = origin_url
-        output = open(
-            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
-            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'fritz_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
+                      )
         data = json.dumps(content)
         output.write(data)
         output.close()
@@ -329,9 +332,11 @@ def add_fritz():
     if x:
         content = json.loads(x)
         content['origins_url'] = origin_url
-        output = open(
-            '/scr2/sedm/sedmpy/web/static/fritz_request_%s.txt'
-            % datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'fritz_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
+                      )
         data = json.dumps(content)
         output.write(data)
         output.close()
