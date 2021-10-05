@@ -260,6 +260,7 @@ def add_request():
 
     # Next add the origins url to determine where the request came from
     content['origins_url'] = origin_url
+    print("sedm_flask::add_request")
     print(content)
     try:
         watcher.process_new_request(content, isfile=False)
@@ -282,6 +283,7 @@ def add_request():
 
 @app.route('/add_fritz', methods=['GET', 'POST'])
 def add_fritz():
+    print("sedm_flask::add_fritz")
     print(request.data)
     print(request.form)
     origin_url = request.url

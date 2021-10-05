@@ -1,10 +1,10 @@
 import datetime
 import astroplan
-from astropy.time import Time, TimeDelta
+from astropy.time import Time
 
 
 class ScheduleNight:
-    def __init__(self, obsdatetime=None, config_file="json_url"):
+    def __init__(self, obsdatetime=None):
         # 1. Load config file
         if obsdatetime:
             self.obsdatetime = obsdatetime
@@ -12,11 +12,11 @@ class ScheduleNight:
             self.obsdatetime = datetime.datetime.utcnow()
 
         self.site = 'palomar'
-        #self.long = params['site']['longitude']
-        #self.lat = params['site']['latitude']
-        #self.elev = params['site']['elevation']
+        # self.long = params['site']['longitude']
+        # self.lat = params['site']['latitude']
+        # self.elev = params['site']['elevation']
         self.obs_site = astroplan.Observer.at_site(site_name=self.site)
-        #self.obs_times = self.get_observing_times()
+        # self.obs_times = self.get_observing_times()
 
     def get_observing_times_by_date(self, obsdatetime="", return_type=""):
         """
@@ -47,29 +47,23 @@ class ScheduleNight:
         which = 'nearest'
 
         ret = {'sun_set':
-                   self.obs_site.sun_set_time(obstime,
-                                              which=which),
+               self.obs_site.sun_set_time(obstime, which=which),
                'sun_rise':
-                   self.obs_site.sun_rise_time(obstime,
-                                               which=which),
+               self.obs_site.sun_rise_time(obstime, which=which),
                'evening_civil':
-                   self.obs_site.twilight_evening_civil(obstime,
-                                                        which=which),
+               self.obs_site.twilight_evening_civil(obstime, which=which),
                'evening_nautical':
-                   self.obs_site.twilight_evening_nautical(obstime,
-                                                           which=which),
+               self.obs_site.twilight_evening_nautical(obstime, which=which),
                'evening_astronomical':
-                   self.obs_site.twilight_evening_astronomical(obstime,
-                                                               which=which),
-               'morning_civil':
-                   self.obs_site.twilight_morning_civil(obstime,
-                                                        which=which),
-               'morning_nautical':
-                   self.obs_site.twilight_morning_nautical(obstime,
+               self.obs_site.twilight_evening_astronomical(obstime,
                                                            which=which),
+               'morning_civil':
+               self.obs_site.twilight_morning_civil(obstime, which=which),
+               'morning_nautical':
+               self.obs_site.twilight_morning_nautical(obstime, which=which),
                'morning_astronomical':
-                   self.obs_site.twilight_morning_astronomical(obstime,
-                                                               which=which)}
+               self.obs_site.twilight_morning_astronomical(obstime,
+                                                           which=which)}
 
         if return_type == 'json':
             json_dict = {k: v.iso for k, v in ret.items()}
@@ -83,6 +77,7 @@ class ScheduleNight:
 
         :param return_type:
         :param obsdatetime:
+        :param use_ut_date:
         :return:
         """
 
@@ -101,42 +96,34 @@ class ScheduleNight:
 
         # if sun set is greater than input time we are
         if sun_set > obstime:
-            print('Using next')
+            # print('Using next')
             which = 'next'
         else:
-            print('Using nearest')
+            # print('Using nearest')
 
-
-
-            obstime = self.obs_site.twilight_evening_astronomical(obstime,
-                                                                  which="nearest")
+            obstime = self.obs_site.twilight_evening_astronomical(
+                obstime, which="nearest")
 
             which = 'nearest'
 
         ret = {'sun_set':
-                   self.obs_site.sun_set_time(obstime,
-                                              which=which),
+               self.obs_site.sun_set_time(obstime, which=which),
                'sun_rise':
-                   self.obs_site.sun_rise_time(obstime,
-                                               which=which),
+               self.obs_site.sun_rise_time(obstime, which=which),
                'evening_civil':
-                   self.obs_site.twilight_evening_civil(obstime,
-                                                        which=which),
+               self.obs_site.twilight_evening_civil(obstime, which=which),
                'evening_nautical':
-                   self.obs_site.twilight_evening_nautical(obstime,
-                                                           which=which),
+               self.obs_site.twilight_evening_nautical(obstime, which=which),
                'evening_astronomical':
-                   self.obs_site.twilight_evening_astronomical(obstime,
-                                                               which=which),
-               'morning_civil':
-                   self.obs_site.twilight_morning_civil(obstime,
-                                                        which=which),
-               'morning_nautical':
-                   self.obs_site.twilight_morning_nautical(obstime,
+               self.obs_site.twilight_evening_astronomical(obstime,
                                                            which=which),
+               'morning_civil':
+               self.obs_site.twilight_morning_civil(obstime, which=which),
+               'morning_nautical':
+               self.obs_site.twilight_morning_nautical(obstime, which=which),
                'morning_astronomical':
-                   self.obs_site.twilight_morning_astronomical(obstime,
-                                                               which=which)}
+               self.obs_site.twilight_morning_astronomical(obstime,
+                                                           which=which)}
 
         if return_type == 'json':
             json_dict = {k: v.iso for k, v in ret.items()}
@@ -165,12 +152,13 @@ if __name__ == '__main__':
     import time
     import json
 
-    #obs_times = Times()
+    # obs_times = Times()
     obs = ScheduleNight()
 
-    #start = time.time()
-    #obs_times.get_observing_times()print(obs.get_observing_times(return_type='json'))
-    #print(time.time()-start)
+    # start = time.time()
+    # obs_times.get_observing_times()print(obs.get_observing_times(
+    # return_type='json'))
+    # print(time.time()-start)
     obsdict = {}
     obsstart = datetime.datetime.strptime('2017-01-01', "%Y-%m-%d")
     start = time.time()
@@ -185,9 +173,15 @@ if __name__ == '__main__':
         x = obs.get_observing_times(datestr)
         print(x['evening_nautical'].iso)
         print(x['morning_nautical'].iso)
-        print((x['morning_nautical'] - x['evening_nautical']).to_datetime().seconds)
-        obsdict[datestr] = {'morning': x['morning_nautical'].iso, 'evening': x['evening_nautical'].iso,
-                            'total': (x['morning_nautical'] - x['evening_nautical']).to_datetime().seconds}
+        print((
+                      x['morning_nautical'] - x['evening_nautical']
+              ).to_datetime().seconds)
+        obsdict[datestr] = {'morning': x['morning_nautical'].iso,
+                            'evening': x['evening_nautical'].iso,
+                            'total': (
+                                    x['morning_nautical'] -
+                                    x['evening_nautical']
+                            ).to_datetime().seconds}
         obsstart += datetime.timedelta(days=1)
     with open('data.txt', 'w') as outfile:
         json.dump(obsdict, 'science_dates.json')
