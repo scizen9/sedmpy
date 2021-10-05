@@ -998,7 +998,7 @@ def get_object(object_name, user_id):
         return {'message': 'Could not find any targets with that name under '
                            'your allocation'}
     else:
-        return {'message': objects}
+        return {'message': objects['message']}
 
 
 ###############################################################################
