@@ -2941,7 +2941,6 @@ def get_status():
     except:
         data['rc_EndExposureTime'] = "NA"
         data['rc_LastStartTime'] = "NA"
-        pass
 
     try:
         ifu_start_time = datetime.datetime.strptime(data['ifu_LastStartTime'],
@@ -2953,8 +2952,8 @@ def get_status():
     except:
         data['ifu_EndExposureTime'] = "NA"
         data['ifu_LastStartTime'] = "NA"
-        pass
 
+    print("Last IFU exp start time: %s" % data['ifu_LastStartTime'])
     return data
 
 
