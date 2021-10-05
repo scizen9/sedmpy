@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import requests
 import glob
+import time
 from decimal import Decimal
 from bokeh.io import curdoc
 from bokeh.layouts import row, column
@@ -2921,8 +2922,14 @@ def get_status():
         try:
             data = json.load(json_file)
         except json.decoder.JSONDecodeError:
-            print("JSON decode error")
-            data = {}
+            print("JSON decode error, trying again")
+            json_file.close()
+            with open(status_dir + 'telstatus.json') as json_file:
+                try:
+                    data = json.load(json_file)
+                except json.decoder.JSONDecodeError:
+                    print("JSON decode error")
+                    data = {}
     try:
         rc_start_time = datetime.datetime.strptime(data['rc_LastStartTime'],
                                                    '%Y-%m-%d %H:%M:%S.%f')
