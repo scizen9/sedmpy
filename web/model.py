@@ -2275,15 +2275,19 @@ def get_weather_stats(obsdate=None):
     if not obsdate:
         # get the weather stats
         statsfile, mydate = search_stats_file()
-        stats_plot = plot_stats(statsfile, mydate)
-        if stats_plot is None:
-            message += " No statistics log found up to 100 days prior to" \
-                       " today... Weather has been terrible lately!"
-            script, div = None, None
+        if statsfile is not None and mydate is not None:
+            stats_plot = plot_stats(statsfile, mydate)
+            if stats_plot is None:
+                message += " No statistics log found up to 100 days prior to" \
+                           " today... Weather has been terrible lately!"
+                script, div = None, None
+            else:
+                message += " Weather statistics for last opened day: %s" % (
+                    os.path.basename(os.path.dirname(os.path.dirname(
+                        statsfile))))
+                script, div = components(stats_plot)
         else:
-            message += " Weather statistics for last opened day: %s" % (
-                os.path.basename(os.path.dirname(os.path.dirname(statsfile))))
-            script, div = components(stats_plot)
+            script, div = None, None
     else:
         mydate_in = obsdate.replace("-", "")
 
@@ -2318,7 +2322,7 @@ def search_stats_file(mydate=None):
     Returns the last stats file that is present in the system according to
     the present date. It also returns a message stating what date that was.
     """
-    # If the date is specified, we will try to located the right file.
+    # If the date is specified, we will try to locate the right file.
     # None will be returned if it does not exist.
     if mydate:
         s = os.path.join(phot_dir, mydate, "stats/stats.log")
@@ -2349,13 +2353,13 @@ def search_stats_file(mydate=None):
             if os.path.exists(s):
                 if os.path.getsize(s) > 0:
                     return s, newdatedir
-                else:
-                    return None, None
+                # else:
+                #    return None, None
             elif os.path.exists(s_new):
                 if os.path.getsize(s_new) > 0:
                     return s_new, newdatedir
-                else:
-                    return None, None
+                # else:
+                #    return None, None
             i = i + 1
             curdate -= datetime.timedelta(days=1)
         return None, None
