@@ -2922,7 +2922,6 @@ def get_status():
             data = json.load(json_file)
         except json.decoder.JSONDecodeError:
             print("JSON decode error")
-            print(data)
             data = {}
     try:
         rc_start_time = datetime.datetime.strptime(data['rc_LastStartTime'],
