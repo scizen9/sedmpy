@@ -334,7 +334,7 @@ def get_schedule(start_time="", end_time="", return_type='table'):
     :param end_time:
     :return:
     """
-    print(start_time, end_time, return_type)
+
     with open('static/scheduler/scheduler.html', 'r') as myfile:
         data = myfile.read().replace('\n', '')
 
@@ -3112,7 +3112,7 @@ def get_p18obsdata(obsdate):
     return p18date, p18seeing
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
-    print(x)
+#    x = get_ifu_products('/scr7/rsw/sedm/redux/20180827/', 189)
+#    print(x)
