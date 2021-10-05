@@ -378,10 +378,10 @@ class ScheduleNight:
         targets = self._set_target_coordinates(targets)
 
         # Remove non-observable targets
-        print(len(targets), "before purge")
+        # print(len(targets), "before purge")
         # targets = self.remove_setting_targets(targets, start_time=start_time,
         #                                       end_time=end_time)
-        print(len(targets), "after purge")
+        # print(len(targets), "after purge")
 
         targets['HA'] = targets.apply(self._set_target_ha, axis=1)
         targets['obs_dict'] = targets.apply(self._set_obs_seq, axis=1)
@@ -580,10 +580,10 @@ class ScheduleNight:
 
         # if sun set is greater than input time we are
         if sun_set > obstime:
-            print('Using next')
+            # print('Using next')
             which = 'next'
         else:
-            print('Using nearest')
+            # print('Using nearest')
             which = 'nearest'
 
         ret = {
