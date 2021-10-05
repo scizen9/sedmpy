@@ -54,6 +54,7 @@ def home():
 
 @app.route('/request', methods=['GET', 'POST'])
 def requests():
+    print("sedm_flask::request")
     form = AddFixedRequest()
 
     # 1. If the request method is of type post then we expect this to be a
@@ -86,6 +87,7 @@ def requests():
 
 @app.route('/add_csv', methods=['GET', 'POST'])
 def add_csv():
+    print("sedm_flask::add_csv")
     form = AddCSVRequest()
 
     # 1. If the request method is of type post then we expect this to be a
@@ -202,6 +204,7 @@ def data_static(filename):
 
 @app.route('/visibility')
 def active_visibility():
+    print("sedm_flask::visibility")
     sedm_dict = model.get_pending_visibility(flask_login.current_user.id)
     sedm_dict['js_resources'] = INLINE.render_js()
     sedm_dict['css_resources'] = INLINE.render_css()
@@ -211,6 +214,7 @@ def active_visibility():
 
 @app.route('/weather_stats', methods=['GET', 'POST'])
 def weather_stats():
+    print("sedm_flask::weather_stats")
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
     if request.is_json:
@@ -226,12 +230,16 @@ def weather_stats():
 
 @app.route('/add_growth', methods=['GET', 'POST'])
 def add_growth():
+    print("sedm_flask::add_growth")
     x = request.files['jsonfile'].read()
     if x:
         content = json.loads(x)
-        output = open(
-            '/scr2/sedm/sedmpy/web/static/request_%s.txt' %
-            datetime.datetime.utcnow().strftime("%Y%m%d_%H_%M_%S.%f"), 'w')
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'growth_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
+                      )
+
         data = json.dumps(content)
         output.write(data)
         output.close()
@@ -243,6 +251,8 @@ def add_growth():
 
 @app.route('/add_request', methods=['GET', 'POST'])
 def add_request():
+    print("sedm_flask::add_request")
+
     origin_url = request.environ['REMOTE_ADDR']
 
     # First check for the type of request
@@ -260,7 +270,7 @@ def add_request():
 
     # Next add the origins url to determine where the request came from
     content['origins_url'] = origin_url
-    print("sedm_flask::add_request")
+
     print(content)
     try:
         watcher.process_new_request(content, isfile=False)
@@ -284,8 +294,7 @@ def add_request():
 @app.route('/add_fritz', methods=['GET', 'POST'])
 def add_fritz():
     print("sedm_flask::add_fritz")
-    print(request.data)
-    print(request.form)
+
     origin_url = request.url
     if request.data:
         content = json.loads(request.data)
@@ -325,6 +334,7 @@ def add_fritz():
 
 @app.route('/get_marshal_id', methods=['GET', 'POST'])
 def get_marhsal_id():
+    print("sedm_flask::get_marshal_id")
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
 
@@ -342,6 +352,7 @@ def get_marhsal_id():
 
 @app.route('/get_user_observations', methods=['GET', 'POST'])
 def get_user_observations():
+    print("sedm_flask::get_user_observations")
     # 1. If the request method is of type post then we expect this to be a
     #    submission.
 
@@ -359,6 +370,7 @@ def get_user_observations():
 
 @app.route('/objects', methods=['GET', 'POST'])
 def objects():
+    print("sedm_flask::objects")
     form = FindObject()
 
     if request.method == 'POST':
@@ -372,6 +384,7 @@ def objects():
 
 @app.route('/project_stats', methods=['GET', 'POST'])
 def project_stats():
+    print("sedm_flask::project_stats")
     # form = AddFixedRequest()
     if request.is_json:
         content = json.loads(request.get_json())
@@ -386,6 +399,7 @@ def project_stats():
 
 @app.route('/scheduler', methods=['GET', 'POST'])
 def scheduler():
+    print("sedm_flask::scheduler")
     out = model.get_schedule()
     return render_template('scheduler.html', sedm_dict=out)
 
