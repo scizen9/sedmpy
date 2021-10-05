@@ -290,59 +290,36 @@ def add_fritz():
     if request.data:
         content = json.loads(request.data)
         content['origins_url'] = origin_url
-        output = open(os.path.join(config['path']['path_requests'],
-                                   'fritz_request_%s.txt' %
-                                   datetime.datetime.utcnow().strftime(
-                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
-                      )
 
-        data = json.dumps(content)
-        output.write(data)
-        output.close()
-        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
-    if request.is_json:
+    elif request.is_json:
         content = json.loads(request.get_json())
         content['origins_url'] = origin_url
-        output = open(os.path.join(config['path']['path_requests'],
-                                   'fritz_request_%s.txt' %
-                                   datetime.datetime.utcnow().strftime(
-                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
-                      )
-        data = json.dumps(content)
-        output.write(data)
-        output.close()
-        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
-    if request.form:
+
+    elif request.form:
         content = request.form.to_dict(flat=True)
         content['origins_url'] = origin_url
-        output = open(os.path.join(config['path']['path_requests'],
-                                   'fritz_request_%s.txt' %
-                                   datetime.datetime.utcnow().strftime(
-                                       "%Y%m%d_%H_%M_%S.%f")), 'w'
-                      )
-        data = json.dumps(content)
-        output.write(data)
-        output.close()
-        return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
 
-    if 'jsonfile' in request.files:
+    elif 'jsonfile' in request.files:
         x = request.files['jsonfile'].read()
-    else:
-        return "No json file"
-    if x:
         content = json.loads(x)
         content['origins_url'] = origin_url
+
+    else:
+        ret = "No json file"
+        print('Not a json file')
+        content = {}
+
+    if content:
+        data = json.dumps(content)
         output = open(os.path.join(config['path']['path_requests'],
-                                   'fritz_request_%s.txt' %
+                                   'fritz_test_request_%s.txt' %
                                    datetime.datetime.utcnow().strftime(
                                        "%Y%m%d_%H_%M_%S.%f")), 'w'
                       )
-        data = json.dumps(content)
         output.write(data)
         output.close()
         return 'Content-type: text/html\n <title>Accepted Fritz CGI</title>'
     else:
-        print('Not a json file')
         return 'ERROR'
 
 
