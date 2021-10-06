@@ -43,6 +43,7 @@ def load_user(user_id):
 
 @app.route('/')
 def home():
+    print("sedm_flask::home")
     if flask_login.current_user.is_authenticated:
         sedm_dict = model.get_homepage(flask_login.current_user.id,
                                        flask_login.current_user.name)
@@ -447,6 +448,7 @@ def monitor():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print("sedm_flask::login")
     form = LoginForm()
     if form.validate_on_submit():
         # Login and validate the user.index
@@ -469,6 +471,7 @@ def login():
 
 @app.route('/passchange', methods=['GET', 'POST'])
 def login_change():
+    print("sedm_flask::login_change")
     form = PassChangeForm()
 
     # 1. If the request method is of type post then we expect this to be a
@@ -487,6 +490,7 @@ def login_change():
 @app.route("/logout")
 @flask_login.login_required
 def logout():
+    print("sedm_flask::logout")
     flask_login.logout_user()
     return redirect(url_for('login'))
 

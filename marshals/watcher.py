@@ -46,13 +46,14 @@ def process_new_request(request, isfile=True, add2db=True,
 
     # 4. Now check to see if we are creating a request entry
     if create_request:
-        ret = create_request_entry(req_dict)
-        print(ret)
+        if create_request_entry(req_dict):
+            print("new request succeeded")
+        else:
+            print("new request failed")
 
     # 5. Add the raw request to database
     if add2db:
-        ret = add_request_to_db(req_dict)
-        print(ret)
+        _ = add_request_to_db(req_dict)
 
 
 def delete_request_entry(request_dict):
@@ -174,11 +175,9 @@ def create_request_entry(request, custom_dict=None,
         object_id, msg = sedmdb.add_object(objdict)
 
         if object_id == -1:
-            print("TARGET IN DB ALREADY")
             print(msg)
             object_id = msg.split()[-1]
         priority = request['priority']
-        print(priority)
 
         # TODO: Replace this and only use the programname to add request
         if request['programname'] == 'Redshift Completeness Factor':
@@ -284,8 +283,6 @@ def create_request_entry(request, custom_dict=None,
             allocation_id = sedmdb.get_from_allocation(
                 values=['id'],
                 where_dict={'program_id': program_id, 'active': True})
-            print(len(allocation_id))
-
             print(allocation_id)
             allocation_id = allocation_id[0][0]
         except Exception as e:
@@ -301,6 +298,7 @@ def create_request_entry(request, custom_dict=None,
     obs_seq, exptime = get_observing_sequence(follow_up, objdict['magnitude'])
 
     if 'origins_url' in request:
+        print(request['origins_url'])
         if 'private' in request['origins_url']:
             external_id = 2
         elif 'skipper' in request['origins_url']:
@@ -326,6 +324,8 @@ def create_request_entry(request, custom_dict=None,
     print(external_id)
     print(request_dict)
     print(sedmdb.add_request(request_dict))
+
+    return True
 
 
 def get_prior_mag(mag_dict):
@@ -362,10 +362,8 @@ def get_observing_sequence(obs_str, mag=17):
     :param mag:
     :return:
     """
-    print(obs_str)
     sequence, filters = obs_str.split('|', 1)
-    print(sequence)
-    print(filters)
+
     sequence_list = []
     exptime_list = []
 
@@ -382,7 +380,6 @@ def get_observing_sequence(obs_str, mag=17):
         elif sequence == 'Three Shot (r,g,i)':
             obs_list = ['1r', '1g', '1i']
             for o in obs_list:
-                print(o)
                 sequence_list.append(o)
                 exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
         elif sequence == 'Fourshot + IFU':
@@ -417,7 +414,7 @@ def get_exptime(obsfilter, mag):
     """
 
     mag = float(mag)
-    print("Finding exptime for filter:%s at magnitude:%s" % (obsfilter, mag))
+    print("Finding exptime for filter:%s at magnitude:%.2f" % (obsfilter, mag))
     if mag > 18:
         ifu_exptime = 2250
         r_exptime = 180
