@@ -307,9 +307,6 @@ def get_homepage(userid, username):
 
     # Make a greeting statement
     sedm_dict['greeting'] = 'Hello %s!' % username
-    sedm_dict['quick_links'] = '<a href="/#completed">Completed</a>, ' \
-                               '<a href="/#expired">Expired</a>, ' \
-                               '<a href="/#failed">Failed</a>'
     return sedm_dict
 
 
