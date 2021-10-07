@@ -120,7 +120,7 @@ def find_recent_bias(redd, fname, destdir, dstr):
             # Skip dirs newer than current dir (if any)
             if int(d.split('/')[-1]) >= int(dstr):
                 continue
-            src = glob.glob(os.path.join(d, fname))
+            src = glob.glob(os.path.join(d, fname+'*'))
             if len(src) == 1:
                 os.symlink(src[0], os.path.join(destdir, fname))
                 ret = True
@@ -199,8 +199,8 @@ def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
     ncw = find_recent(redd, '_WaveSolution.pkl', outdir, cur_date_str)
     ncf = find_recent(redd, '_Flat.fits', outdir, cur_date_str)
     if not bias_ready(outdir):
-        ncb = find_recent_bias(redd, 'bias0.1.fits*', outdir, cur_date_str)
-        nc2 = find_recent_bias(redd, 'bias2.0.fits*', outdir, cur_date_str)
+        ncb = find_recent_bias(redd, 'bias0.1.fits', outdir, cur_date_str)
+        nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir, cur_date_str)
     else:
         ncb = True
         nc2 = True
