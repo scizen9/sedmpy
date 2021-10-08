@@ -1201,10 +1201,7 @@ def plot_stats_allocation(data):
 
     # Create the second plot with the % spent
     alloc_names = data['allocations']
-    if data['alloc_hours'] > 0:
-        percentage = (data["spent_hours"] / data["alloc_hours"]) * 100
-    else:
-        percentage = 0.
+    percentage = (data["spent_hours"] / data["alloc_hours"]) * 100
 
     colors = n_names * ['#084594']
     '''for i, p in enumerate(percentage):
