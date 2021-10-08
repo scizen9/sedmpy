@@ -316,7 +316,6 @@ def add_fritz():
         content['origins_url'] = origin_url
 
     else:
-        ret = "No json file"
         print('Not a json file')
         content = {}
 
