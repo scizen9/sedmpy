@@ -180,98 +180,61 @@ def create_request_entry(request, custom_dict=None,
         priority = request['priority']
 
         # TODO: Replace this and only use the programname to add request
-        if request['programname'] == 'Redshift Completeness Factor':
-            name = 'Bright Cosmology Survey'
+        if request['programname'] == 'Asteroids':
+            name = 'Astrometric Follow-up of 10 m scale asteroids'
             shareid = 2
-        elif request['programname'] == 'Cosmology':
-            name = 'Bright Cosmology Survey'
-        elif request['programname'] == 'Transients in Elliptical Galaxies':
-            name = 'Transients in elliptical hosts'
+        elif request['programname'] == 'Redshift Completeness Factor':
+            name = 'A Census of Bright Transients with ZTF-II'
             shareid = 2
-        elif request['programname'] == 'Caltech Transients in Elliptical Galaxies':
-            name = 'Transients in elliptical hosts'
-            shareid = 3
-        elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
-            name = 'ToO GRB+GW'
-            shareid = 2
-        elif request['programname'] == 'Neutrino follow-up':
-            name = 'ToO neutrinos'
-            shareid = 2
-        elif request['programname'] == 'Infant Supernovae':
-            name = 'Infant SNe'
-            shareid = 2
-        elif request['programname'] == 'Nuclear Transients':
-            name = 'Tidal Disruption Events'
-            shareid = 2
-        elif request['programname'] == 'Stripped Envelope Supernovae':
-            name = 'Stripped Envelope SNe'
-            shareid = 2
-        elif request['programname'] == 'Census of the Local Universe':
-            name = 'Redshift Completeness Fraction'
-            shareid = 2
-        elif request['programname'] == 'Young Stars':
-            name = 'Caltech YSO'
-            shareid = 2
-        elif request['programname'] == 'Superluminous Supernovae II':
-            name = 'Caltech SLSN'
-            shareid = 2
-        elif request['programname'] == 'Variable Stars':
-            name = 'Variable Stars'
-            shareid = 2
-        elif request['programname'] == 'Cataclysmic Variables':
-            name = 'Variable Stars'
-            shareid = 2
-        elif request['programname'] == 'SN1991T Interaction':
-            name = 'Director Discretionary Time'
-            shareid = 2
-        elif request['programname'] == 'Caltech MSIP targets':
-            name = 'Caltech MSIP targets'
-            shareid = 2
-        elif request['programname'] == 'Orphan Afterglows Caltech':
-            name = 'Caltech MSIP targets'
-            shareid = 2
+        # Convert to The ZTF-II Bright Transient Survey Caltech?
         elif request['programname'] == 'Red Transients':
             name = 'Caltech MSIP targets'
             shareid = 2
-        elif request['programname'] == 'Palomar Gattini-IR':
-            name = 'Director Discretionary Time'
-            shareid = 3
-        elif request['programname'] == 'Palomar Gattini-IR Variables':
-            name = 'Director Discretionary Time'
-            shareid = 3
+        elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
+            name = 'ToO GRB+GW'
+            shareid = 2     # expired
+        elif request['programname'] == 'Infant Supernovae':
+            name = 'Infant SNe'
+            shareid = 2
+        elif request['programname'] == 'Census of the Local Universe Partnership':
+            name = 'Redshift Completeness Fraction'
+            shareid = 2     # expired
+        elif request['programname'] == 'Transients in Elliptical Galaxies':
+            name = 'Transients in elliptical hosts'
+            shareid = 2     # expired
         elif request['programname'] == 'ZTFBH Nuclear':
             name = 'Tidal Disruption Events'
-            shareid = 2
-        elif request['programname'] == 'ZUDS and CLU':
-            name = 'Redshift Completeness Fraction'
-            shareid = 2
-        elif request['programname'] == 'Type IIn Supernovae':
-            name = 'Probing the light curves of of ZTF CC (Type IIn) supernovae'
-            shareid = 2
-        elif request['programname'] == 'Fast Transients':
-            name = 'The First Optically Selected Population of Relativistic Afterglows'
-            shareid = 2
-        elif request['programname'] == 'Rapidly Evolving Transients':
-            name = 'The First Optically Selected Population of Relativistic Afterglows'
-            shareid = 2
-        elif request['programname'] == 'X-ray Counterparts':
-            name = 'X-Ray Counterparts'
-            shareid = 2
-        elif request['programname'] == 'SEDM Team':
-            name = 'SEDM Czar Discretionary Time'
-            shareid = 2
-        elif request['programname'] == 'Asteroids':
-            name = 'Astrometric Follow-up of 10 m scale asteroids'
-            shareid = 2
-        elif request['programname'] == 'Lensed SNe':
-            name = 'Identifying gravitationally lensed supernovae'
+            shareid = 2     # expired
+        elif request['programname'] == 'Superluminous Supernovae':
+            name = 'Caltech SLSN'
+            shareid = 2     # expired
+        elif request['programname'] == 'Nuclear Transients':
+            name = 'Tidal Disruption Events'
             shareid = 2
         elif request['programname'] == 'Sollerman Research Group':
             name = 'An unbiased stripped-envelope supernova sample from ZTF'
             shareid = 2
+        elif request['programname'] == 'SEDM Team':
+            name = 'SEDM Czar Discretionary Time'
+            shareid = 2
         elif request['programname'] == 'Type Ia Supernovae':
             name = 'SEDm follow-up of Type Ia supernovae with early spectra'
             shareid = 2
+        elif request['programname'] == 'Neutrino follow-up':
+            name = 'Multi-Messenger Astronomy'
+            shareid = 2
+        elif request['programname'] == 'Lensed SNe':
+            name = 'Identifying gravitationally lensed supernovae'
+            shareid = 2
+        elif request['programname'] == 'Cataclysmic Variables':
+            name = 'Identification Spectra of Eruptive variables and transients in our galaxy'
+            shareid = 2
+        elif request['programname'] == 'Palomar Gattini-IR':
+            name = 'Director Discretionary Time'
+            shareid = 3     # Caltech?
+        elif request['programname'] == 'Palomar Gattini-IR Variables':
+            name = 'Director Discretionary Time'
+            shareid = 3     # Caltech?
         else:
             name = 'ZTF commissioning'
             shareid = 0
