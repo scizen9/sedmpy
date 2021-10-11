@@ -186,19 +186,18 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Redshift Completeness Factor':
             name = 'A Census of Bright Transients with ZTF-II'
             shareid = 2
-        # Convert to The ZTF-II Bright Transient Survey Caltech?
         elif request['programname'] == 'Red Transients':
-            name = 'Caltech MSIP targets'
+            name = 'The ZTF-II Bright Transient Survey Caltech'
             shareid = 2
-        elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
-            name = 'ToO GRB+GW'
-            shareid = 2     # expired
         elif request['programname'] == 'Infant Supernovae':
             name = 'Infant SNe'
             shareid = 2
         elif request['programname'] == 'Census of the Local Universe Partnership':
-            name = 'Redshift Completeness Fraction'
-            shareid = 2     # expired
+            name = 'The ZTF-II Bright Transient Survey Caltech'
+            shareid = 2
+        elif request['programname'] == 'Census of the Local Universe Caltech':
+            name = 'The ZTF-II Bright Transient Survey Caltech'
+            shareid = 2
         elif request['programname'] == 'Transients in Elliptical Galaxies':
             name = 'Transients in elliptical hosts'
             shareid = 2     # expired
