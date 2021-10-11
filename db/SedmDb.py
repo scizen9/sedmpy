@@ -3933,14 +3933,15 @@ class SedmDB:
                                     AND allocation_id = %d;""" % allocation_id)
 
         if len(exptime) == 0:
-            self.update_allocation({"id": allocation_id,
-                                    "time_spent": timedelta(days=0.0)})
+            ret, msg = self.update_allocation(
+                {"id": allocation_id, "time_spent": timedelta(days=0.0)})
         else:
             reqsum = [np.sum(e) for e in exptime]
-            time_spent = np.sum(reqsum)
+            time_spent = float(np.sum(reqsum))
 
-            self.update_allocation({"id": allocation_id,
-                                    "time_spent": time_spent})
+            ret, msg = self.update_allocation(
+                {"id": allocation_id, "time_spent": time_spent})
+        print(ret, msg)
 
     def get_allocation_spent_time(self, allocation_id, inidate, enddate):
         """
@@ -3982,7 +3983,6 @@ class SedmDB:
         alloc = self.get_from_allocation(["id"], {"active": True})
         al = list(set(alloc))
         for a in al:
-            print(int(a[0]))
             self.update_allocation_time(int(a[0]))
 
     def send_email_by_request(self, requestid=None, to=None, subject=None,
