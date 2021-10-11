@@ -478,7 +478,7 @@ class SedmDB:
                     'designator' (str) (unique)
                     'name' (str)
                     'group_id' (int/long)
-                    'PI' (str)
+                    'pi' (str)
                 optional:
                     'time_allocated' (datetime.timedelta object or
                                       float/int seconds)
@@ -493,7 +493,7 @@ class SedmDB:
             (id (long), "Program added") if the program is added successfully
         """
         param_types = {'id': int, 'name': str, 'designator': str,
-                       'group_id': int, 'PI': str, 'color': str,
+                       'group_id': int, 'pi': str, 'color': str,
                        'time_allocated': 'timedelta', 'priority': float,
                        'inidate': 'datetime', 'enddate': 'datetime'}
         pid = _id_from_time()
@@ -507,11 +507,11 @@ class SedmDB:
                 return -1, "ERROR: a program with that designator " \
                            "already exists!"
         # check for required keys
-        for key in ['designator', 'name', 'group_id', 'PI']:
+        for key in ['designator', 'name', 'group_id', 'pi']:
             if key not in keys:
                 return -1, "ERROR: %s not provided!" % (key,)
         for key in reversed(keys):  # remove any extraneous keys
-            if key not in ['id', 'name', 'designator', 'group_id', 'PI',
+            if key not in ['id', 'name', 'designator', 'group_id', 'pi',
                            'color', 'time_allocated', 'priority', 'inidate',
                            'enddate']:
                 return -1, "ERROR: %s is an invalid key!" % (key,)
