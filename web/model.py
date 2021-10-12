@@ -1105,6 +1105,8 @@ def get_allocation_stats(user_id, inidate=None, enddate=None):
                                 for ts in df["time_spent"]])
         free_hours = alloc_hours - spent_hours
 
+        free_hours[np.where(free_hours < 0)] = 0.
+
         df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours,
                        free_hours=free_hours)
 
@@ -1125,6 +1127,8 @@ def get_allocation_stats(user_id, inidate=None, enddate=None):
             spent_hours = np.array([ts.total_seconds() / 3600.
                                     for ts in df["time_spent"]])
             free_hours = alloc_hours - spent_hours
+
+            free_hours[np.where(free_hours < 0)] = 0.
 
             df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours,
                            free_hours=free_hours)
@@ -1151,6 +1155,8 @@ def get_allocation_stats(user_id, inidate=None, enddate=None):
             alloc_hours = np.array([ta.total_seconds() / 3600.
                                     for ta in df["time_allocated"]])
             free_hours = alloc_hours - spent_hours
+
+            free_hours[np.where(free_hours < 0)] = 0.
             df = df.assign(alloc_hours=alloc_hours, spent_hours=spent_hours,
                            free_hours=free_hours)
 
