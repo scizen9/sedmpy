@@ -188,13 +188,16 @@ def create_request_entry(request, custom_dict=None,
             shareid = 2
         elif request['programname'] == 'Red Transients':
             name = 'The ZTF-II Bright Transient Survey Caltech'
-            shareid = 2
+            shareid = 3
         elif request['programname'] == 'Infant Supernovae':
             name = 'Infant Supernovae 2021'
             shareid = 2
         elif request['programname'] == 'Census of the Local Universe Caltech':
             name = 'The ZTF-II Bright Transient Survey Caltech'
-            shareid = 2
+            shareid = 3
+        elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
+            name = 'Gravitational Wave Follow-Up'
+            shareid = 3     # expired
         elif request['programname'] == 'Transients in Elliptical Galaxies':
             name = 'Transients in elliptical hosts'
             shareid = 2     # expired
@@ -226,13 +229,10 @@ def create_request_entry(request, custom_dict=None,
             name = 'Identification Spectra of Eruptive variables and transients in our galaxy'
             shareid = 2
         elif request['programname'] == 'Palomar Gattini-IR':
-            name = 'Director Discretionary Time'
-            shareid = 3     # Caltech?
-        elif request['programname'] == 'Palomar Gattini-IR Variables':
-            name = 'Director Discretionary Time'
+            name = 'Director Discretionary Time 2021B'
             shareid = 3     # Caltech?
         else:
-            name = 'ZTF commissioning'
+            name = 'SEDm program'
             shareid = 0
 
         program_id = sedmdb.get_from_program(values=['id'],
