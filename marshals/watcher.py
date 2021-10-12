@@ -190,10 +190,7 @@ def create_request_entry(request, custom_dict=None,
             name = 'The ZTF-II Bright Transient Survey Caltech'
             shareid = 2
         elif request['programname'] == 'Infant Supernovae':
-            name = 'Infant SNe'
-            shareid = 2
-        elif request['programname'] == 'Census of the Local Universe Partnership':
-            name = 'The ZTF-II Bright Transient Survey Caltech'
+            name = 'Infant Supernovae 2021'
             shareid = 2
         elif request['programname'] == 'Census of the Local Universe Caltech':
             name = 'The ZTF-II Bright Transient Survey Caltech'
