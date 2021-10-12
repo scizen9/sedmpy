@@ -4223,6 +4223,7 @@ if __name__ == "__main__":
 
     sedmdb = SedmDB()
     print(sedmdb.expire_requests(send_alerts=True))
+    print(sedmdb.update_all_allocations())
 
     # How to add a request by hand (better to use web form)
     #
