@@ -1,6 +1,7 @@
 from marshals import interface
 import json
 import db.SedmDb
+from datetime import datetime
 
 
 sedmdb = db.SedmDb.SedmDB()
@@ -156,12 +157,24 @@ def create_request_entry(request, custom_dict=None,
     else:
         # 1a. Get the username
         try:
-            user_id = sedmdb.get_from_users(
+            ret = sedmdb.get_from_users(
                 values=['id'],
-                where_dict={'username': request['username']})[0][0]
+                where_dict={'username': request['username']})
+            if len(ret) > 0:
+                user_id = ret[0][0]
+                print("Found user: %s" % request['username'])
+            else:
+                udict = {'username': request['username'],
+                         'email': request['email'],
+                         'password': datetime.now().strftime(
+                             "%Y-%m-%dT%H:%M:%S")}
+                ret = sedmdb.add_user(udict)
+                user_id = ret[0]
+                print("Added user: %s" % request['username'])
         except Exception as e:
             print(str(e))
-            user_id = 189
+            print("Using default user!")
+            user_id = 254
             # 1b. Create an entry in the database
         objdict = {
             'name': request['sourcename'],
