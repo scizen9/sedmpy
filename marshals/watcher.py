@@ -199,27 +199,9 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Redshift Completeness Factor':
             name = 'A Census of Bright Transients with ZTF-II'
             shareid = 2
-        elif request['programname'] == 'Red Transients':
-            name = 'The ZTF-II Bright Transient Survey Caltech'
-            shareid = 3
         elif request['programname'] == 'Infant Supernovae':
             name = 'Infant Supernovae 2021'
             shareid = 2
-        elif request['programname'] == 'Census of the Local Universe Caltech':
-            name = 'The ZTF-II Bright Transient Survey Caltech'
-            shareid = 3
-        elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
-            name = 'Gravitational Wave Follow-Up'
-            shareid = 3     # expired
-        elif request['programname'] == 'Transients in Elliptical Galaxies':
-            name = 'Transients in elliptical hosts'
-            shareid = 2     # expired
-        elif request['programname'] == 'ZTFBH Nuclear':
-            name = 'Tidal Disruption Events'
-            shareid = 2     # expired
-        elif request['programname'] == 'Superluminous Supernovae':
-            name = 'Caltech SLSN'
-            shareid = 2     # expired
         elif request['programname'] == 'Nuclear Transients':
             name = 'Tidal Disruption Events'
             shareid = 2
@@ -241,9 +223,18 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Cataclysmic Variables':
             name = 'Identification Spectra of Eruptive variables and transients in our galaxy'
             shareid = 2
+        elif request['programname'] == 'Red Transients':
+            name = 'The ZTF-II Bright Transient Survey Caltech'
+            shareid = 3
+        elif request['programname'] == 'Census of the Local Universe Caltech':
+            name = 'The ZTF-II Bright Transient Survey Caltech'
+            shareid = 3
         elif request['programname'] == 'Palomar Gattini-IR':
-            name = 'Director Discretionary Time 2021B'
-            shareid = 3     # Caltech?
+            name = 'The ZTF-II Bright Transient Survey Caltech'
+            shareid = 3
+        # elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
+        #    name = 'Gravitational Wave Follow-Up'
+        #    shareid = 3     # inactive
         else:
             name = 'SEDm program'
             shareid = 0
