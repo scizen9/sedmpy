@@ -44,7 +44,7 @@ retries = Retry(
     total=5,
     backoff_factor=2,
     status_forcelist=[405, 429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH"]
+    method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"]
 )
 adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
 session.mount("https://", adapter)
@@ -58,8 +58,44 @@ def api(method, endpoint, data=None, verbose=False):
     if response.status_code in (200, 400) and verbose:
         print(response.text)
         # print('JSON response: {}'.format(response.json()))
+    ret = response.json()
 
-    return response
+    return ret
+
+
+def delete_allocation(alloc_id, testing=False):
+    """
+    Delete an allocation on the fritz marshal
+
+    :param alloc_id:
+    :param testing:
+
+    :return:
+    """
+
+    if not alloc_id:
+        print("Must have allocation id!")
+        return None
+
+    alloc_url = fritz_alloc_url + "/%d" % alloc_id
+
+    submission_dict = {'allocation_id': int(alloc_id)}
+
+    if testing:
+        print(alloc_url)
+        print(submission_dict)
+        ret = {"message": "string", "status": "success"}
+    else:
+        # submit for delete
+        try:
+            ret = api("DELETE", alloc_url, data=submission_dict)
+        except requests.exceptions.ConnectionError:
+            ret = {
+                'status': 'Error', 'message': 'ConnectionError',
+                'data': None
+            }
+
+    return ret
 
 
 def create_allocation(pi=None, proposal_id=None,
@@ -115,7 +151,7 @@ def create_allocation(pi=None, proposal_id=None,
                 'data': None
             }
 
-    return ret.json()
+    return ret
 
 
 def update_allocation(alloc_id, pi=None, proposal_id=None,
@@ -175,4 +211,4 @@ def update_allocation(alloc_id, pi=None, proposal_id=None,
                 'data': None
             }
 
-    return ret.json()
+    return ret
