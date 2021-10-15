@@ -84,7 +84,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
         # fritz_annotation_url = fritz_base_url + \
         #                       'spectra/%d/annotations' % spec_id
         fritz_annotation_url = fritz_base_url + \
-                               'sources/%d/annotations' % obj_id
+                               'sources/%s/annotations' % obj_id
         r = api("POST", fritz_annotation_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
