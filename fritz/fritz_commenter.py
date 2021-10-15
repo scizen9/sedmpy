@@ -74,17 +74,17 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
     return: True if success, False if not
     """
 
-    ddict = {'obj_id': obj_id,  # This goes
-             'origin': origin,
-             'data': andic}
+    ddict = {'origin': origin, 'data': andic}
 
     if testing:
         print("TESTING add_spec_autoannot(): no data sent to marshal")
         print(ddict)
         return True
     else:
+        # fritz_annotation_url = fritz_base_url + \
+        #                       'spectra/%d/annotations' % spec_id
         fritz_annotation_url = fritz_base_url + \
-                               'spectra/%d/annotations' % spec_id
+                               'sources/%d/annotations' % obj_id
         r = api("POST", fritz_annotation_url, data=ddict)
         if 'success' in r['status']:
             r_data = r['data']
@@ -165,11 +165,12 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
             'SNIascore': header['SNIASCORE'],
             'SNIascore_err': header['SNIASCORE_ERR']}
     # construct origin
+    origin = 'SNIascore:spc%d' % spec_id  # origin = 'SNIascore'
 
     print(andic)
 
     return add_spec_autoannot(object_id, andic, spec_id=spec_id,
-                              origin='SNIascore', testing=testing), tns_upl
+                              origin=origin, testing=testing), tns_upl
 
 
 def add_SNIascore_classification(fname, object_id=None, testing=False):
@@ -347,9 +348,10 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
     for key in andic:
         andic[key] = header['snidmatch' + key]
     # construct origin
+    origin = 'sedm:spc%d' % spec_id  # origin = 'sedm'
 
     if not add_spec_autoannot(object_id, andic, spec_id=spec_id,
-                              origin='sedm', testing=testing):
+                              origin=origin, testing=testing):
         return False
 
     if pr_posted:
