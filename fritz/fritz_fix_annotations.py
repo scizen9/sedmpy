@@ -159,19 +159,20 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
     return new_anid
 
 
-def verify_spec_annot(spec_id, andic, new_anid):
+def verify_spec_annot(spec_id, andic, new_anid, verbose=False):
     fritz_annotation_url = fritz_base_url + \
-                           'spectra/%s/annotations' % spec_id
+                           'spectra/%d/annotations/%d' % (spec_id, new_anid)
     r = api("GET", fritz_annotation_url)
     verified = False
     if 'success' in r['status']:
+        new_dict = r['data']['data']
         num_to_verify = len(andic)
         for k, v in andic.items():
-            for ann in r['data']:
-                new_dict = ann['data']
-                if k in new_dict:
-                    if v == new_dict[k]:
-                        num_to_verify -= 1
+            if k in new_dict:
+                if v == new_dict[k]:
+                    num_to_verify -= 1
+                    if verbose:
+                        print("%s verified as " % k, v)
         verified = (num_to_verify <= 0)
     else:
         print("error verifying annotation %d" % new_anid)
