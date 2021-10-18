@@ -48,7 +48,7 @@ def get_source_api(ztf_name):
         Returns : all basic data of that source (excludes photometry and
          spectra, includes redshift, classification, comments, etc.)
     """
-    url = BASEURL+'api/sources/'+ztf_name+'?includeComments=true'
+    url = BASEURL+'api/sources/'+ztf_name+'/comments'
     resp = api('GET', url)
     return resp['data']
 
@@ -173,7 +173,7 @@ def get_spectrum_api(spectrum_id):
     """ Info : Query all spectra corresponding to a source, takes input ZTF name
         Returns : list of spectrum jsons
     """
-    url = BASEURL + 'api/spectrum/' + str(spectrum_id)
+    url = BASEURL + 'api/spectra/' + str(spectrum_id)
     resp = api('GET', url)
     return resp
 
@@ -265,11 +265,9 @@ def pprint(*args, **kwargs):
 
 def post_comment(ztf_name, text):
 
-    data = {"obj_id": ztf_name,
-            "text": text,
-            }
+    data = {"text": text}
 
-    url = BASEURL + 'api/comment'
+    url = BASEURL + 'api/sources/%s/comments' % ztf_name
 
     resp = api('POST', url, data=data)
 
