@@ -232,6 +232,9 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Palomar Gattini-IR':
             name = 'The ZTF-II Bright Transient Survey Caltech'
             shareid = 3
+        elif request['programname'] == 'cyclotron WDs':
+            name = 'Director Discretionary Time 2021B'
+            shareid = 3
         # elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
         #    name = 'Gravitational Wave Follow-Up'
         #    shareid = 3     # inactive
