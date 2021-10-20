@@ -34,14 +34,18 @@ SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
 SAND_reply_url = "https://sandbox.wis-tns.org/api/bulk-report-reply"
 
 
-def get_source_api(ztf_name):
+def get_source_api_comments(ztf_name):
     """ Info : Query a single source, takes input ZTF name
-        Returns : all basic data of that source (excludes photometry and
-         spectra, includes redshift, classification, comments, etc.)
+        Returns : comments for the source
     """
     url = BASEURL+'api/sources/'+ztf_name+'/comments'
     resp = api('GET', url)
-    return resp['data']
+    if 'success' in resp['status']:
+        rdata = resp['data']
+    else:
+        print('Unable to retrieve comments for %s' % ztf_name)
+        rdata = None
+    return rdata
 
 
 def get_number_of_sources(group_id, date):
@@ -54,7 +58,11 @@ def get_number_of_sources(group_id, date):
     url = BASEURL+'api/sources?saveSummary=true&group_ids=' + group_id + \
         '&savedAfter='+date+'T00:00:00.000001'
     resp = api('GET', url)
-    return len(resp['data']['sources'])
+    if 'success' in resp['status']:
+        return len(resp['data']['sources'])
+    else:
+        print('Unable to retrieve number of sources')
+        return 0
 
 
 def get_iau_name(ztf_name):
@@ -66,7 +74,11 @@ def get_iau_name(ztf_name):
 
     url = BASEURL + 'api/alerts_aux/' + ztf_name
     resp = api('GET', url)
-    return resp["data"]["cross_matches"]["TNS"]
+    if 'success' in resp['status']:
+        return resp["data"]["cross_matches"]["TNS"]
+    else:
+        print('Unable to retrieve TNS name for %s' % ztf_name)
+        return None
 
 
 def get_classification(ztf_name):
@@ -77,34 +89,36 @@ def get_classification(ztf_name):
         Comment : You need to choose the classification
                 if there are multiple classifications
     """
-
-    url = BASEURL + 'api/sources/' + ztf_name + '/classifications'
-    resp = api('GET', url)
-    output = resp['data']
-
     classification = None
     classification_date = None
 
-    if len(output) < 1:
-        classification = "No Classification found"
-        classification_date = "None"
+    url = BASEURL + 'api/sources/' + ztf_name + '/classifications'
+    resp = api('GET', url)
+    if 'success' in resp['status']:
 
-    if len(output) == 1:
+        output = resp['data']
+        if len(output) < 1:
+            classification = "No Classification found"
+            classification_date = "None"
 
-        classification = resp['data'][0]['classification']
-        classification_date = resp['data'][0]['created_at'].split('T')[0]
+        if len(output) == 1:
 
-    if len(output) > 1:
+            classification = resp['data'][0]['classification']
+            classification_date = resp['data'][0]['created_at'].split('T')[0]
 
-        for si in range(len(output)):
+        if len(output) > 1:
 
-            author = resp['data'][si]['author_name']
-            clss = resp['data'][si]['classification']
-            classify_date = resp['data'][si]['created_at']
+            for si in range(len(output)):
 
-            if author == 'sedm-robot':
-                classification = clss
-                classification_date = classify_date
+                author = resp['data'][si]['author_name']
+                clss = resp['data'][si]['classification']
+                classify_date = resp['data'][si]['created_at']
+
+                if author == 'sedm-robot':
+                    classification = clss
+                    classification_date = classify_date
+    else:
+        print('Unable to retreive classifications for %s' % ztf_name)
 
     return classification, classification_date
 
@@ -119,10 +133,15 @@ def get_redshift(ztf_name):
     url = BASEURL + 'api/sources/' + ztf_name
     resp = api('GET', url)
 
-    redshift = resp['data']['redshift']
+    if 'success' in resp['status']:
 
-    if redshift is None:
-        redshift = "No redshift found"
+        redshift = resp['data']['redshift']
+
+        if redshift is None:
+            redshift = "No redshift found"
+    else:
+        print('Unable to retrieve redshift for %s' % ztf_name)
+        redshift = None
 
     return redshift
 
@@ -173,7 +192,11 @@ def get_all_spectra_len(ztf_name):
 
     url = BASEURL+'api/sources/'+ztf_name+'/spectra'
     resp = api('GET', url)
-    return len(resp['data']['spectra'])
+    if 'success' in resp['status']:
+        return len(resp['data']['spectra'])
+    else:
+        print('Unable to retrieve all spectra')
+        return 0
 
 
 def get_all_spectra_id(ztf_name):
@@ -550,7 +573,11 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
     if ztfname is None:
         ztfname = header['NAME']
 
-    comments = [c['text'] for c in get_source_api(ztfname)]
+    s_comments = get_source_api_comments(ztfname)
+    if s_comments is not None:
+        comments = [c['text'] for c in s_comments]
+    else:
+        return False
     if 'Uploaded to TNS' in comments:
         print("Already uploaded to TNS")
         return False
