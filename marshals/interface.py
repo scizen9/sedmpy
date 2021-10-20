@@ -63,6 +63,9 @@ def api(method, endpoint, data=None, verbose=False):
     except AttributeError:
         error_dict['message'] = 'AttributeError'
         ret = error_dict
+    except json.decoder.JSONDecodeError:
+        error_dict['message'] = 'JSONDecodeError'
+        ret = error_dict
 
     return ret
 

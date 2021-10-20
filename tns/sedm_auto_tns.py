@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import argparse
+from marshals.interface import api
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
 
@@ -31,16 +32,6 @@ SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
 SAND_upload_url = "https://sandbox.wis-tns.org/api/"
 SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
 SAND_reply_url = "https://sandbox.wis-tns.org/api/bulk-report-reply"
-
-
-def api(method, endpoint, data=None, verbose=False):
-    headers = {'Authorization': 'token {}'.format(token)}
-    response = requests.request(method, endpoint, json=data, headers=headers)
-    print('HTTP code: {}, {}'.format(response.status_code, response.reason))
-    if response.status_code in (200, 400) and verbose:
-        print(response.text)
-
-    return response.json()
 
 
 def get_source_api(ztf_name):
@@ -559,7 +550,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
     if ztfname is None:
         ztfname = header['NAME']
 
-    comments = [c['text'] for c in get_source_api(ztfname)['comments']]
+    comments = [c['text'] for c in get_source_api(ztfname)]
     if 'Uploaded to TNS' in comments:
         print("Already uploaded to TNS")
         return False
