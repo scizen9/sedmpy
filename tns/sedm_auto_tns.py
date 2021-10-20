@@ -44,6 +44,7 @@ def get_source_api_comments(ztf_name):
         rdata = resp['data']
     else:
         print('Unable to retrieve comments for %s' % ztf_name)
+        print(resp)
         rdata = None
     return rdata
 
@@ -61,6 +62,7 @@ def get_iau_name(ztf_name):
         return resp["data"]["cross_matches"]["TNS"]
     else:
         print('Unable to retrieve TNS name for %s' % ztf_name)
+        print(resp)
         return None
 
 
@@ -102,6 +104,7 @@ def get_classification(ztf_name):
                     classification_date = classify_date
     else:
         print('Unable to retrieve classifications for %s' % ztf_name)
+        print(resp)
 
     return classification, classification_date
 
@@ -124,6 +127,7 @@ def get_redshift(ztf_name):
             redshift = "No redshift found"
     else:
         print('Unable to retrieve redshift for %s' % ztf_name)
+        print(resp)
         redshift = None
 
     return redshift
@@ -169,6 +173,7 @@ def get_spectrum_api(spectrum_id):
         return resp['data']
     else:
         print('Unable to retrieve spectrum with id: %d' % spectrum_id)
+        print(resp)
         return None
 
 
@@ -179,7 +184,8 @@ def get_all_spectra(ztf_name):
     if 'success' in resp['status']:
         return resp['data']['spectra']
     else:
-        print('Unable to retrieve all spectra')
+        print('Unable to retrieve all spectra for %s' % ztf_name)
+        print(resp)
         return None
 
 
@@ -262,6 +268,7 @@ def post_comment(ztf_name, text):
         pass
     else:
         print('Unable to post %s comment: %s' % (ztf_name, text))
+        print(resp)
 
     return resp
 
