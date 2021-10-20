@@ -28,10 +28,10 @@ TNS_HEADERS = {
 }
 
 # SANDBOX URLs for TNS upload trials
-SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
-SAND_upload_url = "https://sandbox.wis-tns.org/api/"
-SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
-SAND_reply_url = "https://sandbox.wis-tns.org/api/bulk-report-reply"
+# SAND_TNS_BASE_URL = "https://sandbox.wis-tns.org/api/"
+# SAND_upload_url = "https://sandbox.wis-tns.org/api/"
+# SAND_report_url = "https://sandbox.wis-tns.org/api/bulk-report"
+# SAND_reply_url = "https://sandbox.wis-tns.org/api/bulk-report-reply"
 
 
 def get_source_api_comments(ztf_name):
@@ -46,23 +46,6 @@ def get_source_api_comments(ztf_name):
         print('Unable to retrieve comments for %s' % ztf_name)
         rdata = None
     return rdata
-
-
-def get_number_of_sources(group_id, date):
-    """ Info : Query number of sources saved in a group after a certain date
-        Input : group id, date [yyyy-mm-dd]
-        Returns : Number of sources saved after a given date to
-         the specified group
-    """
-
-    url = BASEURL+'api/sources?saveSummary=true&group_ids=' + group_id + \
-        '&savedAfter='+date+'T00:00:00.000001'
-    resp = api('GET', url)
-    if 'success' in resp['status']:
-        return len(resp['data']['sources'])
-    else:
-        print('Unable to retrieve number of sources')
-        return 0
 
 
 def get_iau_name(ztf_name):
@@ -118,7 +101,7 @@ def get_classification(ztf_name):
                     classification = clss
                     classification_date = classify_date
     else:
-        print('Unable to retreive classifications for %s' % ztf_name)
+        print('Unable to retrieve classifications for %s' % ztf_name)
 
     return classification, classification_date
 
@@ -147,9 +130,6 @@ def get_redshift(ztf_name):
 
 
 def get_tns_information(ztf_name):
-
-    # url = BASEURL+'api/sources/'+ztf_name
-    # resp = api('GET', url)
 
     iau = get_iau_name(ztf_name)
 
@@ -185,18 +165,22 @@ def get_spectrum_api(spectrum_id):
     """
     url = BASEURL + 'api/spectra/' + str(spectrum_id)
     resp = api('GET', url)
-    return resp
+    if 'success' in resp['status']:
+        return resp['data']
+    else:
+        print('Unable to retrieve spectrum with id: %d' % spectrum_id)
+        return None
 
 
-def get_all_spectra_len(ztf_name):
+def get_all_spectra(ztf_name):
 
-    url = BASEURL+'api/sources/'+ztf_name+'/spectra'
+    url = BASEURL + 'api/sources/' + ztf_name + '/spectra'
     resp = api('GET', url)
     if 'success' in resp['status']:
-        return len(resp['data']['spectra'])
+        return resp['data']['spectra']
     else:
         print('Unable to retrieve all spectra')
-        return 0
+        return None
 
 
 def get_all_spectra_id(ztf_name):
@@ -206,13 +190,13 @@ def get_all_spectra_id(ztf_name):
 
     spec_id = []
 
-    for si in range(get_all_spectra_len(ztf_name)):
+    spectra = get_all_spectra(ztf_name)
 
-        url = BASEURL + 'api/sources/' + ztf_name + '/spectra'
-        resp = api('GET', url)
-
-        sid = resp['data']['spectra'][si]['id']
-        spec_id.append(sid)
+    if spectra is not None:
+        for spec in spectra:
+            spec_id.append(spec['id'])
+    else:
+        print('No %s spectra retrieved for all ids' % ztf_name)
 
     return spec_id
 
@@ -223,16 +207,16 @@ def get_required_spectrum_id(ztf_name, spec_file):
 
     specfn = os.path.basename(spec_file)
 
-    nspec = (get_all_spectra_len(ztf_name))
+    spectra = get_all_spectra(ztf_name)
 
-    if nspec > 0:
+    if spectra is not None:
 
-        spec_ids = get_all_spectra_id(ztf_name)
+        for spec in spectra:
 
-        for sid in spec_ids:
-            spec = get_spectrum_api(sid)
-            if specfn in spec['data']['original_file_filename']:
-                spec_id = sid
+            if specfn in spec['original_file_filename']:
+                spec_id = spec['id']
+    else:
+        print('No %s spectra retrieved for id in file %s' % (ztf_name, specfn))
 
     return spec_id
 
@@ -247,34 +231,23 @@ def write_ascii_file(ztf_name, specid, path=None):
     else:
         a = get_spectrum_api(specid)
 
-        inst = (a['data']['instrument_name'])
+        inst = (a['instrument_name'])
 
         if inst == 'SEDM':
 
-            header = (a['data']['altdata'])
+            header = (a['altdata'])
 
             specfn = (ztf_name + '_' + str(header['OBSDATE']) +
                       '_' + str(inst) + '.ascii')
 
             with open(os.path.join(path, specfn), 'w') as f:
-                f.write(a['data']['original_file_string'])
+                f.write(a['original_file_string'])
 
         else:
             print('ERROR: not an SEDM spectrum!')
             specfn = None
 
     return specfn
-
-
-def pprint(*args, **kwargs):
-    """
-    slightly more convenient function instead of print(get_pprint)
-
-    params:
-        *args (arguments to pass to get_pprint)
-        **kwargs (keyword arguments to pass to get_pprint)
-    """
-    print(get_pprint(*args, **kwargs))
 
 
 def post_comment(ztf_name, text):
@@ -284,6 +257,11 @@ def post_comment(ztf_name, text):
     url = BASEURL + 'api/sources/%s/comments' % ztf_name
 
     resp = api('POST', url, data=data)
+
+    if 'success' in resp['status']:
+        pass
+    else:
+        print('Unable to post %s comment: %s' % (ztf_name, text))
 
     return resp
 
@@ -627,7 +605,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
                    'synthetic'].index(spectype) + 1
 
     a = get_spectrum_api(specid)
-    header = (a['data']['altdata'])
+    header = (a['altdata'])
     obsdate = str((header['UTC']).split('T')[0]) + \
         ' ' + str((header['UTC']).split('T')[1])
 
