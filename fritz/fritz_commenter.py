@@ -93,7 +93,7 @@ def add_spec_autoannot(obj_id, andic, spec_id=None, origin=None, testing=False):
             print('{}: {} posted'.format(obj_id, origin))
             return True
         else:
-            print('error submitting comment')
+            print('error submitting annotation')
             print(r['status'])
             print(r['message'])
             return False
