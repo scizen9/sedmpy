@@ -581,6 +581,11 @@ def sedm_tns_classify(spec_file, ztfname=None, iau_name=None, testing=False):
         print(info[1])
         return False
 
+    tns_suffix = info[1].split()[0]
+    if 'SN' in tns_suffix:
+        print('Already classified on TNS: %s' % info[1])
+        return False
+
     class_date = info[2].split(',')[-1].split(':')[-1].strip()
     classify = info[2].split(',')[0].split(':')[-1].strip()
 
