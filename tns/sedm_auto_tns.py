@@ -613,7 +613,7 @@ def sedm_tns_classify(spec_file, ztfname=None, iau_name=None, testing=False):
 
     classification_report = TNSClassificationReport()
     if iau_name is None:
-        classification_report.name = info[1]
+        classification_report.name = info[1].split()[-1]
     else:
         classification_report.name = iau_name
     classification_report.fitsName = ''
