@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import argparse
+import shutil
 from marshals.interface import api
 
 SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
@@ -227,27 +228,27 @@ def get_required_spectrum_id(ztf_name, spec_file):
     return spec_id
 
 
-def write_ascii_file(ztf_name, specid, path=None):
+def write_ascii_file(ztf_name, specfl, path=None):
 
     specfn = None
 
-    if specid is None:
-        print("ERROR: no spec_id")
+    if specfl is None:
+        print("ERROR: no spectrum file")
 
     else:
-        a = get_spectrum_api(specid)
+        with open(specfl) as f:
+            header = {line.split(':', 1)[0][1:].strip():
+                      line.split(':', 1)[-1].strip()
+                      for line in f if line[0] == '#'}
 
-        inst = (a['instrument_name'])
+        inst = header['INSTRUME']
 
-        if inst == 'SEDM':
-
-            header = (a['altdata'])
+        if inst == 'SEDM-P60':
 
             specfn = (ztf_name + '_' + str(header['OBSDATE']) +
-                      '_' + str(inst) + '.ascii')
+                      '_SEDM.ascii')
 
-            with open(os.path.join(path, specfn), 'w') as f:
-                f.write(a['original_file_string'])
+            shutil.copy(specfl, os.path.join(path, specfn))
 
         else:
             print('ERROR: not an SEDM spectrum!')
@@ -591,7 +592,7 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
     if specid is None:
         specid = get_required_spectrum_id(ztfname, spec_file)
 
-    spectrum_name = write_ascii_file(ztfname, specid, path=path)
+    spectrum_name = write_ascii_file(ztfname, spec_file, path=path)
 
     if spectrum_name is None:
         print("No spectrum found")
