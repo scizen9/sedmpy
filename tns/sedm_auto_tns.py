@@ -677,6 +677,8 @@ Uploads classification report to the TNS website.
                              '/scr2/sedmdrp/redux/YYYYMMDD/spec_*.txt')
     parser.add_argument('--iau_name', type=str, default=None,
                         help='IAU designation: YYYYabc')
+    parser.add_argument('--spec_id', type=int, default=None,
+                        help='Fritz spectrum id number (int)')
     parser.add_argument('--testing', action="store_true", default=False,
                         help='Do not actually post to TNS (for testing)')
     args = parser.parse_args()
@@ -688,4 +690,5 @@ Uploads classification report to the TNS website.
         print("File not found: %s" % infile)
     else:
         print("Uploading from %s" % infile)
-        sedm_tns_classify(infile, iau_name=args.iau_name, testing=args.testing)
+        sedm_tns_classify(infile, iau_name=args.iau_name, specid=args.spec_id,
+                          testing=args.testing)

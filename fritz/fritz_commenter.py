@@ -144,6 +144,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
             if upload_tns:
                 try:
                     if tns.sedm_tns_classify(fname, ztfname=object_id,
+                                             specid=spec_id,
                                              testing=testing):
                         print("Uploaded SNIa classification to TNS")
                         tns_upl = True
