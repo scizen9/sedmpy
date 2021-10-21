@@ -274,15 +274,15 @@ def post_comment(ztf_name, text):
     return resp
 
 
-def pprint(*args, **kwargs):
+def pprint(*pars, **kwargs):
     """
     slightly more convenient function instead of print(get_pprint)
 
     params:
-        *args (arguments to pass to get_pprint)
+        *pars (parameters to pass to get_pprint)
         **kwargs (keyword arguments to pass to get_pprint)
     """
-    print(get_pprint(*args, **kwargs))
+    print(get_pprint(*pars, **kwargs))
 
 
 def get_pprint(item, indent=0, tab=' '*4, maxwidth=float('inf')):
@@ -542,8 +542,7 @@ def tns_feedback(reprt_id):
         return False
 
 
-def sedm_tns_classify(spec_file, ztfname=None, specid=None,
-                      iau_name=None, testing=False):
+def sedm_tns_classify(spec_file, ztfname=None, iau_name=None, testing=False):
     """Verify the input source, prepare a classification report and
     upload to TNS"""
 
@@ -589,9 +588,6 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
 
     path = os.path.dirname(spec_file)
 
-    if specid is None:
-        specid = get_required_spectrum_id(ztfname, spec_file)
-
     spectrum_name = write_ascii_file(ztfname, spec_file, path=path)
 
     if spectrum_name is None:
@@ -612,14 +608,12 @@ def sedm_tns_classify(spec_file, ztfname=None, specid=None,
     spectype_id = ['object', 'host', 'sky', 'arcs',
                    'synthetic'].index(spectype) + 1
 
-    a = get_spectrum_api(specid)
-    header = (a['altdata'])
     obsdate = str((header['UTC']).split('T')[0]) + \
         ' ' + str((header['UTC']).split('T')[1])
 
     classification_report = TNSClassificationReport()
     if iau_name is None:
-        classification_report.name = get_iau_name(ztfname)[0]['name'][3:]
+        classification_report.name = info[1]
     else:
         classification_report.name = iau_name
     classification_report.fitsName = ''
@@ -678,8 +672,6 @@ Uploads classification report to the TNS website.
                              '/scr2/sedmdrp/redux/YYYYMMDD/spec_*.txt')
     parser.add_argument('--iau_name', type=str, default=None,
                         help='IAU designation: YYYYabc')
-    parser.add_argument('--spec_id', type=int, default=None,
-                        help='Fritz spectrum id number (int)')
     parser.add_argument('--testing', action="store_true", default=False,
                         help='Do not actually post to TNS (for testing)')
     args = parser.parse_args()
@@ -691,5 +683,4 @@ Uploads classification report to the TNS website.
         print("File not found: %s" % infile)
     else:
         print("Uploading from %s" % infile)
-        sedm_tns_classify(infile, iau_name=args.iau_name, specid=args.spec_id,
-                          testing=args.testing)
+        sedm_tns_classify(infile, iau_name=args.iau_name, testing=args.testing)
