@@ -203,7 +203,7 @@ def create_request_entry(request, custom_dict=None,
             name = 'Infant Supernovae 2021'
             shareid = 2
         elif request['programname'] == 'Nuclear Transients':
-            name = 'Tidal Disruption Events'
+            name = 'A complete spectroscopic sample of bright TDEs'
             shareid = 2
         elif request['programname'] == 'Sollerman Research Group':
             name = 'An unbiased stripped-envelope supernova sample from ZTF'
