@@ -2585,19 +2585,22 @@ def get_marshal_id(marshal='growth', request_id=None):
     except Exception as e:
         return {'error': str(e)}
 
-    ret = db.get_from_request(values=['marshal_id'],
+    ret = db.get_from_request(values=['marshal_id', 'external_id'],
                               where_dict={'id': request_id})
     if not ret:
         return {'error': "No object found with that id number"}
 
     if marshal == 'growth':
-        ret = make_dict_from_dbget(['marshal_id'], ret[0])
+
+        ret = make_dict_from_dbget(['marshal_id', 'external_id'], ret[0])
         if isinstance(ret['marshal_id'], int) and ret['marshal_id'] <= 100:
             return {'error': "Request is not a valid growth marshal request"}
         elif isinstance(ret['marshal_id'], str):
             return {'error': ret['marshal_id']}
         elif not ret['marshal_id']:
             return {'error': ret['marshal_id']}
+        elif ret['external_id'] == 2:
+            return {'error': "Not a growth request"}
         else:
             return ret
 
