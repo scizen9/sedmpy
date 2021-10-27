@@ -236,7 +236,7 @@ def fancy_request_table(df):
                .apply(highlight_set, axis=1)\
                .format(
                 {'object': '<a href="https://fritz.science/source/{0}">{0}</a>',
-                 'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.0f}',
+                 'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.1f}',
                  'start date': '{:%b %d}', 'end date': '{:%b %d}',
                  'lastmodified': '{:%b %d %H:%M}',
                  'UPDATE': '<a href="request?request_id={}">+</a>'})\
