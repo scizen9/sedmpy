@@ -23,6 +23,7 @@ import glob
 import os
 import shutil
 import re
+import sys
 import subprocess
 import logging
 import argparse
@@ -34,10 +35,10 @@ from configparser import ConfigParser
 import codecs
 try:
     from AutoReduce import update_spec, make_e3d, update_calibration, \
-        proc_bias_crrs, find_recent, make_finder
+        proc_bias_crrs, find_recent, make_finder, find_recent_bias
 except ImportError:
     from drpifu.AutoReduce import update_spec, make_e3d, update_calibration, \
-        proc_bias_crrs, find_recent, make_finder
+        proc_bias_crrs, find_recent, make_finder, find_recent_bias
 
 try:
     import rcimg
@@ -480,6 +481,73 @@ def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False,
         ret = True
 
     return ret
+
+
+def bias_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0):
+    """Check counts for required raw bias file types in caldir directory.
+
+    Args:
+        caldir (str): directory where raw cal files reside
+        fsize (int): size of completely copied file in bytes
+        mintest (bool): test for minimum required number of files
+        ncp (int): number of cal images most recently copied
+
+    Returns:
+        bool: True if required raw cal files are present, False otherwise
+
+    """
+
+    nbias = 0
+    bias_done = False
+    nbias2 = 0
+    bias2_done = False
+    ready = False
+    bias_done_str = '10 of 10'
+
+    # Get files in calibration directory
+    cflist = sorted(glob.glob(os.path.join(caldir, 'ifu*.fits')))
+    # Are there any files yet?
+    if len(cflist) > 0:
+        # Loop over files
+        for cal in cflist:
+            # Are we complete?
+            if os.stat(cal).st_size >= fsize:
+                # Read FITS header
+                ff = pf.open(cal)
+                hdr = ff[0].header
+                ff.close()
+                # Get OBJECT keyword
+                try:
+                    obj = hdr['OBJECT']
+                except KeyError:
+                    obj = ''
+                # Get ADCSPEED keyword
+                speed = hdr['ADCSPEED']
+
+                # Check for calibration files
+                if 'Calib' in obj:
+                    if 'bias' in obj:
+                        if speed == 2.0:
+                            nbias2 += 1
+                            if bias_done_str in obj:
+                                bias2_done = True
+                        if speed == 0.1:
+                            nbias += 1
+                            if bias_done_str in obj:
+                                bias_done = True
+
+        # Do we have the ideal number of calibration files?
+        if (nbias2 >= 10 or bias2_done) and (nbias >= 10 or bias_done):
+            ready = True
+        # Do we have the minimum allowed number of calibration files?
+        if mintest:
+            if nbias2 >= 5 and nbias >= 5:
+                ready = True
+    logging.info("bias2.0: %d, bias0.1: %d" % (nbias2, nbias))
+    sys.stdout.flush()
+
+    return ready
+    # END: bias_proc_ready
 
 
 def cal_proc_ready(caldir='./'):
@@ -1571,6 +1639,11 @@ def re_reduce(rawd=None, redd=None, ut_date=None, noprecal=False):
     # Now get science images from this date
     nsci, sci = cpsci(srcdir=idir, destdir=odir, datestr=ut_date)
     logging.info("%d sci images copied" % nsci)
+
+    # Do we have what we need?
+    if not bias_proc_ready(caldir=odir, mintest=True):
+        find_recent_bias(redd, 'bias0.1.fits', odir)
+        find_recent_bias(redd, 'bias2.0.fits', odir)
 
     # Now do basic reduction
     proc_bias_crrs(npre+ncal+nsci)
