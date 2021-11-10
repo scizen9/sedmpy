@@ -2157,7 +2157,7 @@ def clean_post_redux(outdir, utdstr):
     back_file = cfg_parser.get('backup', 'redux_backup_file')
     if os.path.exists(back_file):
         with open(back_file, 'a') as bf:
-            bf.writelines(utdstr)
+            bf.writelines(utdstr + "\n")
         print("%s appended to %s, ready for rsync" % (utdstr, back_file))
     else:
         print("Cannot open backup file for update: %s" % back_file)
