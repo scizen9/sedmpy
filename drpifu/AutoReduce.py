@@ -2104,16 +2104,16 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
         update_spec(file)
 
 
-def clean_post_redux(odir):
+def clean_post_redux(outdir, utdstr):
     """Remove/compress unused files after reduction"""
     # Remove intermediate processing files
-    flist = glob.glob(os.path.join(odir, "b_ifu*.fits"))
+    flist = glob.glob(os.path.join(outdir, "b_ifu*.fits"))
     for fl in flist:
         os.remove(fl)
     ndel = len(flist)
     # Remove intermediate calib files, compress others
-    ngzip = 0
-    flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
+    n_gzip = 0
+    flist = glob.glob(os.path.join(outdir, "*crr_b_ifu*.fits"))
     for fl in flist:
         if 'failed' in fl:
             continue
@@ -2134,20 +2134,28 @@ def clean_post_redux(odir):
                     rute.startswith('forcepsf') or \
                     rute.startswith('guider_crr_b'):
                 subprocess.call(["gzip", fl])
-                ngzip += 1
+                n_gzip += 1
     # Compress calib files
-    flist = glob.glob(os.path.join(odir, "*dome.fits"))
-    flist.extend(glob.glob(os.path.join(odir, '??.fits')))
-    flist.extend(glob.glob(os.path.join(odir, 'bias*.fits')))
+    flist = glob.glob(os.path.join(outdir, "*dome.fits"))
+    flist.extend(glob.glob(os.path.join(outdir, '??.fits')))
+    flist.extend(glob.glob(os.path.join(outdir, 'bias*.fits')))
     # Compress rainbow cam images
-    flist.extend(glob.glob(os.path.join(odir, 'rc*.fits')))
+    flist.extend(glob.glob(os.path.join(outdir, 'rc*.fits')))
     for fl in flist:
         if os.path.islink(fl):
             continue
         subprocess.call(["gzip", fl])
-        ngzip += 1
+        n_gzip += 1
+    # append dir to backup file
+    back_file = cfg_parser.get('backup', 'redux_backup_file')
+    if os.path.exists(back_file):
+        with open(back_file, 'a') as bf:
+            bf.writelines(utdstr)
+        print("%s appended to %s, ready for rsync" % (utdstr, back_file))
+    else:
+        print("Cannot open backup file for update: %s" % back_file)
 
-    return ndel, ngzip
+    return ndel, n_gzip
 
 
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
@@ -2296,7 +2304,7 @@ if __name__ == '__main__':
         if args.date is not None:
             odir = os.path.join(args.reduxdir, args.date)
             print("Cleaning %s" % odir)
-            nrm, ngzip = clean_post_redux(odir)
+            nrm, ngzip = clean_post_redux(odir, args.date)
             print("%d intermediate files removed, %d files gzipped" %
                   (nrm, ngzip))
         else:
