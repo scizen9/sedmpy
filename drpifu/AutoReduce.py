@@ -2106,6 +2106,11 @@ def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
 
 def clean_post_redux(outdir, utdstr):
     """Remove/compress unused files after reduction"""
+    # Remove raw file links
+    flist = glob.glob(os.path.join(outdir, "ifu%s_*.fits" % utdstr))
+    for fl in flist:
+        if os.path.islink(fl):
+            os.remove(fl)
     # Remove intermediate processing files
     flist = glob.glob(os.path.join(outdir, "b_ifu*.fits"))
     for fl in flist:
