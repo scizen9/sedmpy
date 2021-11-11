@@ -40,7 +40,7 @@ import sys
 import os
 import re
 import subprocess
-from subprocess import Popen, PIPE
+# from subprocess import Popen, PIPE
 import astropy.io.fits as pf
 import logging
 import argparse
@@ -2165,28 +2165,6 @@ def clean_post_redux(outdir, utdstr):
     return ndel, n_gzip
 
 
-def clean_post_raw(outdir, utdstr):
-    """Remove uncompressed raw files and add record to backup file"""
-    ndel = 0
-    # Remove raw uncompressed file
-    flist = glob.glob(os.path.join(outdir, "*%s_*.fits.gz" % utdstr))
-    for fl in flist:
-        rawf = fl.split('.gz')[0]
-        if os.path.exists(rawf):
-            os.remove(rawf)
-            ndel += 1
-    # append dir to backup file
-    back_file = cfg_parser.get('backup', 'raw_backup_file')
-    if os.path.exists(back_file):
-        with open(back_file, 'a') as bf:
-            bf.writelines(utdstr + "\n")
-        print("%s appended to %s, ready for rsync" % (utdstr, back_file))
-    else:
-        print("Cannot open backup file for update: %s" % back_file)
-
-    return ndel
-
-
 def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
        check_precal=True, indate=None, piggyback=False, local=False,
        nopush_marshal=False, nopush_slack=False, nodb=False, oldext=False):
@@ -2324,8 +2302,6 @@ if __name__ == '__main__':
                         help='Use extract_star.py instead of extractstar.py')
     parser.add_argument('--clean', action="store_true", default=False,
                         help='Clean UTDate directory')
-    parser.add_argument('--raw_clean', action="store_true", default=False,
-                        help='Clean UTDate raw directory')
 
     args = parser.parse_args()
 
@@ -2340,14 +2316,6 @@ if __name__ == '__main__':
                   (nrm, ngzip))
         else:
             print("Error: Must provide a UTDate to clean with --date")
-    elif args.raw_clean:
-        if args.date is not None:
-            odir = os.path.join(args.rawxdir, args.date)
-            print("Cleaning raw dir %s" % odir)
-            nrm = clean_post_raw(odir, args.date)
-            print("%d raw files removed" % nrm)
-        else:
-            print("Error: Must provide a UTDate to raw_clean with --date")
     else:
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
