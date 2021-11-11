@@ -43,7 +43,7 @@ def clean_post_raw(outdir, utdstr):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="""Start SEDM pipeline
+        description="""Clean uncompressed raw files
 
             """, formatter_class=argparse.RawTextHelpFormatter)
 
