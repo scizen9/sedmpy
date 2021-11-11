@@ -23,6 +23,9 @@ def clean_post_raw(outdir, utdstr):
     """Remove uncompressed raw files and add record to backup file"""
     ndel = 0
     # Remove raw uncompressed file
+    if not os.path.exists(outdir):
+        print("Error: outdir not found: %s" % outdir)
+        return 0
     flist = glob.glob(os.path.join(outdir, "*%s_*.fits.gz" % utdstr))
     for fl in flist:
         rawf = fl.split('.gz')[0]
@@ -30,13 +33,14 @@ def clean_post_raw(outdir, utdstr):
             os.remove(rawf)
             ndel += 1
     # append dir to backup file
-    back_file = cfg_parser.get('backup', 'raw_backup_file')
-    if os.path.exists(back_file):
-        with open(back_file, 'a') as bf:
-            bf.writelines(utdstr + "\n")
-        print("%s appended to %s, ready for rsync" % (utdstr, back_file))
-    else:
-        print("Cannot open backup file for update: %s" % back_file)
+    if ndel > 0:
+        back_file = cfg_parser.get('backup', 'raw_backup_file')
+        if os.path.exists(back_file):
+            with open(back_file, 'a') as bf:
+                bf.writelines(utdstr + "\n")
+            print("%s appended to %s, ready for rsync" % (utdstr, back_file))
+        else:
+            print("Cannot open backup file for update: %s" % back_file)
 
     return ndel
 
