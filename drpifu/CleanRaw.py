@@ -62,7 +62,8 @@ if __name__ == '__main__':
         timestamp = timestamp.split("T")[0].replace("-", "")
         odir = os.path.join(_rawpath, timestamp)
     else:
+        timestamp = args.date
         odir = os.path.join(_rawpath, args.date)
     print("Cleaning raw dir %s" % odir)
-    nrm = clean_post_raw(odir, args.date)
+    nrm = clean_post_raw(odir, timestamp)
     print("%d raw files removed" % nrm)
