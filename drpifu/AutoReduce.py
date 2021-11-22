@@ -2157,11 +2157,11 @@ def clean_post_redux(outdir, utdstr):
         n_gzip += 1
     # append dir to backup file
     back_file = cfg_parser.get('backup', 'redux_backup_file')
-    if os.path.exists(back_file):
-        with open(back_file, 'a') as bf:
+    try:
+        with open(back_file, 'w') as bf:
             bf.writelines(utdstr + "\n")
-        print("%s appended to %s, ready for rsync" % (utdstr, back_file))
-    else:
+        print("%s written to %s, ready for rsync" % (utdstr, back_file))
+    except OSError:
         print("Cannot open backup file for update: %s" % back_file)
 
     return ndel, n_gzip
