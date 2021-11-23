@@ -957,7 +957,6 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                         else:
                             logging.error("Not found: %s" % proced)
                         # contsep extraction
-                        """  Disabled for now due to certificate error: 211122
                         cmd = ("extractstar.py", datestr, "--auto", fn,
                                "--autobins", "6", "--tag", "contsep",
                                "--centroid", "auto", "--contsep", "--byecr")
@@ -996,7 +995,6 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                                 logging.error("Error running report for " +
                                               "contsep_lstep1__" +
                                               fn.split('.')[0])
-                        """
                 else:
                     logging.error("Cannot perform extraction for %s" % fn)
     return ncp, copied
