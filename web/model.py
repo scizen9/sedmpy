@@ -669,7 +669,7 @@ def process_request_form(content, form, userid):
             if 'message' in message:
                 process_dict['message'] += message['message']
             else:
-                process_dict['message'] = "Process complete"
+                process_dict['message'] += "Process complete"
 
     request_dict['object_id'] = int(objid)
 
