@@ -68,7 +68,10 @@ def requests():
         else:
             user_id = flask_login.current_user.id
         req_dict, form = model.process_request_form(content, form, user_id)
-        req_dict['message'] = req_dict['message'].replace("--", "<br>")
+        if req_dict['message'] == '':
+            req_dict['message'] = 'Request updated.'
+        else:
+            req_dict['message'] = req_dict['message'].replace("--", "<br>")
 
         return render_template('request.html', req_dict=req_dict, form=form)
 

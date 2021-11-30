@@ -2,7 +2,7 @@
 {% block content %}
     <div class="vertical-center-row">
         <div id="messagebox">
-        <h2 id="message">{{ req_dict.message }}</h2>
+        <h4 id="message">{{ req_dict.message | safe }}</h4>
         <div id="availableObjects"></div>
         </div>
 
