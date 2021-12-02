@@ -570,8 +570,8 @@ def parse_db_target_filters(obs_seq, exptime):
         # 4a. After parsing the indivual elements we need to check that they are
         # valid values
         if flt in rc_filters:
-            if 0 < flt_exptime < 600:
-                if 0 < flt_repeat < 100:
+            if 0 <= flt_exptime <= 1000:
+                if 1 <= flt_repeat <= 100:
                     return_dict['do_%s' % flt] = True
                     return_dict['%s_exptime' % flt] = flt_exptime
                     return_dict['%s_repeats' % flt] = flt_repeat
@@ -877,7 +877,7 @@ def make_obs_seq(obs_seq_dict):
                     exptime_list.append(str(exptime))
                 else:
                     exptime = int(obs_seq_dict['%s_exptime' % flt])
-                    if 0 <= exptime <= 600:
+                    if 0 <= exptime <= 1000:
                         pass
                     else:
                         ret_dict['proc_message'] += ("The exposure time (%s) "
@@ -896,7 +896,7 @@ def make_obs_seq(obs_seq_dict):
                         exptime_list.append(str(exptime))
 
     if not filters_list:
-        ret_dict["ERROR"] = "NO FILTERS COULD BE DETERMINE"
+        ret_dict["ERROR"] = "NO FILTERS COULD BE DETERMINED"
         return ret_dict
     else:
         if len(filters_list) == len(exptime_list):
