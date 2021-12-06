@@ -197,8 +197,8 @@ def create_request_entry(request, custom_dict=None,
             name = 'Astrometric Follow-up of 10 m scale asteroids'
             shareid = 2
         elif request['programname'] == 'Redshift Completeness Factor':
-            name = 'The ZTF-II Bright Transient Survey Caltech'
-            shareid = 3
+            name = 'A Census of Bright Transients with ZTF-II'
+            shareid = 2
         elif request['programname'] == 'Infant Supernovae':
             name = 'Infant Supernovae 2021'
             shareid = 2
