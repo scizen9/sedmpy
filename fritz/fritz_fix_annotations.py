@@ -97,9 +97,9 @@ def get_source_autoannot(obj_id, testing=False):
     return aids, spid, aorg, adat
 
 
-def delete_annotation(annot_id, res_type='source', res_id=None,
+def delete_annotation(annot_id, res_type='sources', res_id=None,
                       testing=False):
-    if 'source' in res_type:
+    if 'sources' in res_type:
         fritz_delete_ann_url = fritz_base_url + '%s/%s/annotations/%d' % (
             res_type, res_id, annot_id)
     else:
