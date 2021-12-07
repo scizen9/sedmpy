@@ -39,7 +39,7 @@ retries = Retry(
     total=5,
     backoff_factor=2,
     status_forcelist=[405, 429, 500, 502, 503, 504],
-    allowed_methods=["HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"]
+    method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"]
 )
 adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
 session.mount("https://", adapter)
