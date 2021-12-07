@@ -1,5 +1,6 @@
 import os
 import json
+import glob
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -198,11 +199,23 @@ def fix_annotations(source_id, testing=False):
                 print("Could not verify annotation %d" % new_anid)
 
 
+def parse_fritz_report(rfile):
+
+    sids = []
+    with open(rfile) as infile:
+        recs = infile.readlines()
+        for rec in recs:
+            if 'OK OK' in rec:
+                sids.append(rec.split()[1].split(':')[0])
+    return sids
+
+
 if __name__ == "__main__":
-    print("here")
-    anids, anspec, anorig, andata = get_source_autoannot('ZTF21abtsoky')
-    print(anids)
-    print(anspec)
-    print(anorig)
-    print(andata)
-    # print("%d annotations found")
+
+    report_file = glob.glob("report_ztf_fritz.txt")[0]
+    sources = parse_fritz_report(report_file)
+    for src in sources:
+        print("source: %s" % src)
+
+    # anids, anspec, anorig, andata = get_source_autoannot('ZTF21abtsoky')
+
