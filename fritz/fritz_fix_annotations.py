@@ -187,6 +187,8 @@ def fix_annotations(source_id, testing=False):
     anids, spids, anorig, andicts = get_source_autoannot(source_id,
                                                          testing=testing)
     for i, ani in enumerate(anids):
+        print("attaching source annotations for %s to spec %d" %
+              (source_id, spids[i]))
         new_anid = add_spec_autoannot(source_id, andicts[i], spec_id=spids[i],
                                       origin=anorig[i], testing=testing)
         if not testing:
