@@ -207,7 +207,9 @@ def parse_fritz_report(rfile):
         for rec in recs:
             if 'OK OK' in rec:
                 sids.append(rec.split()[1].split(':')[0])
-    return sids
+
+    src_ids = list(set(sids))
+    return src_ids
 
 
 if __name__ == "__main__":
@@ -216,6 +218,7 @@ if __name__ == "__main__":
     sources = parse_fritz_report(report_file)
     for src in sources:
         print("source: %s" % src)
+        fix_annotations(src)
 
     # anids, anspec, anorig, andata = get_source_autoannot('ZTF21abtsoky')
 
