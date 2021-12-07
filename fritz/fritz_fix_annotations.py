@@ -39,7 +39,7 @@ retries = Retry(
     total=5,
     backoff_factor=2,
     status_forcelist=[405, 429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"]
+    allowed_methods=["HEAD", "GET", "PUT", "POST", "PATCH", "DELETE"]
 )
 adapter = TimeoutHTTPAdapter(timeout=5, max_retries=retries)
 session.mount("https://", adapter)
@@ -86,9 +86,9 @@ def get_source_autoannot(obj_id, testing=False):
                     spid.append(int(ann['origin'].split(':')[-1].split(
                         'spc')[-1]))
                     if 'SNIascore:' in ann['origin']:
-                        aorg.append('SNIascore')
+                        aorg.append('sedm:SNIascore')
                     else:
-                        aorg.append('sedm')
+                        aorg.append('sedm:SNID')
         else:
             print('error getting annotations for %s' % obj_id)
             print(r['status'])
@@ -198,5 +198,9 @@ def fix_annotations(source_id, testing=False):
 
 if __name__ == "__main__":
     print("here")
-    # anids, anorig, andata = get_source_autoannot('ZTF21abtsoky')
+    anids, anspec, anorig, andata = get_source_autoannot('ZTF21abtsoky')
+    print(anids)
+    print(anspec)
+    print(anorig)
+    print(andata)
     # print("%d annotations found")
