@@ -217,11 +217,14 @@ def parse_fritz_report(rfile):
 
 if __name__ == "__main__":
 
-    report_file = glob.glob("report_ztf_fritz.txt")[0]
-    sources = parse_fritz_report(report_file)
-    for src in sources:
-        print("source: %s" % src)
-        fix_annotations(src)
+    if os.path.exists("report_ztf_fritz.txt"):
+        report_file = glob.glob("report_ztf_fritz.txt")[0]
+        sources = parse_fritz_report(report_file)
+        for src in sources:
+            print("source: %s" % src)
+            fix_annotations(src)
+    else:
+        print("no report file found")
 
     # anids, anspec, anorig, andata = get_source_autoannot('ZTF21abtsoky')
 
