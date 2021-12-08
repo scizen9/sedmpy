@@ -202,13 +202,16 @@ def fix_annotations(source_id, testing=False):
 def parse_fritz_report(rfile):
 
     sids = []
-    with open(rfile) as infile:
-        recs = infile.readlines()
-        for rec in recs:
-            if 'OK OK' in rec:
-                sids.append(rec.split()[1].split(':')[0])
+    if os.path.exists(rfile):
+        with open(rfile) as infile:
+            recs = infile.readlines()
+            for rec in recs:
+                if 'OK OK' in rec:
+                    sids.append(rec.split()[1].split(':')[0])
 
-    src_ids = list(set(sids))
+        src_ids = list(set(sids))
+    else:
+        src_ids = sids
     return src_ids
 
 
