@@ -41,6 +41,11 @@ except ImportError:
         proc_bias_crrs, find_recent, make_finder, find_recent_bias
 
 try:
+    from LinkCals import find_recent_std
+except ImportError:
+    from drpifu.LinkCals import find_recent_std
+
+try:
     import rcimg
 except ImportError:
     import drprc.rcimg as rcimg
@@ -1299,6 +1304,15 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
         logging.error("No calibrations!  Please run ReProcess.py --calibrate.")
     else:
         logging.info("Calibrations present in %s" % outdir)
+
+        # check for flux calibration file
+        flux_list = glob.glob('fluxcal_auto_robot_*STD*.fits')
+        if len(flux_list) <= 0:
+            if find_recent_std(redd, 'fluxcal_auto_robot_*STD*.fits', outdir,
+                               ut_date):
+                logging.info("Linked previous std into %s" % outdir)
+            else:
+                logging.warning("Could not find std to link")
         # Process observations
         nextr = dosci(outdir, datestr=ut_date, nodb=nodb, posdic=pos_dic,
                       oldext=oldext, stds_only=stds_only, manual=manual)
