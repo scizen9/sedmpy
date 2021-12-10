@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import glob
 import requests
@@ -217,14 +218,19 @@ def parse_fritz_report(rfile):
 
 if __name__ == "__main__":
 
-    if os.path.exists("report_ztf_fritz.txt"):
-        report_file = glob.glob("report_ztf_fritz.txt")[0]
-        sources = parse_fritz_report(report_file)
-        for src in sources:
-            print("source: %s" % src)
-            fix_annotations(src)
+    if len(sys.argv) > 1:
+        src = sys.argv[1]
+        print("source: " % src)
+        fix_annotations(src)
     else:
-        print("no report file found")
+        if os.path.exists("report_ztf_fritz.txt"):
+            report_file = glob.glob("report_ztf_fritz.txt")[0]
+            sources = parse_fritz_report(report_file)
+            for src in sources:
+                print("source: %s" % src)
+                fix_annotations(src)
+        else:
+            print("no report file found")
 
     # anids, anspec, anorig, andata = get_source_autoannot('ZTF21abtsoky')
 
