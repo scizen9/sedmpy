@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         src = sys.argv[1]
-        print("source: " % src)
+        print("source: %s" % src)
         fix_annotations(src)
     else:
         if os.path.exists("report_ztf_fritz.txt"):
