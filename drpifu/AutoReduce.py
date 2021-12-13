@@ -1139,6 +1139,8 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
             marsh = res[0]
         except IndexError:
             print("Unable to retrieve marshal number from database")
+        except TypeError:
+            print("Not a valid REQ_ID")
 
     # Get header keyword values
     for key in header_dict.keys():
