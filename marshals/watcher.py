@@ -193,6 +193,9 @@ def create_request_entry(request, custom_dict=None,
         priority = request['priority']
 
         # TODO: Replace this and only use the programname to add request
+        # request['programname'] is the 'name' in the FRITZ group record
+        # name is the 'name' field in the SEDM db table 'program'
+        # shareid is 2 for ZTF programs and 3 for Caltech programs
         if request['programname'] == 'Asteroids':
             name = 'Astrometric Follow-up of 10 m scale asteroids'
             shareid = 2
