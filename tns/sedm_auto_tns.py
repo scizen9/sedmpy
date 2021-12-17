@@ -62,7 +62,7 @@ def get_iau_name(ztf_name):
     if 'success' in resp['status']:
         return resp["data"]["cross_matches"]["TNS"]
     else:
-        print('Unable to retrieve TNS name for %s' % ztf_name)
+        print('Unable to retrieve TNS name from fritz for %s' % ztf_name)
         print(resp)
         return None
 
