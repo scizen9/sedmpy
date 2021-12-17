@@ -88,7 +88,7 @@ def get_tns_name(ztf_name):
 
     response = requests.post('https://www.wis-tns.org/api/get/search',
                              headers=TNS_HEADERS, data=data).json()
-    if response['reply']:
+    if response['data']['reply']:
         tns_name = response['data']['reply'][0]['objname']
     else:
         tns_name = None
