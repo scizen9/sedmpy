@@ -67,6 +67,35 @@ def get_iau_name(ztf_name):
         return None
 
 
+def get_tns_name(ztf_name):
+    """ Info : Query the TNS for name
+        Input : ZTFname
+        Returns : ATname
+    """
+    req_data = {
+        "ra": "",
+        "dec": "",
+        "radius": "",
+        "units": "",
+        "objname": "",
+        "objname_exact_match": 0,
+        "internal_name": ztf_name,
+        "internal_name_exact_match": 0,
+        "objid": ""
+    }
+
+    data = {'api_key': API_KEY, 'data': json.dumps(req_data)}
+    # headers = {'User-Agent': 'tns_marker{"tns_id":' + str(
+    #    YOUR_BOT_ID) + ', "type":"bot", "name":"' + YOUR_BOT_NAME + '"}'}
+    # pprint(headers)
+
+    response = requests.post('https://www.wis-tns.org/api/get/search',
+                             headers=TNS_HEADERS, data=data)
+
+    return json.loads(response.text)['data']['reply'][0]['prefix'] + ' ' + \
+           json.loads(response.text)['data']['reply'][0]['objname']
+
+
 def get_classification(ztf_name):
 
     """ Info : Query the classification and classification date for any source
