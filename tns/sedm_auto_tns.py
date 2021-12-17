@@ -85,15 +85,16 @@ def get_tns_name(ztf_name):
     }
 
     data = {'api_key': API_KEY, 'data': json.dumps(req_data)}
-    # headers = {'User-Agent': 'tns_marker{"tns_id":' + str(
-    #    YOUR_BOT_ID) + ', "type":"bot", "name":"' + YOUR_BOT_NAME + '"}'}
-    # pprint(headers)
 
     response = requests.post('https://www.wis-tns.org/api/get/search',
-                             headers=TNS_HEADERS, data=data)
+                             headers=TNS_HEADERS, data=data).json()
+    if 'success' in response['status']:
+        tns_name = response['data']['reply'][0]['objname']
+    else:
+        tns_name = None
 
-    return json.loads(response.text)['data']['reply'][0]['prefix'] + ' ' + \
-           json.loads(response.text)['data']['reply'][0]['objname']
+    # json.loads(response.text)['data']['reply'][0]['objname']
+    return tns_name
 
 
 def get_classification(ztf_name):
@@ -168,7 +169,12 @@ def get_tns_information(ztf_name):
     iau = get_iau_name(ztf_name)
 
     if not iau:
-        iau = "Not reported to TNS"
+
+        iau = get_tns_name(ztf_name)
+
+        if not iau:
+
+            iau = "Not reported to TNS"
 
     else:
         iau = iau[0]['name']
