@@ -1963,8 +1963,8 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
     # print("Files found", files)
 
-    for f in files:
-        base_name = os.path.basename(f).replace(".png", "")
+    for file in files:
+        base_name = os.path.basename(file).replace(".png", "")
         if product.lower() == 'science' and 'ACQ' in base_name:
             continue
         elif product.lower() == 'science':
@@ -1974,9 +1974,9 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
             if objfilt == imgfilt:
                 if 'data' in display_dict:
-                    display_dict['data'].append(f)
+                    display_dict['data'].append(file)
                 else:
-                    display_dict['data'] = [f]
+                    display_dict['data'] = [file]
         elif product.lower() == 'acquisition':
             if 'ACQ' not in base_name:
                 continue
@@ -1984,35 +1984,35 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                 continue
             else:
                 if 'data' in display_dict:
-                    display_dict['data'].append(f)
+                    display_dict['data'].append(file)
                 else:
-                    display_dict['data'] = [f]
+                    display_dict['data'] = [file]
         else:
             if 'data' in display_dict:
-                display_dict['data'].append(f)
+                display_dict['data'].append(file)
             else:
-                display_dict['data'] = [f]
+                display_dict['data'] = [file]
 
     div_str = ''
 
     if 'data' in display_dict:
         count = 100
-        for i in sorted(display_dict['data']):
-            i = i.replace(base_dir, '')
-            impath = "/data_r/%s" % i
+        for fil in sorted(display_dict['data']):
+            fil = fil.replace(base_dir, '')
+            impath = "/data_r/%s" % fil
 
-            if 'reduced' in i:
-                impathlink = "/data_r/%s" % i.replace('/png/', '/').replace(
+            if 'reduced' in fil:
+                impathlink = "/data_r/%s" % fil.replace('/png/', '/').replace(
                     '.png', '.fits')
-            elif 'pngraw' in i and '.gif' not in i:
-                base_link = i.split('/pngraw/')
+            elif 'pngraw' in fil and '.gif' not in fil:
+                base_link = fil.split('/pngraw/')
 
                 impathlink = "/data_r/%s" % \
                              os.path.join(base_link[0],
-                                          os.path.basename(i).replace(
-                                              '_all.png', '.fits'))
+                                          os.path.basename(fil).replace(
+                                              '_all.png', '.fits.gz'))
             else:
-                impathlink = "/data_r/%s" % i
+                impathlink = "/data_r/%s" % fil
 
             div_str += """<div class="col-sm-4"><div class="card">
                             <a href="{1}?image={4}" data-toggle="lightbox" data-gallery="example-gallery">
@@ -2026,7 +2026,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                             </div>
 
                         </div></div>""".format(impathlink, impath,
-                                               os.path.basename(i), impath,
+                                               os.path.basename(fil), impath,
                                                count)
 
             count += 1
