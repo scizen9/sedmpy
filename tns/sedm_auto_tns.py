@@ -62,9 +62,39 @@ def get_iau_name(ztf_name):
     if 'success' in resp['status']:
         return resp["data"]["cross_matches"]["TNS"]
     else:
-        print('Unable to retrieve TNS name for %s' % ztf_name)
+        print('Unable to retrieve TNS name from fritz for %s' % ztf_name)
         print(resp)
         return None
+
+
+def get_tns_name(ztf_name):
+    """ Info : Query the TNS for name
+        Input : ZTFname
+        Returns : ATname
+    """
+    req_data = {
+        "ra": "",
+        "dec": "",
+        "radius": "",
+        "units": "",
+        "objname": "",
+        "objname_exact_match": 0,
+        "internal_name": ztf_name,
+        "internal_name_exact_match": 0,
+        "objid": ""
+    }
+
+    data = {'api_key': API_KEY, 'data': json.dumps(req_data)}
+
+    response = requests.post('https://www.wis-tns.org/api/get/search',
+                             headers=TNS_HEADERS, data=data).json()
+    if response['data']['reply']:
+        tns_name = response['data']['reply'][0]['objname']
+    else:
+        tns_name = None
+
+    # json.loads(response.text)['data']['reply'][0]['objname']
+    return tns_name
 
 
 def get_classification(ztf_name):
@@ -139,7 +169,12 @@ def get_tns_information(ztf_name):
     iau = get_iau_name(ztf_name)
 
     if not iau:
-        iau = "Not reported to TNS"
+
+        iau = get_tns_name(ztf_name)
+
+        if not iau:
+
+            iau = "Not reported to TNS"
 
     else:
         iau = iau[0]['name']
