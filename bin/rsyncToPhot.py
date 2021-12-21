@@ -43,5 +43,8 @@ if __name__ == '__main__':
               "/scr2/sedmdrp/sedmpy/drpifu/What.py rc%s_*.fits > rcwhat.list" \
               % directory
         subprocess.call(cmd, shell=True)
-
-
+    elif len(flphot) > len(fls):
+        # remove bad links
+        for fl in flphot:
+            if not os.path.exists(os.readlink(fl)):
+                os.unlink(fl)
