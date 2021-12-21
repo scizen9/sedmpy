@@ -46,5 +46,6 @@ if __name__ == '__main__':
     elif len(flphot) > len(fls):
         # remove bad links
         for fl in flphot:
-            if not os.path.exists(os.readlink(fl)):
-                os.unlink(fl)
+            if os.path.islink(fl):
+                if not os.path.exists(os.readlink(fl)):
+                    os.unlink(fl)
