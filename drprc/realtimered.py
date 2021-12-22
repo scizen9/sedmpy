@@ -137,6 +137,8 @@ def plot_image(image, verbose=False, ut_id=None):
             elif 'dome' in subdir or 'twilight' in subdir:
                 if std > pltstd:
                     pltstd = std
+            elif 'norm' in image:
+                pltstd = 0.25
             else:
                 if 'r' in b:
                     if std > pltstd:
