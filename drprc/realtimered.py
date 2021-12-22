@@ -71,15 +71,11 @@ logging.basicConfig(format=log_format,
 logger = logging.getLogger('realtimered')
 
 
-def plot_image(image, verbose=False, ut_id=None):
+def plot_raw_image(image, verbose=False, ut_id=None):
     """
     Plots the reduced image into the png folder.
 
     """
-    if 'norm' in image:
-        is_norm = True
-    else:
-        is_norm = False
     image = os.path.abspath(image)
 
     try:
@@ -151,8 +147,6 @@ def plot_image(image, verbose=False, ut_id=None):
                 if 'r' in b:
                     if std > pltstd:
                         pltstd = std
-            if is_norm:
-                pltstd = 0.25
             if verbose:
                 print("%s %.2f %.2f %.2f" % (b, mid, std, pltstd))
 
@@ -216,7 +210,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         for wl in whatl:
             fl = wl.split()[0]
             utid = "_".join(fl.split("_")[1:]).split(".")[0]
-            plot_image(os.path.join(photdir, fl), ut_id=utid)
+            plot_raw_image(os.path.join(photdir, fl), ut_id=utid)
         logger.info("No acquisition yet (bright or weather), waiting 10 min...")
         time.sleep(600)
         with open(whatf, 'r') as wtf:
@@ -273,7 +267,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                 req_id = fitsutils.get_par(n, "REQ_ID")
                 imname = os.path.basename(n).replace(".fits", "")
                 utid = "_".join(imname.split("_")[1:])
-                plot_image(n, ut_id=utid)
+                plot_raw_image(n, ut_id=utid)
                 if "SCIENCE" in imtype.upper() or "ACQ" in imtype.upper() or \
                         "STANDARD" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:

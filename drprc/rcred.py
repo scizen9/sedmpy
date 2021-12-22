@@ -723,27 +723,31 @@ def init_header_reduced(image):
     fitsutils.update_pars(image, pardic)
 
 
-def plot_image(image, verbose=False, ut_id=None):
+def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     """
     Plots the reduced image into the png folder.
 
     """
+    # is this a normalized image?
     if 'norm' in image:
         is_norm = True
     else:
         is_norm = False
+
     logger.info("Plotting image %s" % image)
 
     print("Plotting image ", image)
 
     image = os.path.abspath(image)
 
-    # Change to image directory
+    # Get image directory
     imdir, imname = os.path.split(image)
 
     # Create destination directory
-
-    png_dir = os.path.join(imdir, "png")
+    if to_raw:
+        png_dir = os.path.join(imdir, "pngraw")
+    else:
+        png_dir = os.path.join(imdir, "png")
 
     if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
@@ -1036,7 +1040,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         # Get basic statistics for the image
         nsrc, fwhm, ellip, bkg = sextractor.get_image_pars(image)
-        plot_image(image, ut_id=utid)
+        plot_reduced_image(image, ut_id=utid)
 
         logger.info("Sextractor statistics: nscr %d, fwhm (arcsec) "
                     "%.2f, ellipticity %.2f" % (nsrc, fwhm, ellip))
