@@ -83,6 +83,7 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     except OSError:
         logger.error("FATAL! Could not open image %s." % image)
         return
+
     d = ff.data.astype(np.float64)
     h = ff.header
     imtype = h.get('IMGTYPE', 'None')

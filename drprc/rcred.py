@@ -740,6 +740,20 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
 
     image = os.path.abspath(image)
 
+    ff = fits.open(image)[0]
+    d = ff.data.astype(np.float64)
+    h = ff.header
+    imtype = h.get('IMGTYPE', 'None')
+    exptime = h.get('EXPTIME', 0)
+    name = h.get('OBJECT', 'None')
+    filt = h.get('FILTER', 'NA')
+    ontarget = h.get('ONTARGET', False)
+    xpx = h.get('TARGXPX', -1.)
+    ypx = h.get('TARGYPX', -1.)
+
+    # Sub-dir
+    subdir = imtype.lower().strip()
+
     # Get image directory
     imdir, imname = os.path.split(image)
 
@@ -752,15 +766,10 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
 
-    ff = fits.open(image)[0]
-    d = ff.data.astype(np.float64)
-    h = ff.header
-    exptime = h.get('EXPTIME', 0)
-    name = h.get('OBJECT', 'None')
-    filt = h.get('FILTER', 'NA')
-    ontarget = h.get('ONTARGET', False)
-    xpx = h.get('TARGXPX', -1.)
-    ypx = h.get('TARGYPX', -1.)
+    if to_raw:
+        png_dir = os.path.join(png_dir, subdir)
+        if not os.path.isdir(png_dir):
+            os.makedirs(png_dir)
 
     c, lo, hi = sigmaclip(d[np.isfinite(d)], low=2.5, high=2.5)
     pltmn = c.mean()
