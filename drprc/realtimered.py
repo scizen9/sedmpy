@@ -76,6 +76,10 @@ def plot_image(image, verbose=False, ut_id=None):
     Plots the reduced image into the png folder.
 
     """
+    if 'norm' in image:
+        is_norm = True
+    else:
+        is_norm = False
     image = os.path.abspath(image)
 
     try:
@@ -137,13 +141,15 @@ def plot_image(image, verbose=False, ut_id=None):
             elif 'dome' in subdir or 'twilight' in subdir:
                 if std > pltstd:
                     pltstd = std
-            elif 'norm' in image:
-                pltstd = 0.25
             else:
                 if 'r' in b:
                     if std > pltstd:
                         pltstd = std
+            if is_norm:
+                pltstd = 0.25
             if verbose:
+                if is_norm:
+                    print("normalized images")
                 print("%s %.2f %.2f %.2f" % (b, mid, std, pltstd))
 
         plt.imshow(d, vmin=-pltstd, vmax=2.*pltstd,
