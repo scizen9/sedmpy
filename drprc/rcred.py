@@ -806,6 +806,8 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
         outfile = imname.replace(".fits", ".png")
     plt.savefig(os.path.join(png_dir, outfile))
     plt.close()
+    if verbose:
+        print(outfile)
 
 
 def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,

@@ -171,6 +171,8 @@ def plot_raw_image(image, verbose=False, ut_id=None):
         logger.info("As %s", outfig)
         plt.savefig(outfig)
         plt.close()
+        if verbose:
+            print(outfig)
     else:
         if verbose:
             logger.info("Exists: %s", outfig)
