@@ -106,7 +106,11 @@ def plot_image(image, verbose=False, ut_id=None):
     if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
 
-    outfig = os.path.join(png_dir, imname.replace(".fits", "_all.png"))
+    if imname.endswith("gz"):
+        outfile = imname.replace(".fits.gz", "_all.png")
+    else:
+        outfile = imname.replace(".fits", "_all.png")
+    outfig = os.path.join(png_dir, outfile)
 
     if not os.path.isfile(outfig):
 
