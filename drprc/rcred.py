@@ -780,7 +780,11 @@ def plot_image(image, verbose=False, ut_id=None):
         fig = plt.gcf()
         ax = fig.gca()
         ax.add_artist(circle)
-    plt.savefig(os.path.join(png_dir, imname.replace(".fits", ".png")))
+    if imname.endswith("gz"):
+        outfile = imname.replace(".fits.gz", ".png")
+    else:
+        outfile = imname.replace(".fits", ".png")
+    plt.savefig(os.path.join(png_dir, outfile))
     plt.close()
 
 
