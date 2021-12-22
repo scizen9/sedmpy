@@ -110,10 +110,16 @@ def plot_image(image, verbose=False, ut_id=None):
     if not os.path.isdir(png_dir):
         os.makedirs(png_dir)
 
-    if imname.endswith("gz"):
-        outfile = imname.replace(".fits.gz", "_all.png")
+    # Handle Bias and Flat images
+    if 'Bias' in imname or 'Flat' in imname:
+        out_suffix = '.png'
     else:
-        outfile = imname.replace(".fits", "_all.png")
+        out_suffix = '_all.png'
+    # Handle gzipped files
+    if imname.endswith("gz"):
+        outfile = imname.replace(".fits.gz", out_suffix)
+    else:
+        outfile = imname.replace(".fits", out_suffix)
     outfig = os.path.join(png_dir, outfile)
 
     if not os.path.isfile(outfig):
@@ -148,8 +154,6 @@ def plot_image(image, verbose=False, ut_id=None):
             if is_norm:
                 pltstd = 0.25
             if verbose:
-                if is_norm:
-                    print("normalized images")
                 print("%s %.2f %.2f %.2f" % (b, mid, std, pltstd))
 
         plt.imshow(d, vmin=-pltstd, vmax=2.*pltstd,

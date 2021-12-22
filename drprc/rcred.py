@@ -728,6 +728,10 @@ def plot_image(image, verbose=False, ut_id=None):
     Plots the reduced image into the png folder.
 
     """
+    if 'norm' in image:
+        is_norm = True
+    else:
+        is_norm = False
     logger.info("Plotting image %s" % image)
 
     print("Plotting image ", image)
@@ -761,6 +765,9 @@ def plot_image(image, verbose=False, ut_id=None):
         pltmn = 0.
     if c.std() > pltstd:
         pltstd = c.std()
+    if is_norm:
+        pltmn = 1.
+        pltstd = 0.25
 
     if verbose:
         print("%s %s mn: %.2f, std: %.2f" % (name, filt, pltmn, pltstd))
