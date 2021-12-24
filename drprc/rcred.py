@@ -134,7 +134,7 @@ def create_masterbias(biasdir=None):
     lfastbias = []
     lslowbias = []
 
-    # Select all filts that are Bias with same instrument
+    # Select all filts that are Bias with RC
     for ff in glob.glob("rc*[0-9].fits"):
         try:
             if "BIAS" in str.upper(fitsutils.get_par(ff, "IMGTYPE").upper()):
@@ -162,6 +162,8 @@ def create_masterbias(biasdir=None):
         hdulist = fstacked.to_hdu()
         hdulist.writeto(outf)
 
+        plot_reduced_image(outf, to_raw=True)
+
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
                               os.path.basename(os.path.abspath(biasdir)))
@@ -185,6 +187,8 @@ def create_masterbias(biasdir=None):
             sstacked.header['STACKF%d' % (ii + 1)] = (fname, 'stack input file')
         hdulist = sstacked.to_hdu()
         hdulist.writeto(outs)
+
+        plot_reduced_image(outs, to_raw=True)
 
         # copy into the reference folder with current date
         newdir = os.path.join("../../refphot/",
@@ -398,6 +402,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                 hdulist = stacked.to_hdu()
                 hdulist.writeto(out)
 
+                plot_reduced_image(out, to_raw=True)
+
                 # Normalize flat
                 mymode = np.nanmedian(stacked.data[150:-150, 150:-150])
                 stacked.data /= mymode
@@ -407,6 +413,8 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
                                              'Divided by this to normalize')
                 hdulist = stacked.to_hdu()
                 hdulist.writeto(out_norm)
+
+                plot_reduced_image(out_norm, to_raw=True)
 
                 # copy into the reference folder with current date
                 newdir = os.path.join("../../refphot/",
