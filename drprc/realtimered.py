@@ -78,6 +78,8 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     """
     image = os.path.abspath(image)
 
+    utdate = int(os.path.basename(image).split('rc')[-1].split('_')[0])
+
     try:
         ff = fits.open(image)[0]
     except OSError:
@@ -93,7 +95,25 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     focpos = h.get('FOCPOS', 0.)
 
     # Sub-dir
-    subdir = imtype.lower().strip()
+    subdir = None
+    if utdate < 20181210:
+        if 'dome' in imtype or 'bias' in imtype:
+            subdir = imtype.lower().strip()
+        else:
+            obtype = h.get('OBJTYPE', 'None')
+            if 'Science' in imtype:
+                if 'Calibration' in obtype:
+                    obname = h.get('OBJNAME')
+                    if 'twilight' in obname:
+                        subdir = 'twilight'
+                    elif 'focus' in obname:
+                        subdir = 'focus'
+                    else:
+                        subdir = 'test'
+            else:
+                subdir = obtype.lower().strip()
+    else:
+        subdir = imtype.lower().strip()
     
     # Change to image directory
     imdir, imname = os.path.split(image)
