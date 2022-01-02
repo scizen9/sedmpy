@@ -78,7 +78,10 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     """
     image = os.path.abspath(image)
 
-    utdate = int(os.path.basename(image).split('rc')[-1].split('_')[0])
+    try:
+        utdate = int(os.path.basename(image).split('rc')[-1].split('_')[0])
+    except ValueError:
+        utdate = int(image.split('/')[-2])
 
     try:
         ff = fits.open(image)[0]
