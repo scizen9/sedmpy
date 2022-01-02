@@ -762,7 +762,7 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     ypx = h.get('TARGYPX', -1.)
 
     # Sub-dir
-    subdir = None
+    subdir = 'test'
     if utdate < 20181210:
         if 'dome' in imtype or 'bias' in imtype:
             subdir = imtype.lower().strip()
