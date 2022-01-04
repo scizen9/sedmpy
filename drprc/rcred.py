@@ -658,7 +658,11 @@ def clean_cosmic(fl):
     if fitsutils.has_par(fl, "RDNOISE"):
         rn = fitsutils.get_par(fl, "RDNOISE")
     else:
-        rn = 20
+        # Are we a fast or slow readout image?
+        if fitsutils.get_par(fl, "ADCSPEED") == 2:
+            rn = 20
+        else:
+            rn = 4
     array, header = cosmics.fromfits(fl)
 
     try:
@@ -707,28 +711,6 @@ def get_sequential_name(target_dir, name, i=0):
             newname = get_sequential_name(target_dir, name, i=i + 1)
 
     return newname
-
-
-def init_header_reduced(image):
-    """
-    IQWCS = 1 or 0 / Indicates astrometry has been solved for the field
-    IQZEROPT =  1 or 0 /indicates if the zero point was calculated for the image
-    SKYBKG = FLOAT / Average sky background given in counts
-    SEEPIX = FLOAT  / Seeing expressed in pixels
-    ZPCAT = 'String' / Catalog used to calculate zero point
-    ZEROPTU = FLOAT  / Zero point uncertainty
-    ZEROPT  = 'FLOAT'  / Zero point by comparison to catalog
-    """
-
-    pardic = {"IQWCS": 0,
-              "IQZEROPT": 0,
-              "SKYBKG": 0,
-              "SEEPIX": 0,
-              "ZPCAT": "none",
-              "ZEROPTU": 0.,
-              "ZEROPT": 0.,
-              "CRREJ": 0}
-    fitsutils.update_pars(image, pardic)
 
 
 def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
@@ -890,24 +872,15 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         if existing:
             return []
 
-    # Initialize the basic parameters.
-    init_header_reduced(image)
-
     # Are we a fast or slow readout image?
     if fitsutils.get_par(image, "ADCSPEED") == 2:
         speed = 'fast'
     else:
         speed = 'slow'
 
-    # Update noise parameters needed for cosmic reection
-    if 'fast' in speed:
-        fitsutils.update_par(image, "RDNOISE", 20.)
-    else:
-        fitsutils.update_par(image, "RDNOISE", 4.)
-
     if cosmic:
         logger.info("Correcting for cosmic rays...")
-        # Correct for cosmics each filter
+        # Correct for cosmics in whole image
         cleanimg = clean_cosmic(os.path.join(os.path.abspath(curdir), image))
         img = cleanimg
     else:
@@ -960,6 +933,10 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         rawf.header['BIASFILE'] = (bias_slow, 'Master bias')
         rawf.header['RDNOISE'] = (4., 'Read noise in electrons')
     rawf.header['HISTORY'] = 'Bias subtracted'
+    rawf.header['IQWCS'] = (False, 'Astrometry solved?')
+    rawf.header['IQZEROPT'] = (False, 'Zeropoint calculated?')
+    rawf.header['SKYBKG'] = (0., 'Avg. sky in counts')
+    rawf.header['CRREJ'] = (False, 'Were cosmic rays cleaned?')
     # Set negative counts to zero
     rawf.data[rawf.data < 0] = 0
     hdul = rawf.to_hdu()
@@ -983,6 +960,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
         os.remove(img)
 
     # Slicing the image for flats
+    logger.info("Slicing file %s" % astro_img)
     print("Creating sliced files...")
     slice_names = slice_rc(astro_img)
     print("Created: ", slice_names)
@@ -990,6 +968,10 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
     # Remove un-sliced image
     if not save_int:
         os.remove(astro_img)
+
+    # Remove full de-biased images
+    if not save_int:
+        os.remove(debiased)
 
     # DE-flat each filter and store under object name
     for i, debiased_f in enumerate(slice_names):
@@ -1043,7 +1025,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
             logger.error("SOMETHING IS WRONG. Error when dividing %s by "
                          "the flat field %s!" % (debiased_f, flat))
 
-        # Removes the de-biased file
+        # Removes the sliced, de-biased file
         if not save_int:
             os.remove(debiased_f)
 
