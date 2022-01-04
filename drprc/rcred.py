@@ -730,6 +730,11 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
 
     image = os.path.abspath(image)
 
+    try:
+        utdate = int(os.path.basename(image).split('rc')[-1].split('_')[0])
+    except ValueError:
+        utdate = int(image.split('/')[-2])
+
     ff = fits.open(image)[0]
     d = ff.data.astype(np.float64)
     h = ff.header
@@ -742,7 +747,27 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     ypx = h.get('TARGYPX', -1.)
 
     # Sub-dir
-    subdir = imtype.lower().strip()
+    subdir = 'test'
+    if utdate < 20181210:
+        if 'dome' in imtype or 'bias' in imtype:
+            subdir = imtype.lower().strip()
+        else:
+            obtype = h.get('OBJTYPE', 'None')
+            if 'Science' in imtype:
+                if 'Calibration' in obtype:
+                    obname = h.get('OBJNAME')
+                    if 'twilight' in obname:
+                        subdir = 'twilight'
+                    elif 'focus' in obname:
+                        subdir = 'focus'
+                    else:
+                        subdir = 'test'
+                else:
+                    subdir = obtype.lower().strip()
+            else:
+                subdir = obtype.lower().strip()
+    else:
+        subdir = imtype.lower().strip()
 
     # Get image directory
     imdir, imname = os.path.split(image)
