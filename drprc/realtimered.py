@@ -113,6 +113,8 @@ def plot_raw_image(image, verbose=False, ut_id=None):
                         subdir = 'focus'
                     else:
                         subdir = 'test'
+                elif 'Twilight' in obtype:
+                    subdir = 'twilight'
                 else:
                     subdir = obtype.lower().strip()
             else:
