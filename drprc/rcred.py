@@ -766,6 +766,8 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
                     subdir = 'twilight'
                 else:
                     subdir = obtype.lower().strip()
+            elif 'Twilight' in imtype:
+                subdir = 'twilight'
             else:
                 subdir = obtype.lower().strip()
     else:
