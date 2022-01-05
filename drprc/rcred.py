@@ -762,7 +762,7 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
                         subdir = 'focus'
                     else:
                         subdir = 'test'
-                elif 'twilight' in obtype.lower():
+                elif 'Twilight' in obtype:
                     subdir = 'twilight'
                 else:
                     subdir = obtype.lower().strip()
