@@ -745,6 +745,20 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     ontarget = h.get('ONTARGET', False)
     xpx = h.get('TARGXPX', -1.)
     ypx = h.get('TARGYPX', -1.)
+    if ontarget and xpx < 0 or ypx < 0:
+        obra = h.get('OBJRA', 'None')
+        obdec = h.get('OBJDEC', 'None')
+        if obra is not None and obdec is not None:
+            try:
+                out = subprocess.Popen(['sky2xy', image, obra, obdec],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT)
+                stdout, stderr = out.communicate()
+                if len(stderr) < 1:
+                    xpx = float(stdout.split()[4])
+                    ypx = float(stdout.split()[5])
+            except Exception:
+                print("Unable to get target position in image")
 
     # Sub-dir
     subdir = 'test'
