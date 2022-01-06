@@ -1980,7 +1980,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
         elif product.lower() == 'acquisition':
             if 'ACQ' not in base_name:
                 continue
-            elif "_r_r" not in base_name or "_NA_r" not in base_name:
+            elif "_r_r" not in base_name and "_NA_r" not in base_name:
                 continue
             else:
                 if 'data' in display_dict:
