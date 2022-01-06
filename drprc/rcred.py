@@ -1016,7 +1016,8 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
     # Remove full de-biased images
     if not save_int:
-        os.remove(debiased)
+        if os.path.isfile(debiased):
+            os.remove(debiased)
 
     # DE-flat each filter and store under object name
     for i, debiased_f in enumerate(slice_names):
