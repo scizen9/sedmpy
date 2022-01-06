@@ -754,9 +754,11 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT)
                 stdout, stderr = out.communicate()
-                if len(stderr) < 1:
+                if stderr is None:
                     xpx = float(stdout.split()[4])
                     ypx = float(stdout.split()[5])
+                else:
+                    print(stderr)
             except Exception:
                 print("Unable to get target position in image")
 
