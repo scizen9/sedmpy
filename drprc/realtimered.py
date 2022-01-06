@@ -276,12 +276,17 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
 
     phot_zp = {'u': None, 'g': None, 'r': None, 'i': None}
     # Run this loop for 12h after the start.
+    n_wait = 0
     while deltime.total_seconds() < total_wait:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
         if len(nfilesnew) == len(nfiles):
+            if n_wait > 10:
+                logger.info("No new image after %d waits, waiting 30s" % n_wait)
             time.sleep(30)
+            n_wait += 1
         else:
+            n_wait = 0
             new = [ff for ff in nfilesnew if ff not in nfiles]
             new.sort()
             logger.info("Detected %d new incoming files in the last 30s." %
