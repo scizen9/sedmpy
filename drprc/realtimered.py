@@ -396,6 +396,13 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                     else:
                         do_cosmic = False
                     reduced = rcred.reduce_image(n, cosmic=do_cosmic)
+        # Check for focus plots
+        focus_plots = glob.glob(os.path.join(photdir, "rcfocus*.png"))
+        for fp in focus_plots:
+            bn = os.path.basename(fp)
+            lbn = os.path.join(photdir, "pngraw/focus", bn)
+            if not os.path.islink(lbn):
+                os.symlink(fp, lbn)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
