@@ -218,7 +218,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
     time_curr = datetime.datetime.now()
     # Delta time
     deltime = time_curr - time_ini
-    # Don't wait longer than this (12hr)
+    # Don't wait longer than this (13hr)
     total_wait = 13.*3600.
 
     # Do we have files yet?
@@ -275,7 +275,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         subprocess.call(cmd, shell=True)
 
     phot_zp = {'u': None, 'g': None, 'r': None, 'i': None}
-    # Run this loop for 12h after the start.
+    # Run this loop for 13h after the start.
     n_wait = 0
     while deltime.total_seconds() < total_wait:
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
