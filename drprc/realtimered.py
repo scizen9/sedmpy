@@ -100,7 +100,7 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     # Sub-dir
     subdir = 'test'
     if utdate < 20181210:
-        if 'dome' in imtype or 'bias' in imtype:
+        if 'dome' in imtype.lower() or 'bias' in imtype.lower():
             subdir = imtype.lower().strip()
         else:
             obtype = h.get('OBJTYPE', 'None')
