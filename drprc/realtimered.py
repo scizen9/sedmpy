@@ -79,7 +79,7 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     image = os.path.abspath(image)
 
     try:
-        utdate = int(os.path.basename(image).split('rc')[-1].split('_')[0])
+        utdate = int(os.path.basename(image)[2:10])
     except ValueError:
         utdate = int(image.split('/')[-2])
 
