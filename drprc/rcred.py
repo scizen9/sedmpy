@@ -733,7 +733,10 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     try:
         utdate = int(os.path.basename(image)[2:10])
     except ValueError:
-        utdate = int(image.split('/')[-3])
+        try:
+            utdate = int(image.split('/')[-3])
+        except ValueError:
+            utdate = int(image.split('/')[-2])
 
     ff = fits.open(image)[0]
     d = ff.data.astype(np.float64)
