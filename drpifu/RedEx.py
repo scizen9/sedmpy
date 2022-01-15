@@ -32,7 +32,9 @@ if __name__ == "__main__":
                         help='recover Quality 5 extraction')
     parser.add_argument('--local', action='store_true', default=False,
                         help='Process data locally only (no push to marshal or '
-                             'slack or db')
+                             'slack')
+    parser.add_argument('--nodb', action='store_true', default=False,
+                        help='Do not update SEDM database')
     parser.add_argument('--lstep', type=str, default=None,
                         help='new lstep value (default is 1)')
     parser.add_argument('--oldext', action='store_true', default=False,
@@ -53,7 +55,7 @@ if __name__ == "__main__":
 
     if not args.obs_id:
         logging.info("Usage - redex <obs_id> [<x> <y>] [--recover] [--local]"
-                     " [--lstep <n>] [--oldext] [--doab]")
+                     " [--nodb] [--lstep <n>] [--oldext] [--doab]")
     else:
 
         # Get tag id
@@ -363,11 +365,12 @@ if __name__ == "__main__":
                 os.path.join(rd, dd, "spec_auto_%s_*_%s.fits" %
                              (tagstr, obname)))
             if len(fits_file) == 1 and not args.testing:
-                if not args.local:
+                if not args.nodb:
                     # Update database entry
                     ar.update_spec(fits_file[0])
-                    # e-mail user that re-extraction was made
-                    ar.email_user(fits_file[0], dd, obname)
+                    if not args.local:
+                        # e-mail user that re-extraction was made
+                        ar.email_user(fits_file[0], dd, obname)
             else:
                 if args.testing:
                     logging.info("TESTING RedEx.py script")
