@@ -107,7 +107,8 @@ def plot_raw_image(image, verbose=False, ut_id=None):
             if 'science' in imtype.lower():
                 if 'calibration' in obtype.lower():
                     obname = h.get('OBJNAME')
-                    if 'twilight' in obname.lower():
+                    if 'twilight' in obname.lower() or \
+                            'twlight' in obname.lower():
                         subdir = 'twilight'
                     elif 'focus' in obname.lower() or 'focus' in name.lower():
                         subdir = 'focus'
