@@ -121,10 +121,15 @@ def plot_raw_image(image, verbose=False, ut_id=None):
                     subdir = 'science'
                 else:
                     subdir = obtype.lower().strip()
+                    if len(subdir) <= 0:
+                        if 'finding' in name.lower():
+                            subdir = 'acquisition'
             elif 'Twilight' in imtype:
                 subdir = 'twilight'
             elif 'focus' in name.lower():
                 subdir = 'focus'
+            elif 'standard' in imtype.lower:
+                subdir = 'science'
             else:
                 subdir = obtype.lower().strip()
                 if len(subdir) <= 0:
