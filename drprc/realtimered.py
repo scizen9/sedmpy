@@ -124,6 +124,8 @@ def plot_raw_image(image, verbose=False, ut_id=None):
                     if len(subdir) <= 0:
                         if 'finding' in name.lower():
                             subdir = 'acquisition'
+                        else:
+                            subdir = 'guider'
             elif 'Twilight' in imtype:
                 subdir = 'twilight'
             elif 'focus' in name.lower():
