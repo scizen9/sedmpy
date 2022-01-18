@@ -123,8 +123,12 @@ def plot_raw_image(image, verbose=False, ut_id=None):
                     subdir = obtype.lower().strip()
             elif 'Twilight' in imtype:
                 subdir = 'twilight'
+            elif 'focus' in name.lower():
+                subdir = 'focus'
             else:
                 subdir = obtype.lower().strip()
+                if len(subdir) <= 0:
+                    subdir = 'test'
     else:
         subdir = imtype.lower().strip()
     
