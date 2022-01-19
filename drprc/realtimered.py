@@ -426,6 +426,8 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
             lbn = os.path.join(photdir, "pngraw/focus", bn)
             if not os.path.islink(lbn):
                 os.symlink(fp, lbn)
+                slack.push_image(fp, caption="RC FOCUS", title=bn,
+                                 channel=SLACK_CHANNEL)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
