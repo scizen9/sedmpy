@@ -1969,8 +1969,12 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
             continue
         elif product.lower() == 'science':
             filters = base_name.split("_")
-            objfilt = filters[-2]
-            imgfilt = filters[-1]
+            if filters[-1] == "0":
+                objfilt = filters[-3]
+                imgfilt = filters[-2]
+            else:
+                objfilt = filters[-2]
+                imgfilt = filters[-1]
 
             if objfilt == imgfilt:
                 if 'data' in display_dict:
