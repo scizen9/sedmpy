@@ -1407,6 +1407,15 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             calib_dict.pop(i)
     # print(calib_dict, 'calib products')
 
+    if user_id == 2:    # SEDM_admin
+        ext_report = "http://pharos.caltech.edu/data_r/redux/{0}/report.txt".format(obsdate)
+        frz_report = "http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_fritz.txt".format(obsdate)
+        grw_report = "http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_growth.txt".format(obsdate)
+        div_str += """<div class="row">"""
+        div_str += """<h4>Reports</h4>"""
+        div_str += """<a href="{0}">Extraction</a>  <a href="{1}">Fritz</a>  <a href="{2}">Growth</a>""".format(ext_report, frz_report, grw_report)
+        div_str += "</div>"
+
     div_str += """<div class="row">"""
     div_str += """<h4>Calibrations</h4>"""
     for k, v in calib_dict.items():
@@ -2035,8 +2044,6 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
             count += 1
 
-        div_str += """<a href="http://pharos.caltech.edu/data_r/redux/phot/{0}/rcwhat.list">RC what file</a>
-            """.format(obsdate)
         div_str += ''
         sedm_dict['data'] = div_str
     else:
