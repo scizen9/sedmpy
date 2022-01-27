@@ -2035,8 +2035,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
             count += 1
 
-        if 'SEDM_admin' in user_id:
-            div_str += """<a href="http://pharos.caltech.edu/data_r/redux/phot/{0}/rcwhat.list">RC what file</a>
+        div_str += """<a href="http://pharos.caltech.edu/data_r/redux/phot/{0}/rcwhat.list">RC what file</a>
             """.format(obsdate)
         div_str += ''
         sedm_dict['data'] = div_str
