@@ -1417,7 +1417,7 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
         else:
             frz_report = ""
         if os.path.exists(os.path.join(obsdir, 'report_ztf_growth.txt')):
-            grw_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_growth.txt>Growth</a>""".format(obsdate)
+            grw_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_growth.txt">Growth</a>""".format(obsdate)
         else:
             grw_report = ""
         if os.path.exists(os.path.join(obsdir, 'what.list')):
