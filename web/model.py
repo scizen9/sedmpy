@@ -1420,8 +1420,8 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
             grw_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_growth.txt">Growth</a>""".format(obsdate)
         else:
             grw_report = ""
-        if os.path.exists(os.path.join(obsdir, 'what.list')):
-            wha_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/what.list" type="plain/text">What</a>""".format(obsdate)
+        if os.path.exists(os.path.join(obsdir, 'what.txt')):
+            wha_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/what.txt" type="plain/text">What</a>""".format(obsdate)
         else:
             wha_report = ""
         div_str += """<div class="row">"""
