@@ -2022,6 +2022,17 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
 
     div_str = ''
 
+    if user_id == 2:    # SEDM_admin
+        obsdir = os.path.join(new_phot_dir, obsdate)
+        if os.path.exists(os.path.join(obsdir, 'rcwhat.txt')):
+            wha_report = """<a href="http://pharos.caltech.edu/data_r/redux/phot/{0}/rcwhat.txt" type="plain/text">RCWhat</a>""".format(obsdate)
+        else:
+            wha_report = ""
+        div_str += """<div class="row">"""
+        div_str += """<h4>Reports</h4>"""
+        div_str += """{0}""".format(wha_report)
+        div_str += "</div>"
+
     if 'data' in display_dict:
         count = 100
         for fil in sorted(display_dict['data']):
