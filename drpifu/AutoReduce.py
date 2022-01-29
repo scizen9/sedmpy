@@ -1883,6 +1883,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 # Get new listing
                 retcode = subprocess.call("~/spy what ifu*.fits > what.list",
                                           shell=True)
+                # Link what.txt
+                if not os.path.islink(os.path.join('what.txt')):
+                    os.symlink('what.list', 'what.txt')
                 if retcode != 0:
                     logging.error("what oops!")
 

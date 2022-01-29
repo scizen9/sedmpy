@@ -256,6 +256,10 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         if deltime.total_seconds() > total_wait:
             logger.warning("Waited 13hr and no rcwhat file appeared!")
             return
+    # Link rcwhat.txt
+    if not os.path.islink(os.path.join(photdir, 'rcwhat.txt')):
+        os.symlink(os.path.join(photdir, 'rcwhat.list'),
+                   os.path.join(photdir, 'rcwhat.txt'))
 
     # Wait for an acquisition
     with open(whatf, 'r') as wtf:
