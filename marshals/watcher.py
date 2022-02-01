@@ -241,7 +241,7 @@ def create_request_entry(request, custom_dict=None,
             name = 'Finding AM CVn systems in alert-streams'
             shareid = 3
         elif request['programname'] == 'cyclotron WDs':
-            name = 'Director Discretionary Time 2021B'
+            name = 'Director Discretionary Time'
             shareid = 3
         # elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
         #    name = 'Gravitational Wave Follow-Up'
