@@ -196,11 +196,9 @@ def create_request_entry(request, custom_dict=None,
         # request['programname'] is the 'name' in the FRITZ group record
         # name is the 'name' field in the SEDM db table 'program'
         # shareid is 2 for ZTF programs and 3 for Caltech programs
+        # ZTF programs
         if request['programname'] == 'Asteroids':
             name = 'Astrometric Follow-up of 10 m scale asteroids'
-            shareid = 2
-        elif request['programname'] == 'Redshift Completeness Factor':
-            name = 'A Census of Bright Transients with ZTF-II'
             shareid = 2
         elif request['programname'] == 'Infant Supernovae':
             name = 'Infant Supernovae 2021'
@@ -226,6 +224,10 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'Cataclysmic Variables':
             name = 'Identification Spectra of Eruptive variables and transients in our galaxy'
             shareid = 2
+        # Caltech programs
+        elif request['programname'] == 'Redshift Completeness Factor':
+            name = 'The ZTF-II Bright Transient Survey Caltech'
+            shareid = 3
         elif request['programname'] == 'Red Transients':
             name = 'The ZTF-II Bright Transient Survey Caltech'
             shareid = 3
@@ -233,7 +235,10 @@ def create_request_entry(request, custom_dict=None,
             name = 'The ZTF-II Bright Transient Survey Caltech'
             shareid = 3
         elif request['programname'] == 'Palomar Gattini-IR':
-            name = 'The ZTF-II Bright Transient Survey Caltech'
+            name = 'Exploring the dynamic infrared sky with Palomar Gattini-IR'
+            shareid = 3
+        elif request['programname'] == 'AMCVn ':
+            name = 'Finding AM CVn systems in alert-streams'
             shareid = 3
         elif request['programname'] == 'cyclotron WDs':
             name = 'Director Discretionary Time 2021B'
