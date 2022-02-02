@@ -228,6 +228,7 @@ def fancy_request_table(df):
     df['status'] = [i.lower() for i in df['status']]
     df['allocation'] = [i.replace('2018A-', '').replace('2018B-', '')
                         .replace('2019B-', '').replace('2021B-', '')
+                        .replace('2022A-', '')
                         for i in df['allocation']]
     for col in ('obs_seq', 'exptime'):
         df[col] = [improve_obs_seq(i) for i in df[col]]
