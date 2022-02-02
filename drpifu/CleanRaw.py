@@ -28,6 +28,7 @@ def clean_post_raw(outdir, utdstr):
         print("Error: outdir not found: %s" % outdir)
         return 0
     flist = glob.glob(os.path.join(outdir, "*%s_*.fits.gz" % utdstr))
+    print("%d raw compressed files found" % len(flist))
     for fl in flist:
         rawf = fl.split('.gz')[0]
         if os.path.exists(rawf):
@@ -42,6 +43,8 @@ def clean_post_raw(outdir, utdstr):
             print("%s written to %s, ready for rsync" % (utdstr, back_file))
         except OSError:
             print("Cannot open backup file for update: %s" % back_file)
+    else:
+        print("No compressed raw files found.")
 
     return ndel
 
@@ -64,6 +67,6 @@ if __name__ == '__main__':
     else:
         timestamp = args.date
         odir = os.path.join(_rawpath, args.date)
-    print("Cleaning raw dir %s" % odir)
+    print("Cleaning raw dir %s:" % odir)
     nrm = clean_post_raw(odir, timestamp)
-    print("%d raw files removed" % nrm)
+    print("%d raw files removed." % nrm)
