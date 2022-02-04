@@ -279,7 +279,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         if share_id == 2:
             group_id = 209
         else:
-            group_id = None
+            group_id = 209
         # get source name
         try:
             res = search_db.get_from_object(["name"], {"id": object_id})[0]
