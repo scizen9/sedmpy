@@ -1423,10 +1423,12 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
         flist = glob.glob(os.path.join(destdir, 'bkgd_*.fits'))
         for fl in flist:
             subprocess.call(["gzip", fl])
-
+        # Remove RC links, or gzip RC files
         flist = glob.glob(os.path.join(destdir, 'rc%s_*.fits' % ut_date))
         for fl in flist:
-            if not os.path.islink(fl):
+            if os.path.islink(fl):
+                os.remove(fl)
+            else:
                 subprocess.call(["gzip", fl])
 
     return ncube
