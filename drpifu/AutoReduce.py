@@ -2114,6 +2114,7 @@ def clean_post_redux(outdir, utdstr):
     ndel = 0
     # Remove raw file links
     flist = glob.glob(os.path.join(outdir, "ifu%s_*.fits" % utdstr))
+    flist.extend(glob.glob(os.path.join(outdir, 'rc%s_*.fits' % utdstr)))
     for fl in flist:
         if os.path.islink(fl):
             os.remove(fl)
