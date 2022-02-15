@@ -85,12 +85,15 @@ def plot_raw_image(image, verbose=False, ut_id=None):
 
     try:
         ff = fits.open(image)[0]
+        d = ff.data.astype(np.float64)
+        h = ff.header
     except OSError:
         logger.error("FATAL! Could not open image %s." % image)
         return
+    except TypeError:
+        logger.error("FATAL! Buffer size error for image %s." % image)
+        return
 
-    d = ff.data.astype(np.float64)
-    h = ff.header
     imtype = h.get('IMGTYPE', 'None')
     exptime = h.get('EXPTIME', 0)
     name = h.get('OBJECT', 'None')
