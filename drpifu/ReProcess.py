@@ -641,20 +641,23 @@ def clean_raw_data(odir):
     # Remove calib files
     flist = glob.glob(os.path.join(odir, "*crr_b_ifu*.fits"))
     for fl in flist:
-        ff = pf.open(fl)
-        hdr = ff[0].header
-        ff.close()
-        try:
-            obj = hdr['OBJECT']
-        except KeyError:
-            obj = 'Test'
-        if 'Calib' in obj:
+        if os.path.islink(fl):
             os.remove(fl)
-            ndel += 1
         else:
-            rute = fl.split('/')[-1]
-            if rute.startswith('maskcrr_'):
-                subprocess.call(["gzip", fl])
+            ff = pf.open(fl)
+            hdr = ff[0].header
+            ff.close()
+            try:
+                obj = hdr['OBJECT']
+            except KeyError:
+                obj = 'Test'
+            if 'Calib' in obj:
+                os.remove(fl)
+                ndel += 1
+            else:
+                rute = fl.split('/')[-1]
+                if rute.startswith('maskcrr_'):
+                    subprocess.call(["gzip", fl])
 
     return ndel
 
