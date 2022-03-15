@@ -368,7 +368,11 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                     else:
                         # Copy them to transient
                         for r in reduced:
-                            toks = os.path.basename(r).split('.')[0].split('_')
+                            if 'ZTFJ' in r:
+                                toks = os.path.basename(r).split('_')
+                                toks[-1] = toks[-1].split('.')[0]
+                            else:
+                                toks = os.path.basename(r).split('.')[0].split('_')
                             # Do the filters match?
                             if toks[-2] == toks[-1]:
                                 cmd = "rcp %s grbuser@transient.caltech.edu:" \
