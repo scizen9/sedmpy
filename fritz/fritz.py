@@ -206,7 +206,12 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
         # post the spectrum
         ret = api("POST", fritz_spec_url, data=submission_dict)
 
-    return ret
+    if ret['data'] is not None:
+        return ret
+    else:
+        print("ERROR - Unable to upload spectrum to fritz!")
+        print(ret['message'])
+        return None
 
 
 def read_request(request_file):
