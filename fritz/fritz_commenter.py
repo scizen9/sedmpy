@@ -117,6 +117,7 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     """
 
     tns_upl = False
+    ann_upl = False
     file_ext = fname.split('.')[-1]
     assert file_ext == 'txt' or file_ext == 'ascii'
 
@@ -128,11 +129,11 @@ def add_SNIascore_pysedm_autoannot(fname, object_id=None, spec_id=None,
     # SNIascore RESULTS
     if 'SNIASCORE' not in header:
         print(fname, "never run through SNIascore?")
-        return False
+        return ann_upl, tns_upl
 
     if float(header['SNIASCORE']) < 0:
         print('no score')
-        return False
+        return ann_upl, tns_upl
 
     # construct annotations dictionary
     if float(header['SNIASCORE']) >= 0.9:
