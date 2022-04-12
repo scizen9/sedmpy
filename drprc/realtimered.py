@@ -101,7 +101,6 @@ def plot_raw_image(image, verbose=False, ut_id=None):
     focpos = h.get('FOCPOS', 0.)
 
     # Sub-dir
-    subdir = 'test'
     if utdate < 20181210:
         if 'dome' in imtype.lower() or 'bias' in imtype.lower():
             subdir = imtype.lower().strip()
@@ -264,17 +263,26 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         os.symlink(os.path.join(photdir, 'rcwhat.list'),
                    os.path.join(photdir, 'rcwhat.txt'))
 
+    # list of raw plots made
+    raw_plot_list = []
     # Wait for an acquisition
     with open(whatf, 'r') as wtf:
         whatl = wtf.readlines()
     acqs = [wl for wl in whatl if 'ACQ' in wl]
+    n_wait = 0
     while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
         for wl in whatl:
             fl = wl.split()[0]
             utid = "_".join(fl.split("_")[1:]).split(".")[0]
-            plot_raw_image(os.path.join(photdir, fl), ut_id=utid)
-        logger.info("No acquisition yet (bright or weather), waiting 10 min...")
-        time.sleep(600)
+            if fl not in raw_plot_list:
+                plot_raw_image(os.path.join(photdir, fl), ut_id=utid)
+                raw_plot_list.append(fl)
+        if n_wait >= 10:
+            logger.info("No acquisition for 10 min (bright or weather), check again in 60 sec...")
+            n_wait = 0
+        else:
+            n_wait += 1
+        time.sleep(60)
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
         acqs = [wl for wl in whatl if 'ACQ' in wl]
@@ -426,7 +434,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                         do_cosmic = True
                     else:
                         do_cosmic = False
-                    reduced = rcred.reduce_image(n, cosmic=do_cosmic)
+                    _ = rcred.reduce_image(n, cosmic=do_cosmic)
         # Check for focus plots
         focus_plots = glob.glob(os.path.join(photdir, "rcfocus*.png"))
         for fp in focus_plots:
@@ -466,9 +474,9 @@ if __name__ == '__main__':
     else:
         pdir = args.photdir
 
-    photdir = os.path.abspath(pdir)
+    phot_dir = os.path.abspath(pdir)
 
-    reduce_on_the_fly(photdir, nocopy=args.nocopy, proc_na=args.proc_na)
+    reduce_on_the_fly(phot_dir, nocopy=args.nocopy, proc_na=args.proc_na)
 
-    dayname = os.path.basename(photdir)
-    logger.info("Concluding RC image processing for %s." % dayname)
+    day_name = os.path.basename(phot_dir)
+    logger.info("Concluding RC image processing for %s." % day_name)

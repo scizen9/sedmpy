@@ -123,7 +123,10 @@ def plot_stats(statfile):
     colors = {"ACQUISITION": "b", "SCIENCE": "r", "FOCUS": "g", "GUIDER": "k"}
     
     s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
-    s.sort(order="f2")
+    try:
+        s.sort(order="f2")
+    except ValueError:
+        return
     s = s[s["f3"] > 1]
 
     day_frac_diff = datetime.timedelta(
