@@ -2046,7 +2046,7 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
                 impathlink = "/data_r/%s" % fil.replace('/png/', '/').replace(
                     '.png', fits_suffix)
             elif 'pngraw' in fil and '.gif' not in fil:
-                base_link = fil.split('/pngraw/')[0]
+                base_link = fil.replace(base_dir, '').split('/pngraw/')[0]
                 fits_suffix = '.fits'
                 png_suffix = '_all.png'
                 if 'Bias' in fil or 'Flat' in fil:
