@@ -493,9 +493,9 @@ def copy_ref_calib(curdir, calib="Flat"):
                 print("Checking for %s" % cal)
                 c = os.path.join(srcdir, cal)
                 if os.path.isfile(c):
-                    logger.info("Copying calibration file %s to from "
+                    logger.info("Copying calibration file %s from "
                                 "directory %s to directory %s" %
-                                (srcdir, c, curdir))
+                                (c, srcdir, curdir))
                     shutil.copy(c, os.path.join(curdir, os.path.basename(c)))
                     calib_dic[cal] = True
         if all(calib_dic.values()):
