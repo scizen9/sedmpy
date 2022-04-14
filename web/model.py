@@ -2034,25 +2034,32 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     if 'data' in display_dict:
         count = 100
         for fil in sorted(display_dict['data']):
-            fits_suffix = '.fits'
-            if '.png' in fil:
-                if os.path.exists(fil.replace('.png', '.fits.gz')):
-                    fits_suffix = '.fits.gz'
-            fil = fil.replace(base_dir, '')
-            impath = "/data_r/%s" % fil
+            # fil = fil.replace(base_dir, '')
+            impath = "/data_r/%s" % fil.replace(base_dir, '')
 
             if 'reduced' in fil:
+                fits_suffix = '.fits'
+                if os.path.exists(fil.replace('/png', '').replace('.png',
+                                                                  '.fits.gz')):
+                    fits_suffix = '.fits.gz'
+                fil = fil.replace(base_dir, '')
                 impathlink = "/data_r/%s" % fil.replace('/png/', '/').replace(
                     '.png', fits_suffix)
             elif 'pngraw' in fil and '.gif' not in fil:
-                base_link = fil.split('/pngraw/')
-
+                base_link = fil.split('/pngraw/')[0]
+                fits_suffix = '.fits'
+                if os.path.exists(
+                        os.path.join(new_phot_dir, obsdate,
+                                     os.path.basename(fil).replace('_all.png',
+                                                                   '.fits.gz'))):
+                    fits_suffix = '.fits.gz'
+                fil = fil.replace(base_dir, '')
                 impathlink = "/data_r/%s" % \
-                             os.path.join(base_link[0],
+                             os.path.join(base_link,
                                           os.path.basename(fil).replace(
                                               '_all.png', fits_suffix))
             else:
-                impathlink = "/data_r/%s" % fil
+                impathlink = "/data_r/%s" % fil.replace(base_dir, '')
 
             div_str += """<div class="col-sm-4"><div class="card">
                             <a href="{1}?image={4}" data-toggle="lightbox" data-gallery="example-gallery">
