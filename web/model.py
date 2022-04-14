@@ -2048,16 +2048,20 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
             elif 'pngraw' in fil and '.gif' not in fil:
                 base_link = fil.split('/pngraw/')[0]
                 fits_suffix = '.fits'
+                png_suffix = '_all.png'
+                if 'Bias' in fil or 'Flat' in fil:
+                    png_suffix = '.png'
                 if os.path.exists(
-                        os.path.join(new_phot_dir, obsdate,
-                                     os.path.basename(fil).replace('_all.png',
-                                                                   '.fits.gz'))):
+                        os.path.join(
+                            new_phot_dir, obsdate,
+                            os.path.basename(fil).replace(png_suffix,
+                                                          '.fits.gz'))):
                     fits_suffix = '.fits.gz'
                 fil = fil.replace(base_dir, '')
                 impathlink = "/data_r/%s" % \
                              os.path.join(base_link,
                                           os.path.basename(fil).replace(
-                                              '_all.png', fits_suffix))
+                                              png_suffix, fits_suffix))
             else:
                 impathlink = "/data_r/%s" % fil.replace(base_dir, '')
 
