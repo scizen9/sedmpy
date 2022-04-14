@@ -1773,7 +1773,7 @@ def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
         return {'message': 'Could not find summary file (what.list) for %s UT' %
                            os.path.basename(os.path.normpath(obsdir))}
 
-    # Go throught the what list and return all non-calibration entries
+    # Go through the what list and return all non-calibration entries
     with open(os.path.join(obsdir, 'rcwhat.list')) as f:
         what_list = f.read().splitlines()
 
@@ -2034,19 +2034,23 @@ def get_rc_redux_products(obsdate=None, product=None, user_id=None,
     if 'data' in display_dict:
         count = 100
         for fil in sorted(display_dict['data']):
+            fits_suffix = '.fits'
+            if '.png' in fil:
+                if os.path.exists(fil.replace('.png', '.fits.gz')):
+                    fits_suffix = '.fits.gz'
             fil = fil.replace(base_dir, '')
             impath = "/data_r/%s" % fil
 
             if 'reduced' in fil:
                 impathlink = "/data_r/%s" % fil.replace('/png/', '/').replace(
-                    '.png', '.fits')
+                    '.png', fits_suffix)
             elif 'pngraw' in fil and '.gif' not in fil:
                 base_link = fil.split('/pngraw/')
 
                 impathlink = "/data_r/%s" % \
                              os.path.join(base_link[0],
                                           os.path.basename(fil).replace(
-                                              '_all.png', '.fits.gz'))
+                                              '_all.png', fits_suffix))
             else:
                 impathlink = "/data_r/%s" % fil
 
