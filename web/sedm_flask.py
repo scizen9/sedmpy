@@ -148,10 +148,10 @@ def data_access(instrument):
     content['camera_type'] = instrument.lower()
     if instrument.lower() == 'ifu':
         out = model.get_ifu_products(**content)
-        return render_template('view_data.html', sedm_dict=out)
+        return render_template('view_ifu_data.html', sedm_dict=out)
     else:
         out = model.get_rc_products(**content)
-        return render_template('view_data_redux.html', sedm_dict=out)
+        return render_template('view_rc_data.html', sedm_dict=out)
 
 
 @app.route('/data_r/<path:filename>')
