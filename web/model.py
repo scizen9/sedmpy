@@ -261,8 +261,7 @@ def fancy_request_table(df):
 
 def get_homepage(userid, username):
     sedm_dict = {'enddate':
-                 datetime.datetime.utcnow() + datetime.timedelta(days=7,
-                                                                 hours=8),
+                 datetime.datetime.utcnow() + datetime.timedelta(days=30),
                  'inidate':
                  datetime.datetime.utcnow() - datetime.timedelta(days=7,
                                                                  hours=8)}
