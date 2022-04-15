@@ -1361,7 +1361,7 @@ def get_ab_what(obsdir):
     return ablist
 
 
-def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
+def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
                      product_type='all'):
     """
 
@@ -1376,14 +1376,22 @@ def get_ifu_products(obsdir, user_id, obsdate="", show_finder=True,
     if product_type:
         pass
 
+    if not obsdate:
+        obsdate = datetime.datetime.utcnow().strftime("%Y%m%d")
+    else:
+        obsdate = obsdate[0]
+
+    if not obsdir:
+        obsdir = '%s%s/' % (redux_dir, obsdate)
+    else:
+        obsdir = obsdir[0]
+
     # Look first to make sure there is a data directory.
     if not os.path.exists(obsdir):
         return {'message': 'No data directory could be located for %s UT' %
                            os.path.basename(os.path.normpath(obsdir)),
                 'obsdate': obsdate}
 
-    if not obsdate:
-        obsdate = os.path.basename(os.path.normpath(obsdir))
     sedm_dict = {'obsdate': obsdate,
                  'sci_data': ''}
 

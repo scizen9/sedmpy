@@ -147,11 +147,10 @@ def data_access(instrument):
     content['user_id'] = flask_login.current_user.id
     content['camera_type'] = instrument.lower()
     if instrument.lower() == 'ifu':
-        out = model.get_science_products(**content)
+        out = model.get_ifu_products(**content)
         return render_template('view_data.html', sedm_dict=out)
     else:
         out = model.get_rc_redux_products(**content)
-        # print(out)
         return render_template('view_data_redux.html', sedm_dict=out)
 
 
