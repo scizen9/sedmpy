@@ -1362,7 +1362,7 @@ def get_ab_what(obsdir):
 
 
 def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
-                     product_type='all'):
+                     product_type='all', camera_type='ifu'):
     """
 
     :param obsdir: 
@@ -1370,10 +1370,13 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
     :param obsdate: 
     :param product_type:
     :param show_finder:
+    :param camera_type:
     :return: 
     """
     # ifu_dict = {}
     if product_type:
+        pass
+    if camera_type:
         pass
 
     if not obsdate:
