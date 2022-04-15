@@ -327,12 +327,8 @@ def show_expired(days=7):
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE SCHEDULER PAGE.              #
 # KEYWORD:SCHEDULER                                                           #
 ###############################################################################
-def get_schedule(start_time="", end_time="", return_type='table'):
+def get_schedule():
     """
-
-    :param return_type: 
-    :param start_time:
-    :param end_time:
     :return:
     """
 
@@ -1309,41 +1305,6 @@ def plot_stats_allocation(data):
 # THIS SECTION HANDLES ALL THINGS RELATED TO THE VIEW_DATA PAGE.              #
 # KEYWORD:VIEW_DATA                                                           #
 ###############################################################################
-def get_science_products(user_id="", obsdate="", camera_type=""):
-    """
-
-    :param user_id: 
-    :param obsdate: 
-    :param camera_type: 
-    :return: 
-    """
-    if not obsdate:
-        obsdate = datetime.datetime.utcnow().strftime("%Y%m%d")
-    else:
-        obsdate = obsdate[0]
-
-    if not camera_type:
-        camera_type = 'ifu'
-
-    if camera_type == 'ifu':
-        data_dir = '%s%s/' % (redux_dir, obsdate)
-        return get_ifu_products(data_dir, user_id, obsdate)
-    else:
-        data_dir = '%s%s/' % (phot_dir, obsdate)
-        new_data_dir = '%s%s/' % (new_phot_dir, obsdate)
-        # print(data_dir, "In the get science prods")
-        print(new_data_dir, "In the get science prods new")
-        if os.path.exists(data_dir):
-            # print("Old data")
-            return get_rc_products(data_dir, user_id, obsdate)
-        elif os.path.exists(new_data_dir):
-            # print("New data")
-            return get_rc_redux_products(new_data_dir, user_id, obsdate)
-        else:
-            # print("Default data")
-            return get_rc_products(data_dir, user_id, obsdate)
-
-
 def get_ab_what(obsdir):
     """get a pseudo what list for A/B cubes"""
     ablist = []
@@ -1717,224 +1678,7 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
     return sedm_dict
 
 
-def get_rc_products(obsdir, user_id, obsdate="", show_finder=True,
-                    product_type='all'):
-    """
-
-    :param obsdir:
-    :param user_id:
-    :param obsdate:
-    :param show_finder:
-    :param product_type:
-    :return:
-    """
-    # print(obsdir, 'rc')
-    if product_type:
-        pass
-    if show_finder:
-        pass
-    # Look first to make sure there is a data directory.
-    if not os.path.exists(obsdir):
-        return {'message': 'No data directory could be located for %s UT' %
-                           os.path.basename(os.path.normpath(obsdir)),
-                'obsdate': obsdate}
-
-    if not obsdate:
-        obsdate = os.path.basename(os.path.normpath(obsdir))
-    sedm_dict = {'obsdate': obsdate,
-                 'sci_data': ''}
-
-    # Now lets get the non-science products (i.e. calibrations)
-    calib_dict = {}
-    # If a calibration frame doesn't exist then pop it out to avoid bad links
-    # on the page
-    remove_list = []
-    div_str = ''
-    for k, v in calib_dict.items():
-        if not os.path.exists(v):
-            remove_list.append(k)
-
-    if remove_list:
-        for i in remove_list:
-            calib_dict.pop(i)
-    # print(calib_dict, 'calib products')
-
-    div_str += """<div class="row">"""
-    div_str += """<h4>Calibrations</h4>"""
-    for k, v in calib_dict.items():
-        impath = "/data/%s/%s" % (obsdate, os.path.basename(v))
-        impathlink = "/data/%s/%s" % (obsdate,
-                                      os.path.basename(v.replace('.png',
-                                                                 '.pdf')))
-        if not os.path.exists(impathlink):
-            impathlink = impath
-        div_str += """<div class="col-md-{0}">
-          <div class="thumbnail">
-            <a href="{1}">
-              <img src="{2}" width="{3}px" height="{4}px">
-            </a>
-          </div>
-        </div>""".format(2, impathlink, impath, 400, 400)
-    div_str += "</div>"
-    sedm_dict['sci_data'] += div_str
-    # To get ifu products we first look to see if a what.list file has been
-    # created. This way we will know which files to add to our dict and
-    # whether the user has permissions to see the file
-    if not os.path.exists(os.path.join(obsdir, 'rcwhat.list')):
-        return {'message': 'Could not find summary file (what.list) for %s UT' %
-                           os.path.basename(os.path.normpath(obsdir))}
-
-    # Go through the what list and return all non-calibration entries
-    with open(os.path.join(obsdir, 'rcwhat.list')) as f:
-        what_list = f.read().splitlines()
-
-    science_list = []
-    standard_list = []
-    for targ in what_list:
-        if 'Guider' in targ:
-            pass
-        else:
-            science_list.append(targ)
-
-    # Now we go through and make sure the user is allowed to see this target
-    show_list = []
-    if len(science_list) >= 1:
-        allocation_id_list = get_allocations_user(user_id=user_id,
-                                                  return_type='list')
-
-        for sci_targ in science_list:
-            # Start by pulling up all request that match the science target
-            targ_name = sci_targ.split(':')[1].split()[0]
-            if 'STD' not in targ_name:
-                # 1. Get the object id
-
-                object_ids = db.get_object_id_from_name(targ_name)
-
-                object_id = None
-                if len(object_ids) == 1:
-                    object_id = object_ids[0][0]
-                elif len(object_ids) > 1:
-                    # TODO what really needs to happen here is that we need to
-                    # TODO cont: find the id that is closest to the obsdate.
-                    # TODO cont: For now I am just going to use last added
-                    # print(object_ids)
-                    object_id = object_ids[-1][0]
-                elif not object_ids and ('at' in targ_name.lower()
-                                         or 'sn' in targ_name.lower()):
-                    # sometimes it's at 2018abc not at2018abc in the db
-                    targ_name = targ_name[:2] + ' ' + targ_name[2:]
-                    object_ids = db.get_object_id_from_name(targ_name)
-                    try:
-                        object_id = object_ids[-1][0]
-                    except IndexError:
-                        print("There was an error. You can't see this")
-
-                target_requests = db.get_from_request(
-                    values=['allocation_id'],
-                    where_dict={'object_id': object_id, 'status': 'COMPLETED'})
-
-                # Right now I am only seeing if there exists a match between
-                # allocations of all request.  It's possible the request could
-                # have been made by another group as another follow-up and thus
-                # the user shouldn't be able to see it.  This should be able to
-                # be fixed once all request are listed in the headers of the
-                # science images.
-                for req in target_requests:
-                    if req[0] in allocation_id_list:
-                        show_list.append((sci_targ, targ_name))
-                    else:
-                        print("You can't see this at target request 2")
-            else:
-                targ_name = sci_targ.split(':')[1].split()[0].replace('STD-',
-                                                                      '')
-                show_list.append((sci_targ, targ_name))
-
-    if len(standard_list) >= 1:
-        for std_targ in standard_list:
-            targ_name = std_targ.split(':')[1].split()[0].replace('STD-', '')
-            show_list.append((std_targ, targ_name))
-
-    # We have our list of targets that we can be shown, now lets actually find
-    # the files that we will show on the web page.  To make this backwards
-    # compatible I have to look for two types of files
-    if len(show_list) >= 1:
-        science_dict = {}
-        count = 0
-        div_str = ''
-        for targ in show_list:
-            # print(targ)
-            targ_params = targ[0].split()
-            fits_file = targ_params[0].replace('.fits', '')
-            name = targ[1]
-
-            image_list = (glob.glob('%sreduced/png/*%s*.png' % (obsdir,
-                                                                fits_file)))
-
-            if name not in science_dict:
-                science_dict[name] = {'image_list': image_list}
-            else:
-                # We do this to handle cases where there are two or more of
-                # the same object name
-                science_dict[name + '_xRx_%s' % str(count)] = {
-                    'image_list': image_list}
-            count += 1
-        # Alright now we build the table that will show the spectra, image file
-        # and classification.
-
-        # count = 0
-
-        for obj, obj_data in science_dict.items():
-            if '_xRx_' in obj:
-                obj = obj.split('_xRx_')[0]
-
-            if 'ZTF' in obj:
-                obj_link = ('<a href="https://fritz.science/source/'
-                            '%s">%s</a>' %
-                            (obj, obj))
-
-                div_str += """<div class="row">"""
-                div_str += """<h4>%s</h4>""" % obj_link
-            else:
-                div_str += """<div class="row">"""
-                div_str += """<h4>%s</h4>""" % obj
-
-            if obj_data['e3d_list']:
-                for j in obj_data['e3d_list']:
-                    impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
-                    div_str += ('<div class="col-md-{2}">'
-                                '<a href="%s">E3D File</a>'
-                                '</div>' % impath)
-                if obj_data['spec_ascii_list']:
-                    for j in obj_data['spec_ascii_list']:
-                        impath = "/data/%s/%s" % (obsdate, os.path.basename(j))
-                        div_str += ('<div class="col-md-{2}">'
-                                    '<a href="%s">ASCII Spec File</a>'
-                                    '</div>' % impath)
-            # ToDO: Grab data from somewhere to put in the meta data column
-            if obj_data['image_list']:
-                for i in obj_data['image_list']:
-
-                    impath = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    impathlink = "/data/%s/%s" % (obsdate, os.path.basename(i))
-                    if not os.path.exists(impathlink):
-                        impathlink = impath
-
-                    div_str += """<div class="col-md-{0}">
-                    <div class="thumbnail">
-                      <a href="{1}">
-                        <img src="{2}" width="{3}px" height="{4}px">
-                      </a>
-                    </div>
-                  </div>""".format(2, impathlink, impath, 400, 400)
-            div_str += "</div>"
-
-        sedm_dict['sci_data'] += div_str
-
-    return sedm_dict
-
-
-def get_rc_redux_products(obsdate=None, product=None, user_id=None,
-                          camera_type='rc'):
+def get_rc_products(obsdate=None, product=None, user_id=None, camera_type='rc'):
     """
     :param obsdate:
     :param product:
@@ -2124,7 +1868,7 @@ def get_pending_visibility(userid):
 
     # Create html tables
     sedm_dict['pending'] = {'table': fancy_request_table(pending),
-                           'title': 'Pending Requests'}
+                            'title': 'Pending Requests'}
 
     sedm_dict['script'], sedm_dict['div'] = plot_visibility(userid, sedm_dict)
     return sedm_dict
@@ -2215,11 +1959,12 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     p.add_layout(twilight)
     p.add_layout(earth)
 
-    # sun and moon
-    # sun = p.line(delta_midnight, sun_alt,  line_color='red', name="Sun",
-    #             legend='Sun', line_dash='dashed')
-    moon = p.line(delta_midnight, moon_alt, line_color='yellow',
-                  line_dash='dashed', name="Moon", legend='Moon')
+    # sun
+    # p.line(delta_midnight, sun_alt,  line_color='red', name="Sun",
+    #        legend='Sun', line_dash='dashed')
+    # moon
+    p.line(delta_midnight, moon_alt, line_color='yellow', line_dash='dashed',
+           name="Moon", legend='Moon')
     # labels and axes
     p.title.text = "Visibility for %s UTC" % midnight
     p.xaxis.axis_label = "Hours from PDT Midnight"
@@ -2435,11 +2180,11 @@ def search_stats_file(mydate=None):
 
 def load_p48seeing(obsdate):
 
-    time, seeing = get_p18obsdata(obsdate)
+    obtime, seeing = get_p18obsdata(obsdate)
     day_frac_diff = datetime.timedelta(
         np.ceil((datetime.datetime.now() -
                  datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
-    local_date = np.array(time) + day_frac_diff
+    local_date = np.array(obtime) + day_frac_diff
 
     d = pd.DataFrame({'date': local_date, 'seeing': seeing})
 

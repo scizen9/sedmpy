@@ -126,8 +126,8 @@ def get_rc_redux_product():
         content = json.loads(request.get_json())
     else:
         obsdate = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-        return jsonify(model.get_rc_redux_products(obsdate))
-    return jsonify(model.get_rc_redux_products(**content))
+        return jsonify(model.get_rc_products(obsdate))
+    return jsonify(model.get_rc_products(**content))
 
 
 @app.route('/data_access/<path:instrument>', methods=['GET'])
@@ -150,7 +150,7 @@ def data_access(instrument):
         out = model.get_ifu_products(**content)
         return render_template('view_data.html', sedm_dict=out)
     else:
-        out = model.get_rc_redux_products(**content)
+        out = model.get_rc_products(**content)
         return render_template('view_data_redux.html', sedm_dict=out)
 
 
