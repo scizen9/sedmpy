@@ -455,20 +455,25 @@ def copy_ref_calib(curdir, calib="Flat"):
     """
 
     if calib == "Bias":
-        calib_dic = {"Bias_rc_fast.fits": False, "Bias_rc_slow.fits": False}
+        calib_dic = {
+            "Bias_rc_fast.fits": False,
+            "Bias_rc_slow.fits": False
+        }
     else:
-        calib_dic = {"Flat_rc_dome_fast_u_norm.fits": False,
-                     "Flat_rc_dome_fast_g_norm.fits": False,
-                     "Flat_rc_dome_fast_r_norm.fits": False,
-                     "Flat_rc_dome_fast_i_norm.fits": False,
-                     "Flat_rc_dome_slow_u_norm.fits": False,
-                     "Flat_rc_dome_slow_g_norm.fits": False,
-                     "Flat_rc_dome_slow_r_norm.fits": False,
-                     "Flat_rc_dome_slow_i_norm.fits": False,
-                     "Flat_rc_twilight_slow_u_norm.fits": False,
-                     "Flat_rc_twilight_slow_g_norm.fits": False,
-                     "Flat_rc_twilight_slow_r_norm.fits": False,
-                     "Flat_rc_twilight_slow_i_norm.fits": False}
+        calib_dic = {
+            "Flat_rc_dome_fast_g_norm.fits": False,
+            "Flat_rc_dome_fast_i_norm.fits": False,
+            "Flat_rc_dome_fast_r_norm.fits": False,
+            "Flat_rc_dome_fast_u_norm.fits": False,
+            "Flat_rc_dome_slow_g_norm.fits": False,
+            "Flat_rc_dome_slow_i_norm.fits": False,
+            "Flat_rc_dome_slow_r_norm.fits": False,
+            "Flat_rc_dome_slow_u_norm.fits": False,
+            "Flat_rc_twilight_slow_g_norm.fits": False,
+            "Flat_rc_twilight_slow_i_norm.fits": False,
+            "Flat_rc_twilight_slow_r_norm.fits": False,
+            "Flat_rc_twilight_slow_u_norm.fits": False
+        }
 
     # Get the date of the current directory
     curdir = os.path.abspath(curdir)
@@ -484,22 +489,22 @@ def copy_ref_calib(curdir, calib="Flat"):
     caldir = '/'.join(curdir.split('/')[0:-1])
 
     # get a list of potential calibration file directories
-    fspec = os.path.join(caldir, '/20??????')
+    fspec = os.path.join(caldir, '20??????')
     srtlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])
-    srtlist.reverse()
+    redlist = srtlist[0:srtlist.index(curdir)]
     # Loop over list and find cals we need
-    for srcdir in srtlist:
+    for srcdir in redlist.reverse():
         print("Checking %s" % srcdir)
         for cal in calib_dic:
             if not calib_dic[cal]:
                 print("Checking for %s" % cal)
                 c = os.path.join(srcdir, cal)
-                if os.path.isfile(c):
+                if os.path.isfile(c) and not os.path.islink(c):
+                    print("Found: %s" % c)
                     logger.info("Linking calibration file %s from "
                                 "directory %s to directory %s" %
                                 (c, srcdir, curdir))
                     os.symlink(c, os.path.join(curdir, os.path.basename(c)))
-                    # shutil.copy(c, os.path.join(curdir, os.path.basename(c)))
                     calib_dic[cal] = True
         if all(calib_dic.values()):
             break
