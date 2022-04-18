@@ -300,7 +300,8 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                 plot_raw_image(os.path.join(photdir, fl), ut_id=utid)
                 raw_plot_list.append(fl)
         if n_wait >= 10:
-            logger.info("No acquisition for 10 min (bright or weather), check again in 60 sec...")
+            logger.info("No acquisition for 10 min (bright or weather), "
+                        "check again in 60 sec...")
             n_wait = 0
         else:
             n_wait += 1
@@ -308,6 +309,12 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
         acqs = [wl for wl in whatl if 'ACQ' in wl]
+        bias = [wl for wl in whatl if 'bias' in wl]
+        focus = [wl for wl in whatl if 'FOCUS' in wl]
+        if len(bias) >= 20:
+            rcred.create_masterbias(phot_dir)
+        if len(focus) > 0:
+            rcred.create_masterflat(phot_dir)
         # Check our wait time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
