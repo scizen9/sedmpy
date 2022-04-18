@@ -104,7 +104,7 @@ def get_xy_coords(image, ra, dec):
     return coords
 
 
-def create_masterbias(biasdir=None):
+def create_masterbias(biasdir=None, copy2refphot=False):
     """
     Combines slow and fast readout mode biases for the specified channel.
     """
@@ -164,12 +164,13 @@ def create_masterbias(biasdir=None):
 
         plot_reduced_image(outf, to_raw=True)
 
-        # copy into the reference folder with current date
-        newdir = os.path.join("../../refphot/",
-                              os.path.basename(os.path.abspath(biasdir)))
-        if not os.path.isdir(newdir):
-            os.makedirs(newdir)
-        shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
+        if copy2refphot:
+            # copy into the reference folder with current date
+            newdir = os.path.join("../../refphot/",
+                                  os.path.basename(os.path.abspath(biasdir)))
+            if not os.path.isdir(newdir):
+                os.makedirs(newdir)
+            shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
     else:
         copy_ref_calib(biasdir, outf)
 
@@ -190,17 +191,19 @@ def create_masterbias(biasdir=None):
 
         plot_reduced_image(outs, to_raw=True)
 
-        # copy into the reference folder with current date
-        newdir = os.path.join("../../refphot/",
-                              os.path.basename(os.path.abspath(biasdir)))
-        if not os.path.isdir(newdir):
-            os.makedirs(newdir)
-        shutil.copy(outs, os.path.join(newdir, os.path.basename(outs)))
+        if copy2refphot:
+            # copy into the reference folder with current date
+            newdir = os.path.join("../../refphot/",
+                                  os.path.basename(os.path.abspath(biasdir)))
+            if not os.path.isdir(newdir):
+                os.makedirs(newdir)
+            shutil.copy(outs, os.path.join(newdir, os.path.basename(outs)))
     else:
         copy_ref_calib(biasdir, outs)
 
 
-def create_masterflat(flatdir=None, biasdir=None, plot=True):
+def create_masterflat(flatdir=None, biasdir=None, plot=True,
+                      copy2refphot=False):
     """
     Creates a masterflat from both dome flats and sky flats if the number of
     counts in the given filter is not saturated and not too low
@@ -416,14 +419,16 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True):
 
                 plot_reduced_image(out_norm, to_raw=True)
 
-                # copy into the reference folder with current date
-                newdir = os.path.join("../../refphot/",
-                                      os.path.basename(
-                                          os.path.abspath(flatdir)))
-                if not os.path.isdir(newdir):
-                    os.makedirs(newdir)
-                shutil.copy(out_norm, os.path.join(newdir,
-                                                   os.path.basename(out_norm)))
+                if copy2refphot:
+                    # copy into the reference folder with current date
+                    newdir = os.path.join("../../refphot/",
+                                          os.path.basename(
+                                              os.path.abspath(flatdir)))
+                    if not os.path.isdir(newdir):
+                        os.makedirs(newdir)
+                    shutil.copy(out_norm,
+                                os.path.join(newdir,
+                                             os.path.basename(out_norm)))
             # END: for b in bands
         # END: for speed in speeds
     # END: for kind in kinds
