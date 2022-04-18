@@ -71,6 +71,25 @@ logging.basicConfig(format=log_format,
 logger = logging.getLogger('realtimered')
 
 
+def gzip_fits_files(curdir):
+    """gzip all the fits files in current directory"""
+    # top level
+    flist = glob.glob(os.path.join(curdir, '*.fits'))
+    ntgzip = 0
+    for fl in flist:
+        if os.path.isfile(fl) and not os.path.islink(fl):
+            subprocess.run(["gzip", fl])
+            ntgzip += 1
+    # reduced level
+    flist = glob.glob(os.path.join(curdir, 'reduced', '*.fits'))
+    nrgzip = 0
+    for fl in flist:
+        if os.path.isfile(fl) and not os.path.islink(fl):
+            subprocess.run(["gzip", fl])
+            nrgzip += 1
+    return ntgzip, nrgzip
+
+
 def plot_raw_image(image, verbose=False, ut_id=None):
     """
     Plots the reduced image into the png folder.
@@ -477,6 +496,10 @@ if __name__ == '__main__':
     phot_dir = os.path.abspath(pdir)
 
     reduce_on_the_fly(phot_dir, nocopy=args.nocopy, proc_na=args.proc_na)
+
+    ntopgz, nredgz = gzip_fits_files(phot_dir)
+    logger.info("Gzipped %d top-level and %d reduced fits files" %
+                (ntopgz, nredgz))
 
     day_name = os.path.basename(phot_dir)
     logger.info("Concluding RC image processing for %s." % day_name)
