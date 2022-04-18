@@ -493,7 +493,7 @@ def copy_ref_calib(curdir, calib="Flat"):
     srtlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])
     redlist = srtlist[0:srtlist.index(curdir)]
     # Loop over list and find cals we need
-    for srcdir in redlist.reverse():
+    for srcdir in reversed(redlist):
         print("Checking %s" % srcdir)
         for cal in calib_dic:
             if not calib_dic[cal]:
