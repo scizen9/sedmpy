@@ -46,7 +46,7 @@ if __name__ == '__main__':
     elif len(flphot) > len(fls):
         # remove bad links
         for fl in flphot:
-            if 'rcwhat' in fl:
+            if 'rcwhat' in fl or 'Bias' in fl or 'Flat' in fl:
                 continue
             if os.path.islink(fl):
                 if not os.path.exists(os.readlink(fl)):
