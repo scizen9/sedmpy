@@ -77,6 +77,9 @@ def gzip_fits_files(curdir):
     flist = glob.glob(os.path.join(curdir, '*.fits'))
     ntgzip = 0
     for fl in flist:
+        # Skip cal files
+        if 'Bias' in fl or 'Flat' in fl:
+            continue
         if os.path.isfile(fl) and not os.path.islink(fl):
             subprocess.run(["gzip", fl])
             ntgzip += 1
