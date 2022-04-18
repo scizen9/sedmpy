@@ -481,8 +481,10 @@ def copy_ref_calib(curdir, calib="Flat"):
     if all(calib_dic.values()):
         return
 
+    caldir = '/'.join(curdir.split('/')[0:-1])
+
     # get a list of potential calibration file directories
-    fspec = os.path.join(_reduxpath, 'refphot/20??????')
+    fspec = os.path.join(caldir, '/20??????')
     srtlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])
     srtlist.reverse()
     # Loop over list and find cals we need
