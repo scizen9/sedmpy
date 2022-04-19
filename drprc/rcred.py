@@ -336,6 +336,10 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True,
                     fff = 'b_' + ff.replace(".fits", "_%s.fits" % b)
                     fi = fits.open(fff)
                     d = fi[0].data
+                    if 'EXPTIME' in fi[0].header:
+                        exptime = fi[0].header['EXPTIME']
+                    else:
+                        exptime = -99
                     status = "rejected"
                     level = np.percentile(d, 90)
                     if ldic[b][0] < level < ldic[b][1]:
@@ -347,12 +351,12 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True,
                         fi[0].data = d
                         fi.writeto(fff, overwrite=True)
                         status = "accepted"
-                    logger.info("%s %s %s flat with level %.2f is %s" %
-                                (fff, speed, kind, level, status))
+                    logger.info("%s %.0fs %s %s flat with level %.2f is %s" %
+                                (fff, exptime, speed, kind, level, status))
 
                     if plot:
-                        plt.title("%s %s %s Flat, %s at level=%.1f" %
-                                  (speed, kind, b, status, level))
+                        plt.title("%.0fs %s %s %s Flat, %s at level=%.1f" %
+                                  (exptime, speed, kind, b, status, level))
                         plt.imshow(d.T, cmap=plt.get_cmap("nipy_spectral"))
                         plt.colorbar()
                         plt.savefig("reduced/flats/%s" %
