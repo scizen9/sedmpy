@@ -309,9 +309,9 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
         acqs = [wl for wl in whatl if 'ACQ' in wl]
-        bias = [wl for wl in whatl if 'bias' in wl]
+        bias = [wl for wl in whatl if 'bias' in wl and '10 of 10' in wl]
         focus = [wl for wl in whatl if 'FOCUS' in wl]
-        if len(bias) >= 20:
+        if len(bias) >= 2:
             rcred.create_masterbias(phot_dir)
         if len(focus) > 0:
             rcred.create_masterflat(phot_dir)
