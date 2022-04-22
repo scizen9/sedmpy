@@ -172,7 +172,7 @@ def create_masterbias(biasdir=None, copy2refphot=False):
                 os.makedirs(newdir)
             shutil.copy(outf, os.path.join(newdir, os.path.basename(outf)))
     else:
-        copy_ref_calib(biasdir, outf)
+        copy_ref_calib(biasdir, "bias")
 
     if len(lslowbias) > 0 and doslow:
 
@@ -199,10 +199,10 @@ def create_masterbias(biasdir=None, copy2refphot=False):
                 os.makedirs(newdir)
             shutil.copy(outs, os.path.join(newdir, os.path.basename(outs)))
     else:
-        copy_ref_calib(biasdir, outs)
+        copy_ref_calib(biasdir, "bias")
 
 
-def create_masterflat(flatdir=None, biasdir=None, plot=True,
+def create_masterflat(flatdir=None, biasdir=None, plot=True, twilight=False,
                       copy2refphot=False):
     """
     Creates a masterflat from both dome flats and sky flats if the number of
@@ -220,14 +220,20 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True,
     if plot and not os.path.isdir("reduced/flats"):
         os.makedirs("reduced/flats")
 
-    if len(glob.glob("Flat_rc*norm.fits")) == 8:
-        logger.info("Master Flat exists!")
+    if len(glob.glob("Flat_rc*norm.fits")) == 12:
+        logger.info("All Master Flats (dome, twilight) exist!")
         return
-    if len(glob.glob("Flat_rc*norm.fits")) > 0:
-        logger.info("Some Master Flats exist!")
+    if len(glob.glob("Flat_rc_dome*norm.fits")) == 8 and not twilight:
+        logger.info("Dome Master Flats exist!")
+        return
+    if len(glob.glob("Flat_rc_twilight*norm.fits")) == 4 and twilight:
+        logger.info("Twilight Master Flats exist!")
         return
     else:
-        logger.info("Starting the Master Flat creation!")
+        if twilight:
+            logger.info("Starting the Master Twilight Flat creation!")
+        else:
+            logger.info("Starting the Master Dome Flat creation!")
 
     bias_slow = "Bias_rc_slow.fits"
     bias_fast = "Bias_rc_fast.fits"
@@ -235,10 +241,10 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True,
     if not os.path.isfile(bias_slow) and not os.path.isfile(bias_fast):
         create_masterbias(biasdir)
 
-    lstflat = []
-    lftflat = []
-    lsdflat = []
-    lfdflat = []
+    lstflat = []    # list of slow twilight flat images
+    lftflat = []    # list of fast twilight flat images (not currently used)
+    lsdflat = []    # list of slow dome flat images
+    lfdflat = []    # list of fast dome flat images
 
     for ff in glob.glob("rc*[0-9].fits"):
         try:
@@ -275,31 +281,42 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True,
     # Remove bias from the flats
     debiased_flats = []
 
-    slow_flats = lstflat + lsdflat
-    if len(slow_flats) > 0:
-        sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
-        for sfl in slow_flats:
-            rawf = ccdproc.fits_ccddata_reader(filename=sfl, unit='adu')
-            rawf.data = rawf.data.astype(np.float64)
-            rawf.data -= sbias.data
-            rawf.header['HISTORY'] = 'Bias subtracted'
-            rawf.header['MBIAS'] = (bias_slow, 'master bias file')
-            redhdul = rawf.to_hdu()
-            redhdul.writeto('b_'+sfl)
-            debiased_flats.append('b_'+sfl)
+    if twilight:
+        if len(lstflat) > 0:
+            sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
+            for sfl in lstflat:
+                rawf = ccdproc.fits_ccddata_reader(filename=sfl, unit='adu')
+                rawf.data = rawf.data.astype(np.float64)
+                rawf.data -= sbias.data
+                rawf.header['HISTORY'] = 'Bias subtracted'
+                rawf.header['MBIAS'] = (bias_slow, 'master bias file')
+                redhdul = rawf.to_hdu()
+                redhdul.writeto('b_' + sfl)
+                debiased_flats.append('b_' + sfl)
+    else:
+        if len(lsdflat) > 0:
+            sbias = ccdproc.fits_ccddata_reader(filename=bias_slow)
+            for sfl in lsdflat:
+                rawf = ccdproc.fits_ccddata_reader(filename=sfl, unit='adu')
+                rawf.data = rawf.data.astype(np.float64)
+                rawf.data -= sbias.data
+                rawf.header['HISTORY'] = 'Bias subtracted'
+                rawf.header['MBIAS'] = (bias_slow, 'master bias file')
+                redhdul = rawf.to_hdu()
+                redhdul.writeto('b_'+sfl)
+                debiased_flats.append('b_'+sfl)
 
-    fast_flats = lftflat + lfdflat
-    if len(fast_flats) > 0:
-        fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
-        for ffl in fast_flats:
-            rawf = ccdproc.fits_ccddata_reader(filename=ffl, unit='adu')
-            rawf.data = rawf.data.astype(np.float64)
-            rawf.data -= fbias.data
-            rawf.header['HISTORY'] = 'Bias subtracted'
-            rawf.header['MBIAS'] = (bias_fast, 'master bias file')
-            redhdul = rawf.to_hdu()
-            redhdul.writeto('b_' + ffl)
-            debiased_flats.append('b_'+ffl)
+        if len(lfdflat) > 0:
+            fbias = ccdproc.fits_ccddata_reader(filename=bias_fast)
+            for ffl in lfdflat:
+                rawf = ccdproc.fits_ccddata_reader(filename=ffl, unit='adu')
+                rawf.data = rawf.data.astype(np.float64)
+                rawf.data -= fbias.data
+                rawf.header['HISTORY'] = 'Bias subtracted'
+                rawf.header['MBIAS'] = (bias_fast, 'master bias file')
+                redhdul = rawf.to_hdu()
+                redhdul.writeto('b_' + ffl)
+                debiased_flats.append('b_'+ffl)
 
     # Slice the flats.
     for ff in debiased_flats:
@@ -443,7 +460,10 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True,
         for ff in glob.glob('b_*_%s.fits' % b):
             os.remove(ff)
     # Ensure we have all the flats
-    copy_ref_calib(flatdir, "Flat")
+    if twilight:
+        copy_ref_calib(flatdir, "twilight")
+    else:
+        copy_ref_calib(flatdir, "dome")
 
 
 def get_median_bkg(img):
@@ -456,17 +476,24 @@ def get_median_bkg(img):
     return bkg
 
 
-def copy_ref_calib(curdir, calib="Flat"):
+def copy_ref_calib(curdir, calib="dome"):
     """
     Reference master Bias and master Flat are stored in the refphot folder.
     The files are copied if they are not found in the folder where the
     photometry is being reduced.
     """
 
-    if calib == "Bias":
+    if calib == "bias":
         calib_dic = {
             "Bias_rc_fast.fits": False,
             "Bias_rc_slow.fits": False
+        }
+    elif calib == "twilight":
+        calib_dic = {
+            "Flat_rc_twilight_slow_g_norm.fits": False,
+            "Flat_rc_twilight_slow_i_norm.fits": False,
+            "Flat_rc_twilight_slow_r_norm.fits": False,
+            "Flat_rc_twilight_slow_u_norm.fits": False
         }
     else:
         calib_dic = {
@@ -477,11 +504,7 @@ def copy_ref_calib(curdir, calib="Flat"):
             "Flat_rc_dome_slow_g_norm.fits": False,
             "Flat_rc_dome_slow_i_norm.fits": False,
             "Flat_rc_dome_slow_r_norm.fits": False,
-            "Flat_rc_dome_slow_u_norm.fits": False,
-            "Flat_rc_twilight_slow_g_norm.fits": False,
-            "Flat_rc_twilight_slow_i_norm.fits": False,
-            "Flat_rc_twilight_slow_r_norm.fits": False,
-            "Flat_rc_twilight_slow_u_norm.fits": False
+            "Flat_rc_dome_slow_u_norm.fits": False
         }
 
     # Get the date of the current directory
@@ -972,7 +995,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
             ('fast' in speed and not os.path.isfile(bias_fast))):
         logger.warning(
             "Master bias not found! Trying to copy from reference folder...")
-        copy_ref_calib(curdir, "Bias")
+        copy_ref_calib(curdir, "bias")
         if (('slow' in speed and not os.path.isfile(bias_slow)) or
                 ('fast' in speed and not os.path.isfile(bias_fast))):
             logger.error("Bias not found in reference folder")
@@ -1067,7 +1090,7 @@ def reduce_image(image, flatdir=None, biasdir=None, cosmic=False,
 
         if not os.path.isfile(flat):
             logger.warning("Master flat not found in %s" % flat)
-            copy_ref_calib(curdir, "Flat")
+            copy_ref_calib(curdir, kind)
             continue
         else:
             logger.info("Using flat %s" % flat)
