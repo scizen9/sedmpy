@@ -287,6 +287,9 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
 
     # list of raw plots made
     raw_plot_list = []
+    bias_done = False
+    domes_done = False
+    twilights_done = False
     # Wait for an acquisition
     with open(whatf, 'r') as wtf:
         whatl = wtf.readlines()
@@ -309,12 +312,17 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
         acqs = [wl for wl in whatl if 'ACQ' in wl]
-        bias = [wl for wl in whatl if 'bias' in wl and '10 of 10' in wl]
+        bias = [wl for wl in whatl if 'bias' in wl]
+        dome = [wl for wl in whatl if 'dome' in wl]
         focus = [wl for wl in whatl if 'FOCUS' in wl]
-        if len(bias) >= 2:
+        if len(bias) >= 20 and not bias_done:
             rcred.create_masterbias(phot_dir)
-        if len(focus) > 0:
+            bias_done = True
+        if len(dome) >= 40 and not domes_done:
             rcred.create_masterflat(phot_dir)
+        if len(focus) > 0 and not twilights_done:
+            rcred.create_masterflat(phot_dir, twilight=True)
+            twilights_done = True
         # Check our wait time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
