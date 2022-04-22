@@ -77,7 +77,6 @@ def gzip_fits_files(curdir):
     utdstr = curdir.split('/')[-1]
     flist = glob.glob(os.path.join(curdir, '*.fits'))
     ntgzip = 0
-    ntdel = 0
     for fl in flist:
         # Skip cal files
         if 'Bias' in fl or 'Flat' in fl:
@@ -85,9 +84,6 @@ def gzip_fits_files(curdir):
         if os.path.isfile(fl) and not os.path.islink(fl):
             subprocess.run(["gzip", fl])
             ntgzip += 1
-        if os.path.islink(fl):
-            os.remove(fl)
-            ntdel += 1
     # reduced level
     flist = glob.glob(os.path.join(curdir, 'reduced', '*.fits'))
     nrgzip = 0
@@ -104,7 +100,7 @@ def gzip_fits_files(curdir):
     except OSError:
         print("Cannot open backup file for update: %s" % back_file)
 
-    return ntgzip, nrgzip, ntdel
+    return ntgzip, nrgzip
 
 
 def plot_raw_image(image, verbose=False, ut_id=None):
@@ -529,10 +525,9 @@ if __name__ == '__main__':
 
     reduce_on_the_fly(phot_dir, nocopy=args.nocopy, proc_na=args.proc_na)
 
-    ntopgz, nredgz, ntopdl = gzip_fits_files(phot_dir)
-    logger.info("Deleted %d raw links, "
-                "Gzipped %d top-level and %d reduced fits files" %
-                (ntopdl, ntopgz, nredgz))
+    ntopgz, nredgz = gzip_fits_files(phot_dir)
+    logger.info("Gzipped %d top-level and %d reduced fits files" %
+                (ntopgz, nredgz))
 
     day_name = os.path.basename(phot_dir)
     logger.info("Concluding RC image processing for %s." % day_name)
