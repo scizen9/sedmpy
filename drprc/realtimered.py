@@ -338,6 +338,12 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
         if deltime.total_seconds() > total_wait:
+            if not bias_done:
+                rcred.create_masterbias(phot_dir)
+            if not domes_done:
+                rcred.create_masterflat(phot_dir)
+            if not twilights_done:
+                rcred.create_masterflat(phot_dir, twilight=True)
             logger.warning("Waited 13hr and no ACQ appeared!")
             return
 
