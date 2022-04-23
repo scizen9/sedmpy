@@ -791,7 +791,7 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
     if ontarget and xpx < 0 or ypx < 0:
         obra = h.get('OBJRA', 'None')
         obdec = h.get('OBJDEC', 'None')
-        if obra is not None and obdec is not None:
+        if obra is not None and obdec is not None and not to_raw:
             try:
                 out = subprocess.Popen(['sky2xy', image, obra, obdec],
                                        stdout=subprocess.PIPE,
@@ -869,8 +869,7 @@ def plot_reduced_image(image, verbose=False, ut_id=None, to_raw=False):
         plt.title("%s %s %s-band [%ds]. On target=%s" % (ut_id, name, filt,
                                                          exptime, ontarget))
     else:
-        plt.title("%s %s-band [%ds]. On target=%s" % (name, filt,
-                                                      exptime, ontarget))
+        plt.title("%s %s-band [%ds]" % (name, filt, exptime))
     plt.colorbar()
     if ontarget and xpx >= 0 and ypx >= 0:
         circle = plt.Circle((xpx, ypx), 20, fill=False, color='r',
