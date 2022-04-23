@@ -43,16 +43,20 @@ from configparser import ConfigParser
 
 import codecs
 
-parser = ConfigParser()
+cfg_parser = ConfigParser()
 
-configfile = os.environ["SEDMCONFIG"]
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                              "../config/sedmconfig.cfg")
 
 # Open the file with the correct encoding
 with codecs.open(configfile, 'r') as f:
-    parser.read_file(f)
+    cfg_parser.read_file(f)
 
-_logpath = parser.get('paths', 'logpath')
-_photpath = parser.get('paths', 'photpath')
+_logpath = cfg_parser.get('paths', 'logpath')
+_photpath = cfg_parser.get('paths', 'photpath')
 
 SLACK_CHANNEL = "pysedm-report"
 
@@ -92,7 +96,7 @@ def gzip_fits_files(curdir):
             subprocess.run(["gzip", fl])
             nrgzip += 1
     # append dir to backup file
-    back_file = parser.get('backup', 'phot_backup_file')
+    back_file = cfg_parser.get('backup', 'phot_backup_file')
     try:
         with open(back_file, 'w') as bf:
             bf.writelines(utdstr + "\n")
