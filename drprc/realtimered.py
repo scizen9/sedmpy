@@ -330,6 +330,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
             bias_done = True
         if len(dome) >= 40 and not domes_done:
             rcred.create_masterflat(phot_dir)
+            domes_done = True
         if len(focus) > 0 and not twilights_done:
             rcred.create_masterflat(phot_dir, twilight=True)
             twilights_done = True
