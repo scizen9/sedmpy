@@ -32,8 +32,8 @@ if __name__ == '__main__':
 
     if not os.path.isdir("/scr2/sedmdrp/redux/phot/%s" % directory):
         os.makedirs("/scr2/sedmdrp/redux/phot/%s" % directory)
-    fls = glob.glob("/scr2/sedm/raw/%s/rc*" % directory)
-    flphot = glob.glob("/scr2/sedmdrp/redux/phot/%s/rc*" % directory)
+    fls = glob.glob("/scr2/sedm/raw/%s/rc2*" % directory)
+    flphot = glob.glob("/scr2/sedmdrp/redux/phot/%s/rc2*" % directory)
     if len(fls) > 0 and len(fls) > len(flphot):
         cmd = "ln -s /scr2/sedm/raw/%s/rc* /scr2/sedmdrp/redux/phot/%s/"\
               % (directory, directory)
