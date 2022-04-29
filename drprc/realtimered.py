@@ -309,10 +309,13 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
         whatl = wtf.readlines()
     acqs = [wl for wl in whatl if 'ACQ' in wl]
     n_wait = 0
+    # wait until we have an acquisition
     while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
+        # loop over entries in rcwhat file
         for wl in whatl:
             fl = wl.split()[0]
             utid = "_".join(fl.split("_")[1:]).split(".")[0]
+            # plot new ones
             if fl not in raw_plot_list:
                 plot_raw_image(os.path.join(photdir, fl), ut_id=utid)
                 raw_plot_list.append(fl)
@@ -322,25 +325,30 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
             n_wait = 0
         else:
             n_wait += 1
+
         time.sleep(60)
+
+        # re-check rcwhat file
         with open(whatf, 'r') as wtf:
             whatl = wtf.readlines()
+        # look for ACQs, biases, domes, twilights (complete when focusing)
         acqs = [wl for wl in whatl if 'ACQ' in wl]
         bias = [wl for wl in whatl if 'bias' in wl]
         dome = [wl for wl in whatl if 'dome' in wl]
         focus = [wl for wl in whatl if 'FOCUS' in wl]
-        if len(bias) >= 20 and not bias_done:
+        if len(bias) >= 20 and not bias_done:   # we have our biases
             rcred.create_masterbias(phot_dir)
             bias_done = True
-        if len(dome) >= 40 and not domes_done:
+        if len(dome) >= 40 and not domes_done:  # we have our domes
             rcred.create_masterflat(phot_dir)
             domes_done = True
-        if len(focus) > 0 and not twilights_done:
+        if len(focus) > 0 and not twilights_done:   # we have our eve twilights
             rcred.create_masterflat(phot_dir, twilight=True)
             twilights_done = True
         # Check our wait time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
+        # if the night is over, process cals anyway
         if deltime.total_seconds() > total_wait:
             if not bias_done:
                 rcred.create_masterbias(phot_dir)
@@ -350,10 +358,11 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                 rcred.create_masterflat(phot_dir, twilight=True)
             logger.warning("Waited 13hr and no ACQ appeared!")
             return
+    # end wait for ACQs while loop
 
     logger.info("We have acquired now, so let's reduce some data!")
-    # Get the current the number of files
 
+    # Get the current the number of files
     nfiles = []
     logger.info("Starting the on-the-fly reduction for directory %s." % photdir)
 
@@ -374,6 +383,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
     # Run this loop for 13h after the start.
     n_wait = 0
     while deltime.total_seconds() < total_wait:
+        # list of all RC image files
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
         if len(nfilesnew) == len(nfiles):
@@ -381,9 +391,10 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                 logger.info("No new image after %d waits, waiting 30s" % n_wait)
             time.sleep(30)
             n_wait += 1
+        # we got some new files
         else:
             n_wait = 0
-            new = [ff for ff in nfilesnew if ff not in nfiles]
+            new = [ff for ff in nfilesnew if ff not in nfiles]  # list of new
             new.sort()
             logger.info("Detected %d new incoming files in the last 30s." %
                         len(new))
@@ -429,9 +440,8 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                                     logger.info("Quick MAG_ZP: %.3f" % std_zp)
                                     if phot_zp[target_filter] is None:
                                         phot_zp[target_filter] = std_zp
-                    if nocopy:
-                        logger.info("Skipping copies to transient")
-                    else:
+                    # end do_phot
+                    if not nocopy:
                         # Copy them to transient
                         for r in reduced:
                             toks = os.path.basename(r).split('_')
@@ -461,6 +471,10 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                                               % imgf)
                                 else:
                                     print("Cannot push: %s" % imgf)
+                    # end if not nocopy
+                    else:
+                        logger.info("Skipping copies to transient")
+
                     if "SCIENCE" in imtype.upper():
                         t_now = datetime.datetime.now()
                         stat_str = "Complete %4d%02d%02d %02d_%02d_%02d" % (
