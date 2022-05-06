@@ -2184,7 +2184,7 @@ def load_p48seeing(obsdate):
     day_frac_diff = datetime.timedelta(
         np.ceil((datetime.datetime.now() -
                  datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
-    local_date = np.array(obtime) + day_frac_diff
+    local_date = np.array(obtime)   # + day_frac_diff
 
     d = pd.DataFrame({'date': local_date, 'seeing': seeing})
 
@@ -2924,8 +2924,7 @@ def get_p18obsdata(obsdate):
             if len(i) > 5 and int(i[5]) > 4:
                 d = '%s %s' % (i[1], i[0])
                 p18date.append(datetime.datetime.strptime(d,
-                                                          "%m/%d/%Y %H:%M:%S")
-                               + datetime.timedelta(hours=utc_offset_hours))
+                                                          "%m/%d/%Y %H:%M:%S"))
                 p18seeing.append(float(i[4]))
         except Exception as e:
             print(str(e))
