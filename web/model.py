@@ -2884,6 +2884,9 @@ def get_p18obsdata(obsdate):
     :param obsdate: Must be in "Year-Month-Day" or "YYYYMMDD" format
     :return: List of dates and average seeing
     """
+    utc_offset_hours = int((datetime.datetime.utcnow() -
+                            datetime.datetime.now()) /
+                           datetime.timedelta(hours=1))
     # 1. Create the URL to get the seeing for the requested night
     p18date = []
     p18seeing = []
@@ -2922,7 +2925,7 @@ def get_p18obsdata(obsdate):
                 d = '%s %s' % (i[1], i[0])
                 p18date.append(datetime.datetime.strptime(d,
                                                           "%m/%d/%Y %H:%M:%S")
-                               + datetime.timedelta(hours=8))
+                               + datetime.timedelta(hours=utc_offset_hours))
                 p18seeing.append(float(i[4]))
         except Exception as e:
             print(str(e))
