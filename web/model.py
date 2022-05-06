@@ -2181,10 +2181,8 @@ def search_stats_file(mydate=None):
 def load_p48seeing(obsdate):
 
     obtime, seeing = get_p18obsdata(obsdate)
-    day_frac_diff = datetime.timedelta(
-        np.ceil((datetime.datetime.now() -
-                 datetime.datetime.utcnow()).total_seconds()) / 3600 / 24)
-    local_date = np.array(obtime)   # + day_frac_diff
+
+    local_date = np.array(obtime)
 
     d = pd.DataFrame({'date': local_date, 'seeing': seeing})
 
@@ -2884,9 +2882,6 @@ def get_p18obsdata(obsdate):
     :param obsdate: Must be in "Year-Month-Day" or "YYYYMMDD" format
     :return: List of dates and average seeing
     """
-    utc_offset_hours = int((datetime.datetime.utcnow() -
-                            datetime.datetime.now()) /
-                           datetime.timedelta(hours=1))
     # 1. Create the URL to get the seeing for the requested night
     p18date = []
     p18seeing = []
