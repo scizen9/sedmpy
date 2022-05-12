@@ -881,10 +881,12 @@ class SedmDB:
                     'marshal_id' (int/long)
 
                 'typedesig' should be one of:
-                    'f' (fixed), 'v' (periodic fixed),
+                    'f' (fixed),
+                    'v' (periodic fixed),
                     'P' (built-in planet or satellite name),
                     'e' (heliocentric elliptical),
-                    'h' (heliocentric hyperbolic), 'p' (heliocentric parabolic),
+                    'h' (heliocentric hyperbolic),
+                    'p' (heliocentric parabolic),
                     'E' (geocentric elliptical)
 
         Returns:
@@ -978,8 +980,8 @@ class SedmDB:
             except exc.ProgrammingError:
                 return -1, "ERROR: add_object sql command failed with " \
                            "a ProgrammingError!"
-            return id, "Fixed object added, input period data " \
-                       "into table `periodic`"
+            return oid, "Fixed object added, input period data into table " \
+                        "`periodic`"
 
         elif pardic['typedesig'] in ['h', 'E', 'e', 'p']:
             function_dict = {'e': 'add_elliptical_heliocentric',
@@ -996,9 +998,8 @@ class SedmDB:
             except exc.ProgrammingError:
                 return -1, "ERROR: add_object sql command failed with " \
                            "a ProgrammingError!"
-            return (id, "Non-fixed object added, orbit parameters "
-                        "can be added with `%s`"
-                    % (function_dict[pardic['typedesig']],))
+            return oid, "Non-fixed object added, orbit parameters " \
+                        "can be added with `%s`" % function_dict[pardic['typedesig']]
         elif pardic['typedesig'] == 'P':
             obj_sql = _generate_insert_sql(pardic, obj_keys, 'object')
             try:
@@ -1009,7 +1010,7 @@ class SedmDB:
             except exc.ProgrammingError:
                 return -1, "ERROR: add_object sql command failed with " \
                            "a ProgrammingError!"
-            return id, "Non-fixed object added"
+            return oid, "Non-fixed object added"
         else:
             return -1, "ERROR: typedesig provided was invalid, " \
                        "it must be one of ['f', 'h', 'E', 'e', 'p', 'P']!"
