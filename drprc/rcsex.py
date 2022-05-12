@@ -500,6 +500,10 @@ def analyze_img(sexfile, arcsecpix=0.394, is_rcam=True, mag_quantile=0.8,
     ellip = df['ELLIPTICITY'].quantile(ellp_quantile)
     df = df[(df['MAG_BEST'] < mag) & (df['ELLIPTICITY'] < ellip)]
     df = df[(df['Y_IMAGE'] < y_max) & (df['Y_IMAGE'] > y_min)]
+    df = df[(df['FLAGS'] <= 0)]
+    # cut on size
+    size_cut = df['FWHM_IMAGE'].median() + 2.5 * df['FWHM_IMAGE'].std()
+    df = df[(df['FWHM_IMAGE'] < size_cut)]
     nextract = len(df)
     avgfwhm = df['FWHM_IMAGE'].median() * arcsecpix
     avgellip = df['ELLIPTICITY'].median()
@@ -556,12 +560,12 @@ def analyse_image(sexfile, arcsecpix=0.394, is_rccam=True):
     if s is None or s.ndim == 0 or len(s) == 0:
         print("Empty content of the file for file %s. " % sexfile)
         return 0, 0, 0, 0
-        
-    # Select sources inside of the cross
+
     x = s["x"]
     y = s["y"]
     
     if is_rccam:
+        # Avoid cross region
         s = s[((y < 850) | (y > 1125))*((x < 885) | (x > 1540))]
 
     # Select with good flags only.
