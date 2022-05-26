@@ -1827,10 +1827,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             logging.info("Skipping check for raw cal files")
             ncp = 0
         else:
-            # Copy raw cal files from previous date directory
-            npre = cpprecal(rawlist, outdir, nodb=nodb)
-            logging.info("Linked %d raw cal files from %s" % (npre,
-                                                              rawlist[-2]))
+            if check_precal:
+                # Copy raw cal files from previous date directory
+                npre = cpprecal(rawlist, outdir, nodb=nodb)
+                logging.info("Linked %d raw cal files from %s" % (npre,
+                                                                  rawlist[-2]))
             # Now check the current source dir for raw cal files
             ncp = cpcal(srcdir, outdir, nodb=nodb)
             logging.info("Linked %d raw cal files from %s" % (ncp, srcdir))
@@ -2323,8 +2324,16 @@ if __name__ == '__main__':
         else:
             print("Error: Must provide a UTDate to clean with --date")
     else:
+        if args.local:
+            arg_nodb = True
+            arg_nopush_slack = True
+            arg_nopush_marshal = True
+        else:
+            arg_nodb = args.nodb
+            arg_nopush_slack = args.nopush_slack
+            arg_nopush_marshal = args.nopush_marshal
         go(rawd=args.rawdir, redd=args.reduxdir, wait=args.wait,
            check_precal=(not args.skip_precal), indate=args.date,
-           piggyback=args.piggyback, local=args.local, nodb=args.nodb,
-           nopush_marshal=args.nopush_marshal, nopush_slack=args.nopush_slack,
+           piggyback=args.piggyback, local=args.local, nodb=arg_nodb,
+           nopush_marshal=arg_nopush_marshal, nopush_slack=arg_nopush_slack,
            oldext=args.oldext)
