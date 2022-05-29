@@ -3,9 +3,9 @@ from stsci.image.numcombine import numCombine as nc
 import astropy.io.fits as pf
 import numpy as np
 import time
-import Version as Version
+import version
 
-drp_ver = Version.ifu_drp_version()
+drp_ver = version.__version__
 
 
 def imcombine(flist, fout, listfile=None, combtype="mean",

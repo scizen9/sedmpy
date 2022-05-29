@@ -50,12 +50,9 @@ try:
 except ImportError:
     import drprc.rcimg as rcimg
 
-try:
-    import Version
-except ImportError:
-    import drpifu.Version as Version
+import version
 
-drp_ver = Version.ifu_drp_version()
+drp_ver = version.__version__
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
     datefmt='%Y%m%d %H:%M:%S', level=logging.INFO)

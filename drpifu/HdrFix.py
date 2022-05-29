@@ -11,12 +11,9 @@ from astropy.time import Time
 from configparser import ConfigParser
 import codecs
 
-try:
-    import Version
-except ImportError:
-    import drpifu.Version as Version
+import version
 
-drp_ver = Version.ifu_drp_version()
+drp_ver = version.__version__
 
 # Get pipeline configuration
 cfg_parser = ConfigParser()
