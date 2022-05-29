@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-links raw rc images into appropriate /scr2/sedmdrp/phot directory
+links raw rc images into appropriate phot directory
 
 Created on Fri Mar  4 23:31:27 2016
-Updated on Thu Feb 13 by neill
+Updated on 29 May, 2022 by neill
 
 @author: nadiablago
 """
@@ -11,7 +11,16 @@ import datetime
 import subprocess
 import os
 import glob
+import json
 import argparse
+import version
+
+cfg_path = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(cfg_path) as cfg_file:
+    sedm_cfg = json.load(cfg_file)
+
+_phot_dir = sedm_cfg['paths']['photpath']
+_raw_dir = sedm_cfg['paths']['rawpath']
 
 if __name__ == '__main__':
 
@@ -30,15 +39,17 @@ if __name__ == '__main__':
         directory = datetime.datetime.strftime(datetime.datetime.utcnow(),
                                                "%Y%m%d")
 
-    if not os.path.isdir("/scr2/sedmdrp/redux/phot/%s" % directory):
-        os.makedirs("/scr2/sedmdrp/redux/phot/%s" % directory)
-    fls = glob.glob("/scr2/sedm/raw/%s/rc2*" % directory)
-    flphot = glob.glob("/scr2/sedmdrp/redux/phot/%s/rc2*" % directory)
+    source = os.path.join(_raw_dir, directory)
+    dest = os.path.join(_phot_dir, directory)
+
+    if not os.path.isdir(dest):
+        os.makedirs(dest)
+    fls = glob.glob(os.path.join(source, "rc2*"))
+    flphot = glob.glob(os.path.join(dest, "rc2*"))
     if len(fls) > 0 and len(fls) > len(flphot):
-        cmd = "ln -s /scr2/sedm/raw/%s/rc* /scr2/sedmdrp/redux/phot/%s/"\
-              % (directory, directory)
+        cmd = "ln -s %s/rc* %s/" % (source, dest)
         subprocess.call(cmd, shell=True)
-        os.chdir("/scr2/sedmdrp/redux/phot/%s" % directory)
+        os.chdir(dest)
         cmd = "~/spy what rc%s_*.fits > rcwhat.list " % directory
         subprocess.call(cmd, shell=True)
     elif len(flphot) > len(fls):
