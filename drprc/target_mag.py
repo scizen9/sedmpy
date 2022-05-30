@@ -10,7 +10,12 @@ import matplotlib.pyplot as plt
 from astropy.io import fits as pf
 from astropy.stats import sigma_clipped_stats
 from astropy.visualization import simple_norm
-from photutils import aperture_photometry, CircularAperture, CircularAnnulus, centroid_sources, centroid_2dg
+# centroid routines moved in later versions of photutils
+try:
+    from photutils import aperture_photometry, CircularAperture, CircularAnnulus, centroid_sources, centroid_2dg
+except ImportError:
+    from photutils import aperture_photometry, CircularAperture, CircularAnnulus
+    from photutils.centroids import centroid_sources, centroid_2dg
 import numpy as np
 
 extinction_coeff = {'u': 0.594, 'g': 0.208, 'r': 0.120, 'i': 0.059}
