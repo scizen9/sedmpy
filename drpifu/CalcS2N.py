@@ -10,22 +10,19 @@ import glob
 import argparse
 import astropy.io.fits as pf
 import numpy as np
-from configparser import ConfigParser
-import codecs
+import version
+import json
 
-cfg_parser = ConfigParser()
-
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              '../config/sedmconfig.cfg')
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
-
-_reduxpath = cfg_parser.get('paths', 'reduxpath')
+_reduxpath = sedm_cfg['paths']['reduxpath']
 
 
 def calc_s2n(spec_file=None, start_wave=4000., end_wave=8000., overwrite=False):

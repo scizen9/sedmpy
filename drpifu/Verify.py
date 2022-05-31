@@ -9,23 +9,20 @@ import datetime
 from astropy.io import fits
 import glob
 import os
-from configparser import ConfigParser
-import codecs
+import version
+import json
 
-cfg_parser = ConfigParser()
-
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              '../config/sedmconfig.cfg')
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
-
-_rawpath = cfg_parser.get('paths', 'rawpath')
-_reduxpath = cfg_parser.get('paths', 'reduxpath')
+_rawpath = sedm_cfg['paths']['rawpath']
+_reduxpath = sedm_cfg['paths']['reduxpath']
 
 
 def time_from_fspec(filespec=None, imtype="ifu"):

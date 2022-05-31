@@ -1,23 +1,21 @@
 import os
 import glob
 import argparse
-from configparser import ConfigParser
-import codecs
+import json
+import version
 import datetime
 
 # Get pipeline configuration
-cfg_parser = ConfigParser()
-# Find config file: default is sedmpy/config/sedmconfig.cfg
+# Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              "../config/sedmconfig.cfg")
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
+    configfile = os.path.join(version.CONFIG_DIR, "sedmconfig.json")
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
 # Get paths
-_rawpath = cfg_parser.get('paths', 'rawpath')
+_rawpath = sedm_cfg['paths']['rawpath']
 
 
 def clean_post_raw(outdir, utdstr):
@@ -36,7 +34,7 @@ def clean_post_raw(outdir, utdstr):
             ndel += 1
     # append dir to backup file
     if ndel > 0:
-        back_file = cfg_parser.get('backup', 'raw_backup_file')
+        back_file = sedm_cfg['backup']['raw_backup_file']
         try:
             with open(back_file, 'w') as bf:
                 bf.writelines(utdstr + "\n")

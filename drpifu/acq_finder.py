@@ -24,29 +24,24 @@ import os
 import sys
 import glob
 import argparse
-from configparser import ConfigParser
-import codecs
+import json
+import version
 
 from matplotlib import pylab as plt
 plt.switch_backend('Agg')
 
-cfg_parser = ConfigParser()
-
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              '../config/sedmconfig.cfg')
-
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
 # Default paths
-_rcpath = cfg_parser.get('paths', 'photpath')
-_reduxpath = cfg_parser.get('paths', 'reduxpath')
-_srcpath = cfg_parser.get('paths', 'srcpath')
-_altrcpath = cfg_parser.get('paths', 'rawpath')
+_rcpath = sedm_cfg['paths']['photpath']
+_reduxpath = sedm_cfg['paths']['reduxpath']
+_srcpath = sedm_cfg['paths']['srcpath']
+_altrcpath = sedm_cfg['paths']['rawpath']
 
 
 def finder(myfile, findername, searchrad=0.2/60.):

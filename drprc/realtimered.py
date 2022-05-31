@@ -13,7 +13,6 @@ import glob
 import os
 import time
 import argparse
-import json
 try:
     import fitsutils
 except ImportError:
@@ -38,25 +37,20 @@ from astropy.io import fits
 from matplotlib import pylab as plt
 import numpy as np
 from scipy.stats import sigmaclip
+import version
+import json
 
-from configparser import ConfigParser
-
-import codecs
-
-cfg_parser = ConfigParser()
-
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              "../config/sedmconfig.cfg")
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
-
-_logpath = cfg_parser.get('paths', 'logpath')
-_photpath = cfg_parser.get('paths', 'photpath')
+_logpath = sedm_cfg['paths']['logpath']
+_photpath = sedm_cfg['paths']['photpath']
 
 SLACK_CHANNEL = "pysedm-report"
 
@@ -96,7 +90,7 @@ def gzip_fits_files(curdir):
             subprocess.run(["gzip", fl])
             nrgzip += 1
     # append dir to backup file
-    back_file = cfg_parser.get('backup', 'phot_backup_file')
+    back_file = sedm_cfg['backup']['phot_backup_file']
     try:
         with open(back_file, 'w') as bf:
             bf.writelines(utdstr + "\n")

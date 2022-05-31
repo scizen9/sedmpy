@@ -15,23 +15,18 @@ except ImportError:
 import os
 import glob
 import argparse
-from configparser import ConfigParser
-import codecs
-
-cfg_parser = ConfigParser()
+import json
+import version
 
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              '../config/sedmconfig.cfg')
-
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
 # Default paths
-_photpath = cfg_parser.get('paths', 'photpath')
+_photpath = sedm_cfg['paths']['photpath']
 
     
 if __name__ == "__main__":

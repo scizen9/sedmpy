@@ -7,27 +7,22 @@ import logging
 import subprocess
 import astropy.io.fits as pf
 from astropy.time import Time
-
-from configparser import ConfigParser
-import codecs
-
+import json
 import version
 
 drp_ver = version.__version__
 
 # Get pipeline configuration
-cfg_parser = ConfigParser()
-# Find config file: default is sedmpy/config/sedmconfig.cfg
+# Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              '../config/sedmconfig.cfg')
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
 # Get path
-_rawpath = cfg_parser.get('paths', 'rawpath')
+_rawpath = sedm_cfg['paths']['rawpath']
 
 
 header_types = {"TELESCOP": str, "LST": str,
