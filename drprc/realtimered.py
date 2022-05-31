@@ -268,7 +268,8 @@ def plot_raw_image(image, verbose=False, ut_id=None):
             logger.info("Exists: %s", outfig)
 
 
-def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
+def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
+                      local=False):
     """
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
@@ -480,7 +481,11 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False):
                         stat_str = "Complete %4d%02d%02d %02d_%02d_%02d" % (
                             t_now.year, t_now.month, t_now.day,
                             t_now.hour, t_now.minute, t_now.second)
-                        update_fritz_status(request_id=req_id, status=stat_str)
+                        if not local:
+                            update_fritz_status(request_id=req_id,
+                                                status=stat_str)
+                        else:
+                            print('Local mode: not updating fritz')
                 elif "POINTING" in imtype.upper():
                     if fitsutils.get_par(n, "EXPTIME") > 30.:
                         do_cosmic = True
@@ -536,8 +541,15 @@ if __name__ == '__main__':
                         help='do not copy to transient', default=False)
     parser.add_argument('-p', '--proc_na', action="store_true",
                         help='process NA image types', default=False)
+    parser.add_argument('-l', '--local', action="store_true",
+                        help='process locally', default=False)
 
     args = parser.parse_args()
+
+    if args.local:
+        args_nocopy = True
+    else:
+        args_nocopy = args.nocopy
 
     if args.photdir is None:
         timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
@@ -548,7 +560,8 @@ if __name__ == '__main__':
 
     phot_dir = os.path.abspath(pdir)
 
-    reduce_on_the_fly(phot_dir, nocopy=args.nocopy, proc_na=args.proc_na)
+    reduce_on_the_fly(phot_dir, nocopy=args_nocopy, proc_na=args.proc_na,
+                      local=args.local)
 
     ntopgz, nredgz = gzip_fits_files(phot_dir)
     logger.info("Gzipped %d top-level and %d reduced fits files" %
