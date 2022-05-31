@@ -4,16 +4,14 @@ import glob
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+import version
 
 DEFAULT_TIMEOUT = 5  # seconds
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
+with open(os.path.join(version.CONFIG_DIR, 'marshals.json')) as data_file:
+    marshal_cfg = json.load(data_file)
 
-with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
-                       'marshals.json')) as data_file:
-    params = json.load(data_file)
-
-token = params['marshals']['fritz']['token']
+token = marshal_cfg['marshals']['fritz']['token']
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -87,7 +85,7 @@ def update_status_request(status, request_id, marshal_name, save=False,
     """
 
     # 1. Get the instrument id
-    if marshal_name.lower() not in params['marshals']:
+    if marshal_name.lower() not in marshal_cfg['marshals']:
         return {"iserror": True, "msg": "Marshal: %s not found in config file"}
 
     if save:
@@ -121,7 +119,7 @@ def update_status_request(status, request_id, marshal_name, save=False,
     if testing:
         print(status_payload)
     else:
-        ret = api("POST", params["marshals"][marshal_name]['status_url'],
+        ret = api("POST", marshal_cfg["marshals"][marshal_name]['status_url'],
                   data=status_payload)
         if 'success' in ret['status']:
             print('Status for request %d updated to %s' % (request_id, status))
@@ -217,7 +215,7 @@ def checker(request, check_source=True, check_followup=True,
     if check_source:
         if "origins_url" in request:
             url = request["orgins_url"]
-            if not any(x in url for x in params['sources']):
+            if not any(x in url for x in marshal_cfg['sources']):
                 msg_list.append("Source of request '%s' not regonized" % url)
         else:
             msg_list.append("origins_url missing from request")
@@ -238,7 +236,7 @@ def checker(request, check_source=True, check_followup=True,
         ret = check_field('programname', request)
         if ret:
             msg_list.append(ret)
-        elif request['programname'] not in params['programs']:
+        elif request['programname'] not in marshal_cfg['programs']:
             msg_list.append("Progam: %s is not a valid program")
 
     if check_user:
@@ -255,7 +253,7 @@ def checker(request, check_source=True, check_followup=True,
         ret = check_field('status', request)
         if ret:
             msg_list.append(ret)
-        elif request['status'].lower() not in params['status_types']:
+        elif request['status'].lower() not in marshal_cfg['status_types']:
             msg_list.append("Status: %s is not recognized" % request['status'])
 
     if check_id:
