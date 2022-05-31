@@ -462,7 +462,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                                 basename = os.path.basename(r).split('.')[0]
                                 imgf = png_dir + basename + '.png'
                                 title = "RC image: %s | %s" % (basename, imtype)
-                                if slack is not None:
+                                if slack is not None and not local:
                                     try:
                                         slack.push_image(imgf, caption="",
                                                          title=title,
@@ -500,7 +500,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                         title = "RC image: %s | %s" % (basename, imtype)
                         if slack is not None:
                             # only push r-band where ref pixel is
-                            if '_r.png' in imgf:
+                            if '_r.png' in imgf and not local:
                                 slack.push_image(imgf, caption="",
                                                  title=title,
                                                  channel=SLACK_CHANNEL)
@@ -519,8 +519,9 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
             lbn = os.path.join(photdir, "pngraw/focus", bn)
             if not os.path.islink(lbn):
                 os.symlink(fp, lbn)
-                slack.push_image(fp, caption="RC FOCUS", title=bn,
-                                 channel=SLACK_CHANNEL)
+                if not local:
+                    slack.push_image(fp, caption="RC FOCUS", title=bn,
+                                     channel=SLACK_CHANNEL)
         # Get new delta time
         time_curr = datetime.datetime.now()
         deltime = time_curr - time_ini
@@ -559,6 +560,8 @@ if __name__ == '__main__':
         pdir = args.photdir
 
     phot_dir = os.path.abspath(pdir)
+
+    print("Reducing RC data in", phot_dir)
 
     reduce_on_the_fly(phot_dir, nocopy=args_nocopy, proc_na=args.proc_na,
                       local=args.local)
