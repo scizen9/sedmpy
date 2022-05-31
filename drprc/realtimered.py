@@ -361,6 +361,14 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
             return
     # end wait for ACQs while loop
 
+    # Make sure required cals were made
+    if not bias_done:
+        rcred.create_masterbias(phot_dir)
+    if not domes_done:
+        rcred.create_masterflat(phot_dir)
+    if not twilights_done:
+        rcred.create_masterflat(phot_dir, twilight=True)
+
     logger.info("We have acquired now, so let's reduce some data!")
 
     # Get the current the number of files
