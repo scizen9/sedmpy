@@ -39,6 +39,7 @@ import glob
 import sys
 import os
 import re
+import json
 import subprocess
 # from subprocess import Popen, PIPE
 import astropy.io.fits as pf
@@ -51,8 +52,6 @@ import db.SedmDb
 
 from astropy.time import Time
 from astropy.coordinates import Angle
-from configparser import ConfigParser
-import codecs
 
 import version
 
@@ -72,20 +71,18 @@ logging.basicConfig(
     datefmt='%Y%m%d %H:%M:%S', level=logging.INFO)
 
 # Get pipeline configuration
-cfg_parser = ConfigParser()
-# Find config file: default is sedmpy/config/sedmconfig.cfg
+# Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              "../config/sedmconfig.cfg")
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
+    configfile = os.path.join(version.CONFIG_DIR, "sedmconfig.json")
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
 # Get paths
-_rawpath = cfg_parser.get('paths', 'rawpath')
-_reduxpath = cfg_parser.get('paths', 'reduxpath')
-_srcpath = cfg_parser.get('paths', 'srcpath')
+_rawpath = sedm_cfg['paths']['rawpath']
+_reduxpath = sedm_cfg['paths']['reduxpath']
+_srcpath = sedm_cfg['paths']['srcpath']
 
 
 def cube_ready(caldir='./', cur_date_str=None, avrmslim=35.0):
@@ -2158,7 +2155,7 @@ def clean_post_redux(outdir, utdstr):
         subprocess.call(["gzip", fl])
         n_gzip += 1
     # append dir to backup file
-    back_file = cfg_parser.get('backup', 'redux_backup_file')
+    back_file = sedm_cfg['backup']['redux_backup_file']
     try:
         with open(back_file, 'w') as bf:
             bf.writelines(utdstr + "\n")
