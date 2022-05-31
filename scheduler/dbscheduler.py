@@ -14,29 +14,27 @@ import time
 import obstimes
 import sqlite3
 
-from configparser import ConfigParser
-import codecs
+import version
 
 # Get scheduler configuration
-cfg_parser = ConfigParser()
 # Find config file: default is sedmpy/config/schedulerconfig.cfg
 try:
     configfile = os.environ["SEDMSCHEDULERCONFIG"]
 except KeyError:
-    configfile = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                              "../config/schedulerconfig.cfg")
-with codecs.open(configfile, 'r') as f:
-    cfg_parser.read_file(f)
-_dbconn = {"host": cfg_parser.get("dbconn", "host"),
-           "port": cfg_parser.get("dbconn", "port"),
-           "dbname": cfg_parser.get("dbconn", "dbname"),
-           "user": cfg_parser.get("dbconn", "user"),
-           "password": cfg_parser.get("dbconn", "password")
+    configfile = os.path.join(version.CONFIG_DIR, "schedulerconfig.json")
+with open(configfile) as config_file:
+    db_cfg = json.load(config_file)
+
+_dbconn = {"host": db_cfg["dbconn"]["host"],
+           "port": db_cfg["dbconn"]["port"],
+           "dbname": db_cfg["dbconn"]["dbname"],
+           "user": db_cfg["dbconn"]["user"],
+           "password": db_cfg["dbconn"]["password"]
            }
 
-_standard_db = cfg_parser.get("paths", "standard_db")
-_target_dir = cfg_parser.get("paths", "target_dir")
-_schedule = cfg_parser.get("paths", "schedule")
+_standard_db = db_cfg["paths"]["standard_db"]
+_target_dir = db_cfg["paths"]["target_dir"]
+_schedule = db_cfg["paths"]["schedule"]
 
 
 class Scheduler:

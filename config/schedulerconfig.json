@@ -1,0 +1,14 @@
+{
+  "dbconn": {
+    "host": "localhost",
+    "port": 5432,
+    "dbname": "sedmdb",
+    "user": "sedmuser",
+    "password": "---password---"
+  },
+  "paths": {
+    "standard_db": "/scr2/sedm/sedmpy/scheduler/standards.sql",
+    "target_dir": "/scr2/sedm/targets/",
+    "schedule": "/scr2/sedm/scheduler/test_scheduler.html"
+  }
+}
