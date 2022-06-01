@@ -21,18 +21,19 @@ except ImportError:
 
 from matplotlib import pylab as plt
 
-from configparser import ConfigParser
-import codecs
+import version
+import json
 
-parser = ConfigParser()
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
-configfile = os.environ["SEDMCONFIG"]
-
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    parser.read_file(f)
-
-_focuspath = parser.get('paths', 'focuspath')
+_focuspath = sedm_cfg['paths']['focuspath']
 
 rootdir = _focuspath
 
@@ -294,8 +295,8 @@ def analyse_sex_ifu_spectrograph(sexfileslist, plot=True, interactive=False,
             
             plt.tight_layout()
             plt.savefig(os.path.join(os.path.dirname(sexfileslist[0]),
-                                     os.path.basename(f).replace(".sex",
-                                                                 ".png")))
+                                     os.path.basename(ff).replace(".sex",
+                                                                  ".png")))
             plt.clf()
         
         focpos.append(pos)
@@ -442,8 +443,8 @@ def analyse_sex_ifu(sexfileslist, plot=True, interactive=False, debug=False):
             plt.title("mags image")
             
             plt.savefig(os.path.join(os.path.dirname(sexfileslist[0]),
-                                     os.path.basename(f).replace(".sex",
-                                                                 ".png")))
+                                     os.path.basename(ff).replace(".sex",
+                                                                  ".png")))
             plt.clf()
         
         focpos.append(pos)
