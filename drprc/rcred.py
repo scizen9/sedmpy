@@ -64,7 +64,7 @@ with open(configfile) as config_file:
 _logpath = sedm_cfg['paths']['logpath']
 _photpath = sedm_cfg['paths']['photpath']
 _reduxpath = sedm_cfg['paths']['reduxpath']
-_db = sedm_cfg['persistence', 'db']
+_db = sedm_cfg['persistence']['db']
 
 FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 now = datetime.datetime.utcnow()
