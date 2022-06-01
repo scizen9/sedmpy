@@ -89,6 +89,17 @@ elif computer == 'pharos':
     base_dir = '/scr2/sedmdrp/'
     port = 5432
 
+elif computer == 'minar':
+    raw_dir = '/data/sedmdrp/raw/'
+    phot_dir = '/data/sedmdrp/redux/phot/'
+    new_phot_dir = '/data/sedmdrp/redux/phot/'
+    redux_dir = '/data/sedmdrp/redux/'
+    status_dir = '/data/sedmdrp/raw/telstatus/'
+    requests_dir = '/data/sedmdrp/logs/requests/'
+    host = 'localhost'
+    base_dir = '/data/sedmdrp/'
+    port = 5432
+
 elif computer == 'ether':
     raw_dir = '/home/rsw/sedm_data/raw/'
     phot_dir = '/home/rsw/sedm/phot/'
