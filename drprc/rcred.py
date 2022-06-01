@@ -49,21 +49,22 @@ try:
 except ImportError:
     from drprc.target_mag import get_target_mag
 
-from configparser import ConfigParser
-import codecs
+import version
+import json
 
-parser = ConfigParser()
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
-configfile = os.environ['SEDMCONFIG']
-
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    parser.read_file(f)
-
-_logpath = parser.get('paths', 'logpath')
-_photpath = parser.get('paths', 'photpath')
-_reduxpath = parser.get('paths', 'reduxpath')
-_db = parser.get('persistence', 'db')
+_logpath = sedm_cfg['paths']['logpath']
+_photpath = sedm_cfg['paths']['photpath']
+_reduxpath = sedm_cfg['paths']['reduxpath']
+_db = sedm_cfg['persistence', 'db']
 
 FORMAT = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 now = datetime.datetime.utcnow()
