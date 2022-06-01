@@ -34,8 +34,8 @@ def get_seeing(imfile=None, destdir=None, save_fig=False, show_plot=False,
             scaled = (scale > 0)
             # run SExtractor
             cmd = ["sex", "-c", "%s" %
-                   os.path.join(os.environ["SEDMPY"], "drprc", "config",
-                                "sedmrc.sex"), fspec]
+                   os.path.join(os.environ["SEDMPY"], "config", "sedmrc.sex"),
+                   fspec]
             if not scaled:
                 cmd.append("-GAIN")
                 cmd.append("1.0")

@@ -17,7 +17,7 @@ import sqlite3
 import version
 
 # Get scheduler configuration
-# Find config file: default is sedmpy/config/schedulerconfig.cfg
+# Find config file: default is sedmpy/config/schedulerconfig.json
 try:
     configfile = os.environ["SEDMSCHEDULERCONFIG"]
 except KeyError:

@@ -5,10 +5,9 @@ import argparse
 import shutil
 from marshals.interface import api
 
-SITE_ROOT = os.path.abspath(os.path.dirname(__file__)+'/../..')
+import version
 
-with open(os.path.join(SITE_ROOT, 'sedmpy', 'marshals', 'config',
-                       'marshals.json')) as data_file:
+with open(os.path.join(version.CONFIG_DIR, 'marshals.json')) as data_file:
     params = json.load(data_file)
 
 token = params['marshals']['fritz']['token']
