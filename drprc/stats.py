@@ -30,19 +30,20 @@ except ImportError:
 import matplotlib.dates as md
 import argparse
 
-from configparser import ConfigParser
-import codecs
+import version
+import json
 
-parser = ConfigParser()
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
-configfile = os.environ["SEDMCONFIG"]
-
-# Open the file with the correct encoding
-with codecs.open(configfile, 'r') as f:
-    parser.read_file(f)
-
-_logpath = parser.get('paths', 'logpath')
-_photpath = parser.get('paths', 'photpath')
+_logpath = sedm_cfg['paths']['logpath']
+_photpath = sedm_cfg['paths']['photpath']
 
 plt.switch_backend('Agg')
 
