@@ -185,7 +185,7 @@ def test_get_request_atomic_requests():
 
 
 def test_fits_header_parse():
-    fitsfile = '/scr2/sedm/phot/20161012/rc20161012_12_36_34.fits'
+    fitsfile = '/data/sedmdrp/phot/20220531/rc20220521_10_36_34.fits'
     db_tools.add_observation_fitsfile(fitsfile)
 
 

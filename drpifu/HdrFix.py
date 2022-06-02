@@ -418,5 +418,5 @@ if __name__ == "__main__":
         # Update listings
         os.chdir(indir)
         os.system("rm *what.list")
-        os.system("/scr2/sedmdrp/spy what ifu*.fits > what.list")
-        os.system("/scr2/sedmdrp/spy what rc*.fits > rcwhat.list")
+        os.system("~/spy what ifu*.fits > what.list")
+        os.system("~/spy what rc*.fits > rcwhat.list")

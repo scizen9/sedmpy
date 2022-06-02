@@ -1,46 +1,39 @@
 import json
-# Required import to bypass the fact there is already a
-# db module that gets imported from kpy
-# import sys
-# sys.path.append('/scr2/sedm/sedmpy/')
 from string import Template
 import datetime
 import pandas as pd
 import astroplan
 from astropy.time import Time, TimeDelta
-from astropy.coordinates import SkyCoord, Angle, get_moon
+from astropy.coordinates import SkyCoord, EarthLocation, Angle, get_moon
 import astropy.units as u
 import numpy as np
 import os
+import version
+from db.SedmDb import SedmDB
 
 computer = os.uname()[1]  # a quick fix
-scheduler_path = None
 if computer == 'pele':
-    from db.SedmDb import SedmDB
-    scheduler_path = \
-        '/scr/rsw/sedm/projects/sedmpy/web/static/scheduler/scheduler.html'
     server = 'pharos.caltech.edu'
     port = 5432
 elif computer == 'pharos':
-    from db.SedmDb import SedmDB
-    scheduler_path = '/scr2/sedm/sedmpy/web/static/scheduler/scheduler.html'
+    server = 'localhost'
+    port = 5432
+elif computer == 'minar':
     server = 'localhost'
     port = 5432
 elif computer == 'ether':
-    from db.SedmDb import SedmDB
-    scheduler_path = '/home/rsw/new/sedmpy/web/templates/scheduler_table.html'
     server = 'localhost'
     port = 22222
 elif computer == 'modon':
-    from db.SedmDb import SedmDB
+    server = 'pharos.caltech.edu'
     port = 5432
 
-SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
-json_url = os.path.join(SITE_ROOT, 'config.json')
+json_url = os.path.join(version.CONFIG_DIR, 'schedulerconfig.json')
 
 
 class ScheduleNight:
-    def __init__(self, obsdatetime=None, config_file=json_url):
+    def __init__(self, obsdatetime=None, config_file=json_url,
+                 site_name='Palomar'):
         # 1. Load config file
         with open(config_file, 'r') as fp:
             params = json.load(fp)
@@ -50,11 +43,9 @@ class ScheduleNight:
         else:
             self.obsdatetime = datetime.datetime.utcnow()
 
-        self.site = params['site']['name']
-        self.long = params['site']['longitude']
-        self.lat = params['site']['latitude']
-        self.elev = params['site']['elevation']
-        self.obs_site = astroplan.Observer.at_site(site_name=self.site)
+        self.site_name = site_name
+        self.site = EarthLocation.of_site(self.site_name)
+        self.obs_site = astroplan.Observer.at_site(site_name=self.site_name)
         self.obs_times = self.get_observing_times()
         self.running_obs_time = None
         self.conn = None

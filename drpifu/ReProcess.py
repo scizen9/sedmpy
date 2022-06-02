@@ -13,7 +13,7 @@ Note:
 
         optional arguments:
           -h, --help           show this help message and exit
-          --reduxdir REDUXDIR  Output reduced directory (/scr2/sedm/redux)
+          --reduxdir REDUXDIR  Output reduced directory (/data/sedmdrp/redux)
           --date YYYYMMDD      Select date to process (None)
           --nodb               Do not update SEDM Db (False)
 
@@ -164,8 +164,8 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
     star observations, process them as well.
 
     Args:
-        srcdir (str): source directory (typically in /scr2/sedm/raw)
-        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        srcdir (str): source directory (typically in /data/sedmdrp/raw)
+        destdir (str): destination directory (typically in /data/sedmdrp/redux)
         fsize (int): size of completely copied file in bytes
         datestr (str): YYYYMMDD date string
 
@@ -310,7 +310,7 @@ def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
     files into the destination directory.
 
     Args:
-        rawd (str): top level raw directory (like '/scr2/sedm/raw')
+        rawd (str): top level raw directory (like '/data/sedmdrp/raw')
         destdir (str): where to put the files
         cdate (str): date of interest in format 'YYYYMMDD'
         fsize (int): size of completely copied file in bytes
@@ -951,7 +951,7 @@ def dosci(destdir='./', datestr=None, nodb=False, posdic=None, oldext=False,
     star observations, process them as well.
 
     Args:
-        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        destdir (str): destination directory (typically in /data/sedmdrp/redux)
         datestr (str): YYYYMMDD date string
         nodb (bool): if True no update to SEDM db
         posdic (dict): position dictionary from get_extract_pos function
@@ -1263,7 +1263,7 @@ def re_extract(redd=None, ut_date=None, nodb=False, oldext=False,
     """Re-extract spectra from cube files for one night.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
         oldext (bool): True to use old extract_star instead of new extractstar
@@ -1343,7 +1343,7 @@ def re_cube(redd=None, ut_date=None, nodb=False, ignore_bad=False):
     """Create e3d cube files for one night.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
         ignore_bad (boo): should we ignore bad wave stats?
@@ -1519,7 +1519,7 @@ def re_calib(redd=None, ut_date=None, nodb=False):
     """Create calibration files for one night.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedmdrp/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         ut_date (str): input directory for single night processing
         nodb (bool): True if no update to SEDM db
 

@@ -33,7 +33,7 @@ https://fritz.science/api/followup_request
 
 and save the output to the file followup_request.json
 
-in /scr2/sedmdrp/fritz
+in /data/sedmdrp/fritz
 
 cd into that directory and run:
 

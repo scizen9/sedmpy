@@ -10,18 +10,27 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import re
 from string import Template
+import version
+
+configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
+_rdir = sedm_cfg['paths']['rawpath']
+_redd = sedm_cfg['paths']['reduxpath']
+_pdir = sedm_cfg['paths']['photpath']
 
 class ingestNight:
     """
     Ingest a directory of files or given a specific night ingest all raw and
     processed images for that night.
     """
-    def __init__(self, raw_dir='/scr2/sedm/raw/',
-                 ifu_proc_dir='/scr/rsw/sedm/data/redux/',
-                 rc_proc_dir='/scr2/sedm/phot/',
+    def __init__(self, raw_dir=_rdir,
+                 ifu_proc_dir=_redd,
+                 rc_proc_dir=_pdir,
                  ifu_prexfix='ifu', rc_prefix='rc',
                  ingest_file='ingest.json',
-                 problem_file='/scr/rsw/problem_files.json'):
+                 problem_file='problem_files.json'):
         """
 
         :param raw_dir:

@@ -6,6 +6,8 @@ import argparse
 import os
 import datetime
 import sys
+import version
+
 try:
     from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
     from marshal_commenter import get_missing_info
@@ -15,13 +17,16 @@ except ImportError:
     from growth.marshal_commenter import get_missing_info
     from growth.marshal_commenter import auth
 
+configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
 
 # Path constants
 add_target_url = 'http://nera.palomar.caltech.edu/cgi-bin/' \
                  'telescopes/p60/sedm/exFollowup.cgi'
 
-pharos_spec_dir = '/scr2/sedmdrp/redux/'
-pharos_phot_dir = '/scr2/sedm/phot/'
+pharos_spec_dir = sedm_cfg['paths']['reduxpath']
+pharos_phot_dir = sedm_cfg['paths']['photpath']
 
 growth_base_url = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 growth_inst_url = growth_base_url + 'update_followup_config.cgi'

@@ -249,7 +249,7 @@ def dosci(destdir='./', datestr=None, ztfupld=False, slack=False,
     star observations, process them as well.
 
     Args:
-        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        destdir (str): destination directory (typically in /data/sedmdrp/redux)
         datestr (str): YYYYMMDD date string
         ztfupld (bool): upload to ZTF marshal?
         slack (bool): upload to pysedm-report Slack channel?

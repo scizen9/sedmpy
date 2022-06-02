@@ -8,6 +8,14 @@ import sys
 import os
 import logging
 import argparse
+import json
+import version
+
+configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
+_redd = sedm_cfg['paths']['reduxdir']
 
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
@@ -44,7 +52,7 @@ def find_recent(redd, fname, destdir, dstr):
     version of the input file.  Copy (link) it into the destination directory.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
         dstr (str): YYYYMMDD date string of current directory
@@ -92,7 +100,7 @@ def find_recent_bias(redd, fname, destdir, dstr):
     version of the input file.  Copy it to the destination directory.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
         dstr (str): YYYYMMDD date string of current directory
@@ -139,7 +147,7 @@ def find_recent_std(redd, fname, destdir, dstr):
     version of the input file.  Copy it to the destination directory.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
         dstr (str): YYYYMMDD date string of current directory
@@ -186,7 +194,7 @@ def find_recent_std(redd, fname, destdir, dstr):
     return ret
 
 
-def link_cals(redd='/scr2/sedmdrp/redux', outdir=None, link_std=False):
+def link_cals(redd=_redd, outdir=None, link_std=False):
     # Get current date string
     cur_date_str = str(outdir.split('/')[-1])
     # Check status
@@ -225,8 +233,8 @@ if __name__ == '__main__':
 
             """, formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--reduxdir', type=str, default='/scr2/sedmdrp/redux',
-                        help='Output reduced directory (/scr2/sedmdrp/redux)')
+    parser.add_argument('--reduxdir', type=str, default=_redd,
+                        help='Output reduced directory (%s)' % _redd)
     parser.add_argument('--std', action="store_true", default=False,
                         help='Link in a flux calibrator?')
 

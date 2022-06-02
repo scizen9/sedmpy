@@ -6,6 +6,7 @@ import argparse
 import os
 import datetime
 import sys
+import version
 from marshals.interface import api, update_status_request
 try:
     from fritz_commenter import add_SNID_pysedm_autoannot as add_annots
@@ -16,9 +17,13 @@ try:
 except ImportError:
     from fritz.fritz_commenter import add_SNIascore_pysedm_autoannot as add_ia_annots
 
+configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
 # Path constants
-pharos_spec_dir = '/scr2/sedmdrp/redux/'
-pharos_phot_dir = '/scr2/sedmrp/redux/phot/'
+pharos_spec_dir = sedm_cfg['paths']['reduxpath']
+pharos_phot_dir = sedm_cfg['paths']['photpath']
 # URL constants
 fritz_base_url = 'https://fritz.science/'
 fritz_spec_url = fritz_base_url + 'api/spectrum/ascii'

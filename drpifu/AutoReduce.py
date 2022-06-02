@@ -22,15 +22,15 @@ Note:
 
         optional arguments:
           -h, --help           show this help message and exit
-          --rawdir RAWDIR      Input raw directory (/scr2/sedm/raw)
-          --reduxdir REDUXDIR  Output reduced directory (/scr2/sedm/redux)
+          --rawdir RAWDIR      Input raw directory (/data/sedmdrp/raw)
+          --reduxdir REDUXDIR  Output reduced directory (/data/sedmdrp/redux)
           --wait               Wait for new directory first (False)
           --piggyback          Don't copy data, copied by another script (False)
           --skip_precal        Skip check of previous day for cal files? (False)
           --date YYYYMMDD      Select date to process (None)
           --update YYYYMMDD    UTDate directory to update (None)
           --local              Process data locally, no push to marshal or slack
-                               (False)
+                               or db update (False)
           --nodb               Do not update SEDM Db (False)
 
 """
@@ -436,7 +436,7 @@ def update_observation(input_fitsfile):
     # END: update_observation
 
 
-def update_calibration(utdate, src_dir='/scr2/sedmdrp/redux'):
+def update_calibration(utdate, src_dir=_reduxpath):
     """ Update the SEDM database spec_calib table on pharos
         by adding a new spectral calibration"""
 
@@ -646,8 +646,8 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None, nodb=False):
     star observations, process them as well.
 
     Args:
-        srcdir (str): source directory (typically in /scr2/sedm/raw)
-        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        srcdir (str): source directory (typically in /data/sedmdrp/raw)
+        destdir (str): destination directory (typically in /data/sedmdrp/redux)
         fsize (int): size of completely copied file in bytes
         datestr (str): YYYYMMDD date string
         nodb (bool): skip update of SEDM db
@@ -715,7 +715,7 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
     star observations, process them as well.
 
     Args:
-        destdir (str): destination directory (typically in /scr2/sedm/redux)
+        destdir (str): destination directory (typically in /data/sedmdrp/redux)
         datestr (str): YYYYMMDD date string
         local (bool): set to skip pushing to marshal and slack
         nodb (bool): if True no update to SEDM db
@@ -1407,7 +1407,7 @@ def find_recent(redd, fname, destdir, dstr):
     version of the input file.  Copy (link) it into the destination directory.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
         dstr (str): YYYYMMDD date string of current directory
@@ -1455,7 +1455,7 @@ def find_recent_bias(redd, fname, destdir):
     version of the input file.  Copy it to the destination directory.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
 
@@ -1501,7 +1501,7 @@ def find_recent_fluxcal(redd, fname, destdir):
     version of the input file.  Copy it to the destination directory.
 
     Args:
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         fname (str): what file to look for
         destdir (str): where the file should go
 
@@ -1565,7 +1565,7 @@ def cpprecal(dirlist, destdir='./', fsize=8400960, nodb=False):
     files into the destination directory.
 
     Args:
-        dirlist (list): a list of raw directories (typically in /scr2/sedm/raw)
+        dirlist (list): a list of raw dirs (typically in /data/sedmdrp/raw)
         destdir (str): where to put the files
         fsize (int): size of completely copied file in bytes
         nodb (bool): skip update of SEDM db
@@ -1758,8 +1758,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     the loop.
 
     Args:
-        rawlist (list): list of raw data directories (usually in /scr2/sedm/raw)
-        redd (str): reduced directory (something like /scr2/sedm/redux)
+        rawlist (list): list of raw data dirs (usually in /data/sedmdrp/raw)
+        redd (str): reduced directory (something like /data/sedmdrp/redux)
         check_precal (bool): should we check for images from previous night?
         indir (str): input directory for single night processing
         piggyback (bool): basic processing done by StartObs.py
@@ -1952,8 +1952,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                              "%d s (waves),  and %d s (flat)" %
                              (procb_time, procg_time, procw_time, procf_time))
                 # Make cube report
-                cmd = "/scr2/sedmdrp/miniconda3/bin/python " \
-                      "~/sedmpy/drpifu/CubeReport.py %s" % cur_date_str
+                cmd = "python ~/sedmpy/drpifu/CubeReport.py %s" % cur_date_str
                 if not local:
                     cmd += " --slack"   # send to slack pysedm_report channel
                 logging.info(cmd)
@@ -2084,7 +2083,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # END: obs_loop
 
 
-def update(red_dir='/scr2/sedmdrp/redux', ut_dir=None):
+def update(red_dir=_reduxpath, ut_dir=None):
     """Update re-extracted spectra"""
 
     # Check inputs
@@ -2166,7 +2165,7 @@ def clean_post_redux(outdir, utdstr):
     return ndel, n_gzip
 
 
-def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
+def go(rawd=_rawpath, redd=_reduxpath, wait=False,
        check_precal=True, indate=None, piggyback=False, local=False,
        nopush_marshal=False, nopush_slack=False, nodb=False, oldext=False):
     """Outermost infinite loop that watches for a new raw directory.
@@ -2176,8 +2175,8 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
     a new raw directory every 10 minutes.
 
     Args:
-        rawd (str): raw directory, should be /scr2/sedm/raw
-        redd (str): reduced directory, should be like /scr2/sedm/redux
+        rawd (str): raw directory, should be like /data/sedmdrp/raw
+        redd (str): reduced directory, should be like /data/sedmdrp/redux
         wait (bool): wait for new directory, else start right away
         check_precal (bool): should we check previous night for cals?
         indate (str): input date to process: YYYYMMDD (e.g. 20180626)
@@ -2249,7 +2248,10 @@ def go(rawd='/scr2/sedm/raw', redd='/scr2/sedmdrp/redux', wait=False,
                              "putting reduced data in %s" % (nraw, rawd, redd))
                 logging.info("Latest raw directory is %s" % rawlist[-1])
                 stat = obs_loop(rawlist, redd, check_precal=check_precal,
-                                piggyback=piggyback, oldext=oldext)
+                                piggyback=piggyback, local=local, nodb=nodb,
+                                nopush_marshal=nopush_marshal,
+                                nopush_slack=nopush_slack,
+                                oldext=oldext)
                 its += 1
                 logging.info("Finished SEDM observing iteration %d in "
                              "raw dir %s" % (its, rawlist[-1]))

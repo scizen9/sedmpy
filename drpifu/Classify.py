@@ -11,6 +11,14 @@ import argparse
 import re
 import drpifu.RunSnid as RunSnid
 import drpifu.RunSNIascore as RunSNIascore
+import json
+import version
+
+configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
+_redd = sedm_cfg['paths']['reduxpath']
 
 
 def classify(spec_dir='./', overwrite=False):
@@ -123,7 +131,7 @@ if __name__ == '__main__':
         Classifies the output ascii spectra
 
         Specify input directory with -d, or --specdir parameters.
-        If none specified, use current date directory in /scr2/sedmdrp/redux/
+        If none specified, use current date directory in /data/sedmdrp/redux/
 
         """, formatter_class=argparse.RawTextHelpFormatter)
 
@@ -143,7 +151,7 @@ if __name__ == '__main__':
         try:
             reddir = os.environ['SEDMREDUXPATH']
         except KeyError:
-            reddir = "/scr2/sedmdrp/redux"
+            reddir = _redd
         specdir = os.path.join(reddir, timestamp)
     else:
         specdir = os.path.abspath(specdir)

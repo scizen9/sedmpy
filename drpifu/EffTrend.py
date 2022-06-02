@@ -10,7 +10,14 @@ import numpy as np
 from astropy.time import Time
 import astropy.io.fits as pf
 
-sdir = '/scr2/sedmdrp/redux'
+import json
+import version
+
+configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
+sdir = sedm_cfg['paths']['reduxpath']
 fspec = os.path.join(sdir, '20??????')
 dlist = sorted([d for d in glob.glob(fspec) if os.path.isdir(d)])[1:]
 
