@@ -245,13 +245,13 @@ def fancy_request_table(df):
         df[col] = [improve_obs_seq(i) for i in df[col]]
 
     styled = df.style\
-               .apply(highlight_set, axis=1)\
                .format(
                 {'object': '<a href="https://fritz.science/source/{0}">{0}</a>',
                  'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.1f}',
                  'start date': '{:%b %d}', 'end date': '{:%b %d}',
                  'lastmodified': '{:%b %d %H:%M}',
-                 'UPDATE': '<a href="request?request_id={}">+</a>'})\
+                 'UPDATE': '<a href="request?request_id={}">+</a>'})
+    """"\
                .set_table_styles([{'text-align': 'left'}])\
                .set_table_attributes('style="width:100%" '
                                      'class="dataframe_fancy table '
@@ -260,7 +260,7 @@ def fancy_request_table(df):
                     [{'selector': '.row_heading',
                       'props': [('display', 'none')]},
                      {'selector': '.blank.level0',
-                      'props': [('display', 'none')]}])
+                      'props': [('display', 'none')]}]) """
     # this .replace() thing is super bad form but it's faster for now than
     # finding the right way
     return styled.render()\
@@ -2258,11 +2258,11 @@ def plot_stats(statsfile, mydate):
                                                'ellipticity', 'bkg', 'airmass',
                                                'in_temp', 'imtype', 'out_temp',
                                                'in_hum']])
-            source_static.data = source.data
+            source_static.data = dict(source.data)
 
         p48 = load_p48seeing(mydate)
         source_p48.data = source_p48.from_df(p48[['date', 'seeing']])
-        source_static_p48.data = source_p48.data
+        source_static_p48.data = dict(source_p48.data)
 
     source_static_p48 = ColumnDataSource(data=dict(date=[], seeing=[]))
     tools = 'pan,box_zoom,reset'
