@@ -8,7 +8,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, Angle, get_moon
 import astropy.units as u
 import numpy as np
 import os
-import version
+import sedmpy_version
 from db.SedmDb import SedmDB
 
 computer = os.uname()[1]  # a quick fix
@@ -28,7 +28,7 @@ elif computer == 'modon':
     server = 'pharos.caltech.edu'
     port = 5432
 
-json_url = os.path.join(version.CONFIG_DIR, 'schedulerconfig.json')
+json_url = os.path.join(sedmpy_version.CONFIG_DIR, 'schedulerconfig.json')
 
 
 class ScheduleNight:

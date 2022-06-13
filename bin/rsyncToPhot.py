@@ -13,9 +13,9 @@ import os
 import glob
 import json
 import argparse
-import version
+import sedmpy_version
 
-cfg_path = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+cfg_path = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(cfg_path) as cfg_file:
     sedm_cfg = json.load(cfg_file)
 

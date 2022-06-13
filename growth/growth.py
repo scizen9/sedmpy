@@ -6,7 +6,7 @@ import argparse
 import os
 import datetime
 import sys
-import version
+import sedmpy_version
 
 try:
     from marshal_commenter import add_SNID_pysedm_autoannot as add_annots
@@ -17,7 +17,7 @@ except ImportError:
     from growth.marshal_commenter import get_missing_info
     from growth.marshal_commenter import auth
 
-configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 

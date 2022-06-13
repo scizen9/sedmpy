@@ -49,7 +49,7 @@ try:
 except ImportError:
     from drprc.target_mag import get_target_mag
 
-import version
+import sedmpy_version
 import json
 
 # Get pipeline configuration
@@ -57,7 +57,7 @@ import json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+    configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 

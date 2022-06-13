@@ -49,9 +49,9 @@ try:
 except ImportError:
     import drprc.rcimg as rcimg
 
-import version
+import sedmpy_version
 
-drp_ver = version.__version__
+drp_ver = sedmpy_version.__version__
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
     datefmt='%Y%m%d %H:%M:%S', level=logging.INFO)
@@ -61,7 +61,7 @@ logging.basicConfig(
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+    configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 
