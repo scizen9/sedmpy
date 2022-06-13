@@ -16,12 +16,12 @@ import os
 import glob
 import argparse
 import json
-import version
+import sedmpy_version
 
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+    configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 

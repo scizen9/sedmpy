@@ -11,9 +11,9 @@ from astropy.time import Time
 import astropy.io.fits as pf
 
 import json
-import version
+import sedmpy_version
 
-configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 

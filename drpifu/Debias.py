@@ -18,9 +18,9 @@ import time
 import numpy as np
 import astropy.io.fits as pf
 import scipy.ndimage.filters as FI
-import version
+import sedmpy_version
 
-drp_ver = version.__version__
+drp_ver = sedmpy_version.__version__
 
 
 def add_prefix(fname):

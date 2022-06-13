@@ -6,8 +6,8 @@ import glob
 import subprocess
 import argparse
 import json
-import version
-configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+import sedmpy_version
+configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 

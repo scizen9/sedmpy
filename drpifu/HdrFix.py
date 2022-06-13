@@ -8,16 +8,16 @@ import subprocess
 import astropy.io.fits as pf
 from astropy.time import Time
 import json
-import version
+import sedmpy_version
 
-drp_ver = version.__version__
+drp_ver = sedmpy_version.__version__
 
 # Get pipeline configuration
 # Find config file: default is sedmpy/config/sedmconfig.json
 try:
     configfile = os.environ["SEDMCONFIG"]
 except KeyError:
-    configfile = os.path.join(version.CONFIG_DIR, 'sedmconfig.json')
+    configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 

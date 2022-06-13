@@ -14,14 +14,14 @@ import time
 import obstimes
 import sqlite3
 
-import version
+import sedmpy_version
 
 # Get scheduler configuration
 # Find config file: default is sedmpy/config/schedulerconfig.json
 try:
     configfile = os.environ["SEDMSCHEDULERCONFIG"]
 except KeyError:
-    configfile = os.path.join(version.CONFIG_DIR, "schedulerconfig.json")
+    configfile = os.path.join(sedmpy_version.CONFIG_DIR, "schedulerconfig.json")
 with open(configfile) as config_file:
     db_cfg = json.load(config_file)
 

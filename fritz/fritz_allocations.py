@@ -4,7 +4,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-import version
+import sedmpy_version
 
 DEFAULT_TIMEOUT = 5  # seconds
 
@@ -16,7 +16,7 @@ default_id = 37
 instrument_id = 2
 telescope_id = 37
 
-with open(os.path.join(version.CONFIG_DIR, 'marshals.json')) as data_file:
+with open(os.path.join(sedmpy_version.CONFIG_DIR, 'marshals.json')) as data_file:
     params = json.load(data_file)
 
 token = params['marshals']['fritz']['alloc_token']

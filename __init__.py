@@ -1,2 +1,2 @@
-import version
-__version__ = version.__version__
+import sedmpy_version
+__version__ = sedmpy_version.__version__
