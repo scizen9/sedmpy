@@ -2302,13 +2302,13 @@ def plot_stats(statsfile, mydate):
         fwhm = figure(plot_width=425, plot_height=250, tools=tools,
                       x_axis_type='datetime', active_drag="box_zoom")
         fwhm.x_range = ns.x_range
-        fwhm.circle('date', 'fwhm', source=source_static, color="green",
+        fwhm.circle('date', 'fwhm', source=source, color="green",
                     legend_label="Focus", view=view_focus)
-        fwhm.circle('date', 'fwhm', source=source_static, color="red",
+        fwhm.circle('date', 'fwhm', source=source, color="red",
                     legend_label="Science", view=view_science)
-        fwhm.circle('date', 'fwhm', source=source_static, color="blue",
+        fwhm.circle('date', 'fwhm', source=source, color="blue",
                     legend_label="Acquisition", view=view_acquisition)
-        fwhm.circle('date', 'fwhm', source=source_static, color="black",
+        fwhm.circle('date', 'fwhm', source=source, color="black",
                     legend_label="Guider", view=view_guider)
         fwhm.circle('date', 'fwhm', size=1, source=source, color=None,
                     selection_color="orange")
