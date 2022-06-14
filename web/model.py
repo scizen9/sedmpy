@@ -30,7 +30,7 @@ pd.options.mode.chained_assignment = None   # default='warn'
 
 superuser_list = ['SEDm_admin', 2, 20180523190352189]
 
-pd.set_option('display.max_colwidth', -1)
+pd.set_option('display.max_colwidth', None)
 
 request_values = ['id', 'object_id', 'marshal_id',
                   'user_id', 'allocation_id',
