@@ -244,15 +244,15 @@ def fancy_request_table(df):
     for col in ('obs_seq', 'exptime'):
         df[col] = [improve_obs_seq(i) for i in df[col]]
 
-    styled = df.style\
+    if df.shape[0] > 0:
+        styled = df.style\
+               .apply(highlight_set, axis=1)\
                .format(
                 {'object': '<a href="https://fritz.science/source/{0}">{0}</a>',
                  'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.1f}',
                  'start date': '{:%b %d}', 'end date': '{:%b %d}',
                  'lastmodified': '{:%b %d %H:%M}',
-                 'UPDATE': '<a href="request?request_id={}">+</a>'})
-    """"\
-               .set_table_styles([{'text-align': 'left'}])\
+                 'UPDATE': '<a href="request?request_id={}">+</a>'})\
                .set_table_attributes('style="width:100%" '
                                      'class="dataframe_fancy table '
                                      'table-striped nowrap"')\
@@ -260,10 +260,27 @@ def fancy_request_table(df):
                     [{'selector': '.row_heading',
                       'props': [('display', 'none')]},
                      {'selector': '.blank.level0',
-                      'props': [('display', 'none')]}]) """
+                      'props': [('display', 'none')]}])
+    else:
+        styled = df.style \
+            .format(
+             {'object': '<a href="https://fritz.science/source/{0}">{0}</a>',
+              'RA': '{:.3f}', 'DEC': '{:.3f}', 'priority': '{:.1f}',
+              'start date': '{:%b %d}', 'end date': '{:%b %d}',
+              'lastmodified': '{:%b %d %H:%M}',
+              'UPDATE': '<a href="request?request_id={}">+</a>'}) \
+            .set_table_attributes('style="width:100%" '
+                                  'class="dataframe_fancy table '
+                                  'table-striped nowrap"') \
+            .set_table_styles(
+                 [{'selector': '.row_heading',
+                   'props': [('display', 'none')]},
+                  {'selector': '.blank.level0',
+                   'props': [('display', 'none')]}])
+    # .set_table_styles([{'text-align': 'left'}])\
     # this .replace() thing is super bad form but it's faster for now than
     # finding the right way
-    return styled.render()\
+    return styled.to_html()\
                  .replace('RA</th>', '<a href="#" data-toggle="tooltip" '
                           'title="red if peaks >8h from midnight">RA</a></th>')\
                  .replace('DEC</th>', '<a href="#" data-toggle="tooltip" '
