@@ -2292,9 +2292,9 @@ def plot_stats(statsfile, mydate):
                       x_axis_type='datetime', active_drag="box_zoom")
         temp.x_range = ns.x_range
         temp.line('date', 'in_temp', source=source_static, color='blue',
-                  legend="Inside")
+                  legend_label="Inside")
         temp.line('date', 'out_temp', source=source_static, color='green',
-                  legend="Outside")
+                  legend_label="Outside")
         temp.circle('date', 'in_temp', size=1, source=source, color=None,
                     selection_color="orange")
         temp.title.text = "Temperature [C]"
@@ -2303,13 +2303,13 @@ def plot_stats(statsfile, mydate):
                       x_axis_type='datetime', active_drag="box_zoom")
         fwhm.x_range = ns.x_range
         fwhm.circle('date', 'fwhm', source=source_static, color="green",
-                    legend="Focus", view=view_focus)
+                    legend_label="Focus", view=view_focus)
         fwhm.circle('date', 'fwhm', source=source_static, color="red",
-                    legend="Science", view=view_science)
+                    legend_label="Science", view=view_science)
         fwhm.circle('date', 'fwhm', source=source_static, color="blue",
-                    legend="Acquisition", view=view_acquisition)
+                    legend_label="Acquisition", view=view_acquisition)
         fwhm.circle('date', 'fwhm', source=source_static, color="black",
-                    legend="Guider", view=view_guider)
+                    legend_label="Guider", view=view_guider)
         fwhm.circle('date', 'fwhm', size=1, source=source, color=None,
                     selection_color="orange")
         fwhm.title.text = "P60 FWHM [arcsec]"
