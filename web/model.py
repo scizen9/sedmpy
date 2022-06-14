@@ -1219,7 +1219,7 @@ def plot_stats_allocation(data):
                toolbar_location=None, tools="")
 
     p.vbar_stack(categories, x='allocations', width=0.9, color=colors,
-                 source=source, legend=["Spent", "Available"])
+                 source=source, legend_label=["Spent", "Available"])
     p.y_range.start = 0
     p.x_range.range_padding = 0.1
     p.xgrid.grid_line_color = None
@@ -1252,8 +1252,8 @@ def plot_stats_allocation(data):
             source=source)
 
     p2.xgrid.grid_line_color = None
-    p2.legend.orientation = "horizontal"
-    p2.legend.location = "top_center"
+    # p2.legend.orientation = "horizontal"  # no legend for this plot
+    # p2.legend.location = "top_center"
     p2.yaxis.axis_label = '% time spent'
     p2.xaxis.major_label_orientation = 0.3
 
@@ -1281,7 +1281,7 @@ def plot_stats_allocation(data):
     for i in range(n_names):
         p3.wedge(x=0, y=0, radius=.9, start_angle=starts[i], end_angle=ends[i],
                  color=pie_colors[i],
-                 legend="[{0}%] {1}".format(percents_only[i], alloc_names[i]))
+                 legend_label="[{0}%] {1}".format(percents_only[i], alloc_names[i]))
 
     p3.xgrid.grid_line_color = None
     p3.ygrid.grid_line_color = None
@@ -1310,7 +1310,7 @@ def plot_stats_allocation(data):
     for i in range(n_names):
         p4.wedge(x=0, y=0, radius=.9, start_angle=starts[i], end_angle=ends[i],
                  color=pie_colors[i],
-                 legend="[{0}%] {1}".format(percents_only[i], alloc_names[i]))
+                 legend_label="[{0}%] {1}".format(percents_only[i], alloc_names[i]))
 
     p4.xgrid.grid_line_color = None
     p4.ygrid.grid_line_color = None
@@ -1992,7 +1992,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     #        legend='Sun', line_dash='dashed')
     # moon
     p.line(delta_midnight, moon_alt, line_color='yellow', line_dash='dashed',
-           name="Moon", legend='Moon')
+           name="Moon", legend_label='Moon')
     # labels and axes
     p.title.text = "Visibility for %s UTC" % midnight
     p.xaxis.axis_label = "Hours from PDT Midnight"
@@ -2073,7 +2073,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
                 # full path of the night
                 dotted = p.line('times', 'alt', color=color, source=source,
                                 line_dash='2 2', name=req['object'],
-                                line_width=1, legend=legend)
+                                line_width=1, legend_label=legend)
                 # manually crop the source so only thick observed
                 # part has tooltips
                 endtime = req['lastmodified']
@@ -2093,7 +2093,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
 
         path = p.line('times', 'alt', color=color, source=source,
                       name=''.format(req['object']),
-                      line_width=line_width, legend=legend)
+                      line_width=line_width, legend_label=legend)
         if not req['allocation'] == 'other':
             tooltipped.append(path)
 
