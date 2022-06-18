@@ -1,8 +1,8 @@
 {
-  "source": ["skipper.caltech.edu", "pharos.caltech.edu", "localhost"],
+  "source": ["skipper.caltech.edu", "minar.caltech.edu", "localhost"],
   "tokens": {
     "skipper.caltech.edu": "empty",
-    "pharos.caltech.edu": "empty",
+    "minar.caltech.edu": "empty",
     "localhost": "empty"
   },
   "programs": ["all"],
