@@ -75,7 +75,7 @@ if computer == 'pele':
     status_dir = '/scr/rsw/'
     requests_dir = '/scr/rsw/'
     base_dir = '/scr/rsw/'
-    host = 'pharos.caltech.edu'
+    host = 'minar.caltech.edu'
     port = 5432
 
 elif computer == 'pharos':
@@ -998,7 +998,7 @@ def get_requests_for_user(user_id, inidate=None, enddate=None):
 
 
 def convert_to_link(reqid):
-    return """http://pharos.caltech.edu/request?request_id=%s""" % reqid
+    return """http://minar.caltech.edu/request?request_id=%s""" % reqid
 
 
 ###############################################################################
@@ -1410,19 +1410,19 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
 
     if user_id == 2:    # SEDM_admin
         if os.path.exists(os.path.join(obsdir, 'report.txt')):
-            ext_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/report.txt">Extraction</a>""".format(obsdate)
+            ext_report = """<a href="http://minar.caltech.edu/data_r/redux/{0}/report.txt">Extraction</a>""".format(obsdate)
         else:
             ext_report = ""
         if os.path.exists(os.path.join(obsdir, 'report_ztf_fritz.txt')):
-            frz_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_fritz.txt">Fritz</a>""".format(obsdate)
+            frz_report = """<a href="http://minar.caltech.edu/data_r/redux/{0}/report_ztf_fritz.txt">Fritz</a>""".format(obsdate)
         else:
             frz_report = ""
         if os.path.exists(os.path.join(obsdir, 'report_ztf_growth.txt')):
-            grw_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/report_ztf_growth.txt">Growth</a>""".format(obsdate)
+            grw_report = """<a href="http://minar.caltech.edu/data_r/redux/{0}/report_ztf_growth.txt">Growth</a>""".format(obsdate)
         else:
             grw_report = ""
         if os.path.exists(os.path.join(obsdir, 'what.txt')):
-            wha_report = """<a href="http://pharos.caltech.edu/data_r/redux/{0}/what.txt" type="plain/text">What</a>""".format(obsdate)
+            wha_report = """<a href="http://minar.caltech.edu/data_r/redux/{0}/what.txt" type="plain/text">What</a>""".format(obsdate)
         else:
             wha_report = ""
         div_str += """<div class="row">"""
@@ -1809,7 +1809,7 @@ def get_rc_products(obsdate=None, product=None, user_id=None, camera_type='rc'):
     if user_id == 2:    # SEDM_admin
         obsdir = os.path.join(new_phot_dir, obsdate)
         if os.path.exists(os.path.join(obsdir, 'rcwhat.txt')):
-            wha_report = """<a href="http://pharos.caltech.edu/data_r/redux/phot/{0}/rcwhat.txt" type="plain/text">RCWhat</a>""".format(obsdate)
+            wha_report = """<a href="http://minar.caltech.edu/data_r/redux/phot/{0}/rcwhat.txt" type="plain/text">RCWhat</a>""".format(obsdate)
             div_str += """<div class="row">"""
             div_str += """<h4>{0}</h4>""".format(wha_report)
             div_str += "</div>"
@@ -1854,7 +1854,7 @@ def get_rc_products(obsdate=None, product=None, user_id=None, camera_type='rc'):
                             </a>
                             <div class="cardbody">
                                 <h6 class="card-title">{2}</h6>
-                                <a href="http://pharos.caltech.edu{0}" class="btn btn-primary">
+                                <a href="http://minar.caltech.edu{0}" class="btn btn-primary">
                                     Download
                                 </a> 
                             </div>

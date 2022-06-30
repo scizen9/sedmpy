@@ -5,4 +5,4 @@ Request for follow-up on {object_name} has been determined to not be possible du
 
 From Auto-SEDm
 
-http://pharos.caltech.edu
+http://minar.caltech.edu

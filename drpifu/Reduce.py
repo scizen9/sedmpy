@@ -1,4 +1,4 @@
-"""Conduct automatic reduction of SEDM data in sedmdrp@pharos
+"""Conduct automatic reduction of SEDM data on sedmdrp@minar
 
 Functions
     * :func:`red_loop`     one night observing loop

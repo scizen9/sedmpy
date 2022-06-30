@@ -20,7 +20,7 @@ def report():
         print("\n%s" % comment)
     print("\nSEDM DRP run in %s\nFound %d spec_*.txt files" %
           (os.getcwd(), len(flist)))
-    print("See http://pharos.caltech.edu/data_access/ifu?obsdate=%s\n" %
+    print("See http://minar.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
 
     print("UTStart  Object               Exptime Air    Qual"

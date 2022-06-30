@@ -156,7 +156,7 @@ class ingestNight:
                                   (${observation_id}, '${obsdate}', '${product_name}', '${product_type}', 
                                   '${camera}', '${basedir}', '${ext_type}', ${request_id})""")
 
-        self.db = SedmDB(host="pharos", dbname='sedmdb', port=5432)
+        self.db = SedmDB(host="minar", dbname='sedmdb', port=5432)
 
     def _insert_dataproducts_dict(self, obsdate, observation_id=0, product_name="",
                                   product_type="", camera="", basedir="", ext_type="",

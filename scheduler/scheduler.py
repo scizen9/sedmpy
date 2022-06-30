@@ -13,7 +13,7 @@ from db.SedmDb import SedmDB
 
 computer = os.uname()[1]  # a quick fix
 if computer == 'pele':
-    server = 'pharos.caltech.edu'
+    server = 'minar.caltech.edu'
     port = 5432
 elif computer == 'pharos':
     server = 'localhost'
@@ -25,7 +25,7 @@ elif computer == 'ether':
     server = 'localhost'
     port = 22222
 elif computer == 'modon':
-    server = 'pharos.caltech.edu'
+    server = 'minar.caltech.edu'
     port = 5432
 
 json_url = os.path.join(sedmpy_version.CONFIG_DIR, 'schedulerconfig.json')

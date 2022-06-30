@@ -25,8 +25,8 @@ with open(configfile) as config_file:
 add_target_url = 'http://nera.palomar.caltech.edu/cgi-bin/' \
                  'telescopes/p60/sedm/exFollowup.cgi'
 
-pharos_spec_dir = sedm_cfg['paths']['reduxpath']
-pharos_phot_dir = sedm_cfg['paths']['photpath']
+minar_spec_dir = sedm_cfg['paths']['reduxpath']
+minar_phot_dir = sedm_cfg['paths']['photpath']
 
 growth_base_url = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 growth_inst_url = growth_base_url + 'update_followup_config.cgi'

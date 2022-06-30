@@ -1,4 +1,4 @@
-Use account sedm on pharos
+Use account sedmdrp on minar: WARNING - this is out of date and needs to be modified!
 
 Start-up procedure.  Issue these in a screen session:
 

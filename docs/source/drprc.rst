@@ -65,10 +65,10 @@ drprc.listener module
     :undoc-members:
     :show-inheritance:
 
-drprc.pharos module
+drprc.minar module
 ---------------------
 
-.. automodule:: drprc.pharos
+.. automodule:: drprc.minar
     :members:
     :undoc-members:
     :show-inheritance:

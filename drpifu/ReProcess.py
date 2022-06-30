@@ -1,4 +1,4 @@
-"""Conduct automatic reduction of SEDM data in sedmdrp@pharos
+"""Conduct automatic reduction of SEDM data in sedmdrp@minar
 
 Functions
     * :func:`reproc`     one night calibration loop

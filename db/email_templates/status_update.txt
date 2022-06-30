@@ -4,4 +4,4 @@ The status for follow-up on {object_name} has been updated to {new_status} at {s
 
 This is an auto-generated alert.
 
-http://pharos.caltech.edu
+http://minar.caltech.edu

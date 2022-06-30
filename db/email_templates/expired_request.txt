@@ -8,10 +8,10 @@ To re-submit this request visit
 
 To see the full list of expired targets for the last seven days, visit
 
-http://pharos.caltech.edu/#expired
+http://minar.caltech.edu/#expired
 
 This is an auto-generated alert.
 
 From Auto-SEDm
 
-http://pharos.caltech.edu
+http://minar.caltech.edu

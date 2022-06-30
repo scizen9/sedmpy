@@ -1,4 +1,4 @@
-"""Conduct automatic reduction of SEDM data in sedmdrp@pharos
+"""Conduct automatic reduction of SEDM data on sedmdrp@minar
 
 Functions
     * :func:`go`           outer loop waits for new data directory
@@ -389,7 +389,7 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False, nodb=False):
 
 
 def update_observation(input_fitsfile):
-    """ Update the SEDM database observation table on pharos
+    """ Update the SEDM database observation table on minar
         by adding a new observation"""
 
     header_dict = {
@@ -437,7 +437,7 @@ def update_observation(input_fitsfile):
 
 
 def update_calibration(utdate, src_dir=_reduxpath):
-    """ Update the SEDM database spec_calib table on pharos
+    """ Update the SEDM database spec_calib table on minar
         by adding a new spectral calibration"""
 
     spec_calib_dict = {}
@@ -1062,7 +1062,7 @@ def make_e3d(fnam=None, destdir=None, datestr=None, nodb=False, sci=False,
 
 
 def update_spec(input_specfile, update_db=False, nopush_marshal=False):
-    """ Update the SEDM database on pharos by adding a new spec entry"""
+    """ Update the SEDM database on minar by adding a new spec entry"""
 
     header_dict = {
         'imgset': 'IMGSET', 'quality': 'QUALITY', 'cubefile': 'SOURCE',
@@ -1285,7 +1285,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
 
 
 def update_cube(input_fitsfile):
-    """ Update the SEDM database on pharos by adding a new cube entry. """
+    """ Update the SEDM database on minar by adding a new cube entry. """
 
     header_dict = {
         'ccd_x_flex_corr': 'IFLXCORR', 'ccd_x_flex_px': 'CCDIFLX',
@@ -1382,7 +1382,7 @@ def email_user(spec_file, utdate, object_name):
                  'Manual recovery may be possible.'
     else:
         status = 'IFU extraction succeeded.'
-    link = 'http://pharos.caltech.edu/data_access/ifu?obsdate=%s' % utdate
+    link = 'http://minar.caltech.edu/data_access/ifu?obsdate=%s' % utdate
     subj = 'SEDM followup status report for %s on %s' % (object_name, utdate)
 
     sedmdb = db.SedmDb.SedmDB()

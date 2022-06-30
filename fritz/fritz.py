@@ -22,8 +22,8 @@ with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 
 # Path constants
-pharos_spec_dir = sedm_cfg['paths']['reduxpath']
-pharos_phot_dir = sedm_cfg['paths']['photpath']
+minar_spec_dir = sedm_cfg['paths']['reduxpath']
+minar_phot_dir = sedm_cfg['paths']['photpath']
 # URL constants
 fritz_base_url = 'https://fritz.science/'
 fritz_spec_url = fritz_base_url + 'api/spectrum/ascii'
