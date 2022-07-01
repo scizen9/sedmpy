@@ -1952,7 +1952,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                              "%d s (waves),  and %d s (flat)" %
                              (procb_time, procg_time, procw_time, procf_time))
                 # Make cube report
-                cmd = "python ~/sedmpy/drpifu/CubeReport.py %s" % cur_date_str
+                cmd = "~/miniconda3/bin/python " \
+                      "~/sedmpy/drpifu/CubeReport.py %s" % cur_date_str
                 if not local:
                     cmd += " --slack"   # send to slack pysedm_report channel
                 logging.info(cmd)
