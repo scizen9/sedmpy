@@ -376,7 +376,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
 
     if not nocopy:
         # Make destination directory
-        cmd = "rsh transient.caltech.edu -l grbuser mkdir " \
+        cmd = "ssh -l grbuser transient.caltech.edu mkdir " \
               "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
               dayname
         logger.info(cmd)
@@ -451,7 +451,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                             toks[-1] = toks[-1].split('.')[0]
                             # Do the filters match?
                             if toks[-2] == toks[-1]:
-                                cmd = "rcp %s grbuser@transient.caltech.edu:" \
+                                cmd = "scp %s grbuser@transient.caltech.edu:" \
                                       "/scr3/mansi/ptf/p60phot/" \
                                       "fremling_pipeline/sedm/reduced/%s/" % \
                                       (r, dayname)
