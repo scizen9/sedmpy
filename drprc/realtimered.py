@@ -263,7 +263,7 @@ def plot_raw_image(image, verbose=False, ut_id=None):
 
 
 def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
-                      local=False):
+                      local=False, one_pass=False):
     """
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
@@ -356,6 +356,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
     # end wait for ACQs while loop
 
     # Make sure required cals were made
+    logger.info("Re-checking cals before proceeding")
     if not bias_done:
         rcred.create_masterbias(phot_dir)
     if not domes_done:
@@ -376,7 +377,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
 
     if not nocopy:
         # Make destination directory
-        cmd = "rsh transient.caltech.edu -l grbuser mkdir " \
+        cmd = "ssh -l grbuser transient.caltech.edu mkdir " \
               "/scr3/mansi/ptf/p60phot/fremling_pipeline/sedm/reduced/%s" % \
               dayname
         logger.info(cmd)
@@ -391,7 +392,11 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
 
         if len(nfilesnew) == len(nfiles):
             if n_wait > 10:
-                logger.info("No new image after %d waits, waiting 30s" % n_wait)
+                if one_pass:
+                    logger.info("One pass requested, exiting loop")
+                    return
+                else:
+                    logger.info("No new image after %d waits, waiting 30s" % n_wait)
             time.sleep(30)
             n_wait += 1
         # we got some new files
@@ -451,7 +456,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                             toks[-1] = toks[-1].split('.')[0]
                             # Do the filters match?
                             if toks[-2] == toks[-1]:
-                                cmd = "rcp %s grbuser@transient.caltech.edu:" \
+                                cmd = "scp %s grbuser@transient.caltech.edu:" \
                                       "/scr3/mansi/ptf/p60phot/" \
                                       "fremling_pipeline/sedm/reduced/%s/" % \
                                       (r, dayname)
@@ -546,13 +551,10 @@ if __name__ == '__main__':
                         help='process NA image types', default=False)
     parser.add_argument('-l', '--local', action="store_true",
                         help='process locally', default=False)
+    parser.add_argument('-o', '--one_pass', action="store_true",
+                        help='make only one pass through images', default=False)
 
     args = parser.parse_args()
-
-    if args.local:
-        args_nocopy = True
-    else:
-        args_nocopy = args.nocopy
 
     if args.photdir is None:
         timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
@@ -564,9 +566,10 @@ if __name__ == '__main__':
     phot_dir = os.path.abspath(pdir)
 
     print("Reducing RC data in", phot_dir)
+    logger.info("Reducing RC data in %s", phot_dir)
 
-    reduce_on_the_fly(phot_dir, nocopy=args_nocopy, proc_na=args.proc_na,
-                      local=args.local)
+    reduce_on_the_fly(phot_dir, nocopy=args.nocopy, proc_na=args.proc_na,
+                      local=args.local, one_pass=args.one_pass)
 
     ntopgz, nredgz = gzip_fits_files(phot_dir)
     logger.info("Gzipped %d top-level and %d reduced fits files" %

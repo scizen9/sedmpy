@@ -197,7 +197,7 @@ def plot_stats(statfile):
                frameon=True, ncol=1, fancybox=False, shadow=True,
                bbox_to_anchor=(0., 1.))
     
-    plt.savefig(statfile.replace(".log", "%s.png" % day), bbox="tight")
+    plt.savefig(statfile.replace(".log", "%s.png" % day), bbox_inches="tight")
 
 
 if __name__ == '__main__':

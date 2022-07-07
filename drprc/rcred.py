@@ -352,6 +352,9 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True, twilight=False,
                 lfiles = []
                 for ff in flist:
                     fff = 'b_' + ff.replace(".fits", "_%s.fits" % b)
+                    if not os.path.exists(fff):
+                        logger.warning("Cannot find %s", fff)
+                        continue
                     fi = fits.open(fff)
                     d = fi[0].data
                     if 'EXPTIME' in fi[0].header:
