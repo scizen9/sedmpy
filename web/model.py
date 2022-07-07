@@ -1865,10 +1865,10 @@ def get_rc_products(obsdate=None, product=None, user_id=None, camera_type='rc'):
 
             count += 1
 
-        div_str += ''
-        sedm_dict['data'] = div_str
     else:
-        sedm_dict['data'] = "No %s images found" % product
+        div_str += "<p>No %s images found" % product
+
+    sedm_dict['data'] = div_str
 
     # print(sedm_dict)
     return sedm_dict
