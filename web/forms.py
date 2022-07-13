@@ -93,7 +93,7 @@ class AddFixedRequest(FlaskForm):
         'Use object magnitude to set exposure time')
     ifu_exptime = fields.IntegerField(
         'Enter total IFU exposure time in seconds')
-    ab = fields.BooleanField('Select For AB pair')
+    #ab = fields.BooleanField('Select For AB pair')
 
     cadence = fields.FloatField('Cadence', default=None)
 
