@@ -50,7 +50,7 @@ object_values = ['id', 'marshal_id', 'name', 'iauname',
 
 request_form_values = ['request_id', 'object_id', 'marshal_id',
                        'user_id', 'allocation', 'ifu', 'ifu_use_mag',
-                       'ab', 'rc', 'do_r', 'do_g', 'do_i', 'do_u',
+                       'rc', 'do_r', 'do_g', 'do_i', 'do_u',
                        'r_exptime', 'g_exptime', 'i_exptime', 'u_exptime',
                        'r_repeats', 'g_repeats', 'i_repeats', 'u_repeats',
                        'ifu_exptime', 'priority', 'inidate', 'rc_use_mag',
@@ -508,8 +508,6 @@ def populate_form(content, form):
         form.ifu.data = ret_dict['do_ifu']
     if 'ifu_exptime' in ret_dict:
         form.ifu_exptime.data = ret_dict['ifu_exptime']
-    if 'ab' in ret_dict:
-        form.ab.data = ret_dict['ab']
     if 'do_rc' in ret_dict:
         form.rc.data = ret_dict['do_rc']
     if 'do_r' in ret_dict:
@@ -698,7 +696,7 @@ def process_request_form(content, form, userid):
 
     # 2. Now let's put together the request
     # by getting all the values into a dictionary
-    obs_seq_key_list = ['ifu', 'rc', 'ab', 'do_r', 'do_i', 'do_u', 'do_g',
+    obs_seq_key_list = ['ifu', 'rc', 'do_r', 'do_i', 'do_u', 'do_g',
                         'r_repeats', 'g_repeats', 'i_repeats', 'u_repeats',
                         'r_exptime', 'g_exptime', 'i_exptime', 'u_exptime',
                         'ifu_use_mag', 'rc_use_mag', 'ifu_exptime']
