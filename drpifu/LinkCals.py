@@ -15,7 +15,7 @@ configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
     sedm_cfg = json.load(config_file)
 
-_redd = sedm_cfg['paths']['reduxdir']
+_redd = sedm_cfg['paths']['reduxpath']
 
 logging.basicConfig(
     format='%(asctime)s %(funcName)s %(levelname)-8s %(message)s',
