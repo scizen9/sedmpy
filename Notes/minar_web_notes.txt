@@ -13,6 +13,10 @@ but needs to point to the new config file
 
 /data/sedmdrp/miniconda3/envs/python2/bin/python /data/sedmdrp/miniconda3/envs/python2/bin/supervisord -c /data/sedmdrp/sedmpy/config/supervisord.conf
 
+NB: The supervisor will start the gunicorn process in #2 automatically.
+If you want to see the output from the flask app, kill the lead gunicorn
+process and start it manually as in #2.  Otherwise, you are done.
+
 2. The gunicorn startup now needs to point to the custom python3 version
 and needs to be started in the /data/sedmdrp/sedmpy/web directory
 
