@@ -635,8 +635,9 @@ def sedm_tns_classify(spec_file, ztfname=None, iau_name=None, testing=False):
 
     specfile = os.path.join(path, spectrum_name)
 
-    classifiers = 'SNIascore on behalf of the SEDM Team (Caltech) and ' \
-                  'the Zwicky Transient Facility (ZTF)'
+    classifiers = 'C. Fremling, D. Neill, Y. Sharma on behalf of the SEDM ' \
+                  'Team (Caltech) and the Zwicky Transient Facility (ZTF) ' \
+                  'based on SNIascore'
     source_group = 48  # ZTF source group number
 
     proprietary_period = '0'
