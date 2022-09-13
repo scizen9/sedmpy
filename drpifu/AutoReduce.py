@@ -49,9 +49,11 @@ import ephem
 import smtplib
 from email.message import EmailMessage
 import db.SedmDb
+from datetime import datetime
 
 from astropy.time import Time
 from astropy.coordinates import Angle
+import astroplan
 
 import sedmpy_version
 
@@ -1782,6 +1784,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     p60.lon = '-116:52:00'
     p60.elevation = 1706
     sun = ephem.Sun()
+    # use astroplan
+    obs_site = astroplan.Observer.at_site(sedm_cfg['observatory'])
+    obstime = Time(datetime.utcnow())
 
     # Source directory is most recent raw dir
     if indir is None:
@@ -1817,6 +1822,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     if not cube_ready(outdir, cur_date_str):
         # Wait for cal files until sunset
         sunset = p60.next_setting(sun)
+        ap_sunset = obs_site.sun_set_time(obstime, which='nearest')
+        print("ephem sun set: ", sunset.tuple())
+        print("astroplan sun set: ", ap_sunset.iso)
         if piggyback:
             logging.info("Skipping check for raw cal files")
             ncp = 0
@@ -2007,6 +2015,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         while doit:
             # Wait for next sunrise
             sunrise = p60.next_rising(sun)
+            ap_sunrise = obs_site.sun_rise_time(obstime, which='next')
+            print("ephem sunrise: ", sunrise.tuple())
+            print("astroplan sunrise: ", ap_sunrise.iso)
             # Wait a minute
             logging.info("waiting 60s for new ifu images...")
             sys.stdout.flush()
