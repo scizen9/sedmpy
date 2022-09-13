@@ -16,5 +16,8 @@
     "redux_backup_file": "/data/sedmdrp/redux/irsa-p60-sedm-backup2.list",
     "raw_backup_file": "/data/sedmdrp/raw/irsa-p60-sedm-backup2.list",
     "phot_backup_file": "/data/sedmdrp/redux/phot/irsa-p60-sedm-backup2.list"
+  },
+  "observatory": {
+    "name": "palomar"
   }
 }

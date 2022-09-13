@@ -1785,7 +1785,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     p60.elevation = 1706
     sun = ephem.Sun()
     # use astroplan
-    obs_site = astroplan.Observer.at_site(sedm_cfg['observatory'])
+    obs_site = astroplan.Observer.at_site(sedm_cfg['observatory']['name'])
     obstime = Time(datetime.utcnow())
 
     # Source directory is most recent raw dir
