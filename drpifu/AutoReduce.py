@@ -2016,7 +2016,11 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             # Wait for next sunrise
             sunrise = p60.next_rising(sun)
             ap_sunrise = obs_site.sun_rise_time(obstime, which='next')
+            morning_civil_twilight = obs_site.twilight_morning_civil(
+                obstime, which='next')
             print("ephem sunrise: ", sunrise.tuple())
+            print("astroplan morning civil twilight: ",
+                  morning_civil_twilight.iso)
             print("astroplan sunrise: ", ap_sunrise.iso)
             # Wait a minute
             logging.info("waiting 60s for new ifu images...")
