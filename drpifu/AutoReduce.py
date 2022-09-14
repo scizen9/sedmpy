@@ -2218,10 +2218,10 @@ def go(rawd=_rawpath, redd=_reduxpath, wait=False,
                                          "iteration with raw dir %s" %
                                          rawlist[-1])
                         else:
-                            gm = time.gmtime()
+                            now = datetime.utcnow()
                             logging.info("UT = %02d:%02d No new directories "
                                          "yet, so keep waiting" %
-                                         (gm.tm_hour, gm.tm_min))
+                                         (now.hour, now.minute))
                             sys.stdout.flush()
                 logging.info("Found %d raw directories in %s: "
                              "putting reduced data in %s" % (nraw, rawd, redd))
