@@ -45,7 +45,6 @@ import subprocess
 import astropy.io.fits as pf
 import logging
 import argparse
-import ephem
 import smtplib
 from email.message import EmailMessage
 import db.SedmDb
@@ -1778,15 +1777,12 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         KeyboardInterrupt handler exits gracefully with a ctrl-C.
 
     """
-    # Set up Observatory params
-    p60 = ephem.Observer()
-    p60.lat = '33:21:00'
-    p60.lon = '-116:52:00'
-    p60.elevation = 1706
-    sun = ephem.Sun()
-    # use astroplan
-    obs_site = astroplan.Observer.at_site(sedm_cfg['observatory']['name'])
+    # Set up Observatory params and night limiting epochs
+    p60 = astroplan.Observer.at_site(sedm_cfg['observatory']['name'])
     obstime = Time(datetime.utcnow())
+    evening_civil_twilight = p60.twilight_evening_civil(obstime,
+                                                        which='nearest')
+    morning_civil_twilight = p60.twilight_morning_civil(obstime, which='next')
 
     # Source directory is most recent raw dir
     if indir is None:
@@ -1821,10 +1817,6 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
         # Wait for cal files until sunset
-        sunset = p60.next_setting(sun)
-        ap_sunset = obs_site.sun_set_time(obstime, which='nearest')
-        print("ephem sun set: ", sunset.tuple())
-        print("astroplan sun set: ", ap_sunset.iso)
         if piggyback:
             logging.info("Skipping check for raw cal files")
             ncp = 0
@@ -1841,13 +1833,13 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         while not cal_proc_ready(outdir, ncp=ncp, test_cal_ims=piggyback):
             # Wait a minute
             logging.info("waiting 60s...")
-            now = ephem.now()
+            now = Time(datetime.utcnow())
             time.sleep(60)
             if piggyback:
                 logging.info("checking for processed cal files")
                 ncp = 0
             else:
-                if check_precal and now.tuple()[3] >= 20:
+                if check_precal and now.to_datetime().hour >= 20:
                     logging.info("checking %s for new raw cal files..."
                                  % rawlist[-2])
                     ncp = cpprecal(rawlist, outdir, nodb=nodb)
@@ -1860,27 +1852,15 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 logging.info("Linked %d raw cal files from %s" % (ncp, srcdir))
             if ncp <= 0:
                 # Check to see if we are still before an hour after sunset
-                now = ephem.now()
-                if now < sunset + ephem.hour:
-                    logging.info("UT  = %d%02d%02d %02d_%02d_%02.0f < sunset "
-                                 "(%d%02d%02d %02d_%02d_%02.0f)"
-                                 " + 1hr, so keep waiting" %
-                                 (now.tuple()[0], now.tuple()[1],
-                                  now.tuple()[2], now.tuple()[3],
-                                  now.tuple()[4], now.tuple()[5],
-                                  sunset.tuple()[0], sunset.tuple()[1],
-                                  sunset.tuple()[2], sunset.tuple()[3],
-                                  sunset.tuple()[4], sunset.tuple()[5]))
+                now = Time(datetime.utcnow())
+                if now < evening_civil_twilight:
+                    logging.info("UT  = %s < civil twilight (%s),"
+                                 " so keep  waiting" %
+                                 (now.iso, evening_civil_twilight.iso))
                 else:
-                    logging.info("UT = %d%02d%02d %02d_%02d_%02.0f >= sunset "
-                                 "(%d%02d%02d %02d_%02d_%02.0f) + 1hr, time "
-                                 "to get a cal set" %
-                                 (now.tuple()[0], now.tuple()[1],
-                                  now.tuple()[2], now.tuple()[3],
-                                  now.tuple()[4], now.tuple()[5],
-                                  sunset.tuple()[0], sunset.tuple()[1],
-                                  sunset.tuple()[2], sunset.tuple()[3],
-                                  sunset.tuple()[4], sunset.tuple()[5]))
+                    logging.info("UT = %s >= civil twilight (%s), "
+                                 "time to get a cal set" %
+                                 (now.iso, evening_civil_twilight.iso))
                     break
             else:
                 # Get new listing
@@ -2013,15 +1993,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     doit = True
     try:
         while doit:
-            # Wait for next sunrise
-            sunrise = p60.next_rising(sun)
-            ap_sunrise = obs_site.sun_rise_time(obstime, which='next')
-            morning_civil_twilight = obs_site.twilight_morning_civil(
-                obstime, which='next')
-            print("ephem sunrise: ", sunrise.tuple())
-            print("astroplan morning civil twilight: ",
-                  morning_civil_twilight.iso)
-            print("astroplan sunrise: ", ap_sunrise.iso)
+            # Wait for morning civil twilight
+
             # Wait a minute
             logging.info("waiting 60s for new ifu images...")
             sys.stdout.flush()
@@ -2056,18 +2029,12 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             # Have we been waiting for a while?
             if nnc > 3:
                 # Check time
-                now = ephem.now()
-                if now >= sunrise:
-                    # No new observations and sun is probably up!
+                now = Time(datetime.utcnow())
+                if now >= morning_civil_twilight:
+                    # No new observations but civil twilight has begun
                     logging.info("No new images for %d minutes and UT = "
-                                 "%d%02d%02d %02d_%02d_%02.0f > "
-                                 "%d%02d%02d %02d_%02d_%02.0f so sun is up!" %
-                                 (nnc, now.tuple()[0], now.tuple()[1],
-                                  now.tuple()[2], now.tuple()[3],
-                                  now.tuple()[4], now.tuple()[5],
-                                  sunrise.tuple()[0], sunrise.tuple()[1],
-                                  sunrise.tuple()[2], sunrise.tuple()[3],
-                                  sunrise.tuple()[4], sunrise.tuple()[5]))
+                                 "%s > %s so twilight has begun!" %
+                                 (nnc, now.iso, morning_civil_twilight.iso))
                     logging.info(
                         "Time to wait until we have a new raw directory")
                     doit = False
@@ -2076,15 +2043,9 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     ret = True
                 else:
                     logging.info("No new image for %d minutes but UT = "
-                                 "%d%02d%02d %02d_%02d_%02.0f <= "
-                                 "%d%02d%02d %02d_%02d_%02.0f, so sun is still "
-                                 "down, keep waiting" %
-                                 (nnc, now.tuple()[0], now.tuple()[1],
-                                  now.tuple()[2], now.tuple()[3],
-                                  now.tuple()[4], now.tuple()[5],
-                                  sunrise.tuple()[0], sunrise.tuple()[1],
-                                  sunrise.tuple()[2], sunrise.tuple()[3],
-                                  sunrise.tuple()[4], sunrise.tuple()[5]))
+                                 "%s <= %s, so twilight has not started, keep "
+                                 "waiting" %
+                                 (nnc, now.iso, morning_civil_twilight.iso))
                 if indir is not None:
                     logging.info("Done processing images from %s", indir)
                     doit = False
