@@ -1783,6 +1783,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     evening_civil_twilight = p60.twilight_evening_civil(obstime,
                                                         which='nearest')
     morning_civil_twilight = p60.twilight_morning_civil(obstime, which='next')
+    print("evening civil twilight: ", evening_civil_twilight.iso)
+    print("morning civil twilight: ", morning_civil_twilight.iso)
 
     # Source directory is most recent raw dir
     if indir is None:
