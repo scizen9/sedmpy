@@ -1864,7 +1864,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     logging.info("UT = %s >= civil twilight (%s), "
                                  "time to get a cal set" %
                                  (now.iso.split()[-1],
-                                  evening_civil_twilight.iso.split()[-1])
+                                  evening_civil_twilight.iso.split()[-1]))
                     break
             else:
                 # Get new listing
