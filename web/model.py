@@ -2281,9 +2281,6 @@ def plot_stats(statsfile, mydate):
 
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
-        source_p18.data['seeing_min'] = p18['seeing'].min()
-        source_p18.data['seeing_max'] = p18['seeing'].max()
-        source_p18.data['seeing_median'] = p18['seeing'].median()
         source_static_p18.data = dict(source_p18.data)
         print("\nP18 min, max, median FWHM: ", p18['seeing'].min(),
               p18['seeing'].max(), p18['seeing'].median())
