@@ -61,10 +61,6 @@ request_form_values = ['request_id', 'object_id', 'marshal_id',
 rc_filter_list = ['r', 'g', 'i', 'u']
 schedule = ScheduleNight()
 
-p18_min = None
-p18_max = None
-p18_median = None
-
 # this all needs to go in some sort of config file instead of changing the
 # source code constantly
 computer = os.uname()[1]  # a quick fix
@@ -2269,7 +2265,6 @@ def plot_stats(statsfile, mydate):
     source_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
 
     def update(selected=None):
-        global p18_min, p18_max, p18_median
 
         if selected:
             pass
@@ -2281,13 +2276,14 @@ def plot_stats(statsfile, mydate):
                                                'in_temp', 'imtype', 'out_temp',
                                                'in_hum']])
             source_static.data = dict(source.data)
+            print("IFU min, max, median FWHM: ", data['fwhm'].min(),
+                  data['fwhm'].max(), data['fwhm'].median())
 
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
         source_static_p18.data = dict(source_p18.data)
-        p18_min = p18['seeing'].min()
-        p18_max = p18['seeing'].max()
-        p18_median = p18['seeing'].median
+        print("P18 min, max, median seeing: ", p18['seeing'].min(),
+              p18['seeing'].max(), p18['seeing'].median())
 
     source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
     tools = 'pan,box_zoom,reset'
@@ -2296,21 +2292,6 @@ def plot_stats(statsfile, mydate):
                        x_axis_type='datetime', active_drag="box_zoom")
     p18seeing.circle('date', 'seeing', source=source_static_p18, color="black")
     p18seeing.title.text = "P18 seeing [arcsec]"
-
-    if p18_min:
-        p18_min_span = Span(location=p18_min, dimension='width',
-                            line_dash='dashed', line_width=3)
-        p18seeing.add_layout(p18_min_span)
-
-    if p18_max:
-        p18_max_span = Span(location=p18_max, dimension='width',
-                            line_dash='dashed', line_width=3)
-        p18seeing.add_layout(p18_max_span)
-
-    if p18_median:
-        p18_median_span = Span(location=p18_median, dimension='width',
-                               line_dash='dotted', line_width=3)
-        p18seeing.add_layout(p18_median_span)
 
     if statsfile:
         ns = figure(plot_width=425, plot_height=250, tools=tools,
