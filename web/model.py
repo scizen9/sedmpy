@@ -2262,9 +2262,9 @@ def plot_stats(statsfile, mydate):
                          filters=[GroupFilter(column_name='imtype',
                                               group='FOCUS')])
     source_p18 = ColumnDataSource(data=dict(date=[], seeing=[],
-                                            seeing_min=None,
-                                            seeing_max=None,
-                                            seeing_median=None))
+                                            seeing_min=0.,
+                                            seeing_max=0.,
+                                            seeing_median=0.))
 
     def update(selected=None):
 
@@ -2292,9 +2292,9 @@ def plot_stats(statsfile, mydate):
               p18['seeing'].max(), p18['seeing'].median())
 
     source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[],
-                                                   seeing_min=None,
-                                                   seeing_max=None,
-                                                   seeing_median=None))
+                                                   seeing_min=0.,
+                                                   seeing_max=0.,
+                                                   seeing_median=0.))
     tools = 'pan,box_zoom,reset'
 
     p18seeing = figure(plot_width=425, plot_height=250, tools=tools,
