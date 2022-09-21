@@ -2292,9 +2292,9 @@ def plot_stats(statsfile, mydate):
                        x_axis_type='datetime', active_drag="box_zoom")
     p18seeing.circle('date', 'seeing', source=source_static_p18, color="black")
     p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
-        source_static_p18.data['fwhm'].min(),
-        source_static_p18.data['fwhm'].max(),
-        source_static_p18.data['fwhm'].mean())
+        source_static_p18.data['seeing'].min(),
+        source_static_p18.data['seeing'].max(),
+        source_static_p18.data['seeing'].mean())
 
     if statsfile:
         ns = figure(plot_width=425, plot_height=250, tools=tools,
