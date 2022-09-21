@@ -2291,10 +2291,7 @@ def plot_stats(statsfile, mydate):
     p18seeing = figure(plot_width=425, plot_height=250, tools=tools,
                        x_axis_type='datetime', active_drag="box_zoom")
     p18seeing.circle('date', 'seeing', source=source_static_p18, color="black")
-    p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
-        source_p18.data['seeing'].min(),
-        source_p18.data['seeing'].max(),
-        source_p18.data['seeing'].mean())
+    p18seeing.title.text = "P18 seeing [arcsec]"
 
     if statsfile:
         ns = figure(plot_width=425, plot_height=250, tools=tools,
@@ -2376,6 +2373,11 @@ def plot_stats(statsfile, mydate):
 
     # initialize
     update()
+
+    p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
+        source_p18.data['seeing'].min(),
+        source_p18.data['seeing'].max(),
+        source_p18.data['seeing'].mean())
 
     curdoc().add_root(layout)
     curdoc().title = "Stats"
