@@ -2291,10 +2291,10 @@ def plot_stats(statsfile, mydate):
     p18seeing = figure(plot_width=425, plot_height=250, tools=tools,
                        x_axis_type='datetime', active_drag="box_zoom")
     p18seeing.circle('date', 'seeing', source=source_static_p18, color="black")
-    p18seeing.title.text = "P18 seeing [arcsec]"
-    # seeing_median = Span(location='seeing_median', dimension='width',
-    #                     source=source_static_p18, line_dash='dotted')
-    # p18seeing.add_layout(seeing_median)
+    p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
+        source_static_p18.data['fwhm'].min(),
+        source_static_p18.data['fwhm'].max(),
+        source_static_p18.data['fwhm'].mean())
 
     if statsfile:
         ns = figure(plot_width=425, plot_height=250, tools=tools,
