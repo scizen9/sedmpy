@@ -1858,11 +1858,13 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                 if now < evening_civil_twilight:
                     logging.info("UT  = %s < civil twilight (%s),"
                                  " so keep  waiting" %
-                                 (now.iso, evening_civil_twilight.iso))
+                                 (now.iso.split()[-1],
+                                  evening_civil_twilight.iso.split()[-1]))
                 else:
                     logging.info("UT = %s >= civil twilight (%s), "
                                  "time to get a cal set" %
-                                 (now.iso, evening_civil_twilight.iso))
+                                 (now.iso.split()[-1],
+                                  evening_civil_twilight.iso.split()[-1]))
                     break
             else:
                 # Get new listing
@@ -2036,7 +2038,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     # No new observations but civil twilight has begun
                     logging.info("No new images for %d minutes and UT = "
                                  "%s > %s so twilight has begun!" %
-                                 (nnc, now.iso, morning_civil_twilight.iso))
+                                 (nnc, now.iso.split()[-1],
+                                 morning_civil_twilight.iso.split()[-1]))
                     logging.info(
                         "Time to wait until we have a new raw directory")
                     doit = False
@@ -2047,7 +2050,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     logging.info("No new image for %d minutes but UT = "
                                  "%s <= %s, so twilight has not started, keep "
                                  "waiting" %
-                                 (nnc, now.iso, morning_civil_twilight.iso))
+                                 (nnc, now.iso.split()[-1],
+                                  morning_civil_twilight.iso.split()[-1]))
                 if indir is not None:
                     logging.info("Done processing images from %s", indir)
                     doit = False
