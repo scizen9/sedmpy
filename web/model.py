@@ -2276,13 +2276,14 @@ def plot_stats(statsfile, mydate):
                                                'in_temp', 'imtype', 'out_temp',
                                                'in_hum']])
             source_static.data = dict(source.data)
-            print("IFU min, max, median FWHM: ", data['fwhm'].min(),
-                  data['fwhm'].max(), data['fwhm'].median())
+            excl_focus = data[data['imtype'] != 'FOCUS']
+            print("\nIFU min, max, median FWHM: ", excl_focus['fwhm'].min(),
+                  excl_focus['fwhm'].max(), excl_focus['fwhm'].median())
 
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
         source_static_p18.data = dict(source_p18.data)
-        print("P18 min, max, median seeing: ", p18['seeing'].min(),
+        print("\nP18 min, max, median FWHM: ", p18['seeing'].min(),
               p18['seeing'].max(), p18['seeing'].median())
 
     source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
