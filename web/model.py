@@ -2261,10 +2261,7 @@ def plot_stats(statsfile, mydate):
     view_focus = CDSView(source=source,
                          filters=[GroupFilter(column_name='imtype',
                                               group='FOCUS')])
-    source_p18 = ColumnDataSource(data=dict(date=[], seeing=[],
-                                            seeing_min=0.,
-                                            seeing_max=0.,
-                                            seeing_median=0.))
+    source_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
 
     def update(selected=None):
 
@@ -2291,19 +2288,16 @@ def plot_stats(statsfile, mydate):
         print("\nP18 min, max, median FWHM: ", p18['seeing'].min(),
               p18['seeing'].max(), p18['seeing'].median())
 
-    source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[],
-                                                   seeing_min=0.,
-                                                   seeing_max=0.,
-                                                   seeing_median=0.))
+    source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
     tools = 'pan,box_zoom,reset'
 
     p18seeing = figure(plot_width=425, plot_height=250, tools=tools,
                        x_axis_type='datetime', active_drag="box_zoom")
     p18seeing.circle('date', 'seeing', source=source_static_p18, color="black")
     p18seeing.title.text = "P18 seeing [arcsec]"
-    seeing_median = Span(location='seeing_median', dimension='width',
-                         source=source_static_p18, line_dash='dotted')
-    p18seeing.add_layout(seeing_median)
+    # seeing_median = Span(location='seeing_median', dimension='width',
+    #                     source=source_static_p18, line_dash='dotted')
+    # p18seeing.add_layout(seeing_median)
 
     if statsfile:
         ns = figure(plot_width=425, plot_height=250, tools=tools,
