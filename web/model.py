@@ -2264,10 +2264,12 @@ def plot_stats(statsfile, mydate):
     source_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
 
     fwhm = None
+    ellipticity = None
+    airmass = None
 
     def update(selected=None):
 
-        ret = None
+        ret = {}
 
         if selected:
             pass
@@ -2278,18 +2280,27 @@ def plot_stats(statsfile, mydate):
                                                'ellipticity', 'bkg', 'airmass',
                                                'in_temp', 'imtype', 'out_temp',
                                                'in_hum']])
+            if len(data) > 2:
+                ret['el_min'] = data['ellipticity'].min()
+                ret['el_max'] = data['ellipticity'].max()
+                ret['el_median'] = data['ellipticity'].median()
+                ret['air_min'] = data['airmass'].min()
+                ret['air_max'] = data['airmass'].max()
+                ret['air_median'] = data['airmass'].median()
             source_static.data = dict(source.data)
             excl_focus = data[data['imtype'] != 'FOCUS']
-            ret = {'IFU_min': excl_focus['fwhm'].min(),
-                   'IFU_max': excl_focus['fwhm'].max(),
-                   'IFU_median': excl_focus['fwhm'].median()}
+            if len(excl_focus) > 2:
+                ret['RC_min'] = excl_focus['fwhm'].min()
+                ret['RC_max'] = excl_focus['fwhm'].max()
+                ret['RC_median'] = excl_focus['fwhm'].median()
 
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
         source_static_p18.data = dict(source_p18.data)
-        ret['p18_min'] = p18['seeing'].min()
-        ret['p18_max'] = p18['seeing'].max()
-        ret['p18_median'] = p18['seeing'].median()
+        if len(source_p18) > 2:
+            ret['p18_min'] = p18['seeing'].min()
+            ret['p18_max'] = p18['seeing'].max()
+            ret['p18_median'] = p18['seeing'].median()
         return ret
 
     source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
@@ -2381,12 +2392,21 @@ def plot_stats(statsfile, mydate):
     # initialize
     sstats = update()
 
-    p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
-        sstats['p18_min'], sstats['p18_median'], sstats['p18_max'])
+    if sstats:
+        p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
+            sstats['p18_min'], sstats['p18_median'], sstats['p18_max'])
 
-    if fwhm and 'IFU_median' in sstats:
-        fwhm.title.text = "P60 FWHM [arcsec] (%.2f, %.2f, %.2f)" % (
-            sstats['IFU_min'], sstats['IFU_median'], sstats['IFU_max'])
+    if airmass and 'air_median' in sstats:
+        airmass.title.text = "Airmass (%.2f, %.2f, %.2f)" % (
+            sstats['air_min'], sstats['air_median'], sstats['air_max'])
+
+    if ellipticity and 'el_median' in sstats:
+        ellipticity.title.text = "Ellipticity (%.2f, %.2f, %.2f)" % (
+            sstats['el_min'], sstats['el_median'], sstats['el_max'])
+
+    if fwhm and 'RC_median' in sstats:
+        fwhm.title.text = "P60 (RC) seeing [arcsec] (%.2f, %.2f, %.2f)" % (
+            sstats['RC_min'], sstats['RC_median'], sstats['RC_max'])
 
     curdoc().add_root(layout)
     curdoc().title = "Stats"
