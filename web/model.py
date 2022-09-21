@@ -2297,7 +2297,7 @@ def plot_stats(statsfile, mydate):
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
         source_static_p18.data = dict(source_p18.data)
-        if len(source_p18) > 2:
+        if len(p18) > 2:
             ret['p18_min'] = p18['seeing'].min()
             ret['p18_max'] = p18['seeing'].max()
             ret['p18_median'] = p18['seeing'].median()
