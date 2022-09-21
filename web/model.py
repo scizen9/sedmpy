@@ -2263,7 +2263,11 @@ def plot_stats(statsfile, mydate):
                                               group='FOCUS')])
     source_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
 
+    fwhm = None
+
     def update(selected=None):
+
+        ret = None
 
         if selected:
             pass
@@ -2276,14 +2280,17 @@ def plot_stats(statsfile, mydate):
                                                'in_hum']])
             source_static.data = dict(source.data)
             excl_focus = data[data['imtype'] != 'FOCUS']
-            print("\nIFU min, max, median FWHM: ", excl_focus['fwhm'].min(),
-                  excl_focus['fwhm'].max(), excl_focus['fwhm'].median())
+            ret = {'IFU_min': excl_focus['fwhm'].min(),
+                   'IFU_max': excl_focus['fwhm'].max(),
+                   'IFU_median': excl_focus['fwhm'].median()}
 
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
         source_static_p18.data = dict(source_p18.data)
-        print("\nP18 min, max, median FWHM: ", p18['seeing'].min(),
-              p18['seeing'].max(), p18['seeing'].median())
+        ret['p18_min'] = p18['seeing'].min()
+        ret['p18_max'] = p18['seeing'].max()
+        ret['p18_median'] = p18['seeing'].median()
+        return ret
 
     source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
     tools = 'pan,box_zoom,reset'
@@ -2372,12 +2379,14 @@ def plot_stats(statsfile, mydate):
         layout = row(column(p18seeing))
 
     # initialize
-    update()
+    sstats = update()
 
     p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
-        source_p18.data['seeing'].min(),
-        source_p18.data['seeing'].max(),
-        source_p18.data['seeing'].mean())
+        sstats['p18_min'], sstats['p18_median'], sstats['p18_max'])
+
+    if fwhm and 'IFU_median' in sstats:
+        fwhm.title.text = "P60 FWHM [arcsec] (%.2f, %.2f, %.2f)" % (
+            sstats['IFU_min'], sstats['IFU_median'], sstats['IFU_max'])
 
     curdoc().add_root(layout)
     curdoc().title = "Stats"
