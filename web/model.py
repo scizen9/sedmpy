@@ -2242,7 +2242,6 @@ def load_stats(statsfile='stats.log'):
 
 def plot_stats(statsfile, mydate):
 
-    global p18_min, p18_max, p18_median
     source = ColumnDataSource(
         data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[],
                   in_temp=[], imtype=[], out_temp=[], in_hum=[]))
@@ -2262,7 +2261,10 @@ def plot_stats(statsfile, mydate):
     view_focus = CDSView(source=source,
                          filters=[GroupFilter(column_name='imtype',
                                               group='FOCUS')])
-    source_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
+    source_p18 = ColumnDataSource(data=dict(date=[], seeing=[],
+                                            seeing_min=None,
+                                            seeing_max=None,
+                                            seeing_median=None))
 
     def update(selected=None):
 
@@ -2282,17 +2284,26 @@ def plot_stats(statsfile, mydate):
 
         p18 = load_p18seeing(mydate)
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
+        source_p18.data['seeing_min'] = p18['seeing'].min()
+        source_p18.data['seeing_max'] = p18['seeing'].max()
+        source_p18.data['seeing_median'] = p18['seeing'].median()
         source_static_p18.data = dict(source_p18.data)
         print("\nP18 min, max, median FWHM: ", p18['seeing'].min(),
               p18['seeing'].max(), p18['seeing'].median())
 
-    source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
+    source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[],
+                                                   seeing_min=None,
+                                                   seeing_max=None,
+                                                   seeing_median=None))
     tools = 'pan,box_zoom,reset'
 
     p18seeing = figure(plot_width=425, plot_height=250, tools=tools,
                        x_axis_type='datetime', active_drag="box_zoom")
     p18seeing.circle('date', 'seeing', source=source_static_p18, color="black")
     p18seeing.title.text = "P18 seeing [arcsec]"
+    seeing_median = Span(location='seeing_median', dimension='width',
+                         source=source_static_p18, line_dash='dotted')
+    p18seeing.add_layout(seeing_median)
 
     if statsfile:
         ns = figure(plot_width=425, plot_height=250, tools=tools,
