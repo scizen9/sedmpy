@@ -31,9 +31,11 @@ try:
 except ImportError:
     slack = None
     print("you need to install pysedmpush to be able to push on slack")
-import datetime
+from datetime import datetime
 import logging
 from astropy.io import fits
+from astropy.time import Time
+import astroplan
 from matplotlib import pylab as plt
 import numpy as np
 from scipy.stats import sigmaclip
@@ -59,8 +61,7 @@ plt.switch_backend('Agg')
 # Log into a file
 log_format = '%(asctime)-15s %(levelname)s [%(name)s] %(message)s'
 root_dir = _logpath
-now = datetime.datetime.utcnow()
-timestamp = datetime.datetime.isoformat(now)
+timestamp = datetime.isoformat(datetime.utcnow())
 timestamp = timestamp.split("T")[0]
 logging.basicConfig(format=log_format,
                     filename=os.path.join(root_dir,
@@ -268,26 +269,23 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
     Waits for new images to appear in the directory to trigger their
     incremental reduction as well.
     """
-    # Starting time of this run
-    time_ini = datetime.datetime.now()
-    # Current time to check against starting time
-    time_curr = datetime.datetime.now()
-    # Delta time
-    deltime = time_curr - time_ini
-    # Don't wait longer than this (13hr)
-    total_wait = 13.*3600.
+
+    # Current time to check against sun_rise
+    now = Time(datetime.utcnow())
+    p60 = astroplan.Observer.at_site(sedm_cfg['observatory']['name'])
+    sun_rise = p60.sun_rise_time(now, which='next')
+    logger.info("Run until sun rise at %s", sun_rise.iso)
 
     # Do we have files yet?
     whatf = os.path.join(photdir, 'rcwhat.list')
-    while not os.path.isfile(whatf) and deltime.total_seconds() < total_wait:
+    while not os.path.isfile(whatf) and now < sun_rise:
         # Wait 10 minutes
         logger.info("No rcwhat.list file yet, waiting 10 min...")
         time.sleep(600)
-        # Check our wait time
-        time_curr = datetime.datetime.now()
-        deltime = time_curr - time_ini
-        if deltime.total_seconds() > total_wait:
-            logger.warning("Waited 13hr and no rcwhat file appeared!")
+        # Check our current time
+        now = Time(datetime.utcnow())
+        if now > sun_rise:
+            logger.warning("Waited for sun rise and no rcwhat file appeared!")
             return
     # Link rcwhat.txt
     if not os.path.islink(os.path.join(photdir, 'rcwhat.txt')):
@@ -305,7 +303,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
     acqs = [wl for wl in whatl if 'ACQ' in wl]
     n_wait = 0
     # wait until we have an acquisition
-    while len(acqs) <= 0 and deltime.total_seconds() < total_wait:
+    while len(acqs) <= 0 and now < sun_rise:
         # loop over entries in rcwhat file
         for wl in whatl:
             fl = wl.split()[0]
@@ -340,18 +338,17 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
         if len(focus) > 0 and not twilights_done:   # we have our eve twilights
             rcred.create_masterflat(phot_dir, twilight=True)
             twilights_done = True
-        # Check our wait time
-        time_curr = datetime.datetime.now()
-        deltime = time_curr - time_ini
+        # Check our current time
+        now = Time(datetime.utcnow())
         # if the night is over, process cals anyway
-        if deltime.total_seconds() > total_wait:
+        if now > sun_rise:
             if not bias_done:
                 rcred.create_masterbias(phot_dir)
             if not domes_done:
                 rcred.create_masterflat(phot_dir)
             if not twilights_done:
                 rcred.create_masterflat(phot_dir, twilight=True)
-            logger.warning("Waited 13hr and no ACQ appeared!")
+            logger.warning("Waited until sun rise and no ACQ appeared!")
             return
     # end wait for ACQs while loop
 
@@ -372,8 +369,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
 
     dayname = os.path.basename(photdir)
 
-    time_curr = datetime.datetime.now()
-    deltime = time_curr - time_ini
+    now = Time(datetime.utcnow())
 
     if not nocopy:
         # Make destination directory
@@ -384,9 +380,9 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
         subprocess.call(cmd, shell=True)
 
     phot_zp = {'u': None, 'g': None, 'r': None, 'i': None}
-    # Run this loop for 13h after the start.
+    # Run this loop until sun rise.
     n_wait = 0
-    while deltime.total_seconds() < total_wait:
+    while now < sun_rise:
         # list of all RC image files
         nfilesnew = glob.glob(os.path.join(photdir, "rc*[0-9].fits"))
 
@@ -396,7 +392,8 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                     logger.info("One pass requested, exiting loop")
                     return
                 else:
-                    logger.info("No new image after %d waits, waiting 30s" % n_wait)
+                    logger.info("No new image after %d waits, waiting 30s"
+                                % n_wait)
             time.sleep(30)
             n_wait += 1
         # we got some new files
@@ -484,7 +481,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                         logger.info("Skipping copies to transient")
 
                     if "SCIENCE" in imtype.upper():
-                        t_now = datetime.datetime.now()
+                        t_now = datetime.now()
                         stat_str = "Complete %4d%02d%02d %02d_%02d_%02d" % (
                             t_now.year, t_now.month, t_now.day,
                             t_now.hour, t_now.minute, t_now.second)
@@ -529,11 +526,13 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                 if not local:
                     slack.push_image(fp, caption="RC FOCUS", title=bn,
                                      channel=SLACK_CHANNEL)
-        # Get new delta time
-        time_curr = datetime.datetime.now()
-        deltime = time_curr - time_ini
+        # Get new time
+        now = Time(datetime.utcnow())
+        logger.info("Time is now %s", now.iso)
         # Update file count
         nfiles = nfilesnew
+
+    logger.info("End of night because sun is up!")
 
 
 if __name__ == '__main__':
@@ -557,7 +556,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.photdir is None:
-        timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
+        timestamp = datetime.isoformat(datetime.utcnow())
         timestamp = timestamp.split("T")[0].replace("-", "")
         pdir = os.path.join(_photpath, timestamp)
     else:
