@@ -66,9 +66,8 @@ def report():
 
     see_min, see_mean, see_max = seeing_stats()
     if see_mean is not None:
-        print("RCam Seeing (FWHM) avg, min, max: %.2f, %.2f, %.2f\n" % (see_mean,
-                                                                        see_min,
-                                                                        see_max))
+        print("RCam Seeing (FWHM) avg, min, max: %.2f, %.2f, %.2f\n" %
+              (see_mean, see_min, see_max))
     else:
         print("Seeing data unavailable\n")
 
