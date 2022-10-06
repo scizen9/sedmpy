@@ -3,6 +3,47 @@ import os
 import sys
 import time
 import subprocess
+import numpy as np
+import json
+import datetime
+
+import sedmpy_version
+
+# Get pipeline configuration
+# Find config file: default is sedmpy/config/sedmconfig.json
+try:
+    configfile = os.environ["SEDMCONFIG"]
+except KeyError:
+    configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
+with open(configfile) as config_file:
+    sedm_cfg = json.load(config_file)
+
+_logpath = sedm_cfg['paths']['logpath']
+_photpath = sedm_cfg['paths']['photpath']
+
+
+def seeing_stats(statfile=None):
+    """return min, mean, max seeing from guider images"""
+
+    if not statfile:
+        timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
+        timestamp = timestamp.split("T")[0].replace("-", "")
+        statfile = os.path.join(_photpath, timestamp)
+
+    if os.path.exists(statfile):
+        s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
+    else:
+        return None, None, None
+
+    try:
+        s.sort(order="f2")
+    except ValueError:
+        return None, None, None
+
+    s = s[s["f3"] > 1]
+    s = s[s["f9"] == 'GUIDER']
+
+    return s['f4'].min(), s['f4'].mean(), s['f4'].max()
 
 
 def report():
@@ -22,6 +63,14 @@ def report():
           (os.getcwd(), len(flist)))
     print("See http://minar.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
+
+    see_min, see_mean, see_max = seeing_stats()
+    if see_mean is not None:
+        print("Seeing (FWHM) avg, min, max: %.2f, %.2f, %.2f\n" % (see_mean,
+                                                                   see_min,
+                                                                   see_max))
+    else:
+        print("Seeing data unavailable\n")
 
     print("UTStart  Object               Exptime Air    Qual"
           "                   method  Allocation           "
