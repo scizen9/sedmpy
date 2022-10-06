@@ -28,9 +28,9 @@ def seeing_stats(statfile=None):
     if not statfile:
         timestamp = datetime.datetime.isoformat(datetime.datetime.utcnow())
         timestamp = timestamp.split("T")[0].replace("-", "")
-        statfile = os.path.join(_photpath, timestamp)
+        statfile = os.path.join(_photpath, timestamp, "stats/stats.log")
 
-    if os.path.exists(statfile):
+    if os.path.isfile(statfile):
         s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
     else:
         return None, None, None
@@ -66,9 +66,9 @@ def report():
 
     see_min, see_mean, see_max = seeing_stats()
     if see_mean is not None:
-        print("Seeing (FWHM) avg, min, max: %.2f, %.2f, %.2f\n" % (see_mean,
-                                                                   see_min,
-                                                                   see_max))
+        print("RCam Seeing (FWHM) avg, min, max: %.2f, %.2f, %.2f\n" % (see_mean,
+                                                                        see_min,
+                                                                        see_max))
     else:
         print("Seeing data unavailable\n")
 
