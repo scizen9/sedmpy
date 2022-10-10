@@ -606,7 +606,14 @@ class ScheduleNight:
         moon_radec = get_moon(obstime, location=self.obs_site.location)
 
         if return_type == 'json':
-            json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
+            json_dict = {}
+            # Handle rare AttributeError
+            for k, v in ret.items():
+                try:
+                    json_dict[k] = v.iso.split()[-1]
+                except AttributeError:
+                    json_dict[k] = 'None'
+            # json_dict = {k: v.iso.split()[-1] for k, v in ret.items()}
             json_dict['obsdate'] = ret['evening_astronomical'].iso.split()[0]
             json_dict['moon_illumination'] = "%.0f%%" % moon_illum
             json_dict['moon_altitude'] = "%.3f deg" % float(
