@@ -6,7 +6,6 @@ import subprocess
 import numpy as np
 import json
 import datetime
-import numpy as np
 
 import sedmpy_version
 
@@ -52,8 +51,9 @@ def seeing_stats(statfile=None):
     see_min = s['f4'].min()
     see_max = s['f4'].max()
     see_med = np.median(s['f4'])
+    see_std = np.nanstd(s['f4'])
 
-    return see_min, see_med, see_max
+    return see_min, see_med, see_max, see_std
 
 
 def report():
@@ -74,10 +74,10 @@ def report():
     print("See http://minar.caltech.edu/data_access/ifu?obsdate=%s\n" %
           os.getcwd().split('/')[-1])
 
-    see_min, see_mean, see_max = seeing_stats()
+    see_min, see_mean, see_max, see_std = seeing_stats()
     if see_mean is not None:
-        print("RCam Seeing (FWHM) median, min, max: %.2f, %.2f, %.2f\n" %
-              (see_mean, see_min, see_max))
+        print("RCam Seeing (FWHM) median, StdDev, min, max: %.2f, %.2f, "
+              "%.2f, %.2f\n" % (see_mean, see_std, see_min, see_max))
     else:
         print("Seeing data unavailable\n")
 
