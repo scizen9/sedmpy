@@ -64,6 +64,7 @@ def report():
     else:
         comment = None
 
+    obsdate = os.getcwd().split('/')[-1]
     flist = glob.glob("spec_*.txt")
     flist.sort()
     print("\nReport generated on %s" % time.strftime("%c"))
@@ -71,10 +72,10 @@ def report():
         print("\n%s" % comment)
     print("\nSEDM DRP run in %s\nFound %d spec_*.txt files" %
           (os.getcwd(), len(flist)))
-    print("See http://minar.caltech.edu/data_access/ifu?obsdate=%s\n" %
-          os.getcwd().split('/')[-1])
+    print("See http://minar.caltech.edu/data_access/ifu?obsdate=%s\n" % obsdate)
 
-    see_min, see_mean, see_max, see_std = seeing_stats()
+    statsfile = os.path.join(_photpath, 'stats/stats.log')
+    see_min, see_mean, see_max, see_std = seeing_stats(statsfile)
     if see_mean is not None:
         print("RCam Seeing (FWHM) median, StdDev, min, max: %.2f, %.2f, "
               "%.2f, %.2f\n" % (see_mean, see_std, see_min, see_max))
