@@ -38,12 +38,12 @@ def seeing_stats(statfile=None):
             time.sleep(1)
         s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
     else:
-        return None, None, None
+        return None, None, None, None
 
     try:
         s.sort(order="f2")
     except ValueError:
-        return None, None, None
+        return None, None, None, None
 
     s = s[s["f3"] > 1]
     s = s[s["f9"] == 'GUIDER']
@@ -74,7 +74,7 @@ def report():
           (os.getcwd(), len(flist)))
     print("See http://minar.caltech.edu/data_access/ifu?obsdate=%s\n" % obsdate)
 
-    statsfile = os.path.join(_photpath, 'stats/stats.log')
+    statsfile = os.path.join(_photpath, obsdate, 'stats/stats.log')
     see_min, see_mean, see_max, see_std = seeing_stats(statsfile)
     if see_mean is not None:
         print("RCam Seeing (FWHM) median, StdDev, min, max: %.2f, %.2f, "
