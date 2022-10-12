@@ -53,7 +53,6 @@ def seeing_stats(statfile=None):
     see_max = s['f4'].max()
     see_med = np.median(s['f4'])
 
-    # return s['f4'].min(), s['f4'].mean(), s['f4'].max()
     return see_min, see_med, see_max
 
 
@@ -77,7 +76,7 @@ def report():
 
     see_min, see_mean, see_max = seeing_stats()
     if see_mean is not None:
-        print("RCam Seeing (FWHM) avg, min, max: %.2f, %.2f, %.2f\n" %
+        print("RCam Seeing (FWHM) median, min, max: %.2f, %.2f, %.2f\n" %
               (see_mean, see_min, see_max))
     else:
         print("Seeing data unavailable\n")
