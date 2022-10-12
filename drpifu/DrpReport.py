@@ -31,6 +31,11 @@ def seeing_stats(statfile=None):
         statfile = os.path.join(_photpath, timestamp, "stats/stats.log")
 
     if os.path.isfile(statfile):
+        count = 0
+        while os.path.getsize(statfile) == 0 and count < 5:
+            count += 1
+            print("stats file empty, retrying ", count)
+            time.sleep(1)
         s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
     else:
         return None, None, None
