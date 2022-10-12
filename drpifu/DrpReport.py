@@ -6,6 +6,7 @@ import subprocess
 import numpy as np
 import json
 import datetime
+import numpy as np
 
 import sedmpy_version
 
@@ -48,7 +49,12 @@ def seeing_stats(statfile=None):
     s = s[s["f3"] > 1]
     s = s[s["f9"] == 'GUIDER']
 
-    return s['f4'].min(), s['f4'].mean(), s['f4'].max()
+    see_min = s['f4'].min()
+    see_max = s['f4'].max()
+    see_med = np.median(s['f4'])
+
+    # return s['f4'].min(), s['f4'].mean(), s['f4'].max()
+    return see_min, see_med, see_max
 
 
 def report():
