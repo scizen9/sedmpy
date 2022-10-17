@@ -2298,9 +2298,14 @@ def plot_stats(statsfile, mydate):
         source_p18.data = source_p18.from_df(p18[['date', 'seeing']])
         source_static_p18.data = dict(source_p18.data)
         if len(p18) > 2:
-            ret['p18_min'] = p18['seeing'].min()
-            ret['p18_max'] = p18['seeing'].max()
-            ret['p18_median'] = p18['seeing'].median()
+            try:
+                ret['p18_min'] = p18['seeing'].min()
+                ret['p18_max'] = p18['seeing'].max()
+                ret['p18_median'] = p18['seeing'].median()
+            except KeyError:
+                ret['p18_min'] = 0.0
+                ret['p18_max'] = 0.0
+                ret['p18_media'] = 0.0
         return ret
 
     source_static_p18 = ColumnDataSource(data=dict(date=[], seeing=[]))
@@ -2393,8 +2398,11 @@ def plot_stats(statsfile, mydate):
     sstats = update()
 
     if sstats:
-        p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
-            sstats['p18_min'], sstats['p18_median'], sstats['p18_max'])
+        try:
+            p18seeing.title.text = "P18 seeing [arcsec] (%.2f, %.2f, %.2f)" % (
+                sstats['p18_min'], sstats['p18_median'], sstats['p18_max'])
+        except KeyError:
+            p18seeing.title.text = "P18 seeing [arcsec]"
 
     if airmass and 'air_median' in sstats:
         airmass.title.text = "Airmass (%.2f, %.2f, %.2f)" % (
