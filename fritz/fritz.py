@@ -316,8 +316,8 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
         print("Updating target %s using marshal id %d" % (object_name,
                                                           marshal_id))
 
-        now = datetime.datetime.now()
-        ts_str = "%4d%02d%02d %02d_%02d_%02d" % (now.year, now.month,
+        now = datetime.datetime.utcnow()
+        ts_str = "%4d%02d%02dT%02d:%02d:%02d" % (now.year, now.month,
                                                  now.day, now.hour,
                                                  now.minute,
                                                  now.second)
