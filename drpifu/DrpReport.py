@@ -34,7 +34,7 @@ def seeing_stats(statfile=None):
         count = 0
         while os.path.getsize(statfile) == 0 and count < 5:
             count += 1
-            print("stats file empty, retrying ", count)
+            # print("stats file empty, retrying ", count)
             time.sleep(1)
         s = np.genfromtxt(statfile, delimiter=",", dtype=None, encoding=None)
     else:
@@ -187,7 +187,7 @@ def report():
             else:
                 quality = 9
             sfl.close()
-        if ctype == "" or quality == 5:
+        if ctype == "":
             if "STD" in f:
                 ctype = " STD"
             else:
