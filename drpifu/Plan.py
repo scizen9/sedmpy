@@ -1,8 +1,27 @@
 """Generate Makefile for reducing ifu data"""
 
 import sys
-
+import os
 import astropy.io.fits as pf
+from datetime import datetime
+from astropy.time import Time
+
+
+def filename_to_date(filename):
+    rute = os.path.basename(filename)
+    if 'rc' in rute:
+        rute = rute.replace('rc', '')
+    elif 'ifu' in rute:
+        rute = rute.replace('ifu', '')
+    yr = int(rute[0:4])
+    mo = int(rute[4:6])
+    day = int(rute[6:8])
+    hr = int(rute.split('_')[1])
+    mn = int(rute.split('_')[2])
+    sec = int(rute.split('_')[3].split('.')[0])
+    dt = datetime(yr, mo, day, hour=hr, minute=mn, second=sec)
+    ft = Time(dt)
+    return ft.jd
 
 
 def extract_info(infiles):
@@ -22,8 +41,13 @@ def extract_info(infiles):
         ff = pf.open(ifile)
         ff[0].header['filename'] = ifile
         if 'JD' not in ff[0].header:
-            # print("Skipping %s" % ifile)
-            continue
+            print('Warning: no JD keyword in header, generating from fname')
+            jd = filename_to_date(ifile)
+            ff[0].header['JD'] = jd
+        elif ff[0].header['JD'] <= 0:
+            print('Warning JD keyword value illegal, generating from fname')
+            jd = filename_to_date(ifile)
+            ff[0].header['JD'] = jd
         headers.append(ff[0].header)
         ff.close()
     if has_rc and has_ifu:
