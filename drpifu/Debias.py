@@ -78,11 +78,14 @@ def remove(fits_obj):
         GAIN = 1.8  # Guess the gain
 
     # get overscan if correctly sized
+    print(dat.shape)
     if dat.shape == (2048, 2048):
         bias_img = full_frame(dat)
-
+        ret = (dat - bias_img.T) * GAIN
+    else:
+        ret = dat * GAIN
     # return overscan subtracted image
-    return (dat - bias_img.T) * GAIN
+    return ret
 
 
 if __name__ == '__main__':
@@ -121,7 +124,7 @@ if __name__ == '__main__':
             FF[0].header['GAIN'] = (1.0,
                                     'GAIN Adjusted (was guessed %s)' % GAIN)
         FF[0].header['BUNIT'] = 'electron'
-        FF[0].header.add_history('SEDMr.Debias run on %s' % time.strftime("%c"))
+        FF[0].header.add_history('drpifu.Debias run on %s' % time.strftime("%c"))
         FF[0].header['DRPVER'] = drp_ver
         FF.writeto(outname)
 
