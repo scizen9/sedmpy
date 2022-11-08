@@ -198,11 +198,7 @@ crr_b_% : b_%
 		--sigclip 5.0 --fsmode convolve --psfmodel gauss --psffwhm=2 \\
 		$< $@ mask$@
 
-bias: bias0.1.fits bias2.0.fits $(BIAS)
 crrs: $(CRRS)
-
-$(BIAS): bias0.1.fits bias2.0.fits
-	$(BSUB) $(subst b_,,$@)
 
 $(CRRS): 
 	$(CRRSUB) --niter 4 --sepmed --gain 1.0 --readnoise 5.0 --objlim 4.8 \\
@@ -241,16 +237,9 @@ crr_b_% : b_%
 		--sigclip 5.0 --fsmode convolve --psfmodel gaussy --psffwhm=2 \\
 		$< $@ mask$@
 
-bs_crr_b_%.gz : crr_b_%
-	$(BGDSUB) fine.npy $< --gausswidth=100
-
 .PHONY: report finalreport
 
-bias: bias0.1.fits bias2.0.fits $(BIAS)
 crrs: $(CRRS)
-
-$(BIAS): bias0.1.fits bias2.0.fits
-	$(BSUB) $(subst b_,,$@)
 
 $(CRRS): 
 	$(CRRSUB) --niter 4 --sepmed --gain 1.0 --readnoise 5.0 --objlim 4.8 \\
@@ -309,10 +298,14 @@ def to_makefile(objs, calibs, make_rc):
 
     all_targs = ""
 
+    biases = ""
+
     for calibname, imfiles in calibs.items():
 
         makefile += makefile_imcombine(calibname, imfiles)
         all_targs += "%s.fits " % calibname
+        if "bias" in calibname:
+            biases += "%s.fits " % calibname
 
     for objname, objfile in objs.items():
         all_targs += "%s.fits " % objname
@@ -340,7 +333,10 @@ def to_makefile(objs, calibs, make_rc):
     f = open("Makefile", "w")
     clean = "\n\nclean:\n\trm %s" % all_targs
 
-    f.write(preamble + "\nall: %s%s" % (all_targs, clean) + "\n" + makefile)
+    bias = "\nbias: %s $(BIAS)" % biases
+    bias += "\n\n$(BIAS): %s\n\t$(BSUB) $(subst b_,,$@)" % biases
+
+    f.write(preamble + bias + "\n\nall: %s%s" % (all_targs, clean) + "\n" + makefile)
     f.close()
 
 
@@ -353,7 +349,7 @@ def make_plan(headers, make_rc):
 
 if __name__ == '__main__':
 
-    files = sys.argv[1:]
-    to_process, for_rc = extract_info(files)
+    procfiles = sys.argv[1:]
+    to_process, for_rc = extract_info(procfiles)
 
     make_plan(to_process, for_rc)
