@@ -17,7 +17,7 @@ Note:
 import time
 import numpy as np
 import astropy.io.fits as pf
-import scipy.ndimage.filters as FI
+from scipy.ndimage import filters
 import sedmpy_version
 
 drp_ver = sedmpy_version.__version__
@@ -40,7 +40,7 @@ def add_prefix(fname):
     return "/".join(sp)
 
 
-def full_frame(dat):
+def calculate_overscan(dat):
     """Calculate smoothed overscan vector
 
     Args:
@@ -51,9 +51,9 @@ def full_frame(dat):
 
     """
 
-    bias = np.nanmedian(dat[:, 2045:], axis=1)
-    bias = bias.astype(np.float32)
-    smooth = FI.median_filter(bias, size=50)
+    oscan = np.nanmedian(dat[:, 2045:], axis=1)
+    oscan = oscan.astype(np.float32)
+    smooth = filters.median_filter(oscan, size=50)
 
     return np.tile(smooth, (2048, 1))
 
@@ -73,17 +73,17 @@ def remove(fits_obj):
 
     # Gain for electron conversion
     try:
-        GAIN = fits_obj[0].header['GAIN']
+        gain = fits_obj[0].header['GAIN']
     except:
-        GAIN = 1.8  # Guess the gain
+        gain = 1.8  # Guess the gain
 
     # get overscan if correctly sized
     print(dat.shape)
     if dat.shape == (2048, 2048):
-        bias_img = full_frame(dat)
-        ret = (dat - bias_img.T) * GAIN
+        oscan_img = calculate_overscan(dat)
+        ret = (dat - oscan_img.T) * gain
     else:
-        ret = dat * GAIN
+        ret = dat * gain
     # return overscan subtracted image
     return ret
 
@@ -104,10 +104,10 @@ if __name__ == '__main__':
         adcspeed = FF[0].header['ADCSPEED']
 
         bfname = "bias%1.1f.fits" % adcspeed
-        bias = pf.open(bfname)
+        mbias = pf.open(bfname)
 
         # Bias frame subtraction
-        FF[0].data = FF[0].data - bias[0].data
+        FF[0].data = FF[0].data - mbias[0].data
 
         # Overscan subtraction
         FF[0].data = remove(FF)
