@@ -17,10 +17,103 @@ Note:
 import time
 import astropy.io.fits as pf
 import numpy as np
+from scipy.ndimage import filters
 import sedmpy_version
-from Imcombine import subtract_oscan
 
 drp_ver = sedmpy_version.__version__
+
+
+def subtract_oscan(dat, header):
+    """Subtract overscan from image"""
+    # Get over/pre-scan regions
+    try:
+        # These should be in the Andor camera image headers
+        ps_x0 = header['PSCANX0']
+        ps_x1 = header['PSCANX1']
+        os_x0 = header['OSCANX0']
+        os_x1 = header['OSCANX1']
+        andor = True
+    except KeyError:
+        # These are for the PIXIS camera images
+        ps_x0 = 0
+        ps_x1 = 0
+        os_x0 = 2045
+        os_x1 = 2048
+        andor = False
+
+    # Pre-scan value
+    if ps_x1 > ps_x0:
+        pscan = np.nanmedian(np.nanmedian(dat[:, :ps_x1], axis=1))
+        header['PSCANVAL'] = (pscan, 'Pre-scan value')
+    else:
+        pscan = 0.
+    # Over-scan value
+    if os_x1 > os_x0:
+        oscan = np.nanmedian(np.nanmedian(dat[:, os_x0:], axis=1))
+        header['OSCANVAL'] = (oscan, 'Over-scan value')
+    else:
+        oscan = 0.
+
+    if andor:
+        if pscan < oscan:
+            scan_value = pscan
+        else:
+            scan_value = oscan
+
+        header['SCANVAL'] = (scan_value, 'Scan value subtracted')
+        header['OSCANSUB'] = (True, 'Over-scan subtracted?')
+
+    else:
+        scan_value = 0.
+
+    return scan_value
+
+
+def pixoscan(dat):
+    """Calculate smoothed overscan vector
+
+    Args:
+        dat (numpy array): image frame
+
+    Returns:
+        numpy vector: median smoothed overscan image
+
+    """
+
+    oscan = np.nanmedian(dat[:, 2045:], axis=1)
+    oscan = oscan.astype(np.float32)
+    smooth = filters.median_filter(oscan, size=50)
+
+    return np.tile(smooth, (2048, 1))
+
+
+def remove(fits_obj):
+    """Return the overscan-subtracted and gain-corrected version of input
+
+    Args:
+        fits_obj (fits object): fits science image to be oscan-subtracted
+
+    Returns:
+        data array: oscan-subtracted and gain corrected image
+
+    """
+
+    dat = fits_obj[0].data
+
+    # Gain for electron conversion
+    try:
+        gain = fits_obj[0].header['GAIN']
+    except KeyError:
+        gain = 1.8  # Guess the gain
+
+    # get overscan if correctly sized
+    if dat.shape == (2048, 2048):
+        oscan_img = pixoscan(dat)
+        osub_img = (dat - oscan_img.T) * gain
+    else:
+        osub_img = dat * gain
+
+    return osub_img
 
 
 def add_prefix(fname):
@@ -62,21 +155,33 @@ if __name__ == '__main__':
             print("Master bias not found: %s" % bfname)
             continue
 
-        # Subtract overscan
-        img = FF[0].data
-        img = img.astype(np.float32)
-        osval = subtract_oscan(img, FF[0].header)
-        if osval > 0.:
-            img -= osval
+        # Are we an image from the Andor camera?
+        do_andor = 'PSCANX0' in FF[0].header
 
-        # Gain value
-        try:
-            gain = FF[0].header['GAIN']
-        except KeyError:
-            gain = 1.8
+        if do_andor:
 
-        # Bias frame subtraction and gain correction
-        FF[0].data = (img - mbias[0].data) * gain
+            # Subtract overscan
+            img = FF[0].data
+            img = img.astype(np.float32)
+            osval = subtract_oscan(img, FF[0].header)
+            if osval > 0.:
+                img -= osval
+
+            # Gain value
+            try:
+                and_gain = FF[0].header['GAIN']
+            except KeyError:
+                and_gain = 0.9
+
+            # Bias frame subtraction and gain correction
+            FF[0].data = (img - mbias[0].data) * and_gain
+
+        else:
+            # Bias frame subtraction
+            FF[0].data = FF[0].data - mbias[0].data
+
+            # Overscan subtraction
+            FF[0].data = remove(FF)
 
         outname = add_prefix(ifile)
         FF[0].header['BIASSUB'] = (True, 'Bias subtracted?')

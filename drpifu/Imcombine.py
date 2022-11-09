@@ -4,54 +4,9 @@ import astropy.io.fits as pf
 import numpy as np
 import time
 import sedmpy_version
+from Debias import subtract_oscan
 
 drp_ver = sedmpy_version.__version__
-
-
-def subtract_oscan(dat, header):
-    """Subtract overscan from image"""
-    # Get over/pre-scan regions
-    try:
-        # These should be in the Andor camera image headers
-        ps_x0 = header['PSCANX0']
-        ps_x1 = header['PSCANX1']
-        os_x0 = header['OSCANX0']
-        os_x1 = header['OSCANX1']
-        andor = True
-    except KeyError:
-        # These are for the PIXIS camera images
-        ps_x0 = 0
-        ps_x1 = 0
-        os_x0 = 2045
-        os_x1 = 2048
-        andor = False
-
-    # Pre-scan value
-    if ps_x1 > ps_x0:
-        pscan = np.nanmedian(np.nanmedian(dat[:, :ps_x1], axis=1))
-        header['PSCANVAL'] = (pscan, 'Pre-scan value')
-    else:
-        pscan = 0.
-    # Over-scan value
-    if os_x1 > os_x0:
-        oscan = np.nanmedian(np.nanmedian(dat[:, os_x0:], axis=1))
-        header['OSCANVAL'] = (oscan, 'Over-scan value')
-    else:
-        oscan = 0.
-
-    if andor:
-        if pscan < oscan:
-            scan_value = pscan
-        else:
-            scan_value = oscan
-
-        header['SCANVAL'] = (scan_value, 'Scan value subtracted')
-        header['OSCANSUB'] = (True, 'Over-scan subtracted?')
-
-    else:
-        scan_value = 0.
-
-    return scan_value
 
 
 def imcombine(flist, fout, listfile=None, combtype="mean",
