@@ -32,6 +32,7 @@ def extract_info(infiles):
 
     has_rc = False
     has_ifu = False
+    is_andor = False
     for ix, ifile in enumerate(infiles):
         rute = ifile.split('/')[-1]
         if rute.startswith('rc'):
@@ -39,6 +40,7 @@ def extract_info(infiles):
         if rute.startswith('ifu'):
             has_ifu = True
         ff = pf.open(ifile)
+        is_andor = 'PSCANX0' in ff[0].header
         ff[0].header['filename'] = ifile
         if 'JD' not in ff[0].header:
             print('Warning: no JD keyword in header, generating from fname')
@@ -58,8 +60,12 @@ def extract_info(infiles):
         print("Generating Makefile for rc images")
     if has_ifu:
         print("Generating Makefile for ifu images")
+    if is_andor:
+        print("Generating Makefile for Andor images")
+    else:
+        print("Generating Makefile for PIXIS images")
 
-    return sorted(headers, key=lambda x: x['JD']), has_rc
+    return sorted(headers, key=lambda x: x['JD']), has_rc, is_andor
 
 
 def identify_observations(headers):
@@ -273,7 +279,7 @@ post_redux:
 """
 
 
-def makefile_imcombine(objname, files, dependencies=""):
+def makefile_imcombine(objname, files, do_andor, dependencies=""):
 
     filelist = " ".join(["%s " % ifile for ifile in files])
     first = "%s.fits: %s %s\n" % (objname, filelist, dependencies)
@@ -283,9 +289,14 @@ def makefile_imcombine(objname, files, dependencies=""):
     else:
         reject = ""
     if "bias" in objname:
-        second = "\t$(IMCOMBINE) --sub_oscan --outname %s.fits " \
-                 "--listfile %s.lst %s --files %s\n" % (objname, objname,
-                                                        reject, filelist)
+        if do_andor:
+            suboscan = " --sub_oscan"
+        else:
+            suboscan = ""
+        second = "\t$(IMCOMBINE)%s --outname %s.fits " \
+                 "--listfile %s.lst %s --files %s\n" % (suboscan, objname,
+                                                        objname, reject,
+                                                        filelist)
     else:
         second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s " \
                  "--combtype median --files %s\n" % (objname, objname,
@@ -294,7 +305,7 @@ def makefile_imcombine(objname, files, dependencies=""):
     return first + second + "\n"
 
 
-def to_makefile(objs, calibs, make_rc):
+def to_makefile(objs, calibs, make_rc, make_andor):
 
     makefile = ""
 
@@ -304,7 +315,7 @@ def to_makefile(objs, calibs, make_rc):
 
     for calibname, imfiles in calibs.items():
 
-        makefile += makefile_imcombine(calibname, imfiles)
+        makefile += makefile_imcombine(calibname, imfiles, make_andor)
         all_targs += "%s.fits " % calibname
         if "bias" in calibname:
             biases += "%s.fits " % calibname
@@ -343,16 +354,16 @@ def to_makefile(objs, calibs, make_rc):
     f.close()
 
 
-def make_plan(headers, make_rc):
+def make_plan(headers, make_rc, make_andor):
     """Convert headers to a makefile, assuming headers sorted by JD."""
 
     objs, calibs = identify_observations(headers)
-    to_makefile(objs, calibs, make_rc)
+    to_makefile(objs, calibs, make_rc, make_andor)
 
 
 if __name__ == '__main__':
 
     procfiles = sys.argv[1:]
-    to_process, for_rc = extract_info(procfiles)
+    to_process, for_rc, for_andor = extract_info(procfiles)
 
-    make_plan(to_process, for_rc)
+    make_plan(to_process, for_rc, for_andor)
