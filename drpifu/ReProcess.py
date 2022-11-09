@@ -69,6 +69,7 @@ with open(configfile) as config_file:
 _rawpath = sedm_cfg['paths']['rawpath']
 _reduxpath = sedm_cfg['paths']['reduxpath']
 _srcpath = sedm_cfg['paths']['srcpath']
+_nomfs = sedm_cfg['nominal_file_size']
 
 
 def docp(src, dest, onsky=True, verbose=False, skip_cals=False, header=None):
@@ -155,7 +156,7 @@ def docp(src, dest, onsky=True, verbose=False, skip_cals=False, header=None):
     # END: docp
 
 
-def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
+def cpsci(srcdir, destdir='./', fsize=_nomfs, datestr=None):
     """Copies new science ifu image files from srcdir to destdir.
 
     Searches for most recent ifu image in destdir and looks for and
@@ -209,7 +210,7 @@ def cpsci(srcdir, destdir='./', fsize=8400960, datestr=None):
     # END: cpsci
 
 
-def cpcal(srcdir, destdir='./', fsize=8400960):
+def cpcal(srcdir, destdir='./', fsize=_nomfs):
     """Copy raw cal files from srcdir into destdir.
 
     Find calibration files taken within 10 hours of the day changeover
@@ -301,7 +302,7 @@ def cpcal(srcdir, destdir='./', fsize=8400960):
     # END: cpcal
 
 
-def cpprecal(rawd=None, destdir=None, cdate=None, fsize=8400960):
+def cpprecal(rawd=None, destdir=None, cdate=None, fsize=_nomfs):
     """Copy raw cal files from previous date's directory
 
     Make sure we only look in previous day directory for files created
@@ -482,7 +483,7 @@ def cube_ready(caldir='./', cur_date_str=None, ignore_bad=False,
     return ret
 
 
-def bias_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0):
+def bias_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0):
     """Check counts for required raw bias file types in caldir directory.
 
     Args:

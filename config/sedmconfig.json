@@ -19,5 +19,6 @@
   },
   "observatory": {
     "name": "palomar"
-  }
+  },
+  "nominal_file_size": 8400960
 }
