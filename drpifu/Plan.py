@@ -283,7 +283,7 @@ def makefile_imcombine(objname, files, dependencies=""):
     else:
         reject = ""
     if "bias" in objname:
-        second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s --files %s\n" % (
+        second = "\t$(IMCOMBINE) --sub_oscan --outname %s.fits --listfile %s.lst %s --files %s\n" % (
             objname, objname, reject, filelist)
     else:
         second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s --combtype median --files %s\n" % (

@@ -1,5 +1,5 @@
 import argparse
-from stsci.image.numcombine import numCombine as nc
+from stsci.image.numcombine import numCombine
 import astropy.io.fits as pf
 import numpy as np
 import time
@@ -8,8 +8,49 @@ import sedmpy_version
 drp_ver = sedmpy_version.__version__
 
 
+def subtract_oscan(dat, header):
+    """Subtract overscan from image"""
+    # Get over/pre-scan regions
+    try:
+        # These should be in the Andor camera image headers
+        ps_x0 = header['PSCANX0']
+        ps_x1 = header['PSCANX1']
+        os_x0 = header['OSCANX0']
+        os_x1 = header['OSCANX1']
+    except KeyError:
+        # These are for the PIXIS camera images
+        ps_x0 = 0
+        ps_x1 = 0
+        os_x0 = 2045
+        os_x1 = 2048
+
+    # Pre-scan value
+    if ps_x1 > ps_x0:
+        pscan = np.nanmedian(np.nanmedian(dat[:, :ps_x1], axis=1))
+    else:
+        pscan = 0.
+    # Over-scan value
+    if os_x1 > os_x0:
+        oscan = np.nanmedian(np.nanmedian(dat[:, os_x0:], axis=1))
+    else:
+        oscan = 0.
+
+    header['PSCANVAL'] = (pscan, 'Pre-scan value')
+    header['OSCANVAL'] = (oscan, 'Over-scan value')
+
+    if pscan < oscan:
+        scan_value = pscan
+    else:
+        scan_value = oscan
+
+    header['SCANVAL'] = (scan_value, 'Scan value subtracted')
+    header['OSCANSUB'] = (True, 'Oscan subtracted?')
+
+    return scan_value
+
+
 def imcombine(flist, fout, listfile=None, combtype="mean",
-              nlow=0, nhigh=0):
+              nlow=0, nhigh=0, sub_oscan=False):
 
     """Convenience wrapper around STSCI python task numCombine
 
@@ -20,6 +61,7 @@ def imcombine(flist, fout, listfile=None, combtype="mean",
         combtype (str): median, mean, sum, minimum
         nlow (int): Number of low pixels to throw out in median calculation
         nhigh (int): Number of high pixels to throw out in median calculation
+        sub_oscan (bool): If True, subtract overscan before combining
     
     Returns:
         None
@@ -30,15 +72,19 @@ def imcombine(flist, fout, listfile=None, combtype="mean",
     """
 
     imstack = []
+    hdr = {}
     for fl in flist:
         inhdu = pf.open(fl)
         img = inhdu[0].data
         img = img.astype(np.float32)
+        if sub_oscan:
+            img -= subtract_oscan(img, inhdu[0].header)
         imstack.append(img)
 
-    hdr = inhdu[0].header
+        hdr = inhdu[0].header
 
-    result = nc(imstack, combinationType=combtype, nlow=nlow, nhigh=nhigh)
+    result = numCombine(imstack, combinationType=combtype,
+                        nlow=nlow, nhigh=nhigh)
 
     oimg = result.combArrObj
 
@@ -71,8 +117,8 @@ def imcombine(flist, fout, listfile=None, combtype="mean",
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=\
-        """Imcombine.py performs:
+    parser = argparse.ArgumentParser(description="""
+    Imcombine.py performs:
 
         1) Median combination
         2) Mean combine
@@ -87,6 +133,7 @@ if __name__ == '__main__':
     parser.add_argument('--combtype', type=str, default='mean')
     parser.add_argument('--reject', type=str, default='none')
     parser.add_argument('--outname', type=str, default=None)
+    parser.add_argument('--sub_oscan', action="store_true", default=False)
     args = parser.parse_args()
 
     filelist = args.files
@@ -95,6 +142,4 @@ if __name__ == '__main__':
         print("Set --outname")
 
     imcombine(filelist, out, listfile=args.listfile, combtype=args.combtype,
-              nlow=args.Nlo, nhigh=args.Nhi)
-
-
+              nlow=args.Nlo, nhigh=args.Nhi, sub_oscan=args.sub_oscan)
