@@ -283,11 +283,13 @@ def makefile_imcombine(objname, files, dependencies=""):
     else:
         reject = ""
     if "bias" in objname:
-        second = "\t$(IMCOMBINE) --sub_oscan --outname %s.fits --listfile %s.lst %s --files %s\n" % (
-            objname, objname, reject, filelist)
+        second = "\t$(IMCOMBINE) --sub_oscan --outname %s.fits " \
+                 "--listfile %s.lst %s --files %s\n" % (objname, objname,
+                                                        reject, filelist)
     else:
-        second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s --combtype median --files %s\n" % (
-            objname, objname, reject, filelist)
+        second = "\t$(IMCOMBINE) --outname %s.fits --listfile %s.lst %s " \
+                 "--combtype median --files %s\n" % (objname, objname,
+                                                     reject, filelist)
 
     return first + second + "\n"
 
@@ -336,7 +338,8 @@ def to_makefile(objs, calibs, make_rc):
     bias = "\nbias: %s $(BIAS)" % biases
     bias += "\n\n$(BIAS): %s\n\t$(BSUB) $(subst b_,,$@)" % biases
 
-    f.write(preamble + bias + "\n\nall: %s%s" % (all_targs, clean) + "\n" + makefile)
+    f.write(preamble + bias + "\n\nall: %s%s" % (all_targs, clean) +
+            "\n" + makefile)
     f.close()
 
 
