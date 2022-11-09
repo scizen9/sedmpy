@@ -65,7 +65,9 @@ if __name__ == '__main__':
         # Subtract overscan
         img = FF[0].data
         img = img.astype(np.float32)
-        img -= subtract_oscan(img, FF[0].header)
+        osval = subtract_oscan(img, FF[0].header)
+        if osval > 0.:
+            img -= osval
 
         # Gain value
         try:

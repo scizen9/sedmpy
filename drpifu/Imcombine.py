@@ -17,34 +17,39 @@ def subtract_oscan(dat, header):
         ps_x1 = header['PSCANX1']
         os_x0 = header['OSCANX0']
         os_x1 = header['OSCANX1']
+        andor = True
     except KeyError:
         # These are for the PIXIS camera images
         ps_x0 = 0
         ps_x1 = 0
         os_x0 = 2045
         os_x1 = 2048
+        andor = False
 
     # Pre-scan value
     if ps_x1 > ps_x0:
         pscan = np.nanmedian(np.nanmedian(dat[:, :ps_x1], axis=1))
+        header['PSCANVAL'] = (pscan, 'Pre-scan value')
     else:
         pscan = 0.
     # Over-scan value
     if os_x1 > os_x0:
         oscan = np.nanmedian(np.nanmedian(dat[:, os_x0:], axis=1))
+        header['OSCANVAL'] = (oscan, 'Over-scan value')
     else:
         oscan = 0.
 
-    header['PSCANVAL'] = (pscan, 'Pre-scan value')
-    header['OSCANVAL'] = (oscan, 'Over-scan value')
+    if andor:
+        if pscan < oscan:
+            scan_value = pscan
+        else:
+            scan_value = oscan
 
-    if pscan < oscan:
-        scan_value = pscan
+        header['SCANVAL'] = (scan_value, 'Scan value subtracted')
+        header['OSCANSUB'] = (True, 'Over-scan subtracted?')
+
     else:
-        scan_value = oscan
-
-    header['SCANVAL'] = (scan_value, 'Scan value subtracted')
-    header['OSCANSUB'] = (True, 'Oscan subtracted?')
+        scan_value = 0.
 
     return scan_value
 
@@ -78,7 +83,9 @@ def imcombine(flist, fout, listfile=None, combtype="mean",
         img = inhdu[0].data
         img = img.astype(np.float32)
         if sub_oscan:
-            img -= subtract_oscan(img, inhdu[0].header)
+            scan_val = subtract_oscan(img, inhdu[0].header)
+            if scan_val > 0.:
+                img -= scan_val
         imstack.append(img)
 
         hdr = inhdu[0].header
