@@ -23,7 +23,7 @@ import sedmpy_version
 drp_ver = sedmpy_version.__version__
 
 
-def subtract_oscan(dat, header):
+def calculate_oscan(dat, header):
     """Subtract overscan from image"""
     # Get over/pre-scan regions
     try:
@@ -66,7 +66,7 @@ def subtract_oscan(dat, header):
     else:
         scan_value = 0.
 
-    return scan_value
+    return scan_value, ps_x1, os_x0-1
 
 
 def pixoscan(dat):
@@ -83,8 +83,9 @@ def pixoscan(dat):
     oscan = np.nanmedian(dat[:, 2045:], axis=1)
     oscan = oscan.astype(np.float32)
     smooth = filters.median_filter(oscan, size=50)
+    oscan_val = np.nanmedian(smooth)
 
-    return np.tile(smooth, (2048, 1))
+    return np.tile(smooth, (2048, 1)), oscan_val
 
 
 def remove(fits_obj):
@@ -108,10 +109,15 @@ def remove(fits_obj):
 
     # get overscan if correctly sized
     if dat.shape == (2048, 2048):
-        oscan_img = pixoscan(dat)
+        oscan_img, val = pixoscan(dat)
         osub_img = (dat - oscan_img.T) * gain
     else:
+        val = 0.
         osub_img = dat * gain
+
+    # update header
+    fits_obj[0].header['OSCANVAL'] = (val, 'Median Overscan Value')
+    fits_obj[0].header['OSCANSUB'] = (True, 'Overscan subtracted?')
 
     return osub_img
 
@@ -163,7 +169,7 @@ if __name__ == '__main__':
             # Subtract overscan
             img = FF[0].data
             img = img.astype(np.float32)
-            osval = subtract_oscan(img, FF[0].header)
+            osval, x0, x1 = calculate_oscan(img, FF[0].header)
             if osval > 0.:
                 img -= osval
 
@@ -175,6 +181,10 @@ if __name__ == '__main__':
 
             # Bias frame subtraction and gain correction
             FF[0].data = (img - mbias[0].data) * and_gain
+
+            # Trim overscan
+            FF[0].data = FF[0].data[:, x0:x1]
+            FF[0].header['OSCANTRM'] = (True, 'Overscan regions trimmed?')
 
         else:
             # Bias frame subtraction

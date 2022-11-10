@@ -4,7 +4,7 @@ import astropy.io.fits as pf
 import numpy as np
 import time
 import sedmpy_version
-from Debias import subtract_oscan
+from Debias import calculate_oscan
 
 drp_ver = sedmpy_version.__version__
 
@@ -38,7 +38,7 @@ def imcombine(flist, fout, listfile=None, combtype="mean",
         img = inhdu[0].data
         img = img.astype(np.float32)
         if sub_oscan:
-            scan_val = subtract_oscan(img, inhdu[0].header)
+            scan_val, x0, x1 = calculate_oscan(img, inhdu[0].header)
             if scan_val > 0.:
                 img -= scan_val
         imstack.append(img)
