@@ -1944,20 +1944,26 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
     # TODO Dima says to never ever use SkyCoord in production code
     palomar_mountain = EarthLocation(lon=243.1361*u.deg, lat=33.3558*u.deg,
                                      height=1712*u.m)
-    utcoffset = -7 * u.hour  # Pacific Daylight Time
+    local_time = time.localtime()
+    if local_time.tm_isdst:
+        utcoffset = -7 * u.hour  # Pacific Daylight Time
+        time_label = "Hours from PDST Midnight"
+    else:
+        utcoffset = -8 * u.hour  # Pacific Standard Time
+        time_label = "Hours from PST Midnight"
 
     # plotting a single object, or the pending objects in future
     if obsdate is None:
-        time = (Time.now() - utcoffset).datetime  # date is based on local time
-        time = Time(datetime.datetime(time.year, time.month, time.day))
+        tn = (Time.now() - utcoffset).datetime  # date is based on local time
+        tn = Time(datetime.datetime(tn.year, tn.month, tn.day))
     else:  # past observations on a particular night
-        time = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]),
+        tn = Time(datetime.datetime(int(obsdate[:4]), int(obsdate[4:6]),
                                       int(obsdate[6:8])))
         # all_requests = reqs[reqs['status'] == 'COMPLETED']
         # all_requests = all_requests[time - 12 * u.hour
         #                            <= all_requests['startdate']
         #                            < time + 12 * u.hour]
-    midnight = time - utcoffset  # 7am local time of correct date, midnight UTC
+    midnight = tn - utcoffset  # 7am local time of correct date, midnight UTC
 
     delta_midnight = np.linspace(-8, 8, 500) * u.hour
     t = midnight + delta_midnight
@@ -1993,7 +1999,7 @@ def plot_visibility(userid, sedm_dict, obsdate=None):
            name="Moon", legend_label='Moon')
     # labels and axes
     p.title.text = "Visibility for %s UTC" % midnight
-    p.xaxis.axis_label = "Hours from PDT Midnight"
+    p.xaxis.axis_label = time_label
     p.x_range.start = min(plotted_times)
     p.x_range.end = max(plotted_times)
     p.yaxis.axis_label = "Airmass"
