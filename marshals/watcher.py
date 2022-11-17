@@ -269,7 +269,7 @@ def create_request_entry(request, custom_dict=None,
     end_date = request['enddate']
 
     follow_up = "%s|%s" % (request['Followup'], request['Filters'])
-    obs_seq, exptime = get_observing_sequence(follow_up, objdict['magnitude'])
+    obs_seq, exptime = get_observing_sequence(follow_up, objdict['magnitude'],float(request['exptime']))
 
     if 'origins_url' in request:
         print(request['origins_url'])
@@ -293,7 +293,9 @@ def create_request_entry(request, custom_dict=None,
         'enddate': end_date,
         'external_id': 2,
         'shareid': shareid,
-        'marshal_id': int(request['requestid'])
+        'marshal_id': int(request['requestid']),
+        'maxairmass': float(request['max_airmass']),
+        'max_fwhm': float(request['max_fwhm'])
     }
     print(external_id)
     print(request_dict)
@@ -328,7 +330,7 @@ def get_prior_mag(mag_dict):
     return mag
 
 
-def get_observing_sequence(obs_str, mag=17):
+def get_observing_sequence(obs_str, mag=17, exptime=0):
     """
     Get the observing sequence from the predefined followups and or filters
 
@@ -350,25 +352,37 @@ def get_observing_sequence(obs_str, mag=17):
             obs_list = ['1r', '1g', '1i', '1u']
             for o in obs_list:
                 sequence_list.append(o)
-                exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                if exptime == 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(exptime)
         elif sequence == 'Three Shot (r,g,i)':
             obs_list = ['1r', '1g', '1i']
             for o in obs_list:
                 sequence_list.append(o)
-                exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                if exptime == 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(exptime)
         elif sequence == 'Fourshot + IFU':
             obs_list = ['1r', '1g', '1i', '1u']
             sequence_list.append('1ifu')
             exptime_list.append(get_exptime(obsfilter='ifu', mag=mag))
             for o in obs_list:
                 sequence_list.append(o)
-                exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                if exptime == 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(exptime)
 
     if filters:
         filters = filters.split(',')
         for f in filters:
             sequence_list.append('1%s' % f)
-            exptime_list.append(get_exptime(obsfilter=f.lower(), mag=mag))
+            if exptime == 0:
+                exptime_list.append(get_exptime(obsfilter=f.lower(), mag=mag))
+            else:
+                exptime_list.append(exptime)
 
     print(sequence_list)
     print(exptime_list)
