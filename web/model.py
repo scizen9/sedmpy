@@ -2987,6 +2987,12 @@ def get_p18obsdata(obsdate):
         % p18obsdate)
     data = page.content.decode("ISO-8859-1")
 
+    # 2.5 check return
+    empty = ([obsd.replace(hour=7)], [0])
+    if 'not found' in data:
+        print("log file not found for p18 date: ", p18obsdate)
+        return empty
+
     # 3. Split the page by newlines
     data = data.split('\n')
 
@@ -3001,10 +3007,13 @@ def get_p18obsdata(obsdate):
                 p18date.append(datetime.datetime.strptime(d,
                                                           "%m/%d/%Y %H:%M:%S"))
                 p18seeing.append(float(i[4]))
+        except ValueError as e:
+            print("unable to retrieve p18 seeing data:\n", str(e))
+            return empty
         except Exception as e:
-            print(str(e))
-            obsd = obsd.replace(hour=7)
-            return [obsd], [0]
+            print(i)
+            print("unable to retrieve p18 seeing data", str(e))
+            return empty
     return p18date, p18seeing
 
 
