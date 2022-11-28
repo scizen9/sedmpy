@@ -62,12 +62,14 @@ def delete_request_entry(request_dict):
     sedm_requestid = sedmdb.get_from_request(
         values=['id'], where_dict={'marshal_id': request_dict['requestid'],
                                    'external_id': 2})
+    print("Deleting SedmDB request ids:\n", sedm_requestid)
 
     if not sedm_requestid:
         print("No request matching that id")
     else:
         for i in sedm_requestid:
             try:
+                print("Deleting: ", i[0])
                 print(sedmdb.update_request({'id': i[0], 'status': 'CANCELED'}))
                 return
             except Exception as e:
