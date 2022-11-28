@@ -71,10 +71,8 @@ def delete_request_entry(request_dict):
             try:
                 print("Deleting: ", i[0])
                 print(sedmdb.update_request({'id': i[0], 'status': 'CANCELED'}))
-                return
             except Exception as e:
                 print(str(e))
-                return
 
 
 def add_request_to_db(request_dict):
