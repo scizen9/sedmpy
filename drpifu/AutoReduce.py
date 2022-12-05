@@ -419,9 +419,17 @@ def update_observation(input_fitsfile):
         hk = header_dict[key]
         if hk in ff[0].header:
             if key == 'dec':
-                obs_dict[key] = Angle(ff[0].header[hk]+' degrees').degree
+                try:
+                    obs_dict[key] = Angle(ff[0].header[hk]+' degrees').degree
+                except ValueError:
+                    logging.warning("Bad Dec kwd value: %s" % ff[0].header[hk])
+                    obs_dict[key] = -99.0
             elif key == 'ra':
-                obs_dict[key] = Angle(ff[0].header[hk]+' hours').degree
+                try:
+                    obs_dict[key] = Angle(ff[0].header[hk]+' hours').degree
+                except ValueError:
+                    logging.warning("Bad RA kwd value: %s" % ff[0].header[hk])
+                    obs_dict[key] = -99.0
             else:
                 obs_dict[key] = ff[0].header[hk]
         else:
