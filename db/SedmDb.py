@@ -9,6 +9,7 @@ from werkzeug.security import generate_password_hash
 import os
 import sys
 import psycopg2.extras
+import psycopg2.errors
 
 import smtplib
 
@@ -2179,6 +2180,9 @@ class SedmDB:
             except exc.ProgrammingError:
                 return -1, "ERROR: adding observation sql command failed " \
                            "with a ProgrammingError!"
+            except psycopg2.errors.NumericValueOutOfRange:
+                return -1, "ERROR: adding observation sql command failed " \
+                           "with a NumericValueOutOfRange error!"
             return new_observation_id, "Observation added"
 
     def update_observation(self, pardic):
