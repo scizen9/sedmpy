@@ -11,6 +11,7 @@ import argparse
 import re
 import drpifu.RunSnid as RunSnid
 import drpifu.RunSNIascore as RunSNIascore
+import drpifu.RunNgsf as RunNgsf
 import json
 import sedmpy_version
 
@@ -87,6 +88,7 @@ def classify(spec_dir='./', overwrite=False):
 
             # If quality is good, check for previous classification
             if q < 3 or q == 5:
+                specfl = fl.split('/')[-1]
                 # Check for SNID first
                 clas = [li for li in lines if "SNID" in li]
                 # If the file has been classified by SNID, move to the next
@@ -94,7 +96,6 @@ def classify(spec_dir='./', overwrite=False):
                     print("already classified by SNID")
                 else:
                     # If we are here, we run the classification with SNID
-                    specfl = fl.split('/')[-1]
                     good = RunSnid.run_snid(spec_file=specfl,
                                             overwrite=overwrite)
                     # If we actually ran, record the results
@@ -108,12 +109,24 @@ def classify(spec_dir='./', overwrite=False):
                     print("already run through SNIascore")
                 else:
                     # If we are here, we run SNIascore
-                    specfl = fl.split('/')[-1]
                     good = RunSNIascore.run_sniascore(spec_file=specfl,
                                                       overwrite=overwrite)
                     # If we actually ran, record the results
                     if good:
                         res = specfl + " " + RunSNIascore.record_sniascore(
+                            spec_file=specfl)
+                        summary.append(res)
+                # Check for NGSF
+                ngsf = [li for li in lines if "NGSF" in li]
+                if len(ngsf) > 0 and not overwrite:
+                    print("already classified by NGSF")
+                else:
+                    # If we are here, we run NGSF
+                    good = RunNgsf.run_ngsf(spec_file=specfl,
+                                            overwrite=overwrite)
+                    # If we actually ran, record the results
+                    if good:
+                        res = specfl + " " + RunNgsf.record_ngsf(
                             spec_file=specfl)
                         summary.append(res)
             else:
