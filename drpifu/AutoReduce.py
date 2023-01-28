@@ -903,13 +903,14 @@ def dosci(destdir='./', datestr=None, local=False, nodb=False,
                         cmd = ("touch", badfn)
                         subprocess.call(cmd)
                     else:
-                        # Run SNID and SNIascore
-                        logging.info("Running SNID, SNIascore for " + fn)
+                        # Run SNID, SNIascore, and NGSF
+                        logging.info("Running SNID, SNIascore, NGSF for " + fn)
                         cmd = ("make", "classify")
                         logging.info(" ".join(cmd))
                         retcode = subprocess.call(cmd)
                         if retcode != 0:
-                            logging.error("Error running SNID or SNIascore")
+                            logging.error("Error running SNID, SNIascore, "
+                                          "or NGSF")
                         if local or nopush_slack:
                             cmd = ("pysedm_report.py", datestr, "--contains",
                                    fn.split('.')[0])
@@ -1104,6 +1105,10 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         'score': 'SNIASCOR', 'score_err': 'SNIASCER',
         'redshift': 'SNIASCZ', 'redshift_err': 'SNIASCZE'
     }
+    class_ngsf_header_dict = {
+        'classification': 'NGSFTYPE', 'redshift': 'NGSFZ', 'score': 'NGSFCHI2',
+        'phase': 'NGSFPHAS', 'class_template': 'NGSFTEMP'
+    }
     class_dict = {
         'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
         'redshift': 0., 'redshift_err': 0., 'classifier': 'SNID', 'score': 0.,
@@ -1115,6 +1120,11 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         'redshift': 0., 'redshift_err': 0., 'classifier': 'SNIascore',
         'score': 0., 'score_err': 0., 'score_type': 'SNIa',
         'class_source': ''
+    }
+    class_ngsf_dict = {
+        'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
+        'redshift': 0., 'clasifier': 'NGSF', 'score': 0.,
+        'score_type': 'Chi2/dof', 'class_source': '', 'class_template': ''
     }
 
     # Get utdate
@@ -1199,6 +1209,25 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
                     logging.warning("Header keyword not found: %s" % hk)
     else:
         logging.info("No SNIascore info in %s" % input_specfile)
+    # NGSF results
+    good_ngsf_class = False
+    if 'NGSFTYPE' in ff[0].header:
+        if 'NONE' in ff[0].header['NGSFTYPE']:
+            logging.info("NGSF was unable to type %s" % input_specfile)
+        else:
+            good_ngsf_class = True
+            for key in class_ngsf_header_dict.keys():
+                hk = class_ngsf_header_dict[key]
+                if hk in ff[0].header:
+                    class_ngsf_dict[key] = ff[0].header[hk]
+                else:
+                    logging.warning("Header keyword not found: %s" % hk)
+            if 'NGSFSUBT' in ff[0].header:
+                class_dict['classification'] = \
+                    class_dict['classification'] + ' ' + \
+                    ff[0].header['NGSFSUBT']
+    else:
+        logging.info("No NGSF info in %s" % input_specfile)
 
     ff.close()
 
@@ -1269,6 +1298,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         class_dict['spec_id'] = spec_id
         class_ia_dict['spec_id'] = spec_id
         logging.info(status)
+
         if good_class:
             class_id, cstatus = sedmdb.add_classification(class_dict)
             if class_id < 0 and update:
@@ -1278,6 +1308,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
                              " and status %s" % (class_id, cstatus))
         else:
             logging.info("No SNID classification found in input spectrum")
+
         if good_ia_class:
             class_ia_id, ciastatus = sedmdb.add_classification(class_ia_dict)
             if class_ia_id < 0 and update:
@@ -1287,6 +1318,18 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
                              " and status %s" % (class_ia_id, ciastatus))
         else:
             logging.info("No SNIascore record found in input spectrum")
+
+        if good_ngsf_class:
+            class_ngsf_id, cngsfstatus = sedmdb.add_classification(
+                class_ngsf_dict)
+            if class_ngsf_id < 0 and update:
+                logging.info("NGSF record already exists for this spec")
+            else:
+                logging.info("NGSF record accepted with id %d,"
+                             " and status %s" % (class_ngsf_id, cngsfstatus))
+        else:
+            logging.info("No NGSF record found in input spectrum")
+
         return spec_id
     else:
         logging.error("ERROR: no spec_calib_id found for %s" % utdate)
