@@ -42,16 +42,45 @@ def parse_and_fill(spec, ngsfoutput):
     from ngsf, fills a dictionary with the results and fills some of the
     comments in the original file, so that these could be used in the marshal.
     """
-    
+
+    # pre-process pars
+    try:
+        z = float(ngsfoutput[5])
+    except ValueError:
+        z = -100.
+    try:
+        a_v = float(ngsfoutput[6])
+    except ValueError:
+        a_v = -100.
+    try:
+        phase = float(ngsfoutput[7])
+    except ValueError:
+        phase = -100.
+    try:
+        frac_sn = float(ngsfoutput[9])
+    except ValueError:
+        frac_sn = -1.
+    try:
+        frac_gal = float(ngsfoutput[10])
+    except ValueError:
+        frac_gal = -1.
+    try:
+        chi2_dof = float(ngsfoutput[11])
+    except ValueError:
+        chi2_dof = -1.
+    try:
+        chi2_dof2 = float(ngsfoutput[12])
+    except ValueError:
+        chi2_dof2 = -1.
     pars = {"HostType": ngsfoutput[1],
-            "z": float(ngsfoutput[5]),
-            "A_v": float(ngsfoutput[6]),
-            "Phase": float(ngsfoutput[7]),
+            "z": z,
+            "A_v": a_v,
+            "Phase": phase,
             "Band": ngsfoutput[8],
-            "Frac(SN)": float(ngsfoutput[9]),
-            "Frac(gal)": float(ngsfoutput[10]),
-            "CHI2/dof": float(ngsfoutput[11]),
-            "CHI2/dof2": float(ngsfoutput[12]),
+            "Frac(SN)": frac_sn,
+            "Frac(gal)": frac_gal,
+            "CHI2/dof": chi2_dof,
+            "CHI2/dof2": chi2_dof2,
             "Templ": "", "bestMatchType": "", "bestMatchSubtype": "",
             "Instr": ""}
 
@@ -63,8 +92,8 @@ def parse_and_fill(spec, ngsfoutput):
         pars["bestMatchSubtype"] = segs[0].split()[-1]
     pars["Instr"] = segs[2].split()[0]
 
-    print("NGSF RESULTS: Type=%(bestMatchType)s, Host=%(HostType)s, "
-          "CHI2=%(CHI2/dof).2f, Age=%(Phase).2f day, z=%(z).4f" % pars)
+    # print("NGSF RESULTS: Type=%(bestMatchType)s, Host=%(HostType)s, "
+    #       "CHI2=%(CHI2/dof).2f, Age=%(Phase).2f day, z=%(z).4f" % pars)
 
     # Update fits file
     ff = pf.open(spec.replace('.txt', '.fits'), mode='update')
