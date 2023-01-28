@@ -2226,7 +2226,7 @@ def load_stats(statsfile='stats.log'):
                        names=['path', 'obj', 'jd', 'ns', 'fwhm', 'ellipticity',
                               'bkg', 'airmass', 'in_temp', 'imtype', 'out_temp',
                               'in_hum'])
-
+    data = data[data['jd'] > 0]
     jds = data['jd']
     t = Time(jds, format='jd', scale='utc')
     date = t.utc.datetime
