@@ -396,11 +396,10 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
     # Upload NGSF plot
     try:
         ngsf_plot = glob(fname.replace('.txt', '_ngsf0.png'))[0]
-        pl_posted = add_spec_attachment(object_id, 'NGSF_plot:spc%d' % spec_id,
-                                        ngsf_plot, spec_id=spec_id, testing=testing)
+        _ = add_spec_attachment(object_id, 'NGSF_plot:spc%d' % spec_id,
+                                ngsf_plot, spec_id=spec_id, testing=testing)
     except IndexError:
         print('no NGSF plot for {}?'.format(header['name']))
-        pl_posted = False
 
     # NGSF RESULTS
     if 'NGSFTYPE' not in header:
