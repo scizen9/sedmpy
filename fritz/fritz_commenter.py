@@ -371,6 +371,67 @@ def add_SNID_pysedm_autoannot(fname, object_id=None, spec_id=None,
     return ret
 
 
+def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
+    """
+    Add NGSF results as an annotation and the fit plot as a comment
+
+    fname: '*ZTF18aaaaaaa.txt' that has a bunch of
+            "# NGSF[something]: [val]" in the header
+    object_id: (str) ZTF id
+    spec_id: (int) Fritz spec_id number
+    testing: (bool)
+
+    returns: True if all four comments/attachments works, False
+            (and it'll exit early) otherwise
+    """
+
+    file_ext = fname.split('.')[-1]
+    assert file_ext == 'txt' or file_ext == 'ascii'
+
+    with open(fname) as f:
+        header = {line.split(':', 1)[0][1:].strip().lower():
+                  line.split(':', 1)[-1].strip()
+                  for line in f if line[0] == '#'}
+
+    # Upload NGSF plot
+    try:
+        ngsf_plot = glob(fname.replace('.txt', '_ngsf0.png'))[0]
+        pl_posted = add_spec_attachment(object_id, 'NGSF_plot:spc%d' % spec_id,
+                                        ngsf_plot, spec_id=spec_id, testing=testing)
+    except IndexError:
+        print('no NGSF plot for {}?'.format(header['name']))
+        pl_posted = False
+
+    # NGSF RESULTS
+    if 'NGSFTYPE' not in header:
+        print(fname, "never run through NGSF?")
+        return False
+
+    if header['ngsftype'].lower() == 'none':
+        print('no match')
+        return False
+
+    subty = header['ngsfsubtype']
+    if len(subty) <= 1:
+        header['ngsffulltype'] = header['ngsftype']
+    else:
+        header['ngsffulltype'] = '-'.join([header['ngsftype'], subty])
+
+    # construct annotations dictionary
+    andic = {'fulltype': 'None', 'fitchi2_dof': 0., 'fitchi2_dof2': 0.,
+             'redshift': 0., 'fav': 0., 'phase': 0., 'matchtemplate': '',
+             'frac_sn': 0., 'frac_gal': 0., 'hosttype': '', 'templinstr': ''}
+    for key in andic:
+        andic[key] = header['ngsf' + key]
+    # construct origin
+    origin = 'sedm:NGSF'
+
+    ret = add_spec_autoannot(object_id, andic, spec_id=spec_id,
+                             origin=origin, testing=testing)
+
+    return ret
+
+
 if __name__ == "__main__":
     auth = (input('GROWTH marshal username:'), getpass())
 
