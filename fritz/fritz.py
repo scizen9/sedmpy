@@ -16,6 +16,10 @@ try:
     from fritz_commenter import add_SNIascore_pysedm_autoannot as add_ia_annots
 except ImportError:
     from fritz.fritz_commenter import add_SNIascore_pysedm_autoannot as add_ia_annots
+try:
+    from fritz_commenter import add_NGSF_autoannot as add_ngsf_annots
+except ImportError:
+    from fritz.fritz_commenter import add_NGSF_autoannot as add_ngsf_annots
 
 configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
@@ -329,36 +333,41 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 spec_stat = 'Failed ' + ts_str
             else:
                 spec_stat = 'Complete ' + ts_str
-                # now upload pysedm_report and SNID info
+                # get spec_id
                 try:
                     ret_data = spec_ret['data']
                     spec_id = ret_data['id']
                     print("Spectrum id = %d" % spec_id)
+                except KeyError:
+                    spec_id = None
+                if spec_id is None:
+                    print("Warning: unable to obtain spec_id")
+                else:
+                    # now upload pysedm_report and SNID info
                     annots_posted = add_annots(spectra_file,
                                                object_id=object_name,
                                                spec_id=spec_id, testing=testing)
-                except KeyError:
-                    annots_posted = False
-                    print("ERROR - unable to upload SNID annotations")
-                if annots_posted:
-                    print("SNID annotations successfully posted")
-                else:
-                    print("Warning: SNID annotations encountered a problem")
-                # now upload SNIascore info
-                try:
-                    ret_data = spec_ret['data']
-                    spec_id = ret_data['id']
+                    if annots_posted:
+                        print("SNID annotations successfully posted")
+                    else:
+                        print("Warning: SNID annotations encountered a problem")
+                    # now upload SNIascore info
                     ia_annots_posted, status_tns = add_ia_annots(
                         spectra_file, object_id=object_name, spec_id=spec_id,
                         testing=testing)
-                except KeyError:
-                    ia_annots_posted = False
-                    print("ERROR - unable to upload SNIascore annotations")
-                if ia_annots_posted:
-                    print("SNIascore annotations successfully posted")
-                else:
-                    print("Warning: SNIascore annotations encountered a "
-                          "problem")
+                    if ia_annots_posted:
+                        print("SNIascore annotations successfully posted")
+                    else:
+                        print("Warning: SNIascore annotations encountered a "
+                              "problem")
+                    # now upload  NGSF info
+                    ngsf_annots_posted = add_ngsf_annots(
+                        spectra_file, object_id=object_name, spec_id=spec_id,
+                        testing=testing)
+                    if ngsf_annots_posted:
+                        print("NGSF annotations successfully posted")
+                    else:
+                        print("Warning: NGSF annotations encountered a problem")
 
         if add_status:
             try:
