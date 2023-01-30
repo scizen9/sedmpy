@@ -381,7 +381,7 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
     spec_id: (int) Fritz spec_id number
     testing: (bool)
 
-    returns: True if all four comments/attachments works, False
+    returns: True if results are present and upload works, False
             (and it'll exit early) otherwise
     """
 
@@ -393,15 +393,7 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
                   line.split(':', 1)[-1].strip()
                   for line in f if line[0] == '#'}
 
-    # Upload NGSF plot
-    try:
-        ngsf_plot = glob(fname.replace('.txt', '_ngsf0.png'))[0]
-        _ = add_spec_attachment(object_id, 'NGSF_plot:spc%d' % spec_id,
-                                ngsf_plot, spec_id=spec_id, testing=testing)
-    except IndexError:
-        print('no NGSF plot for {}?'.format(header['name']))
-
-    # NGSF RESULTS
+    # NGSF results present?
     if 'NGSFTYPE' not in header:
         print(fname, "never run through NGSF?")
         return False
@@ -410,14 +402,21 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
         print('no match')
         return False
 
+    # Upload NGSF plot
+    try:
+        ngsf_plot = glob(fname.replace('.txt', '_ngsf0.png'))[0]
+        _ = add_spec_attachment(object_id, 'NGSF_plot:spc%d' % spec_id,
+                                ngsf_plot, spec_id=spec_id, testing=testing)
+    except IndexError:
+        print('no NGSF plot for {}?'.format(header['name']))
+
+    # check for subtype
     subty = header['ngsfsubtype']
-    if len(subty) <= 1:
-        header['ngsffulltype'] = header['ngsftype']
-    else:
-        header['ngsffulltype'] = '-'.join([header['ngsftype'], subty])
+    if len(subty) > 1:
+        header['ngsftype'] = '-'.join([header['ngsftype'], subty])
 
     # construct annotations dictionary
-    andic = {'fulltype': 'None', 'fitchi2_dof': 0., 'fitchi2_dof2': 0.,
+    andic = {'type': 'None', 'fitchi2_dof': 0., 'fitchi2_dof2': 0.,
              'redshift': 0., 'fav': 0., 'phase': 0., 'matchtemplate': '',
              'frac_sn': 0., 'frac_gal': 0., 'hosttype': '', 'templinstr': ''}
     for key in andic:
