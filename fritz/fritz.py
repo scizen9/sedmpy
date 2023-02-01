@@ -20,6 +20,10 @@ try:
     from fritz_commenter import add_NGSF_autoannot as add_ngsf_annots
 except ImportError:
     from fritz.fritz_commenter import add_NGSF_autoannot as add_ngsf_annots
+try:
+    from fritz_commenter import add_S2N_autoannot as add_s2n_annots
+except ImportError:
+    from fritz.fritz_commenter import add_S2N_autoannot as add_s2n_annots
 
 configfile = os.path.join(sedmpy_version.CONFIG_DIR, 'sedmconfig.json')
 with open(configfile) as config_file:
@@ -368,7 +372,14 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                         print("NGSF annotations successfully posted")
                     else:
                         print("Warning: NGSF annotations encountered a problem")
-
+                    # now upload S2N info
+                    s2n_annots_posted = add_s2n_annots(
+                        spectra_file, object_id=object_name, spec_id=spec_id,
+                        testing=testing)
+                    if s2n_annots_posted:
+                        print("S2N annotations successfully posted")
+                    else:
+                        print("Warning: S2N annotations encountered a problem")
         if add_status:
             try:
                 status_ret = update_status_request(spec_stat, marshal_id,

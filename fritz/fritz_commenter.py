@@ -430,6 +430,46 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
     return ret
 
 
+def add_S2N_autoannot(fname, object_id=None, spec_id=None, testing=False):
+    """
+    Add S2N results as an annotation
+
+    fname: '*ZTF18aaaaaaa.txt' that has a bunch of
+            "# NGSF[something]: [val]" in the header
+    object_id: (str) ZTF id
+    spec_id: (int) Fritz spec_id number
+    testing: (bool)
+
+    returns: True if results are present and upload works, False
+            (and it'll exit early) otherwise
+    """
+
+    file_ext = fname.split('.')[-1]
+    assert file_ext == 'txt' or file_ext == 'ascii'
+
+    with open(fname) as f:
+        header = {line.split(':', 1)[0][1:].strip().lower():
+                  line.split(':', 1)[-1].strip()
+                  for line in f if line[0] == '#'}
+
+    # S2N results present?
+    if 'S2N_MEDIAN' not in header:
+        print(fname, "never run through CalcS2N?")
+        return False
+
+    # construct annotations dictionary
+    andic = {'median': 0.0, 'wl_start': 0., 'wl_end': 0.}
+    for key in andic:
+        andic[key] = header['s2n_' + key]
+    # construct origin
+    origin = 'sedm:S2N'
+
+    ret = add_spec_autoannot(object_id, andic, spec_id=spec_id,
+                             origin=origin, testing=testing)
+
+    return ret
+
+
 if __name__ == "__main__":
     auth = (input('GROWTH marshal username:'), getpass())
 
