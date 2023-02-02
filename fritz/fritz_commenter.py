@@ -394,7 +394,7 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
                   for line in f if line[0] == '#'}
 
     # NGSF results present?
-    if 'NGSFTYPE' not in header:
+    if 'ngsftype' not in header:
         print(fname, "never run through NGSF?")
         return False
 
@@ -417,7 +417,7 @@ def add_NGSF_autoannot(fname, object_id=None, spec_id=None, testing=False):
 
     # construct annotations dictionary
     andic = {'type': 'None', 'fitchi2_dof': 0., 'fitchi2_dof2': 0.,
-             'redshift': 0., 'fav': 0., 'phase': 0., 'matchtemplate': '',
+             'redshift': 0., 'av': 0., 'phase': 0., 'matchtemplate': '',
              'frac_sn': 0., 'frac_gal': 0., 'hosttype': '', 'templinstr': ''}
     for key in andic:
         andic[key] = header['ngsf' + key]
@@ -453,7 +453,7 @@ def add_S2N_autoannot(fname, object_id=None, spec_id=None, testing=False):
                   for line in f if line[0] == '#'}
 
     # S2N results present?
-    if 'S2N_MEDIAN' not in header:
+    if 's2n_median' not in header:
         print(fname, "never run through CalcS2N?")
         return False
 
