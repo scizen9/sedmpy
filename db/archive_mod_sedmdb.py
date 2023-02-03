@@ -952,8 +952,8 @@ class SedmDB:
         param_types = {'id': int, 'object_id': int, 'inclination': float, 'longascnode_O': float, 'perihelion_o': float,
                        'a': float, 'n': float, 'e': float, 'M': float, 'mjdepoch': int, 'D': int, 'M1': float,
                        'M2': float, 's': float}
-        id = _id_from_time()
-        orbit_params['id'] = id
+        tid = _id_from_time()
+        orbit_params['id'] = tid
         # TODO: query associated table for object already existing, test
         orb_keys = list(orbit_params.keys())
         for key in ['inclination', 'longascnode_O', 'perihelion_o', 'a', 'n', 'e',
@@ -975,7 +975,7 @@ class SedmDB:
             return -1, "ERROR: add_elliptical_orbit sql command failed with an IntegrityError!"
         except exc.ProgrammingError:
             return -1, "ERROR: add_elliptical_orbit sql command failed with a ProgrammingError!"
-        return id, "Elliptical heliocentric orbit added"
+        return tid, "Elliptical heliocentric orbit added"
 
     def get_from_elliptical_heliocentric(self, values, where_dict={}, compare_dict={}):
         """
