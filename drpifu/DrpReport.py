@@ -235,7 +235,7 @@ def report():
                 fracsn = ""
 
         recs.append("%8s %-12s %7s %5s     %d %20s  %-18s  %-14s  "
-                    "%-8s %5s  %6s %6s  %6s %6s %-8s %7s %6s" %
+                    "%-8s %5s  %6s %6s  %6s %6s %-12s %4s %4s" %
                     (tstr, objname, expt, air, quality, meth, prid, ctype,
                      zmch, rlap, snia_score, snia_score_err,
                      snia_z, snia_z_err, ntype, ngsfz, fracsn))
