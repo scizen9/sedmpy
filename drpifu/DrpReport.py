@@ -83,7 +83,7 @@ def report():
         print("Seeing data unavailable\n")
 
     print("UTStart  Object       Exptime Air    Qual"
-          "             method  Allocation           "
+          "               method  Allocation           "
           "Type            z        Rlap   SNIaS SNIaSe   "
           "SNIaZ SNIaZe  NGTY  NGZ    NGFSN")
     recs = []
@@ -166,7 +166,7 @@ def report():
             if len(clas) > 0:
                 for cl in clas:
                     st = cl.split()[-1]
-                    if st != '-':
+                    if 'SUBTYPE' not in st:
                         stype += ("%s" % st)
                     else:
                         stype = ""
