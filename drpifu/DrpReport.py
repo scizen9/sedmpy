@@ -85,7 +85,7 @@ def report():
     print("UTStart  Object       Exptime Air    Qual"
           "               method  Allocation           "
           "Type            z        Rlap   SNIaS SNIaSe   "
-          "SNIaZ SNIaZe  NGTY  NGZ    NGFSN")
+          "SNIaZ SNIaZe  NGTY     NGZ    NGFSN")
     recs = []
     for f in flist:
         # Get object name
@@ -176,7 +176,7 @@ def report():
             # get NGSF redshift
             ngsfz = [li for li in lines if "NGSFREDSHIFT" in li]
             if len(ngsfz) > 0:
-                ngsfz = ("%.4f" % float(ngsfz[0].split()[-1]))
+                ngsfz = ("%.2f" % float(ngsfz[0].split()[-1]))
             else:
                 ngsfz = ""
             # get NGSF CHI2/DOF
