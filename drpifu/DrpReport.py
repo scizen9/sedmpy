@@ -82,9 +82,10 @@ def report():
     else:
         print("Seeing data unavailable\n")
 
-    print("UTStart  Object               Exptime Air    Qual"
-          "                   method  Allocation           "
-          "Type            z        Rlap   SNIaS SNIaSe   SNIaZ SNIaZe")
+    print("UTStart  Object       Exptime Air    Qual"
+          "             method  Allocation           "
+          "Type            z        Rlap   SNIaS SNIaSe   "
+          "SNIaZ SNIaZe  NGTY  NGZ    NGFSN")
     recs = []
     for f in flist:
         # Get object name
@@ -118,7 +119,7 @@ def report():
                     ctype += "-"
                     ctype += stype
             # get SNID redshift
-            zmch = [li for li in lines if "REDSHIFT" in li]
+            zmch = [li for li in lines if "SNIDMATCHREDSHIFT" in li]
             if len(zmch) > 0:
                 zmch = ("%.4f" % float(zmch[0].split()[-1]))
             else:
@@ -153,6 +154,37 @@ def report():
                 snia_z_err = ("%.3f" % float(snia_z_err[0].split()[-1]))
             else:
                 snia_z_err = ""
+            # get NGSF classification
+            clas = [li for li in lines if "NGSFTYPE" in li]
+            ntype = ""
+            if len(clas) > 0:
+                for cl in clas:
+                    ntype += (" %s" % cl.split()[-1])
+            # check for NGSF subtype
+            clas = [li for li in lines if "NGSFSUBTYPE" in li]
+            stype = ""
+            if len(clas) > 0:
+                for cl in clas:
+                    st = cl.split()[-1]
+                    if st != '-':
+                        stype += ("%s" % st)
+                    else:
+                        stype = ""
+                if len(stype) > 0:
+                    ntype += "-"
+                    ntype += stype
+            # get NGSF redshift
+            ngsfz = [li for li in lines if "NGSFREDSHIFT" in li]
+            if len(ngsfz) > 0:
+                ngsfz = ("%.4f" % float(ngsfz[0].split()[-1]))
+            else:
+                ngsfz = ""
+            # get NGSF CHI2/DOF
+            fracsn = [li for li in lines if "NGSFFRAC_SN" in li]
+            if len(fracsn) > 0:
+                fracsn = ("%.2f" % float(fracsn[0].split()[-1]))
+            else:
+                fracsn = ""
             # get flux calibration
             flxcal = [li for li in lines if "FLUXCAL" in li]
             if len(flxcal) > 0:
@@ -192,19 +224,21 @@ def report():
                 ctype = " STD"
             else:
                 ctype = " QUALITY_%d" % quality
-                stype = ""
                 zmch = ""
                 rlap = ""
                 snia_score = ""
                 snia_score_err = ""
                 snia_z = ""
                 snia_z_err = ""
+                ntype = ""
+                ngsfz = ""
+                fracsn = ""
 
-        recs.append("%8s %-20s %7s %5s     %d %24s  %-18s  %-14s  "
-                    "%-8s %5s  %6s %6s  %6s %6s" %
+        recs.append("%8s %-12s %7s %5s     %d %20s  %-18s  %-14s  "
+                    "%-8s %5s  %6s %6s  %6s %6s %-8s %7s %6s" %
                     (tstr, objname, expt, air, quality, meth, prid, ctype,
                      zmch, rlap, snia_score, snia_score_err,
-                     snia_z, snia_z_err))
+                     snia_z, snia_z_err, ntype, ngsfz, fracsn))
     recs.sort()
     for r in recs:
         print(r)
