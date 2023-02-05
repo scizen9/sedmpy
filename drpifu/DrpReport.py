@@ -85,7 +85,7 @@ def report():
     print("UTStart  Object       Exptime Air    Qual"
           "               method  Allocation           "
           "Type            z        Rlap   SNIaS SNIaSe   "
-          "SNIaZ SNIaZe  NGTY        NGZ  NGFSN")
+          "SNIaZ SNIaZe NGTY        NGZ  NGFSN")
     recs = []
     for f in flist:
         # Get object name
@@ -159,7 +159,7 @@ def report():
             ntype = ""
             if len(clas) > 0:
                 for cl in clas:
-                    ntype += (" %s" % cl.split()[-1])
+                    ntype += ("%s" % cl.split()[-1])
             # check for NGSF subtype
             clas = [li for li in lines if "NGSFSUBTYPE" in li]
             stype = ""
