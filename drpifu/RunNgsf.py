@@ -12,6 +12,7 @@ import argparse
 import subprocess
 import re
 import astropy.io.fits as pf
+import numpy as np
 
 
 def find_line_match(lines, match_dict):
@@ -48,30 +49,51 @@ def parse_and_fill(spec, ngsfoutput):
         z = float(ngsfoutput[5])
     except ValueError:
         z = -100.
+    if not np.isfinite(z):
+        z = -100.
+
     try:
         a_v = float(ngsfoutput[6])
     except ValueError:
         a_v = -100.
+    if not np.isfinite(a_v):
+        a_v = -100.
+
     try:
         phase = float(ngsfoutput[7])
     except ValueError:
         phase = -100.
+    if not np.isfinite(phase):
+        phase = -100.
+
     try:
         frac_sn = float(ngsfoutput[9])
     except ValueError:
         frac_sn = -1.
+    if not np.isfinite(frac_sn):
+        frac_sn = -1.
+
     try:
         frac_gal = float(ngsfoutput[10])
     except ValueError:
         frac_gal = -1.
+    if not np.isfinite(frac_gal):
+        frac_gal = -1.
+
     try:
         chi2_dof = float(ngsfoutput[11])
     except ValueError:
         chi2_dof = -1.
+    if not np.isfinite(chi2_dof):
+        chi2_dof = -1.
+
     try:
         chi2_dof2 = float(ngsfoutput[12])
     except ValueError:
         chi2_dof2 = -1.
+    if not np.isfinite(chi2_dof2):
+        chi2_dof2 = -1.
+
     pars = {"HostType": ngsfoutput[1],
             "z": z,
             "A_v": a_v,
