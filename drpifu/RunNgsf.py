@@ -5,9 +5,7 @@ Created on Thu Aug 11 11:23:00 2016
 @author: nblago
 """
 
-import os
 import csv
-import glob
 import argparse
 import subprocess
 import re
