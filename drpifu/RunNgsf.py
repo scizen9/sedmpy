@@ -43,54 +43,69 @@ def parse_and_fill(spec, ngsfoutput):
     """
 
     # pre-process pars
+    failed = False
     try:
         z = float(ngsfoutput[5])
     except ValueError:
         z = -100.
+        failed = True
     if not np.isfinite(z):
         z = -100.
+        failed = True
 
     try:
         a_v = float(ngsfoutput[6])
     except ValueError:
         a_v = -100.
+        failed = True
     if not np.isfinite(a_v):
         a_v = -100.
+        failed = True
 
     try:
         phase = float(ngsfoutput[7])
     except ValueError:
         phase = -100.
+        failed = True
     if not np.isfinite(phase):
         phase = -100.
+        failed = True
 
     try:
         frac_sn = float(ngsfoutput[9])
     except ValueError:
         frac_sn = -1.
+        failed = True
     if not np.isfinite(frac_sn):
         frac_sn = -1.
+        failed = True
 
     try:
         frac_gal = float(ngsfoutput[10])
     except ValueError:
         frac_gal = -1.
+        failed = True
     if not np.isfinite(frac_gal):
         frac_gal = -1.
+        failed = True
 
     try:
         chi2_dof = float(ngsfoutput[11])
     except ValueError:
         chi2_dof = -1.
+        failed = True
     if not np.isfinite(chi2_dof):
         chi2_dof = -1.
+        failed = True
 
     try:
         chi2_dof2 = float(ngsfoutput[12])
     except ValueError:
         chi2_dof2 = -1.
+        failed = True
     if not np.isfinite(chi2_dof2):
         chi2_dof2 = -1.
+        failed = True
 
     pars = {"HostType": ngsfoutput[1],
             "z": z,
@@ -128,7 +143,7 @@ def parse_and_fill(spec, ngsfoutput):
             else:
                 break
 
-        if ngsfoutput is not None:
+        if ngsfoutput is not None and not failed:
             ff[0].header['NGSFTYPE'] = (pars["bestMatchType"],
                                         'NGSF mtach type')
             ff[0].header['NGSFSUBT'] = (pars["bestMatchSubtype"],
