@@ -336,6 +336,7 @@ def get_observing_sequence(obs_str, mag=17, exptime=0):
 
     :param obs_str:
     :param mag:
+    :param exptime:
     :return:
     """
     sequence, filters = obs_str.split('|', 1)
