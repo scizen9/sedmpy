@@ -294,7 +294,7 @@ def create_request_entry(request, custom_dict=None,
         'external_id': 2,
         'shareid': shareid,
         'marshal_id': int(request['requestid']),
-        'maxairmass': float(request['max_airmass']),
+        'maxairmass': float(request['maxairmass']),
         'max_fwhm': float(request['max_fwhm'])
     }
     print(external_id)
