@@ -2899,42 +2899,30 @@ def get_filter_exptime(obsfilter, mag):
         g_exptime = 180
         i_exptime = 180
         u_exptime = 300
-    elif 15 < mag < 18:
+    elif 15 < mag <= 18:
         ifu_exptime = 1800
         r_exptime = 120
         g_exptime = 120
         i_exptime = 120
         u_exptime = 300
-    elif 13 < mag < 15:
-        ifu_exptime = 1200
-        r_exptime = 1
-        g_exptime = 1
-        i_exptime = 1
-        u_exptime = 30
-    elif 11 < mag < 13:
-        ifu_exptime = 90
-        r_exptime = 10
-        g_exptime = 10
-        i_exptime = 10
-        u_exptime = 60
-    elif 10 < mag < 12:
-        ifu_exptime = 300
-        r_exptime = 30
-        g_exptime = 30
-        i_exptime = 30
-        u_exptime = 60
-    elif 12 < mag < 13:
-        ifu_exptime = 600
-        r_exptime = 60
-        g_exptime = 60
-        i_exptime = 60
-        u_exptime = 120
-    elif 13 < mag < 15:
+    elif 13 < mag <= 15:
         ifu_exptime = 900
         r_exptime = 90
         g_exptime = 90
         i_exptime = 90
         u_exptime = 180
+    elif 12 < mag <= 13:
+        ifu_exptime = 600
+        r_exptime = 60
+        g_exptime = 60
+        i_exptime = 60
+        u_exptime = 120
+    elif 10 < mag <= 12:
+        ifu_exptime = 300
+        r_exptime = 30
+        g_exptime = 30
+        i_exptime = 30
+        u_exptime = 60
 
     else:
         ifu_exptime = 1800
