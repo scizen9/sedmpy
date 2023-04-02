@@ -7,7 +7,7 @@ from datetime import datetime
 sedmdb = db.SedmDb.SedmDB()
 
 
-def process_new_request(request, isfile=True, add2db=True,
+def process_new_request(request, isfile=True, add2db=False,
                         check_rejection=False, create_request=True):
     """
 
