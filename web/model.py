@@ -641,11 +641,8 @@ def add_object_to_db(content):
         objid, msg = db.add_object(objdict)
 
         if objid == -1:
-            return_dict['message'] += msg + ('--For now I am going to '
-                                             'assume that you want to '
-                                             'use this object and will '
-                                             'go ahead with the rest '
-                                             'of the request--')
+            return_dict['message'] += msg + ('--Object already exists, '
+                                             'proceeding with request--')
             objid = msg.split()[-1]
 
     else:

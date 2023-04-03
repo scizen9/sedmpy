@@ -935,7 +935,7 @@ class SedmDB:
                 if pardic['name'] in [dx[1] for dx in dup]:
                     lis = [dx[1] for dx in dup]
                     idx = lis.index(pardic['name'])
-                    return (-1, "ERROR: The object '%s' is already "
+                    return (-1, "WARNING: The object '%s' is already "
                                 "in the database with id %s"
                             % (pardic['name'], dup[idx][0]))
                 print("there is already an object within 1 arcsec "
