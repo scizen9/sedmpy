@@ -502,6 +502,8 @@ def bias_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0):
     nbias2 = 0
     bias2_done = False
     ready = False
+    nbias1 = 0
+    bias1_done = False
     bias_done_str = '10 of 10'
 
     # Get files in calibration directory
@@ -535,15 +537,19 @@ def bias_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0):
                             nbias += 1
                             if bias_done_str in obj:
                                 bias_done = True
+                        if speed == 1.0:
+                            nbias1 += 1
+                            if bias_done_str in obj:
+                                bias1_done = True
 
         # Do we have the ideal number of calibration files?
-        if (nbias2 >= 10 or bias2_done) and (nbias >= 10 or bias_done):
+        if ((nbias2 >= 10 or bias2_done) and (nbias >= 10 or bias_done)) or (nbias1 >= 10 or bias1_done):
             ready = True
         # Do we have the minimum allowed number of calibration files?
         if mintest:
-            if nbias2 >= 5 and nbias >= 5:
+            if (nbias2 >= 5 and nbias >= 5) or nbias1 >= 5:
                 ready = True
-    logging.info("bias2.0: %d, bias0.1: %d" % (nbias2, nbias))
+    logging.info("bias2.0: %d, bias0.1: %d, bias1.0: %d" % (nbias2, nbias, nbias1))
     sys.stdout.flush()
 
     return ready

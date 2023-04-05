@@ -114,6 +114,7 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
 
     nbias = 0
     nbias2 = 0
+    nbias1 = 0
     nxe = 0
     nhg = 0
     ncd = 0
@@ -157,6 +158,8 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
                                 nbias2 += 1
                             if speed == 0.1:
                                 nbias += 1
+                            if speed == 2.0:
+                                nbias1 += 1
                         if 'Xe' in obj:
                             nxe += 1
                         if 'dome' in obj:
@@ -167,19 +170,19 @@ def cal_proc_ready(caldir='./', fsize=8400960, mintest=False, ncp=0,
                             ncd += 1
 
             # Do we have the ideal number of calibration files?
-            if (nbias2 >= 10 and nbias >= 10 and nxe >= 5 and ndome >= 5 and
+            if (((nbias2 >= 10 and nbias >= 10) or nbias1 >= 10) and nxe >= 5 and ndome >= 5 and
                     nhg >= 5 and ncd >= 5):
                 ret = True
             # Do we have the minimum allowed number of calibration files?
             if mintest:
-                if (nbias2 >= 5 and nbias >= 5 and nxe >= 3 and ndome >= 3 and
+                if (((nbias2 >= 5 and nbias >= 5) or nbias1 >= 5) and nxe >= 3 and ndome >= 3 and
                         nhg >= 3 and ncd >= 3):
                     ret = True
-        print("bias2.0: %d, bias0.1: %d, dome: %d, Xe: %d, Hg: %d, Cd: %d" %
-              (nbias2, nbias, ndome, nxe, nhg, ncd))
+        print("bias2.0: %d, bias0.1: %d, bias1.0: %d, dome: %d, Xe: %d, Hg: %d, Cd: %d" %
+              (nbias2, nbias, nbias1, ndome, nxe, nhg, ncd))
         sys.stdout.flush()
         # Should we process biases?
-        if nbias2 >= 10 and nbias >= 10 and ncp > 0:
+        if ((nbias2 >= 10 and nbias >= 10) or nbias1 >= 10) and ncp > 0:
             proc_bias_crrs(ncp=ncp)
 
     return ret
