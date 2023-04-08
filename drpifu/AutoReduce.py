@@ -87,7 +87,7 @@ _srcpath = sedm_cfg['paths']['srcpath']
 _nomfs = sedm_cfg['nominal_file_size']
 
 
-def cube_ready(caldir='./', cur_date_str=None, avrmslim=35.0):
+def cube_ready(caldir='./', cur_date_str=None, avrmslim=75.0):
     """Check for all required calibration files in calibration directory.
 
     Args:
@@ -179,8 +179,10 @@ def bias_ready(caldir='./'):
     # Check biases first
     fb = os.path.exists(os.path.join(caldir, 'bias0.1.fits'))
     f2 = os.path.exists(os.path.join(caldir, 'bias2.0.fits'))
-    logging.info("Biases ready?: bias0.1: %d, bias2.0: %d" % (fb, f2))
-    if fb and f2:
+    f1 = os.path.exists(os.path.join(caldir, 'bias1.0.fits'))
+    logging.info("Biases ready?: bias0.1: %d, bias2.0: %d, bias1.0: %d" %
+                 (fb, f2, f1))
+    if (fb and f2) or f1:
         ret = True
 
     return ret
@@ -206,6 +208,8 @@ def cal_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0,
     bias_done = False
     nbias2 = 0
     bias2_done = False
+    nbias1 = 0
+    bias1_done = False
     nxe = 0
     xe_done = False
     nhg = 0
@@ -259,6 +263,10 @@ def cal_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0,
                                 nbias += 1
                                 if bias_done_str in obj:
                                     bias_done = True
+                            if speed == 1.0:
+                                nbias1 += 1
+                                if bias_done_str in obj:
+                                    bias1_done = True
                         if 'Xe' in obj:
                             nxe += 1
                             if lamp_done_str in obj:
@@ -277,21 +285,23 @@ def cal_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0,
                                 cd_done = True
 
             # Do we have the ideal number of calibration files?
-            if ((nbias2 >= 10 or bias2_done) and (nbias >= 10 or bias_done) and
+            if ((((nbias2 >= 10 or bias2_done) and (nbias >= 10 or bias_done))
+                    or (nbias1 >= 10 or bias1_done)) and
                     (nxe >= 5 or xe_done) and (ndome >= 5 or dome_done) and
                     (nhg >= 5 or hg_done) and (ncd >= 5 or cd_done)):
                 ret = True
             # Do we have the minimum allowed number of calibration files?
             if mintest:
-                if (nbias2 >= 5 and nbias >= 5 and nxe >= 3 and ndome >= 3 and
+                if (((nbias2 >= 5 and nbias >= 5) or nbias1 >= 5) and
+                        nxe >= 3 and ndome >= 3 and
                         nhg >= 3 and ncd >= 3):
                     ret = True
-        logging.info("bias2.0: %d, bias0.1: %d, dome: %d, "
+        logging.info("bias2.0: %d, bias0.1: %d, bias1.0: %d, dome: %d, "
                      "Xe: %d, Hg: %d, Cd: %d" %
-                     (nbias2, nbias, ndome, nxe, nhg, ncd))
+                     (nbias2, nbias, nbias1, ndome, nxe, nhg, ncd))
         sys.stdout.flush()
         # Should we process biases?
-        if nbias2 >= 10 and nbias >= 10 and ncp > 0:
+        if ((nbias2 >= 10 and nbias >= 10) or nbias1 >= 10) and ncp > 0:
             proc_bias_crrs(ncp=ncp)
 
     return ret
@@ -472,6 +482,12 @@ def update_calibration(utdate, src_dir=_reduxpath):
             spec_calib_dict['bias_fast_master'] = bias_fast_master
         else:
             logging.info("spec cal item not found: %s" % bias_fast_master)
+
+        bias_andor_master = os.path.join(src, 'bias1.0.fits')
+        if os.path.exists(bias_andor_master):
+            spec_calib_dict['bias_slow_master'] = bias_andor_master
+        else:
+            logging.info("spec cal item not found: %s" % bias_andor_master)
 
         flat = os.path.join(src, utdate + '_Flat.fits')
         if os.path.exists(flat):
@@ -690,7 +706,7 @@ def cpsci(srcdir, destdir='./', fsize=_nomfs, datestr=None, nodb=False):
             if len(prev) == 0:
                 # Call copy
                 nc, ns, nob = docp(fl, destdir + '/' + fn, skip_cals=True,
-                                   nodb=nodb)
+                                   nodb=nodb, verbose=True)
                 if nc >= 1:
                     copied.append(fn)
                 if ns >= 1:
@@ -1765,7 +1781,7 @@ def cpcal(srcdir, destdir='./', fsize=_nomfs, nodb=False):
                 lampcur = hdr['LAMPCUR']
                 # Check for dome exposures
                 if 'dome' in obj:
-                    if exptime > 100. and ('dome' in obj and
+                    if exptime > 30. and ('dome' in obj and
                                            'Xe' not in obj and
                                            'Hg' not in obj and 
                                            'Cd' not in obj):
@@ -1778,7 +1794,7 @@ def cpcal(srcdir, destdir='./', fsize=_nomfs, nodb=False):
                             logging.warning("Bad dome - lamp not on: %s" % src)
                 # Check for arcs
                 elif 'Xe' in obj or 'Cd' in obj or 'Hg' in obj:
-                    if exptime > 25.:
+                    if exptime > 15.:
                         # Copy arc images
                         nc, ns, nob = docp(src, destfil, onsky=False,
                                            verbose=True, nodb=nodb)
@@ -1886,7 +1902,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         # Now loop until we have the raw cal files we need or sun is down
         while not cal_proc_ready(outdir, ncp=ncp, test_cal_ims=piggyback):
             # Wait a minute
-            logging.info("waiting 60s...")
+            logging.info("waiting 60s for more raw cal files...")
             now = Time(datetime.utcnow())
             time.sleep(60)
             if piggyback:
@@ -2024,16 +2040,23 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             if not bias_ready(outdir):
                 ncb = find_recent_bias(redd, 'bias0.1.fits', outdir)
                 nc2 = find_recent_bias(redd, 'bias2.0.fits', outdir)
+                nc1 = find_recent_bias(redd, 'bias1.0.fits', outdir)
             else:
                 ncb = True
                 nc2 = True
-            # Check for failure
-            if not nct or not nctm or not ncg or not ncw or not ncf or not ncb \
-                    or not nc2:
-                msg = "Calibration stage failed: trace = %s, trace/mask = %s" \
-                      "grid = %s, wave = %s, flat = %s, " \
-                      "bias0.1 = %s, bias2.0 = %s, " \
-                      "stopping" % (nct, nctm, ncg, ncw, ncf, ncb, nc2)
+                nc1 = True
+            # Check for bias failure
+            if not ncb or not nc2:
+                if not nc1:
+                    msg = "Calibration stage biases failed: bias0.1 = %s, bias2.0 = %s," \
+                          " bias1.0 = %s, stopping" % (ncb, nc2, nc1)
+                    sys.exit(msg)
+                else:
+                    logging.info("Using Andor single speed biases")
+            # Check for geom failure
+            if not nct or not nctm or not ncg or not ncw or not ncf:
+                msg = "Calibration stage geom failed: trace = %s, trace/mask = %s" \
+                      "grid = %s, wave = %s, flat = %s, stopping" % (nct, nctm, ncg, ncw, ncf)
                 sys.exit(msg)
             # If we get here, we are done
             logging.info("Using older calibration files")
@@ -2100,7 +2123,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     ret = True
                 else:
                     logging.info("No new image for %d minutes but UT = "
-                                 "%s <= %s, so twilight has not started, keep "
+                                 "%s <= %s, so civil twilight has not started, keep "
                                  "waiting" %
                                  (nnc, now.iso.split()[-1],
                                   morning_civil_twilight.iso.split()[-1]))
