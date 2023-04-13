@@ -87,6 +87,19 @@ _srcpath = sedm_cfg['paths']['srcpath']
 _nomfs = sedm_cfg['nominal_file_size']
 
 
+def link_refcube(curdir='./', date_str=None):
+    # source (ref) and destination
+    srcpre = '/data/sedmdrp/redux/ref/20230407_'
+    dstpre = curdir + '/%s_' % date_str
+    grid = 'HexaGrid.pkl'
+    trace = 'TraceMatch.pkl'
+    trace_masks = 'TraceMatch_WithMasks.pkl'
+    # link in
+    os.symlink(srcpre + grid, dstpre + grid)
+    os.symlink(srcpre + trace, dstpre + trace)
+    os.symlink(srcpre + trace_masks, dstpre + trace_masks)
+
+
 def cube_ready(caldir='./', cur_date_str=None, avrmslim=75.0):
     """Check for all required calibration files in calibration directory.
 
@@ -1782,9 +1795,9 @@ def cpcal(srcdir, destdir='./', fsize=_nomfs, nodb=False):
                 # Check for dome exposures
                 if 'dome' in obj:
                     if exptime > 30. and ('dome' in obj and
-                                           'Xe' not in obj and
-                                           'Hg' not in obj and 
-                                           'Cd' not in obj):
+                                          'Xe' not in obj and
+                                          'Hg' not in obj and
+                                          'Cd' not in obj):
                         if lampcur > 0.0:
                             # Copy dome images
                             nc, ns, nob = docp(src, destfil, onsky=False,
@@ -1812,7 +1825,7 @@ def cpcal(srcdir, destdir='./', fsize=_nomfs, nodb=False):
 
 
 def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
-             piggyback=False, local=False, nodb=False,
+             piggyback=False, local=False, nodb=False, use_refcube=False,
              nopush_marshal=False, nopush_slack=False, oldext=False):
     """One night observing loop: processes calibrations and science data
 
@@ -1834,6 +1847,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
         piggyback (bool): basic processing done by StartObs.py
         local (bool): True if no marshal/slack update required
         nodb (bool): True if no update to SEDM db
+        use_refcube (bool): True to use ref traces from 20230407
         nopush_marshal (bool): True if no update to marshal
         nopush_slack (bool): True if no update to slack
         oldext (bool): True to use extract_star.py instead of extracstar.py
@@ -1955,10 +1969,15 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     subprocess.call(("make", "calimgs"))
                 # Process calibration
                 start_time = time.time()
-                cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
-                       "--hexagrid")
-                logging.info(" ".join(cmd))
-                subprocess.call(cmd)
+                if use_refcube:
+                    link_refcube(curdir=outdir, date_str=cur_date_str)
+                    logging.info("linked Traces from ref dir into %s" %
+                                 cur_date_str)
+                else:
+                    cmd = ("ccd_to_cube.py", cur_date_str, "--tracematch",
+                           "--hexagrid")
+                    logging.info(" ".join(cmd))
+                    subprocess.call(cmd)
                 procg_time = int(time.time() - start_time)
                 if os.path.exists(
                    os.path.join(outdir, cur_date_str + '_HexaGrid.pkl')):
@@ -2048,15 +2067,17 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
             # Check for bias failure
             if not ncb or not nc2:
                 if not nc1:
-                    msg = "Calibration stage biases failed: bias0.1 = %s, bias2.0 = %s," \
-                          " bias1.0 = %s, stopping" % (ncb, nc2, nc1)
+                    msg = "Calibration stage biases failed: bias0.1 = %s, " \
+                          "bias2.0 = %s, bias1.0 = %s, stopping" % (ncb,
+                                                                    nc2, nc1)
                     sys.exit(msg)
                 else:
                     logging.info("Using Andor single speed biases")
             # Check for geom failure
             if not nct or not nctm or not ncg or not ncw or not ncf:
-                msg = "Calibration stage geom failed: trace = %s, trace/mask = %s" \
-                      "grid = %s, wave = %s, flat = %s, stopping" % (nct, nctm, ncg, ncw, ncf)
+                msg = "Calibration stage geom failed: trace = %s, " \
+                      "trace/mask = %s, grid = %s, wave = %s, flat = %s, "\
+                      "stopping" % (nct, nctm, ncg, ncw, ncf)
                 sys.exit(msg)
             # If we get here, we are done
             logging.info("Using older calibration files")
@@ -2114,7 +2135,7 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     logging.info("No new images for %d minutes and UT = "
                                  "%s > %s so twilight has begun!" %
                                  (nnc, now.iso.split()[-1],
-                                 morning_civil_twilight.iso.split()[-1]))
+                                  morning_civil_twilight.iso.split()[-1]))
                     logging.info(
                         "Time to wait until we have a new raw directory")
                     doit = False
@@ -2123,8 +2144,8 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
                     ret = True
                 else:
                     logging.info("No new image for %d minutes but UT = "
-                                 "%s <= %s, so civil twilight has not started, keep "
-                                 "waiting" %
+                                 "%s <= %s, so civil twilight has not started, "
+                                 "keep waiting" %
                                  (nnc, now.iso.split()[-1],
                                   morning_civil_twilight.iso.split()[-1]))
                 if indir is not None:
@@ -2223,7 +2244,7 @@ def clean_post_redux(outdir, utdstr):
     return ndel, n_gzip
 
 
-def go(rawd=_rawpath, redd=_reduxpath, wait=False,
+def go(rawd=_rawpath, redd=_reduxpath, wait=False, use_refcube=False,
        check_precal=True, indate=None, piggyback=False, local=False,
        nopush_marshal=False, nopush_slack=False, nodb=False, oldext=False):
     """Outermost infinite loop that watches for a new raw directory.
@@ -2236,6 +2257,7 @@ def go(rawd=_rawpath, redd=_reduxpath, wait=False,
         rawd (str): raw directory, should be like /data/sedmdrp/raw
         redd (str): reduced directory, should be like /data/sedmdrp/redux
         wait (bool): wait for new directory, else start right away
+        use_refcube (bool): Use reference traces from 20230407
         check_precal (bool): should we check previous night for cals?
         indate (str): input date to process: YYYYMMDD (e.g. 20180626)
         piggyback (bool): True if using other script to copy data
@@ -2271,7 +2293,8 @@ def go(rawd=_rawpath, redd=_reduxpath, wait=False,
             stat = obs_loop(rawlist, redd, check_precal=check_precal,
                             piggyback=piggyback, local=local, nodb=nodb,
                             nopush_marshal=nopush_marshal,
-                            nopush_slack=nopush_slack, oldext=oldext)
+                            use_refcube=use_refcube, nopush_slack=nopush_slack,
+                            oldext=oldext)
             its += 1
             logging.info("Finished SEDM observing iteration %d in raw dir %s" %
                          (its, rawlist[-1]))
@@ -2309,7 +2332,7 @@ def go(rawd=_rawpath, redd=_reduxpath, wait=False,
                                 piggyback=piggyback, local=local, nodb=nodb,
                                 nopush_marshal=nopush_marshal,
                                 nopush_slack=nopush_slack,
-                                oldext=oldext)
+                                use_refcube=use_refcube, oldext=oldext)
                 its += 1
                 logging.info("Finished SEDM observing iteration %d in "
                              "raw dir %s" % (its, rawlist[-1]))
@@ -2323,7 +2346,7 @@ def go(rawd=_rawpath, redd=_reduxpath, wait=False,
                         piggyback=piggyback, local=local, nodb=nodb,
                         nopush_marshal=nopush_marshal,
                         nopush_slack=nopush_slack,
-                        oldext=oldext)
+                        use_refcube=use_refcube, oldext=oldext)
         its += 1
         logging.info("Finished SEDM processing in raw dir %s with status %d" %
                      (indir, stat))
@@ -2363,6 +2386,8 @@ if __name__ == '__main__':
                         help='Use extract_star.py instead of extractstar.py')
     parser.add_argument('--clean', action="store_true", default=False,
                         help='Clean UTDate directory')
+    parser.add_argument('--use_refcube', action="store_true", default=False,
+                        help="Use reference traces from 20230407")
 
     args = parser.parse_args()
 
@@ -2390,4 +2415,4 @@ if __name__ == '__main__':
            check_precal=(not args.skip_precal), indate=args.date,
            piggyback=args.piggyback, local=args.local, nodb=arg_nodb,
            nopush_marshal=arg_nopush_marshal, nopush_slack=arg_nopush_slack,
-           oldext=args.oldext)
+           oldext=args.oldext, use_refcube=args.use_refcube)
