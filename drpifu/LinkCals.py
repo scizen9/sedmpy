@@ -237,9 +237,36 @@ if __name__ == '__main__':
                         help='Output reduced directory (%s)' % _redd)
     parser.add_argument('--std', action="store_true", default=False,
                         help='Link in a flux calibrator?')
+    parser.add_argument('--cuberef', action="store_true", default=False,
+                        help='Link in ref Traces from 20230407 for Andor')
 
     args = parser.parse_args()
 
     curdir = os.getcwd()
 
-    link_cals(redd=args.reduxdir, outdir=curdir, link_std=args.std)
+    if args.cuberef:
+        date_str = str(curdir.split('/')[-1])
+        # stash original cube files
+        os.mkdir('orig')
+        os.system("mv %s_* orig" % date_str)
+        # don't forget derived dome cube images
+        os.system("mv e3d_dome.fits orig")
+        os.system("mv bkgd_dome.fits orig")
+        # source (ref) and destination
+        srcpre = '/data/sedmdrp/redux/ref/20230407_'
+        dstpre = curdir + '/%s_' % date_str
+        grid = 'HexaGrid.pkl'
+        trace = 'TraceMatch.pkl'
+        trace_masks = 'TraceMatch_WithMasks.pkl'
+        # link in
+        os.symlink(srcpre + grid, dstpre + grid)
+        os.symlink(srcpre + trace, dstpre + trace)
+        os.symlink(srcpre + trace_masks, dstpre + trace_masks)
+        # tell them what next to do
+        print("Reference traces from 20230407 linked, now do:")
+        print("derive_wavesolution.py %s --nsub" % date_str)
+        print("derive_wavesolution.py %s --merge" % date_str)
+        print("ccd_to_cube.py %s --flat" % date_str)
+
+    else:
+        link_cals(redd=args.reduxdir, outdir=curdir, link_std=args.std)
