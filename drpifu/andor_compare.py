@@ -63,7 +63,6 @@ if __name__ == "__main__":
     # Calculate efficiency spectrum
     eff2 = 100. * ea2/(area * refl)
 
-
     # Plot efficiency spectrum
     pl.figure(1)
     pl.plot(lbda1, eff1, label="Andor")
@@ -83,6 +82,8 @@ if __name__ == "__main__":
     eff2int = interp1d(lbda2, eff2, kind='cubic', bounds_error=False,
                        fill_value='extrapolate')
     eff2rs = eff2int(lbda1)
+
+    # get percent improvement
     effrat = (eff1 / eff2rs - 1.0) * 100.
 
     pl.figure(2)
