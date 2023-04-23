@@ -463,7 +463,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
                                             % r)
                                 # push to slack
                                 png_dir = os.path.dirname(r) + '/png/'
-                                basename = os.path.basename(r).split('.')[0]
+                                basename = os.path.basename(r).split('.fits')[0]
                                 imgf = png_dir + basename + '.png'
                                 title = "RC image: %s | %s" % (basename, imtype)
                                 if slack is not None and not local:
