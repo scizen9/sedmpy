@@ -269,7 +269,8 @@ def create_request_entry(request, custom_dict=None,
     end_date = request['enddate']
 
     follow_up = "%s|%s" % (request['Followup'], request['Filters'])
-    obs_seq, exptime = get_observing_sequence(follow_up, objdict['magnitude'],float(request['exptime']))
+    obs_seq, exptime = get_observing_sequence(follow_up, objdict['magnitude'],
+                                              int(float(request['exptime'])))
 
     if 'origins_url' in request:
         print(request['origins_url'])
@@ -330,7 +331,7 @@ def get_prior_mag(mag_dict):
     return mag
 
 
-def get_observing_sequence(obs_str, mag=17, exptime=0):
+def get_observing_sequence(obs_str, mag=17.0, exptime=0):
     """
     Get the observing sequence from the predefined followups and or filters
 
@@ -427,7 +428,7 @@ def get_exptime(obsfilter, mag):
         r_exptime = 1
         g_exptime = 1
         i_exptime = 1
-        u_exptime = 30
+        u_exptime = 10
     elif 5 < mag < 10:
         ifu_exptime = 90
         r_exptime = 10
@@ -445,20 +446,20 @@ def get_exptime(obsfilter, mag):
         r_exptime = 60
         g_exptime = 60
         i_exptime = 60
-        u_exptime = 120
+        u_exptime = 180
     elif 13 < mag < 15:
         ifu_exptime = 900
         r_exptime = 90
         g_exptime = 90
         i_exptime = 90
-        u_exptime = 180
+        u_exptime = 270
 
     else:
         ifu_exptime = 1800
         r_exptime = 90
         g_exptime = 90
         i_exptime = 90
-        u_exptime = 90
+        u_exptime = 270
 
     if obsfilter == 'ifu':
         return str(ifu_exptime)
