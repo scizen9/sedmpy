@@ -49,7 +49,8 @@ if __name__ == "__main__":
             sys.exit(1)
         else:
             # Calculate observed instrumental spectrum (uncalibrated)
-            logging.info("Aperture extracting observation %s in %s" % (ob_id, dd))
+            logging.info("Aperture extracting observation %s in %s" % (ob_id,
+                                                                       dd))
             pars = ["extract_star.py", dd, "--aperture", ob_id, "--buffer",
                     "10", "--nofluxcal", "--maxpos"]
             logging.info("Running " + " ".join(pars))
@@ -109,4 +110,3 @@ if __name__ == "__main__":
             # Save efficiency plot to file
             plotname = specname[0].replace(".fits", "_eff.png")
             pl.savefig(plotname)
-
