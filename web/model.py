@@ -210,6 +210,8 @@ def fancy_request_table(df):
                 return ['' for _ in hrow.index.values]
         except KeyError:
             return ['' for _ in hrow.index.values]
+        except TypeError:
+            return ['' for _ in hrow.index.values]
 
     def improve_obs_seq(li):
         """
