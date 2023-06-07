@@ -32,17 +32,15 @@ def clean_post_raw(outdir, utdstr):
         if os.path.exists(rawf):
             os.remove(rawf)
             ndel += 1
+
     # append dir to backup file
-    if ndel > 0:
-        back_file = sedm_cfg['backup']['raw_backup_file']
-        try:
-            with open(back_file, 'w') as bf:
-                bf.writelines(utdstr + "\n")
-            print("%s written to %s, ready for rsync" % (utdstr, back_file))
-        except OSError:
-            print("Cannot open backup file for update: %s" % back_file)
-    else:
-        print("No compressed raw files found.")
+    back_file = sedm_cfg['backup']['raw_backup_file']
+    try:
+        with open(back_file, 'w') as bf:
+            bf.writelines(utdstr + "\n")
+        print("%s written to %s, ready for rsync" % (utdstr, back_file))
+    except OSError:
+        print("Cannot open backup file for update: %s" % back_file)
 
     return ndel
 
