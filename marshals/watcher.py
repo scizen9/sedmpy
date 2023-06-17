@@ -243,9 +243,9 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'cyclotron WDs':
             name = 'Director Discretionary Time'
             shareid = 3
-        # elif request['programname'] == 'Electromagnetic Counterparts to Gravitational Waves':
-        #    name = 'Gravitational Wave Follow-Up'
-        #    shareid = 3     # inactive
+        elif request['programname'] == 'EM+GW':
+            name = 'Gravitational Wave Follow-Up'
+            shareid = 3
         else:
             name = 'SEDm program'
             shareid = 0
@@ -357,18 +357,18 @@ def get_observing_sequence(obs_str, mag=17.0, exptime=0):
             obs_list = ['1r', '1g', '1i', '1u']
             for o in obs_list:
                 sequence_list.append(o)
-                # if exptime <= 0:
-                exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
-                # else:
-                #    exptime_list.append(str(int(exptime)))
+                if exptime <= 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(str(int(exptime)))
         elif sequence == 'Three Shot (r,g,i)':
             obs_list = ['1r', '1g', '1i']
             for o in obs_list:
                 sequence_list.append(o)
-                # if exptime <= 0:
-                exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
-                # else:
-                #    exptime_list.append(str(int(exptime)))
+                if exptime <= 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(str(int(exptime)))
         elif sequence == 'Fourshot + IFU':
             obs_list = ['1r', '1g', '1i', '1u']
             sequence_list.append('1ifu')
@@ -387,10 +387,10 @@ def get_observing_sequence(obs_str, mag=17.0, exptime=0):
         filters = filters.split(',')
         for f in filters:
             sequence_list.append('1%s' % f)
-            # if exptime <= 0:
-            exptime_list.append(get_exptime(obsfilter=f.lower(), mag=mag))
-            # else:
-            #    exptime_list.append(str(exptime))
+            if exptime <= 0:
+                exptime_list.append(get_exptime(obsfilter=f.lower(), mag=mag))
+            else:
+                exptime_list.append(str(exptime))
 
     print(sequence_list)
     print(exptime_list)
