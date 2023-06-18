@@ -134,7 +134,7 @@ def create_request_entry(request, custom_dict=None,
 
         # c. even though there should only be one request id we have seen
         # cases where more than one request have been made with the same
-        # marshal id.  Therefore we delete all request matching the id.
+        # marshal id.  Therefore, we delete all request matching the id.
         else:
             for i in sedm_requestid:
                 try:
@@ -331,7 +331,7 @@ def get_prior_mag(mag_dict):
     return mag
 
 
-def get_observing_sequence(obs_str, mag=17.0, exptime=0):
+def get_observing_sequence(obs_str, mag=17.0, exptime=''):
     """
     Get the observing sequence from the predefined followups and or filters
 
@@ -345,52 +345,54 @@ def get_observing_sequence(obs_str, mag=17.0, exptime=0):
     sequence_list = []
     exptime_list = []
 
-    if sequence:
-        print("Found sequence")
-        if sequence == 'IFU':
-            sequence_list.append('1ifu')
-            if exptime <= 0:
-                exptime_list.append(get_exptime(obsfilter='ifu', mag=mag))
-            else:
-                exptime_list.append(str(int(exptime)))
-        elif sequence == 'Four Shot (r,g,i,u)':
-            obs_list = ['1r', '1g', '1i', '1u']
-            for o in obs_list:
-                sequence_list.append(o)
-                if exptime <= 0:
-                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
-                else:
-                    exptime_list.append(str(int(exptime)))
-        elif sequence == 'Three Shot (r,g,i)':
-            obs_list = ['1r', '1g', '1i']
-            for o in obs_list:
-                sequence_list.append(o)
-                if exptime <= 0:
-                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
-                else:
-                    exptime_list.append(str(int(exptime)))
-        elif sequence == 'Fourshot + IFU':
-            obs_list = ['1r', '1g', '1i', '1u']
-            sequence_list.append('1ifu')
-            if exptime <= 0:
-                exptime_list.append(get_exptime(obsfilter='ifu', mag=mag))
-            else:
-                exptime_list.append(str(int(exptime)))
-            for o in obs_list:
-                sequence_list.append(o)
-                # if exptime <= 0:
-                exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
-                # else:
-                #    exptime_list.append(str(int(exptime)))
+    exptimes = exptime.split(',')
 
     if filters:
         filters = filters.split(',')
-        for f in filters:
+        for ii, f in enumerate(filters):
             sequence_list.append('1%s' % f)
-            if exptime <= 0:
+            if int(exptimes[ii]) <= 0:
                 exptime_list.append(get_exptime(obsfilter=f.lower(), mag=mag))
             else:
-                exptime_list.append(str(exptime))
+                exptime_list.append(exptimes[ii])
+
+    elif sequence:
+        print("Found sequence")
+        if sequence == 'IFU':
+            sequence_list.append('1ifu')
+            if int(exptimes[0]) <= 0:
+                exptime_list.append(get_exptime(obsfilter='ifu', mag=mag))
+            else:
+                exptime_list.append(exptimes[0])
+        elif sequence == 'Four Shot (r,g,i,u)':
+            obs_list = ['1r', '1g', '1i', '1u']
+            for ii, o in enumerate(obs_list):
+                sequence_list.append(o)
+                if int(exptimes[ii]) <= 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(exptimes[ii])
+        elif sequence == 'Three Shot (r,g,i)':
+            obs_list = ['1r', '1g', '1i']
+            for ii, o in enumerate(obs_list):
+                sequence_list.append(o)
+                if int(exptimes[ii]) <= 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(exptimes[ii])
+        elif sequence == 'Fourshot + IFU':
+            obs_list = ['1r', '1g', '1i', '1u']
+            sequence_list.append('1ifu')
+            if int(exptimes[0]) <= 0:
+                exptime_list.append(get_exptime(obsfilter='ifu', mag=mag))
+            else:
+                exptime_list.append(exptimes[0])
+            for ii, o in enumerate(obs_list):
+                sequence_list.append(o)
+                if int(exptimes[ii+1]) <= 0:
+                    exptime_list.append(get_exptime(obsfilter=o[1], mag=mag))
+                else:
+                    exptime_list.append(exptimes[ii+1])
 
     print(sequence_list)
     print(exptime_list)
