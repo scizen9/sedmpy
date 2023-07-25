@@ -246,6 +246,9 @@ def create_request_entry(request, custom_dict=None,
         elif request['programname'] == 'EM+GW':
             name = 'Gravitational Wave Follow-Up'
             shareid = 3
+        elif request['programname'] == 'WINTER Comissioning':
+            name = 'Uncovering the dustiest transients with ZTF and WINTER'
+            shareid = 3
         else:
             name = 'SEDm program'
             shareid = 0
