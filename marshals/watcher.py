@@ -244,7 +244,8 @@ def create_request_entry(request, custom_dict=None,
             name = 'Director Discretionary Time'
             shareid = 3
         elif request['programname'] == 'EM+GW':
-            name = 'Gravitational Wave Follow-Up'
+            # name = 'Gravitational Wave Follow-Up'
+            name = 'Photometric follow-up of candidate kilonova with the P60'
             shareid = 3
         elif request['programname'] == 'WINTER Comissioning':
             name = 'Uncovering the dustiest transients with ZTF and WINTER'
