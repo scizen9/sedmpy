@@ -270,7 +270,7 @@ classify:
 
 finalreport:
 	$(REPORT) comment | tee report.txt
-	cat report*.txt | tail -n +2 | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,richard.rwalters@gmail.com,fremling@caltech.edu,jesper@astro.su.se,m.rigault@ipnl.in2p3.fr,lezmy@ipnl.in2p3.fr,tda@lists.astro.caltech.edu
+	cat report*.txt | tail -n +2 | mail -s "SEDM DRP Report for $(current_dir)" neill@srl.caltech.edu,jpurdum@caltech.edu,fremling@caltech.edu,jesper@astro.su.se,m.rigault@ipnl.in2p3.fr,tda@lists.astro.caltech.edu
 	$(PY) $(PYC)/AutoReduce.py --clean --date $(current_dir)
 
 post_redux:
