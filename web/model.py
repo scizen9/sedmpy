@@ -2355,7 +2355,7 @@ def plot_stats(statsfile, mydate):
                     legend_label="Focus", view=view_focus)
         fwhm.circle('date', 'fwhm', source=source, color="red",
                     legend_label="Science", view=view_science)
-        fwhm.circle('date', 'fwhm', source=source, color="blue",
+        fwhm.circle('date', 'fwhm', source=source, color="cyan",
                     legend_label="Acquisition", view=view_acquisition)
         fwhm.circle('date', 'fwhm', source=source, color="black",
                     legend_label="Guider", view=view_guider)
