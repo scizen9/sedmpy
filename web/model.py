@@ -2220,7 +2220,7 @@ def load_stats(statsfile='stats.log'):
     data = pd.read_csv(statsfile, header=None,
                        names=['path', 'obj', 'jd', 'ns', 'fwhm', 'ellipticity',
                               'bkg', 'airmass', 'in_temp', 'imtype', 'out_temp',
-                              'in_hum'])
+                              'in_hum', 'focpos']).fillna(value=0, axis='columns')
 
     jds = data['jd']
     t = Time(jds, format='jd', scale='utc')
@@ -2238,16 +2238,16 @@ def load_stats(statsfile='stats.log'):
          'ellipticity': data2['ellipticity'], 'bkg': data2['bkg'],
          'airmass': data2['airmass'], 'in_temp': data2['in_temp'],
          'imtype': data2['imtype'], 'out_temp': data2['out_temp'],
-         'in_hum': data2['in_hum']})
+         'in_hum': data2['in_hum'], 'focpos': data2['focpos']})
 
 
 def plot_stats(statsfile, mydate):
     source = ColumnDataSource(
         data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[],
-                  in_temp=[], imtype=[], out_temp=[], in_hum=[]))
+                  in_temp=[], imtype=[], out_temp=[], in_hum=[], focpos=[]))
     source_static = ColumnDataSource(
         data=dict(date=[], ns=[], fwhm=[], ellipticity=[], bkg=[], airmass=[],
-                  in_temp=[], imtype=[], out_temp=[], in_hum=[]))
+                  in_temp=[], imtype=[], out_temp=[], in_hum=[], focpos=[]))
 
     view_science = CDSView(source=source,
                            filters=[GroupFilter(column_name='imtype',
@@ -2273,7 +2273,7 @@ def plot_stats(statsfile, mydate):
             source.data = source.from_df(data[['date', 'ns', 'fwhm',
                                                'ellipticity', 'bkg', 'airmass',
                                                'in_temp', 'imtype', 'out_temp',
-                                               'in_hum']])
+                                               'in_hum', 'focpos']])
             source_static.data = source.data
 
         p48 = load_p48seeing(mydate)
@@ -2355,11 +2355,19 @@ def plot_stats(statsfile, mydate):
                         selection_color="orange")
         humidity.title.text = "Inside Humidity [%]"
 
+        focus = figure(plot_width=425, plot_height=250, tools=tools,
+                       x_axis_type='datetime', active_drag="box_zoom")
+        focus.x_range = ns.x_range
+        focus.line('date', 'focpos', source=source_static)
+        focus.circle('date', 'focpos', size=1, source=source, color=None,
+                     selection_color="orange")
+        focus.title.text = "Secondary Focus Position [mm]"
+
         p48seeing.x_range = ns.x_range
 
         left = column(fwhm, p48seeing, airmass)
         center = column(ellipticity, ns, bkg, )
-        right = column(temp, humidity)
+        right = column(temp, humidity, focus)
         layout = row(left, center, right)
 
     else:
