@@ -130,6 +130,7 @@ def plot_stats(statfile):
     except ValueError:
         return
     s = s[s["f3"] > 1]
+    s = s[s["f2"] > 0]
 
     day_frac_diff = datetime.timedelta(
         np.ceil((datetime.datetime.now() -
