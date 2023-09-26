@@ -91,6 +91,7 @@ def get_sextractor_stats(files):
                     in_temp = hd["IN_AIR"]
                     out_temp = hd["OUT_AIR"]
                     in_hum = hd["IN_HUM"]
+                    foc_pos = hd["FOCPOS"]
                     # get weather string (includes imtype)
                     weather_string = ''
                     if in_temp < -99:
@@ -109,9 +110,9 @@ def get_sextractor_stats(files):
                     # get image stats
                     ns, fwhm, ellipticity, bkg = sextractor.analyze_img(sf)
                     out.write(
-                        "%s,%s,%.5f,%d,%.2f,%.3f,%.3f,%.2f,%s\n"
+                        "%s,%s,%.5f,%d,%.2f,%.3f,%.3f,%.2f,%s,%.2f\n"
                         % (os.path.abspath(ff), obj, jd, ns, fwhm, ellipticity,
-                           bkg, airmass, weather_string))
+                           bkg, airmass, weather_string, foc_pos))
                 except Exception as e:
                     print("Error when retrieving the stats parameters from the "
                           "header of file %s.\n Error %s" % (ff, e))
