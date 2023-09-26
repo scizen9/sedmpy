@@ -2224,7 +2224,7 @@ def load_stats(statsfile='stats.log'):
     data = pd.read_csv(statsfile, header=None,
                        names=['path', 'obj', 'jd', 'ns', 'fwhm', 'ellipticity',
                               'bkg', 'airmass', 'in_temp', 'imtype', 'out_temp',
-                              'in_hum', 'focpos']).fillna(value=0, axis='columns')
+                              'in_hum', 'focpos']).fillna(0.)
     data = data[data['jd'] > 0]
     jds = data['jd']
     t = Time(jds, format='jd', scale='utc')
