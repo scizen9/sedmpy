@@ -51,8 +51,9 @@ plt.switch_backend('Agg')
 def get_sextractor_stats(files):
     
     files.sort()
-    sexfiles = [os.path.join(os.path.join(os.path.dirname(ff),
-                                          "sextractor"),
+    sexfiles = [os.path.join(os.path.join(os.path.dirname(ff), "sextractor"),
+                             os.path.basename(ff).replace(".fits.gz", ".sex")) if ".gz" in ff else
+                os.path.join(os.path.join(os.path.dirname(ff), "sextractor"),
                              os.path.basename(ff).replace(".fits", ".sex"))
                 for ff in files]
     sexfiles.sort()
@@ -226,7 +227,7 @@ if __name__ == '__main__':
         timestamp = os.path.basename(os.path.abspath(photdir))
         print("Input directory %s" % photdir)
 
-    rclist = glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fits"))
+    rclist = glob.glob(os.path.join(os.path.abspath(photdir), "rc*[0-9].fit*"))
     print("Running stats on %d rc images in %s" % (len(rclist), photdir))
     if len(rclist) > 0:
         get_sextractor_stats(rclist)
