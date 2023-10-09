@@ -1442,8 +1442,6 @@ def update_ngsf(input_specfile, update_db=False):
         return -1
 
     # update classification
-    class_ngsf_dict['spec_id'] = spec_id
-
     if good_ngsf_class:
         class_ngsf_id, cngsfstatus = sedmdb.add_classification(
             class_ngsf_dict)
