@@ -1378,7 +1378,7 @@ def update_ngsf(input_specfile, update_db=False):
     }
     class_ngsf_dict = {
         'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
-        'redshift': 0., 'clasifier': 'NGSF', 'score': 0.,
+        'redshift': 0., 'classifier': 'NGSF', 'score': 0.,
         'score_type': 'Chi2/dof', 'class_source': '', 'class_template': ''
     }
 
