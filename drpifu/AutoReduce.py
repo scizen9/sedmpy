@@ -1334,9 +1334,10 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         if good_class:
             class_id, cstatus = sedmdb.add_classification(class_dict)
             if class_id < 0 and update_db:
-                logging.info("SNID Classification already exists for this spec")
+                logging.info("SNID DB record could not be updated: %s" %
+                             cstatus)
             else:
-                logging.info("SNID Classification accepted with id %d,"
+                logging.info("SNID DB record accepted with id %d,"
                              " and status %s" % (class_id, cstatus))
         else:
             logging.info("No SNID classification found in input spectrum")
@@ -1344,9 +1345,10 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         if good_ia_class:
             class_ia_id, ciastatus = sedmdb.add_classification(class_ia_dict)
             if class_ia_id < 0 and update_db:
-                logging.info("SNIascore record already exists for this spec")
+                logging.info("SNIascore DB record could not be updated: %s" %
+                             ciastatus)
             else:
-                logging.info("SNIascore record accepted with id %d,"
+                logging.info("SNIascore DB record accepted with id %d,"
                              " and status %s" % (class_ia_id, ciastatus))
         else:
             logging.info("No SNIascore record found in input spectrum")
@@ -1355,9 +1357,10 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
             class_ngsf_id, cngsfstatus = sedmdb.add_classification(
                 class_ngsf_dict)
             if class_ngsf_id < 0 and update_db:
-                logging.info("NGSF record already exists for this spec")
+                logging.info("NGSF DB record could not be updated: %s" %
+                             cngsfstatus)
             else:
-                logging.info("NGSF record accepted with id %d,"
+                logging.info("NGSF DB record accepted with id %d,"
                              " and status %s" % (class_ngsf_id, cngsfstatus))
         else:
             logging.info("No NGSF record found in input spectrum")
@@ -1446,9 +1449,10 @@ def update_ngsf(input_specfile, update_db=False):
         class_ngsf_id, cngsfstatus = sedmdb.add_classification(
             class_ngsf_dict)
         if class_ngsf_id < 0 and update_db:
-            logging.info("NGSF record already exists for this spec")
+            logging.info("NGSF DB record could not be updated: %s" %
+                         cngsfstatus)
         else:
-            logging.info("NGSF record accepted with id %d,"
+            logging.info("NGSF DB record accepted with id %d,"
                          " and status %s" % (class_ngsf_id, cngsfstatus))
     else:
         logging.info("No NGSF record found in input spectrum")
