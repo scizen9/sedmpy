@@ -1167,6 +1167,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     objnam = ff[0].header['OBJECT'].split()[0]
     class_dict['class_source'] = objnam
     class_ia_dict['class_source'] = objnam
+    class_ngsf_dict['class_source'] = objnam
 
     # Open database connection
     sedmdb = db.SedmDb.SedmDB()
@@ -1304,6 +1305,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         spec_dict['observation_id'] = observation_id[0][0]
         class_dict['object_id'] = observation_id[0][1]
         class_ia_dict['object_id'] = observation_id[0][1]
+        class_ngsf_dict['object_id'] = observation_id[0][1]
     else:
         logging.error("No observation_id for %s" % ifufile)
         return -1
@@ -1326,6 +1328,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         # update classification
         class_dict['spec_id'] = spec_id
         class_ia_dict['spec_id'] = spec_id
+        class_ngsf_dict['spec_id'] = spec_id
         logging.info(status)
 
         if good_class:
@@ -1364,6 +1367,92 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         logging.error("ERROR: no spec_calib_id found for %s" % utdate)
         return -1
     # END: update_spec
+
+
+def update_ngsf(input_specfile, update_db=False):
+    """ Update the SEDM database on minar by adding a new spec entry"""
+
+    class_ngsf_header_dict = {
+        'classification': 'NGSFTYPE', 'redshift': 'NGSFZ', 'score': 'NGSFCHI2',
+        'phase': 'NGSFPHAS', 'class_template': 'NGSFTEMP'
+    }
+    class_ngsf_dict = {
+        'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
+        'redshift': 0., 'clasifier': 'NGSF', 'score': 0.,
+        'score_type': 'Chi2/dof', 'class_source': '', 'class_template': ''
+    }
+
+    # Read header
+    ff = pf.open(input_specfile)
+
+    # Get object name
+    objnam = ff[0].header['OBJECT'].split()[0]
+    class_ngsf_dict['class_source'] = objnam
+
+    # Open database connection
+    sedmdb = db.SedmDb.SedmDB()
+
+    # Check for classification info
+    # NGSF results
+    good_ngsf_class = False
+    if 'NGSFTYPE' in ff[0].header:
+        if 'NONE' in ff[0].header['NGSFTYPE']:
+            logging.info("NGSF was unable to type %s" % input_specfile)
+        else:
+            good_ngsf_class = True
+            for key in class_ngsf_header_dict.keys():
+                hk = class_ngsf_header_dict[key]
+                if hk in ff[0].header:
+                    class_ngsf_dict[key] = ff[0].header[hk]
+                else:
+                    logging.warning("Header keyword not found: %s" % hk)
+            if 'NGSFSUBT' in ff[0].header:
+                class_ngsf_dict['classification'] = \
+                    class_ngsf_dict['classification'] + ' ' + \
+                    ff[0].header['NGSFSUBT']
+    else:
+        logging.info("No NGSF info in %s" % input_specfile)
+
+    ff.close()
+
+    # Check if we've already added this spectrum
+    search_fits = input_specfile.replace('+', '\+')
+    spec_id = sedmdb.get_from_spec(['id'], {'fitsfile': search_fits},
+                                   {'fitsfile': '~'})
+    if spec_id:
+        logging.info("Spectrum already in db: %s" % input_specfile)
+        if update_db:
+            logging.info("Updating NGSF classification from %s" % input_specfile)
+
+    # Get observation and object ids
+    ifufile = 'ifu' + '_'.join(
+        input_specfile.split('_ifu')[-1].split('_')[:4]) + '.fits'
+    observation_id = sedmdb.get_from_observation(['id', 'object_id'],
+                                                 {'fitsfile': ifufile},
+                                                 {'fitsfile': '~'})
+    if observation_id:
+        class_ngsf_dict['object_id'] = observation_id[0][1]
+    else:
+        logging.error("No observation_id for %s" % ifufile)
+        return -1
+
+    # update classification
+    class_ngsf_dict['spec_id'] = spec_id
+
+    if good_ngsf_class:
+        class_ngsf_id, cngsfstatus = sedmdb.add_classification(
+            class_ngsf_dict)
+        if class_ngsf_id < 0 and update:
+            logging.info("NGSF record already exists for this spec")
+        else:
+            logging.info("NGSF record accepted with id %d,"
+                         " and status %s" % (class_ngsf_id, cngsfstatus))
+    else:
+        logging.info("No NGSF record found in input spectrum")
+
+    return spec_id
+
+    # END: update_ngsf
 
 
 def update_cube(input_fitsfile):
