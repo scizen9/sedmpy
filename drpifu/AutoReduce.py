@@ -1421,7 +1421,7 @@ def update_ngsf(input_specfile, update_db=False):
                                    {'fitsfile': '~'})
     if spec_id:
         logging.info("Spectrum already in db: %s" % input_specfile)
-        class_ngsf_dict = spec_id[0][0]
+        class_ngsf_dict['spec_id'] = spec_id[0][0]
         if update_db:
             logging.info("Updating NGSF classification from %s" %
                          input_specfile)
