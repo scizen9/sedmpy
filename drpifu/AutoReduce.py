@@ -1333,7 +1333,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
 
         if good_class:
             class_id, cstatus = sedmdb.add_classification(class_dict)
-            if class_id < 0 and update:
+            if class_id < 0 and update_db:
                 logging.info("SNID Classification already exists for this spec")
             else:
                 logging.info("SNID Classification accepted with id %d,"
@@ -1343,7 +1343,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
 
         if good_ia_class:
             class_ia_id, ciastatus = sedmdb.add_classification(class_ia_dict)
-            if class_ia_id < 0 and update:
+            if class_ia_id < 0 and update_db:
                 logging.info("SNIascore record already exists for this spec")
             else:
                 logging.info("SNIascore record accepted with id %d,"
@@ -1354,7 +1354,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         if good_ngsf_class:
             class_ngsf_id, cngsfstatus = sedmdb.add_classification(
                 class_ngsf_dict)
-            if class_ngsf_id < 0 and update:
+            if class_ngsf_id < 0 and update_db:
                 logging.info("NGSF record already exists for this spec")
             else:
                 logging.info("NGSF record accepted with id %d,"
@@ -1421,8 +1421,13 @@ def update_ngsf(input_specfile, update_db=False):
                                    {'fitsfile': '~'})
     if spec_id:
         logging.info("Spectrum already in db: %s" % input_specfile)
+        class_ngsf_dict = spec_id[0][0]
         if update_db:
-            logging.info("Updating NGSF classification from %s" % input_specfile)
+            logging.info("Updating NGSF classification from %s" %
+                         input_specfile)
+    else:
+        logging.error("No spec_id for %s" % input_specfile)
+        return -1
 
     # Get observation and object ids
     ifufile = 'ifu' + '_'.join(
@@ -1442,7 +1447,7 @@ def update_ngsf(input_specfile, update_db=False):
     if good_ngsf_class:
         class_ngsf_id, cngsfstatus = sedmdb.add_classification(
             class_ngsf_dict)
-        if class_ngsf_id < 0 and update:
+        if class_ngsf_id < 0 and update_db:
             logging.info("NGSF record already exists for this spec")
         else:
             logging.info("NGSF record accepted with id %d,"
