@@ -1135,7 +1135,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
         'redshift': 'SNIASCZ', 'redshift_err': 'SNIASCZE'
     }
     class_ngsf_header_dict = {
-        'classification': 'NGSFTYPE', 'redshift': 'NGSFZ', 'score': 'NGSFCHI2',
+        'classification': 'NGSFTYPE', 'redshift': 'NGSFZ', 'score': 'NGSFCH22',
         'phase': 'NGSFPHAS', 'class_template': 'NGSFTEMP'
     }
     class_dict = {
@@ -1153,7 +1153,7 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
     class_ngsf_dict = {
         'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
         'redshift': 0., 'redshift_err': 0.01, 'classifier': 'NGSF', 'score': 0.,
-        'score_type': 'Chi2/dof', 'class_source': '', 'class_template': ''
+        'score_type': 'Chi2/dof2', 'class_source': '', 'class_template': ''
     }
 
     # Get utdate
@@ -1376,13 +1376,13 @@ def update_ngsf(input_specfile, update_db=False):
     """ Update the SEDM database on minar by adding a new spec entry"""
 
     class_ngsf_header_dict = {
-        'classification': 'NGSFTYPE', 'redshift': 'NGSFZ', 'score': 'NGSFCHI2',
+        'classification': 'NGSFTYPE', 'redshift': 'NGSFZ', 'score': 'NGSFCH22',
         'phase': 'NGSFPHAS', 'class_template': 'NGSFTEMP'
     }
     class_ngsf_dict = {
         'spec_id': 0, 'object_id': 0, 'classification': '', 'auto': True,
         'redshift': 0., 'redshift_err': 0.01, 'classifier': 'NGSF', 'score': 0.,
-        'score_type': 'Chi2/dof', 'class_source': '', 'class_template': ''
+        'score_type': 'Chi2/dof2', 'class_source': '', 'class_template': ''
     }
 
     # Read header
