@@ -3751,7 +3751,7 @@ class SedmDB:
                      'spec_id' (int/long),
                      'classifier' (str)
                 optional:
-                    'object_it' (int/long),
+                    'object_id' (int/long),
                     'classification' (str),
                     'redshift' (float),
                     'redshift_err' (float),
