@@ -220,6 +220,7 @@ def upload_spectra(spec_file, request_id=None, sourceid=None, inst_id=2,
         ret = api("POST", fritz_spec_url, data=submission_dict)
 
     if ret['data'] is not None:
+        ret['quality'] = quality
         return ret
     else:
         print("ERROR - Unable to upload spectrum to fritz!")
@@ -336,7 +337,16 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
             if not spec_ret:
                 spec_stat = 'Failed ' + ts_str
             else:
-                spec_stat = 'Complete ' + ts_str
+                # get quality
+                try:
+                    quality = spec_ret['quality']
+                except KeyError:
+                    print("Warning: unable to get quality")
+                    quality = 0
+                if quality == 1 or 'redo' in spectra_file:
+                    spec_stat = 'Completed Manually ' + ts_str
+                else:
+                    spec_stat = 'Completed Automatically' + ts_str
                 # get spec_id
                 try:
                     ret_data = spec_ret['data']
