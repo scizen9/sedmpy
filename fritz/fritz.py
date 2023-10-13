@@ -346,7 +346,7 @@ def update_target_by_request_id(request_id, add_spectra=False, spectra_file='',
                 if quality == 1 or 'redo' in spectra_file:
                     spec_stat = 'Completed Manually ' + ts_str
                 else:
-                    spec_stat = 'Completed Automatically' + ts_str
+                    spec_stat = 'Completed Automatically ' + ts_str
                 # get spec_id
                 try:
                     ret_data = spec_ret['data']
