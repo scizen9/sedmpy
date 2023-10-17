@@ -8,14 +8,13 @@ sedmdb = db.SedmDb.SedmDB()
 
 
 def process_new_request(request, isfile=True, add2db=False,
-                        check_rejection=False, create_request=True):
+                        check_rejection=False):
     """
 
     :param request: request string path
     :param isfile:
     :param add2db:
     :param check_rejection:
-    :param create_request:
 
     :return:
     """
@@ -38,41 +37,71 @@ def process_new_request(request, isfile=True, add2db=False,
         else:
             print("Target passed checker")
 
-    # 4. Determine if a new request or if we need to update an old request
+    # 4. Determine if we are deleting an old request
     if req_dict['status'].lower() == 'delete':
-        delete_request_entry(req_dict)
-        create_request = False
-    elif req_dict['status'].lower() == 'edit':
-        delete_request_entry(req_dict)
-
-    # 4. Now check to see if we are creating a request entry
-    if create_request:
-        if create_request_entry(req_dict):
-            print("new request succeeded")
+        if delete_request_entry(req_dict):
+            msg = 'Accepted Deletion'
+            stat = True
         else:
-            print("new request failed")
+            msg = 'Rejected Deletion, ACTIVE'
+            stat = False
+
+    # 5. Determine if we are updating (editing) and existing request
+    elif req_dict['status'].lower() == 'edit':
+        if delete_request_entry(req_dict):
+            if create_request_entry(req_dict):
+                msg = 'Accepted Edit'
+                stat = True
+            else:
+                msg = 'Rejected Edit'
+                stat = False
+        else:
+            msg = 'Rejected Edit Deletion, ACTIVE'
+            stat = False
+
+    # 6. If we get here, we are creating a new request
+    else:
+        if create_request_entry(req_dict):
+            msg = 'Accepted Request'
+            stat = True
+        else:
+            msg = 'Rejected Request'
+            stat = False
+
+    print(msg)
 
     # 5. Add the raw request to database
     if add2db:
         _ = add_request_to_db(req_dict)
 
+    return stat, msg
+
 
 def delete_request_entry(request_dict):
     # a. start by trying to get the request id from the marshal id
     sedm_requestid = sedmdb.get_from_request(
-        values=['id'], where_dict={'marshal_id': request_dict['requestid'],
-                                   'external_id': 2})
-    print("Canceling SedmDB request ids:\n", sedm_requestid)
+        values=['id', 'status'], where_dict={
+            'marshal_id': request_dict['requestid'], 'external_id': 2})
+    # print("Canceling SedmDB request ids:\n", sedm_requestid)
+
+    ret = False
 
     if not sedm_requestid:
         print("No request matching that id")
     else:
         for i in sedm_requestid:
             try:
-                print("Canceling: ", i[0])
-                print(sedmdb.update_request({'id': i[0], 'status': 'CANCELED'}))
+                if 'ACTIVE' in i[1]:
+                    print("Cannot cancel, currently ACTIVE: ", i[0])
+                else:
+                    print("Canceling: ", i[0])
+                    print(sedmdb.update_request({'id': i[0],
+                                                 'status': 'CANCELED'}))
+                    ret = True
             except Exception as e:
                 print(str(e))
+
+    return ret
 
 
 def add_request_to_db(request_dict):
