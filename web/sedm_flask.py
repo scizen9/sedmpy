@@ -277,22 +277,29 @@ def add_request():
 
     print(content)
     try:
-        watcher.process_new_request(content, isfile=False)
+        stat, msg = watcher.process_new_request(content, isfile=False)
     except Exception as e:
         print(str(e))
+        stat = False
+        msg = str(e)
 
     # Now write the request to file
-    output = open(os.path.join(config['path']['path_requests'],
-                               'new_request_%s.txt' %
-                               datetime.datetime.utcnow().strftime(
-                                   "%Y%m%d_%H_%M_%S.%f")), 'w'
-                  )
-
+    if stat:
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'new_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                   "%Y%m%d_%H_%M_%S.%f")), 'w')
+    else:
+        output = open(os.path.join(config['path']['path_requests'],
+                                   'failed_request_%s.txt' %
+                                   datetime.datetime.utcnow().strftime(
+                                       "%Y%m%d_%H_%M_%S.%f")), 'w')
     data = json.dumps(content)
     output.write(data)
     output.close()
 
-    return 'Content-type: text/html\n <title>Accepted Request</title>'
+    retval = 'Content-type: text/html\n <title>%s</title>' % msg
+    return retval
 
 
 @app.route('/add_fritz', methods=['GET', 'POST'])
