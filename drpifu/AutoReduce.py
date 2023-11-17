@@ -309,7 +309,7 @@ def cal_proc_ready(caldir='./', fsize=_nomfs, mintest=False, ncp=0,
                         nxe >= 3 and ndome >= 3 and
                         nhg >= 3 and ncd >= 3):
                     ret = True
-        logging.info("bias2.0: %d, bias0.1: %d, bias1.0: %d, dome: %d, "
+        logging.info("[OLD; bias2.0: %d, bias0.1: %d,] bias1.0: %d, dome: %d, "
                      "Xe: %d, Hg: %d, Cd: %d" %
                      (nbias2, nbias, nbias1, ndome, nxe, nhg, ncd))
         sys.stdout.flush()
