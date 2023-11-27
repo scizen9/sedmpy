@@ -1405,6 +1405,13 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
             calib_dict.pop(i)
     # print(calib_dict, 'calib products')
 
+    # Check for specfocus plots
+    sfplots = []
+    sflist = glob.glob(os.path.join(obsdir, 'specfocus%s_*.png' % obsdate))
+    if len(sflist) > 0:
+        for sfpf in sflist:
+            sfplots.append(sfpf)
+
     if user_id == 2:    # SEDM_admin
         if os.path.exists(os.path.join(obsdir, 'report.txt')):
             ext_report = """<a href="http://minar.caltech.edu/data_r/redux/{0}/report.txt">Extraction</a>""".format(obsdate)
@@ -1444,6 +1451,23 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
             </a>
           </div>
         </div>""".format(2, impathlink, impath, 400, 400)
+    div_str += "</div>"
+    if sfplots:
+        div_str += """<H4>Spec Focus</h4>"""
+        for sfpf in sfplots:
+            impath = "/data/%s/%s" % (obsdate, os.path.basename(sfpf))
+            impathlink = "data/%s/%s" % (obsdate,
+                                         os.path.basename(sfpf.replace('.png',
+                                                                       '.pdf')))
+            if not os.path.exists(impathlink):
+                impathlink = impath
+            div_str += """<div class="col-md-{0}">
+                      <div class="thumbnail">
+                        <a href="{1}">
+                          <img src="{2}" width="{3}px" height="{4}px">
+                        </a>
+                      </div>
+                    </div>""".format(2, impathlink, impath, 400, 400)
     div_str += "</div>"
     sedm_dict['sci_data'] += div_str
     # To get ifu products we first look to see if a what.list file has been
