@@ -1432,8 +1432,10 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
             wha_report = ""
         div_str += """<div class="row">"""
         div_str += """<h4>Reports</h4>"""
-        div_str += """{0} {1} {2} {3}""".format(ext_report, frz_report,
-                                                grw_report, wha_report)
+        div_str += """{0}
+        {1}
+        {2}
+        {3}""".format(ext_report, frz_report, grw_report, wha_report)
         div_str += "</div>"
 
     div_str += """<div class="row">"""
@@ -1454,6 +1456,7 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
         </div>""".format(2, impathlink, impath, 400, 400)
     div_str += "</div>"
     if sfplots:
+        div_str += """<div class="row">"""
         div_str += """<H4>Spec Focus</h4>"""
         for sfpf in sfplots:
             impath = "/data/%s/%s" % (obsdate, os.path.basename(sfpf))
