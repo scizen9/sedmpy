@@ -1408,6 +1408,7 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
     # Check for specfocus plots
     sfplots = []
     sflist = glob.glob(os.path.join(obsdir, 'specfocus%s_*.png' % obsdate))
+    sflist.sort()
     if len(sflist) > 0:
         for sfpf in sflist:
             sfplots.append(sfpf)
