@@ -1998,6 +1998,16 @@ def obs_loop(rawlist=None, redd=None, check_precal=True, indir=None,
     logging.info("Raw files from  : %s" % srcdir)
     logging.info("Reduced files to: %s" % outdir)
 
+    # Check for focus plots
+    focus_plots = glob.glob(os.path.join(srcdir, "specfocus*.png"))
+    for fp in focus_plots:
+        bn = os.path.basename(fp)
+        lbn = os.path.join(outdir, bn)
+        if not os.path.islink(lbn):
+            os.symlink(fp, lbn)
+
+    logging.info("Found %d spec focus plots" % len(focus_plots))
+
     # Check if processed cal files are ready
     if not cube_ready(outdir, cur_date_str):
         # Wait for cal files until sunset
