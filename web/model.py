@@ -1432,11 +1432,13 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
             wha_report = ""
         div_str += """<div class="row">"""
         div_str += """<h4>Reports</h4>"""
-        div_str += """{0}
+        div_str += """
+        {0}
         {1}
         {2}
         {3}""".format(ext_report, frz_report, grw_report, wha_report)
-        div_str += "</div>"
+        div_str += """</div>
+        """
 
     div_str += """<div class="row">"""
     div_str += """<h4>Calibrations</h4>"""
@@ -1454,7 +1456,8 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
             </a>
           </div>
         </div>""".format(2, impathlink, impath, 400, 400)
-    div_str += "</div>"
+    div_str += """</div>
+    """
     if sfplots:
         div_str += """<div class="row">"""
         div_str += """<H4>Spec Focus</h4>"""
@@ -1472,7 +1475,8 @@ def get_ifu_products(obsdir=None, user_id=None, obsdate="", show_finder=True,
                         </a>
                       </div>
                     </div>""".format(2, impathlink, impath, 400, 400)
-    div_str += "</div>"
+    div_str += """</div>
+    """
     sedm_dict['sci_data'] += div_str
     # To get ifu products we first look to see if a what.list file has been
     # created. This way we will know which files to add to our dict and
