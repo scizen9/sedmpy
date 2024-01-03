@@ -89,7 +89,8 @@ _nomfs = sedm_cfg['nominal_file_size']
 
 def link_refcube(curdir='./', date_str=None):
     # source (ref) and destination
-    srcpre = '/data/sedmdrp/redux/ref/20230407_'
+    # srcpre = '/data/sedmdrp/redux/ref/20230407_'
+    srcpre = '/data/sedmdrp/redux/ref/20231220_'
     dstpre = curdir + '/%s_' % date_str
     grid = 'HexaGrid.pkl'
     trace = 'TraceMatch.pkl'
@@ -1258,6 +1259,9 @@ def update_spec(input_specfile, update_db=False, nopush_marshal=False):
                     ff[0].header['NGSFSUBT']
             if class_ngsf_dict['score'] > 1000:
                 class_ngsf_dict['score'] = 999.
+            if 'phase' in class_ngsf_dict:
+                if class_ngsf_dict['phase'] > 1000:
+                    class_ngsf_dict['phase'] = 999.
     else:
         logging.info("No NGSF info in %s" % input_specfile)
 
