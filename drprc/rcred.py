@@ -227,9 +227,19 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True, twilight=False,
     if len(glob.glob("Flat_rc_dome*norm.fits")) == 8 and not twilight:
         logger.info("Dome Master Flats exist!")
         return
-    if len(glob.glob("Flat_rc_twilight*norm.fits")) == 4 and twilight:
-        logger.info("Twilight Master Flats exist!")
-        return
+    twilist = glob.glob("Flat_rc_twilight*norm.fits")
+    if len(twilist) == 4 and twilight:
+        non_links = 0
+        for tf in twilist:
+            if os.path.islink:
+                new_name = tf.replace("norm", "norm_orig")
+                os.rename(tf, new_name)
+                logger.info("Moving %s to %s" % (tf, new_name))
+            else:
+                non_links += 1
+        if non_links == 4:
+            logger.info("Twilight Master Flats exist!")
+            return
     else:
         if twilight:
             logger.info("Starting the Master Twilight Flat creation!")
