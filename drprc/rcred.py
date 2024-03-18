@@ -221,9 +221,6 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True, twilight=False,
     if plot and not os.path.isdir("reduced/flats"):
         os.makedirs("reduced/flats")
 
-    if len(glob.glob("Flat_rc*norm.fits")) == 12:
-        logger.info("All Master Flats (dome, twilight) exist!")
-        return
     if len(glob.glob("Flat_rc_dome*norm.fits")) == 8 and not twilight:
         logger.info("Dome Master Flats exist!")
         return
