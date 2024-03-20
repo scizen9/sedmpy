@@ -224,24 +224,30 @@ def create_masterflat(flatdir=None, biasdir=None, plot=True, twilight=False,
     if len(glob.glob("Flat_rc_dome*norm.fits")) == 8 and not twilight:
         logger.info("Dome Master Flats exist!")
         return
+    # twilights can happen in evening or morning
     twilist = glob.glob("Flat_rc_twilight*norm.fits")
     if len(twilist) == 4 and twilight:
+        # Check for linked twilights from a previous night when
+        # not taken in the evening
         non_links = 0
         for tf in twilist:
+            # Move links to keep a record of what was used
+            # but also allow morning twilights to be processed
             if os.path.islink:
                 new_name = tf.replace("norm", "norm_orig")
                 os.rename(tf, new_name)
                 logger.info("Moving %s to %s" % (tf, new_name))
             else:
                 non_links += 1
+        # If we have all the non-linked twilights, we are done!
         if non_links == 4:
             logger.info("Twilight Master Flats exist!")
             return
+
+    if twilight:
+        logger.info("Starting the Master Twilight Flat creation!")
     else:
-        if twilight:
-            logger.info("Starting the Master Twilight Flat creation!")
-        else:
-            logger.info("Starting the Master Dome Flat creation!")
+        logger.info("Starting the Master Dome Flat creation!")
 
     bias_slow = "Bias_rc_slow.fits"
     bias_fast = "Bias_rc_fast.fits"
