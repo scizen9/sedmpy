@@ -533,8 +533,7 @@ def reduce_on_the_fly(photdir, nocopy=False, proc_na=False, do_phot=False,
         nfiles = nfilesnew
 
     # Process twilights, if we have not done so at the beginning of the night
-    if not twilights_done:
-        rcred.create_masterflat(phot_dir, twilight=True)
+    rcred.create_masterflat(phot_dir, twilight=True)
 
     logger.info("End of night because sun is up!")
 
